@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Learn Car Driving API
+  version: 1.0.0
+servers:
+  - url: http://localhost/api/v1
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /auth/request-otp:
+    post:
+      summary: Request OTP via WhatsApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_with_cc:
+                  type: string
+              required: [phone_with_cc]
+      responses:
+        '200':
+          description: OTP sent
+  /auth/verify-otp:
+    post:
+      summary: Verify OTP and issue tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_with_cc: { type: string }
+                otp: { type: string }
+                referral_code: { type: string }
+              required: [phone_with_cc, otp]
+      responses:
+        '200':
+          description: Tokens and user data
+  /plans:
+    get:
+      summary: List active plans
+      parameters:
+        - in: query
+          name: country_id
+          schema: { type: string }
+        - in: query
+          name: city_id
+          schema: { type: string }
+        - in: query
+          name: training_type
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /user-requests:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Create a user request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id: { type: string }
+                start_date: { type: string, format: date }
+                has_user_car: { type: boolean }
+                wants_trainer_car: { type: boolean }
+                needs_pickup: { type: boolean }
+              required: [plan_id, start_date, has_user_car, wants_trainer_car, needs_pickup]
+      responses:
+        '201': { description: Created }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+

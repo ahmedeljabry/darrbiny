@@ -1,0 +1,187 @@
+{
+  "info": {
+    "name": "Darbiny API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Darbiny public + protected API collection"
+  },
+  "item": [
+    {
+      "name": "Healthcheck",
+      "item": [
+        {
+          "name": "GET Healthz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}{{api_prefix}}/healthz", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","healthz"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (OTP)",
+      "item": [
+        {
+          "name": "POST Request OTP",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type", "value": "application/json"} ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_with_cc\": \"{{phone_with_cc}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}{{api_prefix}}/auth/request-otp", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","auth","request-otp"] }
+          }
+        },
+        {
+          "name": "POST Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set('access_token', res.data.access_token || '');",
+                  "pm.environment.set('refresh_token', res.data.refresh_token || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type", "value": "application/json"} ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_with_cc\": \"{{phone_with_cc}}\",\n  \"otp\": \"{{otp_code}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}{{api_prefix}}/auth/verify-otp", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","auth","verify-otp"] }
+          }
+        },
+        {
+          "name": "GET Me",
+          "request": {
+            "method": "GET",
+            "header": [ {"key": "Authorization", "value": "Bearer {{access_token}}"} ],
+            "url": { "raw": "{{base_url}}{{api_prefix}}/auth/me", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","auth","me"] }
+          }
+        },
+        {
+          "name": "POST Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set('access_token', res.data.access_token || '');",
+                  "pm.environment.set('refresh_token', res.data.refresh_token || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type", "value": "application/json"} ],
+            "body": {"mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\",\n  \"phone_with_cc\": \"{{phone_with_cc}}\"\n}"},
+            "url": { "raw": "{{base_url}}{{api_prefix}}/auth/refresh", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","auth","refresh"] }
+          }
+        },
+        {
+          "name": "POST Logout",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Authorization", "value": "Bearer {{access_token}}"}, {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{base_url}}{{api_prefix}}/auth/logout", "host": ["{{base_url}}"], "path": ["{{api_prefix}}","auth","logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {"name":"GET Countries","request":{"method":"GET","header":[],"url":{"raw":"{{base_url}}{{api_prefix}}/countries","host":["{{base_url}}"],"path":["{{api_prefix}}","countries"]}}},
+        {"name":"GET Cities","request":{"method":"GET","header":[],"url":{"raw":"{{base_url}}{{api_prefix}}/cities?country_id={{country_id}}","host":["{{base_url}}"],"path":["{{api_prefix}}","cities"],"query":[{"key":"country_id","value":"{{country_id}}"}]}}},
+        {"name":"GET Plans","request":{"method":"GET","header":[],"url":{"raw":"{{base_url}}{{api_prefix}}/plans?country_id={{country_id}}&city_id={{city_id}}&training_type=&hours=","host":["{{base_url}}"],"path":["{{api_prefix}}","plans"],"query":[{"key":"country_id","value":"{{country_id}}"},{"key":"city_id","value":"{{city_id}}"},{"key":"training_type","value":""},{"key":"hours","value":""}]}}}
+      ]
+    },
+    {
+      "name": "User Requests",
+      "item": [
+        {
+          "name": "POST Create Request",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Authorization", "value": "Bearer {{access_token}}"}, {"key":"Content-Type","value":"application/json"} ],
+            "body": {"mode":"raw","raw":"{\n  \"plan_id\": \"{{plan_id}}\",\n  \"notes\": \"\",\n  \"preferred_start\": \"2025-09-20\"\n}"},
+            "url": {"raw":"{{base_url}}{{api_prefix}}/user-requests","host":["{{base_url}}"],"path":["{{api_prefix}}","user-requests"]}
+          }
+        },
+        {"name":"GET List Requests","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/user-requests?mine=true","host":["{{base_url}}"],"path":["{{api_prefix}}","user-requests"],"query":[{"key":"mine","value":"true"}]}}},
+        {"name":"GET Request By Id","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/user-requests/{{user_request_id}}","host":["{{base_url}}"],"path":["{{api_prefix}}","user-requests","{{user_request_id}}"]}}},
+        {"name":"POST Complete Request","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/user-requests/{{user_request_id}}/complete","host":["{{base_url}}"],"path":["{{api_prefix}}","user-requests","{{user_request_id}}","complete"]}}}
+      ]
+    },
+    {
+      "name": "Offers",
+      "item": [
+        {"name":"GET Offers For Request","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/user-requests/{{user_request_id}}/offers","host":["{{base_url}}"],"path":["{{api_prefix}}","user-requests","{{user_request_id}}","offers"]}}},
+        {
+          "name":"POST Create Offer (Trainer)",
+          "request": {
+            "method":"POST",
+            "header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"user_request_id\": \"{{user_request_id}}\",\n  \"price_minor\": 10000,\n  \"message\": \"I can help\"\n}"},
+            "url": {"raw":"{{base_url}}{{api_prefix}}/trainer/offers","host":["{{base_url}}"],"path":["{{api_prefix}}","trainer","offers"]}
+          }
+        },
+        {"name":"POST Accept Offer","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/offers/{{offer_id}}/accept","host":["{{base_url}}"],"path":["{{api_prefix}}","offers","{{offer_id}}","accept"]}}}
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {"name":"POST Reservation","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"user_request_id\": \"{{user_request_id}}\"\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/payments/reservation","host":["{{base_url}}"],"path":["{{api_prefix}}","payments","reservation"]}}},
+        {"name":"POST Plan Payment","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"user_request_id\": \"{{user_request_id}}\"\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/payments/plan","host":["{{base_url}}"],"path":["{{api_prefix}}","payments","plan"]}}},
+        {"name":"POST Webhook (Simulated)","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"event\": \"payment.succeeded\",\n  \"payload\": {}\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/payments/webhook/dummy","host":["{{base_url}}"],"path":["{{api_prefix}}","payments","webhook","dummy"]}}}
+      ]
+    },
+    {
+      "name": "Training",
+      "item": [
+        {"name":"POST Create Training Day","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"user_request_id\": \"{{user_request_id}}\",\n  \"hours_done\": 2,\n  \"notes\": \"session\"\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/training-days","host":["{{base_url}}"],"path":["{{api_prefix}}","training-days"]}}},
+        {"name":"GET Training Days","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/training-days","host":["{{base_url}}"],"path":["{{api_prefix}}","training-days"]}}},
+        {"name":"POST Approve Training Day","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/training-days/{{training_day_id}}/approve","host":["{{base_url}}"],"path":["{{api_prefix}}","training-days","{{training_day_id}}","approve"]}}},
+        {"name":"POST Reject Training Day","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/training-days/{{training_day_id}}/reject","host":["{{base_url}}"],"path":["{{api_prefix}}","training-days","{{training_day_id}}","reject"]}}}
+      ]
+    },
+    {
+      "name": "Ratings",
+      "item": [
+        {"name":"POST Create Rating","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"user_request_id\": \"{{user_request_id}}\",\n  \"score\": 5,\n  \"comment\": \"Great\"\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/ratings","host":["{{base_url}}"],"path":["{{api_prefix}}","ratings"]}}},
+        {"name":"GET Ratings","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/ratings","host":["{{base_url}}"],"path":["{{api_prefix}}","ratings"]}}}
+      ]
+    },
+    {
+      "name": "Referrals & Rewards",
+      "item": [
+        {"name":"GET My Referral","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/me/referral","host":["{{base_url}}"],"path":["{{api_prefix}}","me","referral"]}}},
+        {"name":"GET Rewards","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/rewards","host":["{{base_url}}"],"path":["{{api_prefix}}","rewards"]}}},
+        {"name":"POST Redeem Reward","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"reward_id\": \"{{reward_id}}\"\n}"},"url":{"raw":"{{base_url}}{{api_prefix}}/rewards/redeem","host":["{{base_url}}"],"path":["{{api_prefix}}","rewards","redeem"]}}}
+      ]
+    },
+    {
+      "name": "Admin (API)",
+      "item": [
+        {"name":"GET Payouts","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/payouts","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","payouts"]}}},
+        {"name":"POST Approve Payout","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/payouts/{{payout_id}}/approve","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","payouts","{{payout_id}}","approve"]}}},
+        {"name":"POST Mark Payout Sent","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/payouts/{{payout_id}}/mark-sent","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","payouts","{{payout_id}}","mark-sent"]}}},
+        {"name":"GET Reward Redemptions","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{access_token}}"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/rewards/redemptions","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","rewards","redemptions"]}}},
+        {"name":"POST Approve Redemption","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/rewards/redemptions/{{redemption_id}}/approve","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","rewards","redemptions","{{redemption_id}}","approve"]}}},
+        {"name":"POST Reject Redemption","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{access_token}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{base_url}}{{api_prefix}}/admin/rewards/redemptions/{{redemption_id}}/reject","host":["{{base_url}}"],"path":["{{api_prefix}}","admin","rewards","redemptions","{{redemption_id}}","reject"]}}}
+      ]
+    }
+  ]
+}
+

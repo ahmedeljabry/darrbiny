@@ -1,0 +1,12 @@
+parameters:
+  paths:
+    - app
+  level: max
+  tmpDir: build/phpstan
+  checkGenericClassInNonGenericObjectType: false
+  ignoreErrors:
+    - '#Dynamic property#'
+includes:
+  - vendor/larastan/larastan/extension.neon
+  - vendor/larastan/larastan/rules.neon
+
