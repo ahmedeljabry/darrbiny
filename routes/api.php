@@ -27,6 +27,8 @@ Route::prefix('api/v1')
             Route::post('/refresh', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'refresh']);
         });
 
+       Route::get('home' , \App\Modules\Home\Http\Controllers\HomeController::class);
+
         // Catalog
         Route::get('/countries', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'countries']);
         Route::get('/cities', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'cities']);

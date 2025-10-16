@@ -1,16 +1,19 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu">
   <!-- App Brand -->
   <div class="app-brand demo px-3 py-2">
-    <a href="{{ route('admin.dashboard') }}" class="app-brand-link">
+    <a href="{{ route('admin.dashboard') }}" class="app-brand-link d-flex align-items-center">
       <span class="app-brand-logo demo">
-        <!-- Brand Logo -->
-        <span class="text-primary">
-          <svg width="32" height="22" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z" fill="currentColor"/>
-          </svg>
-        </span>
+        @if(!empty($appSettings['brand']['logo_url']))
+          <img src="{{ asset($appSettings['brand']['logo_url']) }}" alt="logo" style="height:28px; width:auto;"/>
+        @else
+          <span class="text-primary">
+            <svg width="32" height="22" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z" fill="currentColor"/>
+            </svg>
+          </span>
+        @endif
       </span>
-      <span class="app-brand-text demo menu-text fw-bold ms-3">لوحة الإدارة</span>
+      <span class="app-brand-text demo menu-text fw-bold ms-3">{{ $appSettings['brand']['name'] ?? 'لوحة الإدارة' }}</span>
     </a>
 
     <!-- Sidebar Toggle Button -->
@@ -102,6 +105,17 @@
       </a>
     </li>
 
+    <!-- Support Section -->
+    <li class="menu-header small">
+      <span class="menu-header-text" data-i18n="Support">الدعم</span>
+    </li>
+    <li class="menu-item {{ request()->routeIs('admin.support.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.support.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-headset"></i>
+        <div>تذاكر الدعم</div>
+      </a>
+    </li>
+
     <!-- Menu Header Label for Locations -->
     <li class="menu-header small">
       <span class="menu-header-text" data-i18n="Locations">المناطق</span>
@@ -115,49 +129,12 @@
       </a>
     </li>
 
-    <!-- Menu Header Label for Reports -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Reports">التقارير</span>
-    </li>
 
-    <!-- Reports Section with Dropdown -->
-    <li class="menu-item menu-dropdown {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-      <a href="javascript:void(0);" class="menu-link menu-toggle">
-        <i class="menu-icon icon-base ti tabler-file-text"></i>
-        <div>Reports</div>
-      </a>
-      <ul class="menu-sub">
-        <li class="menu-item">
-          <a href="{{ route('admin.reports.sales') }}" class="menu-link">
-            <div>تقارير المبيعات</div>
-          </a>
-        </li>
-        <li class="menu-item">
-          <a href="{{ route('admin.reports.payments') }}" class="menu-link">
-            <div>تقارير المدفوعات</div>
-          </a>
-        </li>
-        <li class="menu-item">
-          <a href="{{ route('admin.reports.subscriptions') }}" class="menu-link">
-            <div>تقارير الاشتراك</div>
-          </a>
-        </li>
-      </ul>
-    </li>
 
     <!-- Menu Header Label for System -->
     <li class="menu-header small">
       <span class="menu-header-text" data-i18n="System">النظام</span>
     </li>
-
-    <!-- Content Management -->
-    <li class="menu-item {{ request()->routeIs('admin.content.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.content.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-edit"></i>
-        <div>المحتوى</div>
-      </a>
-    </li>
-
 
     <!-- Roles & Permissions Section -->
     <li class="menu-item {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
@@ -175,43 +152,7 @@
       </a>
     </li>
 
-    <!-- Menu Header Label for Pages -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Pages">الصفحات</span>
-    </li>
 
-    <!-- Additional Pages Section -->
-    <li class="menu-item">
-      <a href="pages-profile-user.html" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-user"></i>
-        <div>ملف المستخدم</div>
-      </a>
-    </li>
-    <li class="menu-item">
-      <a href="pages-faq.html" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-help"></i>
-        <div>الأسئلة الشائعة</div>
-      </a>
-    </li>
-
-    <!-- Menu Header Label for More -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="More">المزيد</span>
-    </li>
-
-    <!-- Additional Sections -->
-    <li class="menu-item">
-      <a href="pages-settings.html" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-settings"></i>
-        <div>صفحة الإعدادات</div>
-      </a>
-    </li>
-    <li class="menu-item">
-      <a href="pages-about-us.html" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-info-circle"></i>
-        <div>من نحن</div>
-      </a>
-    </li>
   </ul>
 </aside>
 

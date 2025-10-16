@@ -18,7 +18,12 @@ class SettingsController extends BaseController
 
     public function update(SettingsUpdateRequest $request, SettingsService $service)
     {
-        $service->update($request->validated(), $request->file('logo'));
-        return back()->with('status','Settings saved');
+        $service->update(
+            $request->validated(),
+            $request->file('logo'),
+            $request->file('video_app_file'),
+            $request->file('favicon')
+        );
+        return back()->with('status','تم حفظ الإعدادات');
     }
 }

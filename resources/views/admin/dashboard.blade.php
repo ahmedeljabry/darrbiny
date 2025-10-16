@@ -1,98 +1,121 @@
 @extends('admin.layouts.app')
 @section('title', 'الرئيسيه')
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="mb-0">لوحة التحكم</h5>
-        <form method="get" class="d-flex align-items-center gap-2">
-            <label for="period" class="form-label mb-0">الفترة:</label>
-            <select id="period" name="period" class="form-select" style="min-width: 180px" onchange="this.form.submit()">
-                <option value="all" {{ $period->value === 'all' ? 'selected' : '' }}>الكل</option>
-                <option value="today" {{ $period->value === 'today' ? 'selected' : '' }}>اليوم</option>
-                <option value="week" {{ $period->value === 'week' ? 'selected' : '' }}>هذا الأسبوع</option>
-                <option value="month" {{ $period->value === 'month' ? 'selected' : '' }}>هذا الشهر</option>
-            </select>
-        </form>
-    </div>
-
-    <div class="row g-6">
-        <div class="col-lg-3 col-sm-6">
-            <div class="card card-border-shadow-primary h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-4">
-                            <span class="avatar-initial rounded bg-label-primary"><i class="icon-base ti tabler-users icon-28px"></i></span>
-                        </div>
-                        <h4 class="mb-0">{{ $metrics->usersTotal }}</h4>
-                    </div>
-                    <p class="mb-1">المستخدمون</p>
-                    <p class="mb-0">
-                        <small class="text-body-secondary">إجمالي عدد المستخدمين</small>
-                        @if($period->value !== 'all')
-                            <small class="text-success ms-2">جديد: {{ $metrics->usersNew }}</small>
-                        @endif
-                    </p>
+<div class="row">
+    <div class="col-lg-3 col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0">
+                    <h5 class="mb-1 me-2">{{ $planCount }}</h5>
+                    <p class="mb-0">عدد الخطط</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-sm-6">
-            <div class="card card-border-shadow-success h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-4">
-                            <span class="avatar-initial rounded bg-label-success"><i class="icon-base ti tabler-package icon-28px"></i></span>
-                        </div>
-                        <h4 class="mb-0">{{ $metrics->plansTotal }}</h4>
-                    </div>
-                    <p class="mb-1">الخطط</p>
-                    <p class="mb-0">
-                        <small class="text-body-secondary">إجمالي عدد الخطط</small>
-                        @if($period->value !== 'all')
-                            <small class="text-success ms-2">جديد: {{ $metrics->plansNew }}</small>
-                        @endif
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-sm-6">
-            <div class="card card-border-shadow-info h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-4">
-                            <span class="avatar-initial rounded bg-label-info"><i class="icon-base ti tabler-building-skyscraper icon-28px"></i></span>
-                        </div>
-                        <h4 class="mb-0">{{ $metrics->citiesTotal }}</h4>
-                    </div>
-                    <p class="mb-1">المدن</p>
-                    <p class="mb-0">
-                        <small class="text-body-secondary">إجمالي عدد المدن</small>
-                        @if($period->value !== 'all')
-                            <small class="text-success ms-2">جديد: {{ $metrics->citiesNew }}</small>
-                        @endif
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-sm-6">
-            <div class="card card-border-shadow-warning h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-4">
-                            <span class="avatar-initial rounded bg-label-warning"><i class="icon-base ti tabler-world icon-28px"></i></span>
-                        </div>
-                        <h4 class="mb-0">{{ $metrics->countriesTotal }}</h4>
-                    </div>
-                    <p class="mb-1">الدول</p>
-                    <p class="mb-0">
-                        <small class="text-body-secondary">إجمالي عدد الدول</small>
-                        @if($period->value !== 'all')
-                            <small class="text-success ms-2">جديد: {{ $metrics->countriesNew }}</small>
-                        @endif
-                    </p>
+                <div class="card-icon">
+                    <span class="badge bg-label-primary rounded p-2">
+                        <i class="icon-base ti tabler-package icon-26px"></i>
+                    </span>
                 </div>
             </div>
         </div>
     </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0">
+                    <h5 class="mb-1 me-2">{{ $countriesCount }}</h5>
+                    <p class="mb-0">عدد الدول</p>
+                </div>
+                <div class="card-icon">
+                    <span class="badge bg-label-primary rounded p-2">
+                        <i class="icon-base ti tabler-world icon-26px"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0">
+                    <h5 class="mb-1 me-2">{{ $citiesCount }}</h5>
+                    <p class="mb-0">عدد المدن</p>
+                </div>
+                <div class="card-icon">
+                    <span class="badge bg-label-primary rounded p-2">
+                        <i class="icon-base ti tabler-world icon-26px"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0">
+                    <h5 class="mb-1 me-2">{{ $usersCount }}</h5>
+                    <p class="mb-0">عدد المستخدمين</p>
+                </div>
+                <div class="card-icon">
+                    <span class="badge bg-label-primary rounded p-2">
+                        <i class="icon-base ti tabler-users icon-26px"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-4 g-6">
+  <div class="col-12 col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0">إنشاء المستخدمين والخطط (7 أيام)</h5>
+      </div>
+      <div class="card-body">
+        <div id="chart-users-plans" style="height: 320px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0">نسب عامة</h5>
+      </div>
+      <div class="card-body">
+        <div id="chart-overview" style="height: 320px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof ApexCharts !== 'undefined') {
+    const labels = @json($labels ?? []);
+    const userSeries = @json($userSeries ?? []);
+    const planSeries = @json($planSeries ?? []);
+
+    const lineOptions = {
+      chart: { type: 'line', height: 320, toolbar: { show: false } },
+      stroke: { width: 3, curve: 'smooth' },
+      series: [
+        { name: 'المستخدمون', data: userSeries },
+        { name: 'الخطط', data: planSeries }
+      ],
+      xaxis: { categories: labels },
+      yaxis: { min: 0 },
+      legend: { position: 'top' }
+    };
+    new ApexCharts(document.querySelector('#chart-users-plans'), lineOptions).render();
+
+    const donutOptions = {
+      chart: { type: 'donut', height: 320 },
+      labels: ['الخطط','الدول','المدن','المستخدمون'],
+      series: [{{ $planCount }}, {{ $countriesCount }}, {{ $citiesCount }}, {{ $usersCount }}],
+      legend: { position: 'bottom' }
+    };
+    new ApexCharts(document.querySelector('#chart-overview'), donutOptions).render();
+  }
+});
+</script>
+@endpush
 @endsection

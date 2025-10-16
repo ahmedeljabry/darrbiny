@@ -11,13 +11,16 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>@yield('title')</title>
+    <title>{{ $appSettings['brand']['name'] ?? config('app.name','Laravel') }} | @yield('title')</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('admin/assets/img/favicon/favicon.ico') }}" />
+    @if(!empty($appSettings['brand']['favicon_url']))
+      <link rel="icon" type="image/x-icon" href="{{ asset($appSettings['brand']['favicon_url']) }}" />
+    @else
+      <link rel="icon" type="image/x-icon" href="{{ asset('admin/assets/img/favicon/favicon.ico') }}" />
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,14 +46,26 @@
     <link rel="stylesheet" href="{{ asset('admin/assets/vendor/libs/apex-charts/apex-charts.css') }}" />
     <link rel="stylesheet" href="{{ asset('admin/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('admin/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+    <link rel="stylesheet" href="{{ asset('admin/assets/vendor/libs/flatpickr/flatpickr.css') }}" />
+    <link rel="stylesheet" href="{{ asset('admin/assets/vendor/libs/select2/select2.css') }}" />
 
     <!-- Page CSS -->
 
     <link rel="stylesheet" href="{{ asset('admin/assets/vendor/css/pages/app-logistics-dashboard.css') }}" />
+    <link rel="stylesheet" href="{{ asset('admin/assets/css/custom.css') }}" />
 
     <!-- Helpers -->
     <script src="{{ asset('admin/assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('admin/assets/js/config.js') }}"></script>
+
+    <script>
+      window.APP = window.APP || {};
+      window.APP.i18n = Object.assign({}, window.APP.i18n || {}, {
+        noData: @json(__('tables.no_data'))
+      });
+    </script>
+
+    @stack('styles')
 </head>
 
 <body>

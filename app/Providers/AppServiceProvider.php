@@ -13,6 +13,9 @@ use App\Modules\Auth\Services\WhatsappOtpDriver;
 use App\Modules\Payments\Services\PaymentProvider;
 use App\Modules\Payments\Services\DummyProvider;
 use App\Modules\Payments\Services\TapProvider;
+use Illuminate\Support\Facades\View;
+use App\Models\Setting;
+use Illuminate\Support\Facades\Storage;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,5 +37,23 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(UserRequest::class, UserRequestPolicy::class);
         Gate::define('admin', fn ($user) => $user?->hasRole('ADMIN'));
+
+        // Share brand settings globally in views
+        try {
+            $all = Setting::pluck('value','key')->toArray();
+        } catch (\Throwable $e) {
+            $all = [];
+        }
+        $disk = config('filesystems.default', 'public');
+        $brandName = $all['brand.name'] ?? config('app.name', 'لوحة الإدارة');
+        $logoUrl = !empty($all['brand.logo_path']) ? Storage::disk($disk)->url($all['brand.logo_path']) : null;
+        $faviconUrl = !empty($all['brand.favicon_path']) ? Storage::disk($disk)->url($all['brand.favicon_path']) : null;
+        View::share('appSettings', [
+            'brand' => [
+                'name' => $brandName,
+                'logo_url' => $logoUrl,
+                'favicon_url' => $faviconUrl,
+            ],
+        ]);
     }
 }

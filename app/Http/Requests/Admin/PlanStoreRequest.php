@@ -15,12 +15,18 @@ class PlanStoreRequest extends FormRequest
         return [
             'title' => ['required','string','max:120'],
             'description' => ['nullable','string'],
-            'hours_count' => ['required','integer','min:1'],
-            'training_type' => ['required','string','max:50'],
-            'country_id' => ['nullable','uuid'],
-            'city_id' => ['nullable','uuid'],
-            'base_price_minor' => ['required','integer','min:0'],
+            'price_min' => ['required','numeric','min:0'],
+            'badge_discount' => ['nullable','string','max:50'],
+            'deposit_amount' => ['nullable','numeric','min:0'],
+            'duration_days' => ['required','string','max:50'],
+            'hours_count' => ['nullable','integer','min:0'],
+            'session_count' => ['nullable','integer','min:0'],
+            'level' => ['nullable','string','max:50'],
+            'country_id' => ['required','uuid'],
+            'city_id' => ['required','uuid'],
+            'is_active' => ['sometimes','boolean'],
+            'features' => ['nullable','array'],
+            'features.*' => ['nullable','string','max:255'],
         ];
     }
 }
-

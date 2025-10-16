@@ -15,13 +15,18 @@ class PlanUpdateRequest extends FormRequest
         return [
             'title' => ['sometimes','string','max:120'],
             'description' => ['nullable','string'],
-            'hours_count' => ['sometimes','integer','min:1'],
-            'training_type' => ['sometimes','string','max:50'],
-            'country_id' => ['nullable','uuid'],
-            'city_id' => ['nullable','uuid'],
-            'base_price_minor' => ['sometimes','integer','min:0'],
+            'price_min' => ['sometimes','numeric','min:0'],
+            'badge_discount' => ['nullable','string','max:50'],
+            'deposit_amount' => ['nullable','numeric','min:0'],
+            'duration_days' => ['sometimes','string','max:50'],
+            'hours_count' => ['sometimes','integer','min:0'],
+            'session_count' => ['sometimes','integer','min:0'],
+            'level' => ['nullable','string','max:50'],
+            'country_id' => ['sometimes','uuid'],
+            'city_id' => ['sometimes','uuid'],
             'is_active' => ['sometimes','boolean'],
+            'features' => ['nullable','array'],
+            'features.*' => ['nullable','string','max:255'],
         ];
     }
 }
-

@@ -1,125 +1,100 @@
 @extends('admin.layouts.app')
-@section('title','الخطط')
+@section('title', 'الخطط')
 @section('content')
-
-@if (session('status'))
-  <div class="alert alert-success alert-dismissible" role="alert">
-    {{ session('status') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-@endif
-@if ($errors->any())
-  <div class="alert alert-danger" role="alert">
-    <ul class="mb-0">
-      @foreach ($errors->all() as $error)
-        <li>{{ $error }}</li>
-      @endforeach
-    </ul>
-  </div>
-@endif
-
 <div class="row g-6">
-  <div class="col-12 col-lg-5">
+    <div class="col-12">
     <div class="card h-100">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <h5 class="mb-0">إضافة خطة</h5>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{{ route('admin.plans.store') }}">
-          @csrf
-          <div class="mb-3">
-            <label class="form-label">العنوان</label>
-            <input type="text" name="title" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">الوصف</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">الساعات</label>
-              <input type="number" min="1" name="hours_count" class="form-control" required>
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="mb-0">قائمة الخطط</h5>
+                <div class="d-flex align-items-end gap-2 flex-wrap">
+                    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+                        <div>
+                            <label class="form-label">بحث</label>
+                            <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="ابحث بالعنوان أو الوصف">
+                        </div>
+                        <div>
+                            <label class="form-label">الحالة</label>
+                            <select name="status" class="form-select">
+                                <option value="">الكل</option>
+                                <option value="active" @selected(request('status')==='active')>نشطة</option>
+                                <option value="inactive" @selected(request('status')==='inactive')>غير نشطة</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">الدولة</label>
+                            <select name="country_id" class="form-select select2" style="min-width:180px">
+                                <option value="">الكل</option>
+                                @foreach($countries as $c)
+                                  <option value="{{ $c->id }}" @selected(request('country_id')===$c->id)>{{ $c->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">المدينة</label>
+                            <select name="city_id" class="form-select select2" style="min-width:180px">
+                                <option value="">الكل</option>
+                                @foreach($cities as $city)
+                                  <option value="{{ $city->id }}" @selected(request('city_id')===$city->id)>{{ $city->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2 align-items-end">
+                            <button class="btn btn-outline-secondary">تصفية</button>
+                            <a href="{{ route('admin.plans.index') }}" class="btn btn-outline-dark">إعادة تعيين</a>
+                        </div>
+                    </form>
+                    <a class="btn btn-primary" href="{{ route('admin.plans.create') }}">إضافة خطة</a>
+                </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">نوع التدريب</label>
-              <input type="text" name="training_type" class="form-control" required>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>العنوان</th>
+                            <th>الساعات</th>
+                            <th>الجلسات</th>
+                            <th>السعر الأدنى</th>
+                            <th>الدفعة</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($plans as $plan)
+                            <tr>
+                                <td>{{ $plan->title }}</td>
+                                <td>{{ $plan->hours_count }}</td>
+                                <td>{{ $plan->session_count }}</td>
+                                <td>{{ number_format((float) $plan->price_min, 2) }}</td>
+                                <td>{{ $plan->deposit_amount ? number_format((float) $plan->deposit_amount, 2) : '-' }}</td>
+                                <td>
+                                    <span class="badge bg-label-{{ $plan->is_active ? 'success' : 'secondary' }}">{{ $plan->is_active ? 'نشطة' : 'غير نشطة' }}</span>
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-base ti tabler-dots-vertical"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="{{ route('admin.plans.edit', $plan->id) }}"><i class="icon-base ti tabler-pencil me-1"></i> تعديل</a>
+                                            <form method="post" action="{{ route('admin.plans.destroy', $plan->id) }}" data-confirm="delete">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="icon-base ti tabler-trash me-1"></i> حذف
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-          </div>
-          <div class="row g-3 mt-0">
-            <div class="col-md-6">
-              <label class="form-label">السعر الأساسي (بالعملة الفرعية)</label>
-              <input type="number" min="0" name="base_price_minor" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">نشطة؟</label>
-              <div class="form-check form-switch mt-2">
-                <input class="form-check-input" type="checkbox" name="is_active" value="1" checked>
-                <label class="form-check-label">نعم</label>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 d-flex justify-content-end gap-2">
-            <button type="submit" class="btn btn-primary">حفظ</button>
-          </div>
-        </form>
-      </div>
+            <div class="card-footer">{{ $plans->links() }}</div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-12 col-lg-7">
-    <div class="card h-100">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <h5 class="mb-0">قائمة الخطط</h5>
-      </div>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>العنوان</th>
-              <th>النوع</th>
-              <th>الساعات</th>
-              <th>السعر</th>
-              <th>الحالة</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            @foreach($plans as $plan)
-              <tr>
-                <td>{{ $plan->title }}</td>
-                <td>{{ $plan->training_type }}</td>
-                <td>{{ $plan->hours_count }}</td>
-                <td>{{ number_format($plan->base_price_minor/100, 2) }}</td>
-                <td>
-                  <span class="badge bg-label-{{ $plan->is_active ? 'success':'secondary' }}">{{ $plan->is_active ? 'نشطة' : 'مخفية' }}</span>
-                </td>
-                <td class="d-flex gap-2 flex-wrap">
-                  <form method="post" action="{{ route('admin.plans.update', $plan->id) }}" class="d-flex align-items-center gap-2">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="title" value="{{ $plan->title }}">
-                    <input type="hidden" name="training_type" value="{{ $plan->training_type }}">
-                    <input type="hidden" name="hours_count" value="{{ $plan->hours_count }}">
-                    <input type="hidden" name="base_price_minor" value="{{ $plan->base_price_minor }}">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($plan->is_active) onchange="this.form.submit()">
-                      <label class="form-check-label">نشطة</label>
-                    </div>
-                  </form>
-                  <form method="post" action="{{ route('admin.plans.destroy', $plan->id) }}" onsubmit="return confirm('حذف الخطة؟');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
-                  </form>
-                </td>
-              </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer">{{ $plans->links() }}</div>
-    </div>
-  </div>
 </div>
 @endsection
-

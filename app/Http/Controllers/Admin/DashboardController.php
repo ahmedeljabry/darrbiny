@@ -4,21 +4,31 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\Period;
-use App\Http\Requests\Admin\DashboardIndexRequest;
-use App\Services\Dashboard\DashboardService;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends BaseController
 {
-    public function index(DashboardIndexRequest $request, DashboardService $service)
+    public function __invoke()
     {
-        $period = Period::fromString($request->validated('period') ?? 'all');
-        $metrics = $service->getMetrics($period);
+        $planCount = \App\Models\Plan::count();
+        $countriesCount = \App\Models\Country::count();
+        $citiesCount = \App\Models\City::count();
+        $usersCount = \App\Models\User::count();
 
-        return view('admin.dashboard', [
-            'metrics' => $metrics,
-            'period' => $period,
-        ]);
+        $labels = [];
+        $userSeries = [];
+        $planSeries = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day = Carbon::today()->subDays($i);
+            $labels[] = $day->format('Y-m-d');
+            $userSeries[] = \App\Models\User::whereDate('created_at', $day)->count();
+            $planSeries[] = \App\Models\Plan::whereDate('created_at', $day)->count();
+        }
+
+        return view('admin.dashboard', compact(
+            'planCount','countriesCount','citiesCount','usersCount','labels','userSeries','planSeries'
+        ));
     }
+
 }

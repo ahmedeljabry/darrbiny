@@ -34,20 +34,5 @@ class DemoDataSeeder extends Seeder
             'password' => bcrypt('password'),
         ]);
         $admin->assignRole('ADMIN');
-
-        // Plans (assumes GeoSeeder ran and countries/cities exist)
-        $city = \App\Models\City::first();
-        $country = $city?->country ?? \App\Models\Country::first();
-        Plan::firstOrCreate([
-            'title' => 'Starter 5 Hours',
-            'city_id' => $city?->id,
-        ], [
-            'description' => 'Basics of driving',
-            'hours_count' => 5,
-            'training_type' => 'manual',
-            'country_id' => $country?->id,
-            'base_price_minor' => 50000,
-            'is_active' => true,
-        ]);
     }
 }

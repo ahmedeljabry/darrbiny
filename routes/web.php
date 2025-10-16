@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UsersController as AdminUsersController;
-use App\Http\Controllers\Admin\PlansController as AdminPlansController;
+use App\Http\Controllers\Admin\PlansController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\Auth\LoginController as AdminLoginController;
@@ -22,7 +22,6 @@ Route::middleware(['web'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        // Auth (guests only)
         Route::middleware('guest')->group(function () {
             Route::get('/login', [AdminLoginController::class, 'show'])->name('login');
             Route::post('/login', [AdminLoginController::class, 'login'])->name('login.post')->middleware('throttle:6,1');
@@ -31,9 +30,8 @@ Route::middleware(['web'])
         // Logout for authenticated users
         Route::post('/logout', [AdminLoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-        // Protected admin area
         Route::middleware(['auth', 'ensure.admin'])->group(function () {
-            Route::get('/webb', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', DashboardController::class)->name('dashboard');
             Route::get('/course-details', [DashboardController::class, 'courseDetails'])->name('course.details');
 
             Route::get('/users', [AdminUsersController::class, 'index'])->name('users.index');
@@ -46,10 +44,11 @@ Route::middleware(['web'])
             Route::post('/users/{id}/ban', [AdminUsersController::class, 'ban'])->name('users.ban');
             Route::post('/users/{id}/unban', [AdminUsersController::class, 'unban'])->name('users.unban');
 
-            Route::get('/plans', [AdminPlansController::class, 'index'])->name('plans.index');
-            Route::post('/plans', [AdminPlansController::class, 'store'])->name('plans.store');
-            Route::put('/plans/{id}', [AdminPlansController::class, 'update'])->name('plans.update');
-            Route::delete('/plans/{id}', [AdminPlansController::class, 'destroy'])->name('plans.destroy');
+            Route::resource('plans' , PlansController::class)->names('plans');
+
+            // Geo helpers
+            Route::get('/countries/{country}/cities', [\App\Http\Controllers\Admin\GeoAdminController::class, 'cities'])
+                ->name('countries.cities');
 
             Route::get('/content', [AdminContentController::class, 'index'])->name('content.index');
             Route::post('/content', [AdminContentController::class, 'update'])->name('content.update');
@@ -63,9 +62,23 @@ Route::middleware(['web'])
             Route::get('/reports/payments', [\App\Http\Controllers\Admin\ReportsController::class, 'payments'])->name('reports.payments');
             Route::get('/reports/subscriptions', [\App\Http\Controllers\Admin\ReportsController::class, 'subscriptions'])->name('reports.subscriptions');
             Route::get('/geo', [\App\Http\Controllers\Admin\GeoAdminController::class, 'index'])->name('geo.index');
+            Route::get('/geo/countries/create', [\App\Http\Controllers\Admin\GeoAdminController::class, 'createCountry'])->name('geo.countries.create');
+            Route::get('/geo/countries/{id}/edit', [\App\Http\Controllers\Admin\GeoAdminController::class, 'editCountry'])->name('geo.countries.edit');
+            Route::post('/geo/countries', [\App\Http\Controllers\Admin\GeoAdminController::class, 'storeCountry'])->name('geo.countries.store');
+            Route::put('/geo/countries/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCountry'])->name('geo.countries.update');
+            Route::delete('/geo/countries/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCountry'])->name('geo.countries.destroy');
+            Route::post('/geo/countries/{country}/cities', [\App\Http\Controllers\Admin\GeoAdminController::class, 'storeCities'])->name('geo.cities.store');
+            Route::put('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCity'])->name('geo.cities.update');
+            Route::delete('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCity'])->name('geo.cities.destroy');
             Route::get('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'index'])->name('ratings.index');
             Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');
             Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'index'])->name('notifications.index');
+            Route::post('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'send'])->name('notifications.send');
+
+            // Support tickets
+            Route::get('/support', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'index'])->name('support.index');
+            Route::get('/support/{id}', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'show'])->name('support.show');
+            Route::post('/support/{id}/reply', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'reply'])->name('support.reply');
             // Roles & permissions
             Route::get('/roles', [\App\Http\Controllers\Admin\RolesController::class, 'index'])->name('roles.index');
             Route::post('/roles', [\App\Http\Controllers\Admin\RolesController::class, 'store'])->name('roles.store');
