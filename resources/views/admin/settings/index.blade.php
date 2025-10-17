@@ -353,7 +353,7 @@
       </div>
       <div class="card-body">
         <form method="post" action="{{ route('admin.settings.howitworks.update') }}">@csrf
-          @php($hiw = \App\Models\HowItWorksSection::with('steps')->orderBy('position')->get())
+          @php($hiw = \App\Models\HowItWorksSection::with('steps')->get())
           <div id="hiw-list" class="d-flex flex-column gap-2">
             @if ($hiw->isEmpty())
               <div class="border rounded p-2 hiw-row">
