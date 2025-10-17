@@ -16,7 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'correlation' => \App\Http\Middleware\CorrelationId::class,
             'json.envelope' => \App\Http\Middleware\JsonResponseEnvelope::class,
-            'req.log' => \App\Http\Middleware\LogRequestResponse::class,
             'sanitize' => \App\Http\Middleware\SanitizeInput::class,
             'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);

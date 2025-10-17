@@ -19,6 +19,7 @@ class Plan extends BaseModel
         'country_id',
         'city_id',
         'is_active',
+        'show_on_home',
     ];
 
     protected $casts = [
@@ -27,6 +28,7 @@ class Plan extends BaseModel
         'hours_count' => 'integer',
         'session_count' => 'integer',
         'is_active' => 'bool',
+        'show_on_home' => 'bool',
     ];
 
     public function country()
@@ -50,8 +52,8 @@ class Plan extends BaseModel
     }
 
     public function scopeActive($q){ return $q->where('is_active', true); }
-    public function scopeByLocation($q, ?string $countryId, ?string $cityId){
-        return $q->when($countryId, fn($qq)=>$qq->where('country_id',$countryId))
-                ->when($cityId, fn($qq)=>$qq->where('city_id',$cityId));
+    public function scopeHome($q){ return $q->where('show_on_home' , true); }
+    public function scopeByLocation($q, ?string $cityId){
+        return $q->when($cityId, fn($qq) => $qq->where('city_id', $cityId));
     }
 }

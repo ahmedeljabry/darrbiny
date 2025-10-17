@@ -93,6 +93,7 @@ Route::middleware(['web'])
             // Settings
             Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
             Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+            Route::post('/settings/how-it-works', [\App\Http\Controllers\Admin\HowItWorksController::class, 'update'])->name('settings.howitworks.update');
         });
     });
 

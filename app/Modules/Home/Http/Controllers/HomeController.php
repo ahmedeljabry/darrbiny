@@ -2,24 +2,14 @@
 
 namespace App\Modules\Home\Http\Controllers;
 
-use App\Modules\Home\Http\Requests\HomeIndexRequest;
-use App\Services\HomeService;
-use Illuminate\Http\JsonResponse;
+use App\Modules\Home\Services\HomeService;
+use Illuminate\Http\{JsonResponse,Request};
 
-class HomeController
+final class HomeController
 {
     public function __construct(protected HomeService $homeService) {}
-
-    public function __invoke(HomeIndexRequest $request): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
-        $data = $this->homeService->getHomeData(
-            $request->includes(),
-            (int)$request->input('limit_plans', 5),
-            (int)$request->input('limit_trainers', 5),
-            (int)$request->input('country_id', 0),
-            (int)$request->input('city_id', 0)
-        );
-
-        return response()->json($data);
+        return response()->json($this->homeService->getHomeData($request->city_id,(string)$request->input('q', '')));
     }
 }

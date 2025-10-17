@@ -25,6 +25,7 @@ class PlanStoreRequest extends FormRequest
             'country_id' => ['required','uuid'],
             'city_id' => ['required','uuid'],
             'is_active' => ['sometimes','boolean'],
+            'show_on_home' => ['sometimes','boolean'],
             'features' => ['nullable','array'],
             'features.*' => ['nullable','string','max:255'],
         ];

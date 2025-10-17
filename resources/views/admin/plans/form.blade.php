@@ -114,6 +114,11 @@
     <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked(old('is_active', $plan->is_active ?? true))>
     <label class="form-check-label">نشطة</label>
   </div>
+  <div class="form-check form-switch mt-2">
+    <input type="hidden" name="show_on_home" value="0">
+    <input class="form-check-input" type="checkbox" name="show_on_home" value="1" @checked(old('show_on_home', $plan->show_on_home ?? false))>
+    <label class="form-check-label">عرض في الصفحة الرئيسية</label>
+  </div>
 </div>
 
 @push('scripts')

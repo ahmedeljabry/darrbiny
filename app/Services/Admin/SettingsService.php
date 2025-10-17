@@ -74,6 +74,25 @@ final class SettingsService
             $this->save('pages.faq', json_encode($faqs, JSON_UNESCAPED_UNICODE));
         }
         $this->save('pages.contact', $data['page_contact'] ?? null);
+
+        // Home: How it works (sections with steps)
+        if (!empty($data['how_it_works']) && is_array($data['how_it_works'])) {
+            $sections = collect($data['how_it_works'])
+                ->map(function ($row) {
+                    $title = trim((string)($row['title'] ?? ''));
+                    $steps = collect($row['steps'] ?? [])
+                        ->map(fn($s) => trim((string)$s))
+                        ->filter()
+                        ->values()
+                        ->all();
+                    if ($title === '' || empty($steps)) return null;
+                    return [ 'title' => $title, 'steps' => $steps ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+            $this->save('home.how_it_works', json_encode($sections, JSON_UNESCAPED_UNICODE));
+        }
     }
 
     private function save(string $key, mixed $value): void

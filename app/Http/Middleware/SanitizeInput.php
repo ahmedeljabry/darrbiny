@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use Closure;
-use HTMLPurifier_Config;
 use Mews\Purifier\Purifier;
 use Illuminate\Http\Request;
 

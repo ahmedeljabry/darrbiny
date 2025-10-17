@@ -26,7 +26,6 @@ class DemoDataSeeder extends Seeder
         $trainer->assignRole('TRAINER');
         TrainerProfile::firstOrCreate(['user_id' => $trainer->id]);
 
-        // Admin user (for panel login when using session-based auth)
         $admin = User::firstOrCreate(['phone_with_cc' => '+201333333333'], [
             'name' => 'Admin',
             'currency' => 'EGP',

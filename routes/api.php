@@ -8,17 +8,14 @@ RateLimiter::for('otp', fn ($request) => [Limit::perMinute(3)->by($request->ip()
 RateLimiter::for('auth', fn ($request) => [Limit::perMinute(30)->by($request->user()?->id ?? $request->ip())]);
 RateLimiter::for('default', fn ($request) => [Limit::perMinute(60)->by($request->user()?->id ?? $request->ip())]);
 
-Route::prefix('api/v1')
-    ->middleware(['correlation', 'req.log', 'json.envelope', 'sanitize'])
-    ->group(function () {
-        // Healthcheck
-        Route::get('/healthz', fn () => response()->json(['data' => ['ok' => true]]) )->name('healthz');
+Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->group(function () {
 
         // Auth
         Route::prefix('auth')->middleware('throttle:otp')->group(function () {
             Route::post('/request-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'requestOtp']);
             Route::post('/verify-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'verifyOtp']);
         });
+
         Route::prefix('auth')->middleware('throttle:auth')->group(function () {
             Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/me', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'me']);
@@ -27,7 +24,11 @@ Route::prefix('api/v1')
             Route::post('/refresh', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'refresh']);
         });
 
-       Route::get('home' , \App\Modules\Home\Http\Controllers\HomeController::class);
+        Route::prefix('home')->group(function () {
+            Route::get('/' , \App\Modules\Home\Http\Controllers\HomeController::class);
+            Route::post('favorites', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'store']);
+            Route::delete('favorites/{trainerId}', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'destroy']);
+        });
 
         // Catalog
         Route::get('/countries', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'countries']);
@@ -68,15 +69,8 @@ Route::prefix('api/v1')
             Route::get('/me/referral', [\App\Modules\Referrals\Http\Controllers\ReferralController::class, 'me']);
             Route::get('/rewards', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'index']);
             Route::post('/rewards/redeem', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'redeem']);
+
+
         });
 
-        // Admin
-        Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
-            Route::get('/payouts', [\App\Modules\Admin\Http\Controllers\AdminPayoutController::class, 'index']);
-            Route::post('/payouts/{id}/approve', [\App\Modules\Admin\Http\Controllers\AdminPayoutController::class, 'approve']);
-            Route::post('/payouts/{id}/mark-sent', [\App\Modules\Admin\Http\Controllers\AdminPayoutController::class, 'markSent']);
-            Route::get('/rewards/redemptions', [\App\Modules\Admin\Http\Controllers\AdminRewardRedemptionController::class, 'index']);
-            Route::post('/rewards/redemptions/{id}/approve', [\App\Modules\Admin\Http\Controllers\AdminRewardRedemptionController::class, 'approve']);
-            Route::post('/rewards/redemptions/{id}/reject', [\App\Modules\Admin\Http\Controllers\AdminRewardRedemptionController::class, 'reject']);
-        });
     });

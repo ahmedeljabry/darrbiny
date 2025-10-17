@@ -34,6 +34,11 @@
       <i class="ti tabler-file-text"></i> الصفحات
     </button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="howitworks-tab" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab" aria-controls="howitworks" aria-selected="false">
+      <i class="ti tabler-list-details"></i> كيف تعمل الخدمة
+    </button>
+  </li>
 </ul>
 
 <div class="tab-content mt-4" id="settingsTabsContent">
@@ -154,6 +159,7 @@
             <input id="privacy_editor" type="hidden" name="page_privacy_policy" value="{{ $settings['pages.privacy'] ?? '' }}">
             <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
           </div>
+
           @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])
           <div class="mb-3">
             <label class="form-label d-block">الأسئلة الشائعة</label>
@@ -264,5 +270,150 @@
     });
   </script>
 @endpush
+
+@push('scripts')
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    // How It Works tab dynamic UI
+    function addHiwSection(title = '', steps = ['']){
+      const idx = document.querySelectorAll('#hiw-list .hiw-row').length;
+      const el = document.createElement('div');
+      el.className = 'border rounded p-2 hiw-row';
+      el.innerHTML = `
+        <div class="mb-2">
+          <label class="form-label">العنوان</label>
+          <input type="text" class="form-control" name="sections[${idx}][title]" placeholder="اكتب العنوان" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-block">الخطوات</label>
+          <div class="d-flex flex-column gap-2 steps"></div>
+          <div class="mt-2">
+            <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-1">
+          <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
+        </div>`;
+      el.querySelector('input').value = title || '';
+      const stepsEl = el.querySelector('.steps');
+      (steps && steps.length ? steps : ['']).forEach((s, j) => {
+        const row = document.createElement('div');
+        row.className = 'input-group';
+        row.innerHTML = `
+          <span class="input-group-text"><i class="ti tabler-check"></i></span>
+          <input type="text" class="form-control" name="sections[${idx}][steps][${j}]" placeholder="اكتب الخطوة" />
+          <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>`;
+        row.querySelector('input').value = s || '';
+        stepsEl.appendChild(row);
+      });
+      document.getElementById('hiw-list').appendChild(el);
+    }
+
+    document.addEventListener('click', function(e){
+      if (e.target.closest('.js-hiw-add-section')) addHiwSection();
+      if (e.target.closest('.js-hiw-remove-section')) {
+        const row = e.target.closest('.hiw-row');
+        const all = document.querySelectorAll('#hiw-list .hiw-row');
+        if (all.length > 1) row.remove();
+      }
+      if (e.target.closest('.js-hiw-add-step')) {
+        const sec = e.target.closest('.hiw-row');
+        const steps = sec.querySelector('.steps');
+        const idx = Array.from(document.querySelectorAll('#hiw-list .hiw-row')).indexOf(sec);
+        const j = steps.querySelectorAll('.input-group').length;
+        const row = document.createElement('div');
+        row.className = 'input-group';
+        row.innerHTML = `
+          <span class="input-group-text"><i class="ti tabler-check"></i></span>
+          <input type="text" class="form-control" name="sections[${idx}][steps][${j}]" placeholder="اكتب الخطوة" />
+          <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>`;
+        steps.appendChild(row);
+      }
+      if (e.target.closest('.js-hiw-remove-step')) {
+        const row = e.target.closest('.input-group');
+        const steps = e.target.closest('.steps');
+        if (steps.querySelectorAll('.input-group').length > 1) row.remove();
+      }
+    });
+  });
+  </script>
+@endpush
+
+<div class="tab-content mt-4" id="settingsTabsContentHowItWorks">
+  <div class="tab-pane fade" id="howitworks" role="tabpanel" aria-labelledby="howitworks-tab">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <h6 class="mb-0">كيف تعمل الخدمة</h6>
+          <small class="text-body-secondary">تحكم في الأقسام والخطوات الظاهرة للمستخدم</small>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-section">
+          <i class="ti tabler-plus"></i> إضافة قسم
+        </button>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ route('admin.settings.howitworks.update') }}">@csrf
+          @php($hiw = \App\Models\HowItWorksSection::with('steps')->orderBy('position')->get())
+          <div id="hiw-list" class="d-flex flex-column gap-2">
+            @if ($hiw->isEmpty())
+              <div class="border rounded p-2 hiw-row">
+                <div class="mb-2">
+                  <label class="form-label">العنوان</label>
+                  <input type="text" class="form-control" name="sections[0][title]" placeholder="اكتب العنوان">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label d-block">الخطوات</label>
+                  <div class="d-flex flex-column gap-2 steps">
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="ti tabler-check"></i></span>
+                      <input type="text" class="form-control" name="sections[0][steps][0]" placeholder="اكتب الخطوة">
+                      <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end mt-1">
+                  <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
+                </div>
+              </div>
+            @else
+              @foreach($hiw as $i => $section)
+                <div class="border rounded p-2 hiw-row">
+                  <div class="mb-2">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" class="form-control" name="sections[{{ $i }}][title]" value="{{ $section->title }}" placeholder="اكتب العنوان">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label d-block">الخطوات</label>
+                    <div class="d-flex flex-column gap-2 steps">
+                      @foreach($section->steps as $j => $step)
+                        <div class="input-group">
+                          <span class="input-group-text"><i class="ti tabler-check"></i></span>
+                          <input type="text" class="form-control" name="sections[{{ $i }}][steps][{{ $j }}]" value="{{ $step->title }}" placeholder="اكتب الخطوة">
+                          <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
+                        </div>
+                      @endforeach
+                    </div>
+                    <div class="mt-2">
+                      <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-end mt-1">
+                    <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
+                  </div>
+                </div>
+              @endforeach
+            @endif
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 @endsection

@@ -25,6 +25,7 @@ class PlanUpdateRequest extends FormRequest
             'country_id' => ['sometimes','uuid'],
             'city_id' => ['sometimes','uuid'],
             'is_active' => ['sometimes','boolean'],
+            'show_on_home' => ['sometimes','boolean'],
             'features' => ['nullable','array'],
             'features.*' => ['nullable','string','max:255'],
         ];

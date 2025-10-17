@@ -152,10 +152,13 @@ class UsersController extends BaseController
     public function freeze(string $id)
     {
         $user = User::findOrFail($id);
+        if (Auth::id() === $user->id) {
+            return back()->withErrors(['self_delete' => 'لا يمكنك حذف حسابك من لوحة التحكم.']);
+        }
         $user->update(['deleted_at' => now()]);
         return back()->with('status', 'User frozen');
     }
-    
+
     public function ban(string $id, Request $request)
     {
         $user = User::findOrFail($id);
