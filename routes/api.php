@@ -31,9 +31,10 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
         });
 
         // Catalog
-        Route::get('/countries', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'countries']);
         Route::get('/cities', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'cities']);
         Route::get('/plans', [\App\Modules\Catalog\Http\Controllers\PlanController::class, 'index']);
+        Route::get('/plans/{plan}', [\App\Modules\Catalog\Http\Controllers\PlanController::class, 'show']);
+        Route::get('/trainers', [\App\Modules\Catalog\Http\Controllers\TrainerController::class, 'index']);
 
         // User Requests
         Route::middleware('auth:sanctum')->group(function () {

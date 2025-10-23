@@ -14,10 +14,12 @@ class PlanController extends BaseController
     {
         $q = Plan::query()->where('is_active', true);
         if ($cty = $request->query('city_id')) $q->where('city_id', $cty);
-        if ($ctr = $request->query('country_id')) $q->where('country_id', $ctr);
-        if ($type = $request->query('training_type')) $q->where('training_type', $type);
-        if ($hours = $request->query('hours')) $q->where('hours_count', '>=', (int) $hours);
-        return response()->json(['data' => $q->orderBy('title')->paginate(20)]);
+        return response()->json(['data' => $q->paginate(20)]);
+    }
+
+    public function show(Plan $plan)
+    {
+        $plan->load(['features:id,label,plan_id', 'city:id,name', 'country:id,name']);
+        return response()->json(['data' => $plan]);
     }
 }
-
