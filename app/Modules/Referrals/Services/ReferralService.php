@@ -16,10 +16,9 @@ class ReferralService
         if (!$owner || $owner->id === $newUser->id) {
             return;
         }
-        $pointsOwner = (int) config('app.referral_points_owner', 50);
-        $pointsNew = (int) config('app.referral_points_new', 20);
+        // Give 1 point to the referral code owner
+        $pointsOwner = 1;
         $owner->increment('points_balance', $pointsOwner);
-        $newUser->increment('points_balance', $pointsNew);
 
         Referral::updateOrCreate(
             ['owner_user_id' => $owner->id],

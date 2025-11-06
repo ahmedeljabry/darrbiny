@@ -20,6 +20,10 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/me', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'me']);
                 Route::post('/logout', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'logout']);
+                Route::post('/change-password', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'changePassword']);
+                Route::get('/bank-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'getBankAccount']);
+                Route::post('/bank-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'updateBankAccount']);
+                Route::post('/delete-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'deleteAccount']);
             });
             Route::post('/refresh', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'refresh']);
         });
@@ -30,17 +34,47 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::delete('favorites/{trainerId}', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'destroy']);
         });
 
+        // Support Tickets (public endpoint for creating tickets)
+        Route::post('/support-tickets', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'store']);
+        
+        // Support Tickets (authenticated endpoints)
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/support-tickets', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'index']);
+            Route::get('/support-tickets/{id}', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'show']);
+        });
+
         // Catalog
         Route::get('/cities', [\App\Modules\Catalog\Http\Controllers\GeoController::class, 'cities']);
         Route::get('/plans', [\App\Modules\Catalog\Http\Controllers\PlanController::class, 'index']);
         Route::get('/plans/{plan}', [\App\Modules\Catalog\Http\Controllers\PlanController::class, 'show']);
         Route::get('/trainers', [\App\Modules\Catalog\Http\Controllers\TrainerController::class, 'index']);
 
+        // User Routes (User-specific endpoints)
+        Route::prefix('user')->middleware('auth:sanctum')->group(function () {
+            Route::post('/subscriptions/{id}/cancel', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'cancel']);
+            Route::get('/subscriptions/{id}/cancellation-status', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'status']);
+            
+            // Schedule endpoints
+            Route::get('/subscriptions/{id}/schedule', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'index']);
+            Route::post('/subscriptions/{id}/schedule/{dayNumber}/check', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'check']);
+            Route::post('/subscriptions/{id}/schedule/{dayNumber}/uncheck', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'uncheck']);
+            Route::post('/subscriptions/{id}/schedule/{dayNumber}/accept', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'accept']);
+            Route::post('/subscriptions/{id}/schedule/{dayNumber}/reject', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'reject']);
+            Route::post('/subscriptions/{id}/schedule/{dayNumber}/rate', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'rate']);
+        });
+        
+        // Trainer Schedule endpoints
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/trainer/subscriptions/{id}/schedule/{dayNumber}/send', [\App\Modules\Requests\Http\Controllers\TrainerScheduleController::class, 'send']);
+        });
+
         // User Requests
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/user-requests', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'store']);
             Route::get('/user-requests/{id}', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'show']);
             Route::get('/user-requests', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'index']);
+            Route::get('/subscriptions', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'subscriptions']);
+            Route::get('/trainers/{trainerId}/bookings', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'trainerBookings']);
 
             // Offers
             Route::get('/user-requests/{id}/offers', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'listForRequest']);
@@ -48,6 +82,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::post('/offers/{id}/accept', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'accept']);
 
             // Payments
+            Route::get('/user-requests/{id}/payment-details', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentDetails']);
             Route::post('/payments/reservation', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'reservation']);
             Route::post('/payments/plan', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'plan']);
             Route::post('/payments/webhook/{provider}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'webhook'])->withoutMiddleware('auth:sanctum');
@@ -68,8 +103,22 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
             // Referrals & Rewards
             Route::get('/me/referral', [\App\Modules\Referrals\Http\Controllers\ReferralController::class, 'me']);
-            Route::get('/rewards', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'index']);
-            Route::post('/rewards/redeem', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'redeem']);
+            Route::get('/prizes', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'index']);
+            Route::post('/prizes/request', [\App\Modules\Rewards\Http\Controllers\RewardController::class, 'requestPrize']);
+
+            // Messages & Conversations
+            Route::get('/conversations', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'index']);
+            Route::get('/conversations/{id}', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'show']);
+            Route::delete('/conversations/{id}', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'destroy']);
+            Route::get('/conversations/{id}/messages', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'index']);
+            Route::post('/conversations/{id}/messages', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'store']);
+            Route::post('/conversations/{id}/messages/read', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'markAllRead']);
+            Route::post('/messages/{id}/read', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'markRead']);
+            Route::get('/messages/search', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'search']);
+
+            // Wallet
+            Route::post('/wallet/topup-request', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'requestTopup']);
+            Route::get('/wallet/transactions', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'latestTransactions']);
 
 
         });

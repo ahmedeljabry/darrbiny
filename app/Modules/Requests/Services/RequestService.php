@@ -21,6 +21,10 @@ class RequestService
             $req->currency = auth()->user()?->currency ?? 'USD';
             $req->app_fee_reserved_minor = (int) config('app.reservation_fee_minor', 1000);
             $req->save();
+            
+            // Initialize schedule progress when user subscribes
+            app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
+            
             // TODO: dispatch broadcast job to eligible trainers
             return $req;
         });
@@ -50,6 +54,13 @@ class RequestService
     {
         $req->status = UserRequest::STATUS_IN_TRAINING;
         $req->save();
+        
+        // Ensure schedule progress is initialized if not already
+        $progressCount = \App\Models\UserScheduleProgress::where('user_request_id', $req->id)->count();
+        if ($progressCount === 0) {
+            app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
+        }
+        
         // TODO: create secure conversation stub
     }
 

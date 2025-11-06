@@ -18,7 +18,21 @@ class UserResource extends JsonResource
             'country_id' => $this->country_id,
             'city_id' => $this->city_id,
             'points_balance' => $this->points_balance,
+            'referral_code' => $this->referral_code,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')),
+            'latest_transactions' => \App\Models\WalletTransaction::where('user_id', $this->id)
+                ->orderBy('created_at', 'desc')
+                ->limit(3)
+                ->get()
+                ->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'amount' => $transaction->amount,
+                        'type' => $transaction->type,
+                        'status' => $transaction->status,
+                        'created_at' => $transaction->created_at?->toIso8601String(),
+                    ];
+                }),
         ];
     }
 }

@@ -6,14 +6,20 @@ namespace App\Modules\Auth\Http\Controllers;
 
 use App\Models\Country;
 use App\Models\User;
+use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
+use App\Modules\Auth\Http\Requests\DeleteAccountRequest;
 use App\Modules\Auth\Http\Requests\RequestOtpRequest;
+use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
+use App\Notifications\UserAccountDeletedNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Auth\Services\OtpService;
 use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AuthController extends BaseController
@@ -57,7 +63,8 @@ class AuthController extends BaseController
 
     public function me(Request $request)
     {
-        return response()->json(['data' => new UserResource($request->user())]);
+        $user = $request->user();
+        return response()->json(['data' => new UserResource($user)]);
     }
 
     public function logout(Request $request)
@@ -75,6 +82,106 @@ class AuthController extends BaseController
         abort_if(!$user, 401, 'Unauthenticated');
         $tokens = $this->auth->refresh($user, $request->string('refresh_token'));
         return response()->json(['data' => $tokens]);
+    }
+
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        // Verify current password
+        if (!Hash::check($request->input('current_password'), $user->password)) {
+            return response()->json([
+                'message' => 'كلمة المرور الحالية غير صحيحة',
+                'errors' => [
+                    'current_password' => ['كلمة المرور الحالية غير صحيحة'],
+                ],
+            ], 422);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->input('password'));
+        $user->save();
+
+        return response()->json([
+            'message' => 'تم تغيير كلمة المرور بنجاح',
+            'data' => [
+                'success' => true,
+            ],
+        ]);
+    }
+
+    public function updateBankAccount(UpdateBankAccountRequest $request)
+    {
+        $user = $request->user();
+
+        $user->update([
+            'bank_account' => $request->input('bank_account'),
+            'iban' => $request->input('iban'),
+            'bank_name' => $request->input('bank_name'),
+            'bank_country_id' => $request->input('bank_country_id'),
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث معلومات الحساب البنكي بنجاح',
+            'data' => [
+                'bank_account' => $user->bank_account,
+                'iban' => $user->iban,
+                'bank_name' => $user->bank_name,
+                'bank_country_id' => $user->bank_country_id,
+            ],
+        ]);
+    }
+
+    public function getBankAccount(Request $request)
+    {
+        $user = $request->user()->load('bankCountry');
+
+        return response()->json([
+            'data' => [
+                'bank_account' => $user->bank_account,
+                'iban' => $user->iban,
+                'bank_name' => $user->bank_name,
+                'bank_country_id' => $user->bank_country_id,
+                'bank_country' => $user->bankCountry ? [
+                    'id' => $user->bankCountry->id,
+                    'name' => $user->bankCountry->name,
+                ] : null,
+            ],
+        ]);
+    }
+
+    public function deleteAccount(DeleteAccountRequest $request)
+    {
+        $user = $request->user();
+
+        // Verify password
+        if (!Hash::check($request->input('password'), $user->password)) {
+            return response()->json([
+                'message' => 'كلمة المرور غير صحيحة',
+                'errors' => [
+                    'password' => ['كلمة المرور غير صحيحة'],
+                ],
+            ], 422);
+        }
+
+        // Notify admins before deletion
+        $admins = User::role('admin')->get();
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new UserAccountDeletedNotification($user));
+        }
+
+        // Delete all user's access tokens
+        $user->tokens()->delete();
+
+        // Soft delete the user account
+        $user->delete();
+
+        return response()->json([
+            'message' => 'تم حذف حسابك بنجاح',
+            'data' => [
+                'success' => true,
+            ],
+        ]);
     }
 
     private function deriveCurrencyFromPhone(string $phone): string

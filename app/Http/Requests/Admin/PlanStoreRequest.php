@@ -28,6 +28,9 @@ class PlanStoreRequest extends FormRequest
             'show_on_home' => ['sometimes','boolean'],
             'features' => ['nullable','array'],
             'features.*' => ['nullable','string','max:255'],
+            'schedule' => ['nullable','array'],
+            'schedule.*.day_number' => ['required','integer','min:1'],
+            'schedule.*.title' => ['nullable','string','max:255'],
         ];
     }
 }

@@ -22,6 +22,69 @@
 
         <ul class="navbar-nav flex-row align-items-center ms-md-auto">
 
+            <!-- Notifications -->
+            <li class="nav-item navbar-dropdown dropdown-notifications dropdown me-2">
+                <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="icon-base ti tabler-bell icon-md"></i>
+                    @php
+                        $unreadCount = auth()->user()->unreadNotifications()->count();
+                    @endphp
+                    @if($unreadCount > 0)
+                        <span class="badge rounded-pill badge-notifications bg-danger">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                    @endif
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end py-0">
+                    <li class="dropdown-menu-header border-bottom">
+                        <div class="dropdown-header d-flex align-items-center py-3">
+                            <h5 class="text-body mb-0 me-auto">الإشعارات</h5>
+                            @if($unreadCount > 0)
+                                <a href="{{ route('admin.notifications.mark-all-read') }}" class="dropdown-notifications-all text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="تحديد الكل كمقروء">
+                                    <small class="text-muted">تحديد الكل كمقروء</small>
+                                </a>
+                            @endif
+                        </div>
+                    </li>
+                    <li class="dropdown-notifications-list scrollable-container">
+                        @php
+                            $notifications = auth()->user()->notifications()->latest()->limit(10)->get();
+                        @endphp
+                        @forelse($notifications as $notification)
+                            <a href="{{ route('admin.notifications.show', $notification->id) }}" class="dropdown-item dropdown-notifications-item {{ $notification->read_at ? '' : 'marked-as-read' }}">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 me-3">
+                                        <div class="avatar">
+                                            <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
+                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell')))) }}"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ $notification->data['title'] ?? $notification->data['message'] ?? 'إشعار جديد' }}</h6>
+                                        <p class="mb-0">{{ Str::limit($notification->data['message'] ?? $notification->data['title'] ?? '', 50) }}</p>
+                                        <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                                    </div>
+                                    <div class="flex-shrink-0 dropdown-notifications-actions">
+                                        <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                            <span class="badge badge-dot {{ $notification->read_at ? 'bg-secondary' : 'bg-primary' }}"></span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="dropdown-item text-center py-4">
+                                <p class="text-muted mb-0">لا توجد إشعارات</p>
+                            </div>
+                        @endforelse
+                    </li>
+                    <li class="dropdown-menu-footer border-top">
+                        <a href="{{ route('admin.notifications.view') }}" class="dropdown-item d-flex justify-content-center p-3">
+                            عرض جميع الإشعارات
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <!--/ Notifications -->
+
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">

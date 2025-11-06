@@ -36,6 +36,10 @@ class User extends Authenticatable
         'referral_code',
         'referred_by',
         'points_balance',
+        'bank_account',
+        'iban',
+        'bank_name',
+        'bank_country_id',
         'version',
     ];
 
@@ -88,5 +92,25 @@ class User extends Authenticatable
     public function isBanned(): bool
     {
         return ($this->deleted_at !== null) || ($this->banned_until && $this->banned_until->isFuture());
+    }
+
+    public function conversationsAsUserOne()
+    {
+        return $this->hasMany(Conversation::class, 'user_one_id');
+    }
+
+    public function conversationsAsUserTwo()
+    {
+        return $this->hasMany(Conversation::class, 'user_two_id');
+    }
+
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function bankCountry()
+    {
+        return $this->belongsTo(Country::class, 'bank_country_id');
     }
 }

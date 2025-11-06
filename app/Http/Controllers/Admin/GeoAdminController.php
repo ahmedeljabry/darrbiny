@@ -87,7 +87,6 @@ class GeoAdminController extends BaseController
         $country = Country::findOrFail($id);
         $country->update(collect($data)->only(['name','iso2','currency'])->toArray());
 
-        // Update existing cities
         if (!empty($data['cities']) && is_array($data['cities'])) {
             foreach ($data['cities'] as $cityId => $name) {
                 $name = trim((string) $name);

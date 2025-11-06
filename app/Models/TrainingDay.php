@@ -17,5 +17,15 @@ class TrainingDay extends BaseModel
         'hours_done' => 'integer',
         'version' => 'integer',
     ];
+
+    public function userRequest()
+    {
+        return $this->belongsTo(UserRequest::class);
+    }
+
+    public function trainer()
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
+    }
 }
 

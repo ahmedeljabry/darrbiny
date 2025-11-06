@@ -78,6 +78,7 @@
                                         </button>
                                         <div class="dropdown-menu">
                                             <a class="dropdown-item" href="{{ route('admin.plans.edit', $plan->id) }}"><i class="icon-base ti tabler-pencil me-1"></i> تعديل</a>
+                                            <a class="dropdown-item" href="{{ route('admin.plans.schedule.index', $plan->id) }}"><i class="icon-base ti tabler-calendar me-1"></i> جدول المتابعة</a>
                                             <form method="post" action="{{ route('admin.plans.destroy', $plan->id) }}" data-confirm="delete">
                                                 @csrf
                                                 @method('DELETE')

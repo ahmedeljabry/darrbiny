@@ -22,12 +22,10 @@ class HowItWorksController extends BaseController
         ]);
 
         DB::transaction(function () use ($data) {
-            // Replace all content to keep ordering simple
             HowItWorksStep::query()->delete();
             HowItWorksSection::query()->delete();
 
             foreach (array_values($data['sections']) as $sIndex => $sec) {
-                /** @var HowItWorksSection $section */
                 $section = HowItWorksSection::create([
                     'title' => trim($sec['title']),
                     'position' => $sIndex,

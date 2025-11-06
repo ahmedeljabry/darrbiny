@@ -22,5 +22,10 @@ class TrainerOffer extends BaseModel
     {
         return $this->belongsTo(UserRequest::class);
     }
+
+    public function trainer()
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
+    }
 }
 

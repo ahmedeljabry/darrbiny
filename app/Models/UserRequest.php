@@ -37,5 +37,30 @@ class UserRequest extends BaseModel
     {
         return $this->belongsTo(Plan::class);
     }
+
+    public function offers()
+    {
+        return $this->hasMany(TrainerOffer::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function trainingDays()
+    {
+        return $this->hasMany(TrainingDay::class);
+    }
+
+    public function cancellationRequest()
+    {
+        return $this->hasOne(CancellationRequest::class);
+    }
+
+    public function scheduleProgress()
+    {
+        return $this->hasMany(UserScheduleProgress::class);
+    }
 }
 

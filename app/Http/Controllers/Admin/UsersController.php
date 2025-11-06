@@ -20,7 +20,6 @@ class UsersController extends BaseController
     {
         $q = User::query();
 
-        // Filters: role, status, search
         $role = $request->query('role');
         if ($role === 'trainer') {
             $q->role('TRAINER');
@@ -55,7 +54,6 @@ class UsersController extends BaseController
 
         $users = $q->with('roles')->latest()->paginate(20)->withQueryString();
 
-        // Cards
         $totalUsers = User::count();
         $trainersCount = User::role('TRAINER')->count();
         $bannedCount = User::withTrashed()

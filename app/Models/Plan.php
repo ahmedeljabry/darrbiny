@@ -51,6 +51,11 @@ class Plan extends BaseModel
         return $this->hasMany(PlanFeature::class)->orderBy('position');
     }
 
+    public function scheduleItems()
+    {
+        return $this->hasMany(PlanScheduleItem::class)->ordered();
+    }
+
     public function scopeActive($q){ return $q->where('is_active', true); }
     public function scopeHome($q){ return $q->where('show_on_home' , true); }
     public function scopeByLocation($q, ?string $cityId){

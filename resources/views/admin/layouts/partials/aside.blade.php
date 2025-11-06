@@ -55,6 +55,30 @@
       </a>
     </li>
 
+    <!-- Course Details Section -->
+    <li class="menu-item {{ request()->routeIs('admin.course.details') ? 'active' : '' }}">
+      <a href="{{ route('admin.course.details') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-book"></i>
+        <div>تفاصيل الدورات</div>
+      </a>
+    </li>
+
+    <!-- Bookings Section -->
+    <li class="menu-item {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.bookings.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-calendar-event"></i>
+        <div>الحجوزات</div>
+      </a>
+    </li>
+
+    <!-- Cancellation Requests Section -->
+    <li class="menu-item {{ request()->routeIs('admin.cancellation-requests.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.cancellation-requests.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-x"></i>
+        <div>طلبات الإلغاء</div>
+      </a>
+    </li>
+
     <!-- Subscriptions Section -->
     <li class="menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
       <a href="{{ route('admin.subscriptions.index') }}" class="menu-link">
@@ -97,11 +121,43 @@
       </a>
     </li>
 
+    <!-- Wallet Transactions -->
+    <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-currency-dollar"></i>
+        <div>طلبات المحفظة</div>
+      </a>
+    </li>
+
+    <!-- Prizes Management -->
+    <li class="menu-item {{ request()->routeIs('admin.prizes.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.prizes.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-gift"></i>
+        <div>الجوائز</div>
+      </a>
+    </li>
+
+    <!-- Prize Redemptions -->
+    <li class="menu-item {{ request()->routeIs('admin.prize-redemptions.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.prize-redemptions.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-ticket"></i>
+        <div>طلبات الجوائز</div>
+      </a>
+    </li>
+
     <!-- Notifications Section -->
     <li class="menu-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
       <a href="{{ route('admin.notifications.index') }}" class="menu-link">
         <i class="menu-icon icon-base ti tabler-bell"></i>
         <div>الإشعارات</div>
+      </a>
+    </li>
+
+    <!-- Messages Section -->
+    <li class="menu-item {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.messages.index') }}" class="menu-link">
+        <i class="menu-icon icon-base ti tabler-message"></i>
+        <div>الرسائل</div>
       </a>
     </li>
 

@@ -1,0 +1,126 @@
+@extends('admin.layouts.app')
+@section('title', 'طلبات المحفظة')
+@section('content')
+
+@if (session('status'))
+  <div class="alert alert-success alert-dismissible" role="alert">
+    {{ session('status') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+  </div>
+@endif
+
+<div class="row g-6">
+    <div class="col-12">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="mb-0">طلبات المحفظة</h5>
+                <div class="d-flex align-items-end gap-2 flex-wrap">
+                    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+                        <div>
+                            <label class="form-label">بحث</label>
+                            <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="اسم المستخدم أو رقم الهاتف">
+                        </div>
+                        <div>
+                            <label class="form-label">المستخدم</label>
+                            <select name="user_id" class="form-select select2" style="min-width:180px">
+                                <option value="">الكل</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>
+                                        {{ $user->name }} ({{ $user->phone_with_cc }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">الحالة</label>
+                            <select name="status" class="form-select">
+                                <option value="">الكل</option>
+                                <option value="pending" @selected(request('status') == 'pending')>معلق</option>
+                                <option value="approved" @selected(request('status') == 'approved')>موافق عليه</option>
+                                <option value="rejected" @selected(request('status') == 'rejected')>مرفوض</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">من تاريخ</label>
+                            <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control">
+                        </div>
+                        <div>
+                            <label class="form-label">إلى تاريخ</label>
+                            <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
+                        </div>
+                        <div class="d-flex gap-2 align-items-end">
+                            <button class="btn btn-outline-secondary">تصفية</button>
+                            <a href="{{ route('admin.wallet-transactions.index') }}" class="btn btn-outline-dark">إعادة تعيين</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>المبلغ</th>
+                            <th>النوع</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الطلب</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($transactions as $transaction)
+                            <tr>
+                                <td>
+                                    {{ $transaction->user->name ?? 'N/A' }}
+                                    <br><small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small>
+                                </td>
+                                <td><strong>{{ number_format($transaction->amount) }}</strong></td>
+                                <td>
+                                    @if($transaction->type === 'topup_request')
+                                        <span class="badge bg-label-info">طلب إضافة</span>
+                                    @else
+                                        <span class="badge bg-label-secondary">{{ $transaction->type }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($transaction->status === 'pending')
+                                        <span class="badge bg-label-warning">معلق</span>
+                                    @elseif($transaction->status === 'approved')
+                                        <span class="badge bg-label-success">موافق عليه</span>
+                                    @else
+                                        <span class="badge bg-label-danger">مرفوض</span>
+                                    @endif
+                                </td>
+                                <td>{{ $transaction->created_at->format('Y-m-d H:i') }}</td>
+                                <td>
+                                    <a href="{{ route('admin.wallet-transactions.show', $transaction->id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="icon-base ti tabler-eye"></i> عرض
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">لا توجد طلبات</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">{{ $transactions->links() }}</div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.jQuery && $.fn.select2) {
+            const dir = @json(app()->getLocale() === 'en' ? 'ltr' : 'rtl');
+            $('.select2').select2({ dir: dir, width: '100%' });
+        }
+    });
+</script>
+@endpush
+
+@endsection
+

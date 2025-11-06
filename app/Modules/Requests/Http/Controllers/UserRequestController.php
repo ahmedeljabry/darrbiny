@@ -8,6 +8,8 @@ use App\Models\Payout;
 use App\Models\TrainingDay;
 use App\Models\UserRequest;
 use App\Modules\Requests\Http\Requests\StoreUserRequest;
+use App\Modules\Requests\Http\Resources\SubscriptionResource;
+use App\Modules\Requests\Http\Resources\UserRequestResource;
 use App\Modules\Requests\Services\RequestService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -19,22 +21,163 @@ class UserRequestController extends BaseController
     public function index(Request $request)
     {
         $mine = $request->boolean('mine');
-        $q = UserRequest::query();
-        if ($mine) $q->where('user_id', $request->user()->id);
-        return response()->json(['data' => $q->latest()->paginate(20)]);
+        $trainerId = $request->query('trainer_id');
+        $trainerName = $request->query('trainer_name');
+        
+        $q = UserRequest::with(['user', 'plan', 'plan.country', 'plan.city', 'offers.trainer']);
+        
+        if ($mine) {
+            $q->where('user_id', $request->user()->id);
+        }
+        
+        // Search by trainer ID (exact match)
+        if ($trainerId) {
+            $q->where(function ($query) use ($trainerId) {
+                // Bookings where trainer made an offer
+                $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
+                    $offerQuery->where('trainer_id', $trainerId);
+                })
+                // Or bookings where trainer is doing training
+                ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
+                    $trainingQuery->where('trainer_id', $trainerId);
+                });
+            });
+        }
+        
+        // Search by trainer name (partial match)
+        if ($trainerName) {
+            $q->where(function ($query) use ($trainerName) {
+                // Bookings where trainer name matches in offers
+                $query->whereHas('offers.trainer', function ($trainerQuery) use ($trainerName) {
+                    $trainerQuery->where('name', 'like', "%{$trainerName}%");
+                })
+                // Or bookings where trainer name matches in training days
+                ->orWhereHas('trainingDays.trainer', function ($trainerQuery) use ($trainerName) {
+                    $trainerQuery->where('name', 'like', "%{$trainerName}%");
+                });
+            });
+        }
+        
+        $bookings = $q->latest()->paginate(20);
+        return UserRequestResource::collection($bookings)->response();
     }
 
     public function show(string $id)
     {
-        $req = UserRequest::findOrFail($id);
+        $req = UserRequest::with([
+            'user',
+            'plan',
+            'plan.country',
+            'plan.city',
+            'plan.features',
+            'offers',
+            'offers.trainer',
+            'payments',
+            'trainingDays'
+        ])->findOrFail($id);
         $this->authorize('view', $req);
-        return response()->json(['data' => $req]);
+        return response()->json(['data' => new UserRequestResource($req)]);
     }
 
     public function store(StoreUserRequest $request)
     {
         $req = $this->service->create($request->validated(), $request->user()->id);
-        return response()->json(['data' => $req], 201);
+        $req->load(['user', 'plan', 'plan.country', 'plan.city']);
+        return response()->json(['data' => new UserRequestResource($req)], 201);
+    }
+
+    /**
+     * Get bookings for a specific trainer
+     * Shows all bookings where trainer has made offers or is training
+     */
+    public function trainerBookings(Request $request, string $trainerId)
+    {
+        $status = $request->query('status');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+        
+        $q = UserRequest::with([
+            'user',
+            'plan',
+            'plan.country',
+            'plan.city',
+            'offers' => function ($query) use ($trainerId) {
+                $query->where('trainer_id', $trainerId);
+            },
+            'offers.trainer',
+            'trainingDays' => function ($query) use ($trainerId) {
+                $query->where('trainer_id', $trainerId);
+            }
+        ])
+        ->where(function ($query) use ($trainerId) {
+            // Bookings where trainer made an offer
+            $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
+                $offerQuery->where('trainer_id', $trainerId);
+            })
+            // Or bookings where trainer is doing training
+            ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
+                $trainingQuery->where('trainer_id', $trainerId);
+            });
+        });
+        
+        // Filter by status
+        if ($status) {
+            $q->where('status', $status);
+        }
+        
+        // Filter by date range
+        if ($dateFrom) {
+            $q->whereDate('start_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $q->whereDate('start_date', '<=', $dateTo);
+        }
+        
+        $bookings = $q->latest()->paginate(20);
+        return UserRequestResource::collection($bookings)->response();
+    }
+
+    /**
+     * Get user subscriptions with status filtering (active, pending, completed)
+     * For mobile app subscriptions screen with tabs
+     */
+    public function subscriptions(Request $request)
+    {
+        $statusCategory = $request->query('status'); // 'active', 'pending', 'completed'
+        
+        $q = UserRequest::with([
+            'user',
+            'plan',
+            'plan.country',
+            'plan.city',
+            'plan.scheduleItems',
+            'offers',
+            'offers.trainer',
+            'offers.trainer.trainerProfile',
+            'cancellationRequest',
+            'scheduleProgress',
+        ])
+        ->where('user_id', $request->user()->id);
+        
+        // Filter by status category
+        if ($statusCategory === 'active') {
+            $q->where('status', UserRequest::STATUS_IN_TRAINING);
+        } elseif ($statusCategory === 'completed') {
+            $q->where('status', UserRequest::STATUS_COMPLETED);
+        } elseif ($statusCategory === 'pending') {
+            $q->whereIn('status', [
+                UserRequest::STATUS_PENDING_PAYMENT,
+                UserRequest::STATUS_AWAITING_OFFERS,
+                UserRequest::STATUS_OFFER_SELECTED,
+                UserRequest::STATUS_PAID,
+                UserRequest::STATUS_CANCELLED,
+            ]);
+        }
+        // If no status filter, return all
+        
+        $subscriptions = $q->latest()->paginate(20);
+        
+        return SubscriptionResource::collection($subscriptions)->response();
     }
 
     public function complete(Request $request, string $id)

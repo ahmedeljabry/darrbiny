@@ -57,7 +57,7 @@ class PlansController extends BaseController
 
     public function edit(string $id)
     {
-        $plan = \App\Models\Plan::findOrFail($id);
+        $plan = \App\Models\Plan::with('scheduleItems')->findOrFail($id);
         $countries = \App\Models\Country::orderBy('name')->get();
         $cities = \App\Models\City::where('country_id', $plan->country_id)->orderBy('name')->get();
         return view('admin.plans.edit', compact('plan','countries','cities'));

@@ -9,6 +9,7 @@ use App\Notifications\AdminMessageNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Str;
 
 class NotificationsAdminController extends BaseController
 {
@@ -16,6 +17,55 @@ class NotificationsAdminController extends BaseController
     {
         $users = User::select('id','name','phone_with_cc')->latest()->limit(50)->get();
         return view('admin.notifications.index', compact('users'));
+    }
+
+    public function view(Request $request)
+    {
+        $user = auth()->user();
+        $type = $request->query('type');
+        $read = $request->query('read');
+        
+        $query = $user->notifications();
+        
+        if ($type) {
+            $query->where('type', 'like', "%{$type}%");
+        }
+        
+        if ($read === 'read') {
+            $query->whereNotNull('read_at');
+        } elseif ($read === 'unread') {
+            $query->whereNull('read_at');
+        }
+        
+        $notifications = $query->latest()->paginate(20)->withQueryString();
+        
+        return view('admin.notifications.view', compact('notifications', 'type', 'read'));
+    }
+
+    public function show(string $id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        
+        if (!$notification->read_at) {
+            $notification->markAsRead();
+        }
+        
+        return redirect()->back()->with('notification', $notification);
+    }
+
+    public function markAsRead(string $id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        
+        return response()->json(['success' => true]);
+    }
+
+    public function markAllRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+        
+        return back()->with('status', 'تم تحديد جميع الإشعارات كمقروءة');
     }
 
     public function send(Request $request)

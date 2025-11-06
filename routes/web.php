@@ -34,6 +34,13 @@ Route::middleware(['web'])
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
             Route::get('/course-details', [DashboardController::class, 'courseDetails'])->name('course.details');
 
+            // Bookings Management
+            Route::get('/bookings', [\App\Http\Controllers\Admin\BookingsController::class, 'index'])->name('bookings.index');
+            Route::get('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'show'])->name('bookings.show');
+            Route::post('/bookings', [\App\Http\Controllers\Admin\BookingsController::class, 'store'])->name('bookings.store');
+            Route::put('/bookings/{id}/status', [\App\Http\Controllers\Admin\BookingsController::class, 'updateStatus'])->name('bookings.update-status');
+            Route::delete('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'destroy'])->name('bookings.destroy');
+
             Route::get('/users', [AdminUsersController::class, 'index'])->name('users.index');
             Route::get('/users/create', [AdminUsersController::class, 'create'])->name('users.create');
             Route::post('/users', [AdminUsersController::class, 'store'])->name('users.store');
@@ -45,6 +52,10 @@ Route::middleware(['web'])
             Route::post('/users/{id}/unban', [AdminUsersController::class, 'unban'])->name('users.unban');
 
             Route::resource('plans' , PlansController::class)->names('plans');
+            Route::get('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'index'])->name('plans.schedule.index');
+            Route::post('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'store'])->name('plans.schedule.store');
+            Route::put('/plans/schedule/{id}', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'update'])->name('plans.schedule.update');
+            Route::delete('/plans/schedule/{id}', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'destroy'])->name('plans.schedule.destroy');
 
             // Geo helpers
             Route::get('/countries/{country}/cities', [\App\Http\Controllers\Admin\GeoAdminController::class, 'cities'])
@@ -73,12 +84,40 @@ Route::middleware(['web'])
             Route::get('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'index'])->name('ratings.index');
             Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');
             Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'index'])->name('notifications.index');
+            Route::get('/notifications/view', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'view'])->name('notifications.view');
+            Route::get('/notifications/{id}', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'show'])->name('notifications.show');
+            Route::post('/notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'markAsRead'])->name('notifications.mark-read');
+            Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'markAllRead'])->name('notifications.mark-all-read');
             Route::post('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'send'])->name('notifications.send');
+
+            // Cancellation Requests
+            Route::get('/cancellation-requests', [\App\Http\Controllers\Admin\CancellationRequestsController::class, 'index'])->name('cancellation-requests.index');
+            Route::get('/cancellation-requests/{id}', [\App\Http\Controllers\Admin\CancellationRequestsController::class, 'show'])->name('cancellation-requests.show');
+            Route::post('/cancellation-requests/{id}/approve', [\App\Http\Controllers\Admin\CancellationRequestsController::class, 'approve'])->name('cancellation-requests.approve');
+            Route::post('/cancellation-requests/{id}/reject', [\App\Http\Controllers\Admin\CancellationRequestsController::class, 'reject'])->name('cancellation-requests.reject');
+
+            // Messages
+            Route::get('/messages', [\App\Http\Controllers\Admin\MessagesController::class, 'index'])->name('messages.index');
+            Route::get('/messages/{id}', [\App\Http\Controllers\Admin\MessagesController::class, 'show'])->name('messages.show');
+            Route::get('/messages/all', [\App\Http\Controllers\Admin\MessagesController::class, 'messages'])->name('messages.messages');
+
+            // Wallet Transactions
+            Route::get('/wallet-transactions', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'index'])->name('wallet-transactions.index');
+            Route::get('/wallet-transactions/{id}', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'show'])->name('wallet-transactions.show');
+            Route::post('/wallet-transactions/{id}/approve', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'approve'])->name('wallet-transactions.approve');
+            Route::post('/wallet-transactions/{id}/reject', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'reject'])->name('wallet-transactions.reject');
 
             // Support tickets
             Route::get('/support', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'index'])->name('support.index');
             Route::get('/support/{id}', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'show'])->name('support.show');
             Route::post('/support/{id}/reply', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'reply'])->name('support.reply');
+
+            // Prizes Management
+            Route::resource('prizes', \App\Http\Controllers\Admin\PrizesController::class)->names('prizes');
+            Route::get('/prize-redemptions', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'index'])->name('prize-redemptions.index');
+            Route::get('/prize-redemptions/{id}', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'show'])->name('prize-redemptions.show');
+            Route::post('/prize-redemptions/{id}/approve', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'approve'])->name('prize-redemptions.approve');
+            Route::post('/prize-redemptions/{id}/reject', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'reject'])->name('prize-redemptions.reject');
             // Roles & permissions
             Route::get('/roles', [\App\Http\Controllers\Admin\RolesController::class, 'index'])->name('roles.index');
             Route::post('/roles', [\App\Http\Controllers\Admin\RolesController::class, 'store'])->name('roles.store');
