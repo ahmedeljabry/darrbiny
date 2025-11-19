@@ -25,12 +25,43 @@
             "key": "access_token",
             "value": "",
             "type": "string"
+        },
+        {
+            "key": "refresh_token",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
         {
             "name": "Authentication",
             "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
                 {
                     "name": "Request OTP",
                     "request": {
@@ -268,6 +299,100 @@
                             "path": [
                                 "auth",
                                 "delete-account"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/refresh",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "refresh"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Captain Account",
+            "item": [
+                {
+                    "name": "Get Captain Account Details",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/captain/account-details",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "captain",
+                                "account-details"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Captain Account Details",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Captain Name\",\n    \"phone_with_cc\": \"+966501234567\",\n    \"email\": \"captain@example.com\",\n    \"city_id\": \"uuid-here\",\n    \"license_number\": \"123456\",\n    \"license_expiry_date\": \"2025-12-31\",\n    \"car_model\": \"Toyota Camry\",\n    \"car_year\": 2020,\n    \"car_plate_number\": \"ABC123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/captain/account-details",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "captain",
+                                "account-details"
                             ]
                         }
                     }
@@ -867,6 +992,45 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "Payment Webhook",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"webhook_data\": \"from_payment_provider\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/payments/webhook/:provider",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payments",
+                                "webhook",
+                                ":provider"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "provider",
+                                    "value": "moyasar"
+                                }
+                            ]
+                        },
+                        "description": "Webhook endpoint for payment providers. No authentication required."
+                    }
                 }
             ]
         },
@@ -1251,47 +1415,6 @@
                                 "schedule",
                                 ":dayNumber",
                                 "rate"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "value": "uuid-here"
-                                },
-                                {
-                                    "key": "dayNumber",
-                                    "value": "1"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Send Schedule Item (Trainer)",
-                    "request": {
-                        "auth": {
-                            "type": "bearer",
-                            "bearer": [
-                                {
-                                    "key": "token",
-                                    "value": "{{access_token}}",
-                                    "type": "string"
-                                }
-                            ]
-                        },
-                        "method": "POST",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/trainer/subscriptions/:id/schedule/:dayNumber/send",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "trainer",
-                                "subscriptions",
-                                ":id",
-                                "schedule",
-                                ":dayNumber",
-                                "send"
                             ],
                             "variable": [
                                 {

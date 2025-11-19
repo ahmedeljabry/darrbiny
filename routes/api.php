@@ -11,6 +11,10 @@ RateLimiter::for('default', fn ($request) => [Limit::perMinute(60)->by($request-
 Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->group(function () {
 
         // Auth
+        Route::prefix('auth')->middleware('throttle:auth')->group(function () {
+            Route::post('/login', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'login']);
+        });
+
         Route::prefix('auth')->middleware('throttle:otp')->group(function () {
             Route::post('/request-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'requestOtp']);
             Route::post('/verify-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'verifyOtp']);
@@ -63,9 +67,10 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/rate', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'rate']);
         });
         
-        // Trainer Schedule endpoints
+        // Trainer (Captain) profile/account endpoints
         Route::middleware('auth:sanctum')->group(function () {
-            Route::post('/trainer/subscriptions/{id}/schedule/{dayNumber}/send', [\App\Modules\Requests\Http\Controllers\TrainerScheduleController::class, 'send']);
+            Route::get('/captain/account-details', [\App\Modules\Trainers\Http\Controllers\CaptainAccountController::class, 'show']);
+            Route::post('/captain/account-details', [\App\Modules\Trainers\Http\Controllers\CaptainAccountController::class, 'store']);
         });
 
         // User Requests

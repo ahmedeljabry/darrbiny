@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\User;
 use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\DeleteAccountRequest;
+use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RequestOtpRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
@@ -29,6 +30,37 @@ class AuthController extends BaseController
         private readonly AuthService $auth,
         private readonly ReferralService $referrals,
     ) {}
+
+    public function login(LoginRequest $request)
+    {
+        $user = User::where('email', $request->input('email'))->first();
+
+        if (!$user || !Hash::check($request->input('password'), $user->password)) {
+            return response()->json([
+                'message' => 'Invalid credentials',
+                'errors' => [
+                    'email' => ['The provided credentials are incorrect.'],
+                ],
+            ], 401);
+        }
+
+        // Check if user is banned
+        if ($user->isBanned()) {
+            return response()->json([
+                'message' => 'Account is banned',
+                'errors' => [
+                    'email' => ['Your account has been banned.'],
+                ],
+            ], 403);
+        }
+
+        $tokens = $this->auth->issueTokens($user);
+        return response()->json([
+            'data' => array_merge([
+                'user' => (new UserResource($user))->resolve(),
+            ], $tokens),
+        ]);
+    }
 
     public function requestOtp(RequestOtpRequest $request)
     {

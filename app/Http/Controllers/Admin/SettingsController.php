@@ -22,7 +22,8 @@ class SettingsController extends BaseController
             $request->validated(),
             $request->file('logo'),
             $request->file('video_app_file'),
-            $request->file('favicon')
+            $request->file('favicon'),
+            $request->file('video_captain_file'),
         );
         return back()->with('status','تم حفظ الإعدادات');
     }

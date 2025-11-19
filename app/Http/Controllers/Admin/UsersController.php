@@ -107,7 +107,14 @@ class UsersController extends BaseController
 
     public function show(string $id)
     {
-        $user = User::withTrashed()->with('roles')->findOrFail($id);
+        $user = User::withTrashed()
+            ->with([
+                'roles',
+                'trainerProfile.country',
+                'trainerProfile.city',
+            ])
+            ->findOrFail($id);
+
         return view('admin.users.show', compact('user'));
     }
 

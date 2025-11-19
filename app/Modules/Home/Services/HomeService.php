@@ -66,13 +66,18 @@ class HomeService
 
     protected function getVideo(): array
     {
-        $path = (string) Setting::where('key', 'video.app.path')->value('value');
-        if (!$path) {
-            return ['url' => null];
-        }
-
         $disk = config('filesystems.default', 'public');
-        return ['url' => Storage::disk($disk)->url($path)];
+        $userPath = Setting::where('key', 'video.app.path')->value('value');
+        $captainPath = Setting::where('key', 'video.captain.path')->value('value');
+
+        $userUrl = $userPath ? Storage::disk($disk)->url($userPath) : null;
+        $captainUrl = $captainPath ? Storage::disk($disk)->url($captainPath) : null;
+
+        return [
+            'url' => $userUrl,
+            'user_url' => $userUrl,
+            'captain_url' => $captainUrl,
+        ];
     }
 
     protected function getPlans(): array

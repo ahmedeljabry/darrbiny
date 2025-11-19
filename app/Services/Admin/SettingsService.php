@@ -16,7 +16,13 @@ final class SettingsService
         return Setting::pluck('value','key')->toArray();
     }
 
-    public function update(array $data, ?UploadedFile $logo = null, ?UploadedFile $video = null, ?UploadedFile $favicon = null): void
+    public function update(
+        array $data,
+        ?UploadedFile $logo = null,
+        ?UploadedFile $video = null,
+        ?UploadedFile $favicon = null,
+        ?UploadedFile $captainVideo = null,
+    ): void
     {
         if ($logo) {
             $disk = config('filesystems.default', 'public');
@@ -58,7 +64,18 @@ final class SettingsService
             $this->save('video.app.path', $path);
         }
 
-        // Pages content
+        if ($captainVideo) {
+            $disk = config('filesystems.default', 'public');
+            $path = $captainVideo->store('videos', $disk);
+            Upload::create([
+                'disk' => $disk,
+                'path' => $path,
+                'mime' => $captainVideo->getMimeType(),
+                'size' => $captainVideo->getSize(),
+            ]);
+            $this->save('video.captain.path', $path);
+        }
+
         $this->save('pages.usage', $data['page_usage_policy'] ?? null);
         $this->save('pages.privacy', $data['page_privacy_policy'] ?? null);
         if (!empty($data['faqs']) && is_array($data['faqs'])) {
@@ -75,7 +92,6 @@ final class SettingsService
         }
         $this->save('pages.contact', $data['page_contact'] ?? null);
 
-        // Home: How it works (sections with steps)
         if (!empty($data['how_it_works']) && is_array($data['how_it_works'])) {
             $sections = collect($data['how_it_works'])
                 ->map(function ($row) {

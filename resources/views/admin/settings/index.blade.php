@@ -116,15 +116,31 @@
       <div class="card-body">
         <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
           <div class="row g-3">
-            <div class="col-md-8">
-              <label class="form-label">ملف فيديو التطبيق</label>
+            <div class="col-md-6">
+              <label class="form-label">فيديو واجهة المستخدمين</label>
               <input type="file" name="video_app_file" accept="video/*" class="form-control">
+              <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق العميل.</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">فيديو واجهة الكباتن</label>
+              <input type="file" name="video_captain_file" accept="video/*" class="form-control">
+              <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق الكابتن.</small>
             </div>
           </div>
-          @if(!empty($settings['video.app.path']))
-            <div class="mt-3">
-              <label class="form-label d-block">المخزن الحالي</label>
-              <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
+          @if(!empty($settings['video.app.path']) || !empty($settings['video.captain.path']))
+            <div class="row g-4 mt-1">
+              @if(!empty($settings['video.app.path']))
+                <div class="col-md-6">
+                  <label class="form-label d-block">الفيديو الحالي للمستخدمين</label>
+                  <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                </div>
+              @endif
+              @if(!empty($settings['video.captain.path']))
+                <div class="col-md-6">
+                  <label class="form-label d-block">الفيديو الحالي للكباتن</label>
+                  <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.captain.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                </div>
+              @endif
             </div>
           @endif
           <div class="mt-3">
