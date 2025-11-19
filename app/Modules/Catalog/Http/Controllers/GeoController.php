@@ -11,6 +11,12 @@ use Illuminate\Routing\Controller as BaseController;
 
 class GeoController extends BaseController
 {
+    public function countries(Request $request)
+    {
+        $q = Country::query();
+        return response()->json(['data' => $q->orderBy('name')->get()]);
+    }
+
     public function cities(Request $request)
     {
         $countryId = $request->query('country_id');

@@ -455,6 +455,22 @@
             "name": "Catalog",
             "item": [
                 {
+                    "name": "Get Countries",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/countries",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "countries"
+                            ]
+                        }
+                    }
+                },
+                {
                     "name": "Get Cities",
                     "request": {
                         "method": "GET",
