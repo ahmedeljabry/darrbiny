@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Controllers;
 
+use App\Enums\UserType;
 use App\Models\Country;
 use App\Models\User;
 use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\DeleteAccountRequest;
 use App\Modules\Auth\Http\Requests\LoginRequest;
+use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\RequestOtpRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
@@ -31,15 +33,52 @@ class AuthController extends BaseController
         private readonly ReferralService $referrals,
     ) {}
 
+    public function register(RegisterRequest $request)
+    {
+        $type = $request->input('type');
+        $phone = $request->input('phone_with_cc');
+        $userType = $type === 'captain' ? UserType::CAPTAIN : UserType::USER;
+
+        $user = User::create([
+            'name' => $request->input('name'),
+            'password' => Hash::make($request->input('password')),
+            'phone_with_cc' => $phone,
+            'user_type' => $userType,
+            'currency' => $this->deriveCurrencyFromPhone($phone),
+        ]);
+
+        // Assign role based on type
+        $role = $type === 'captain' ? 'TRAINER' : 'USER';
+        $user->assignRole($role);
+
+        // Create trainer profile for captains
+        if ($type === 'captain') {
+            $user->trainerProfile()->create();
+        }
+
+        // Process referral code if provided
+        if ($code = $request->input('referral_code')) {
+            $this->referrals->processSignupReferral($user, $code);
+        }
+
+        $tokens = $this->auth->issueTokens($user);
+        return response()->json([
+            'message' => 'تم إنشاء الحساب بنجاح',
+            'data' => array_merge([
+                'user' => (new UserResource($user))->resolve(),
+            ], $tokens),
+        ], 201);
+    }
+
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->input('email'))->first();
+        $user = User::where('phone_with_cc', $request->input('phone_with_cc'))->first();
 
-        if (!$user || !Hash::check($request->input('password'), $user->password)) {
+        if (!$user || !$user->password || !Hash::check($request->input('password'), $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials',
                 'errors' => [
-                    'email' => ['The provided credentials are incorrect.'],
+                    'phone_with_cc' => ['The provided credentials are incorrect.'],
                 ],
             ], 401);
         }
@@ -49,7 +88,7 @@ class AuthController extends BaseController
             return response()->json([
                 'message' => 'Account is banned',
                 'errors' => [
-                    'email' => ['Your account has been banned.'],
+                    'phone_with_cc' => ['Your account has been banned.'],
                 ],
             ], 403);
         }
@@ -216,8 +255,12 @@ class AuthController extends BaseController
         ]);
     }
 
-    private function deriveCurrencyFromPhone(string $phone): string
+    private function deriveCurrencyFromPhone(?string $phone): string
     {
+        if (!$phone) {
+            return 'USD';
+        }
+        
         // crude derivation based on CC; real impl should parse using libphonenumber
         $map = [
             '+20' => 'EGP', '+966' => 'SAR', '+971' => 'AED', '+1' => 'USD', '+44' => 'GBP', '+49' => 'EUR'
@@ -225,9 +268,8 @@ class AuthController extends BaseController
         foreach ($map as $cc => $cur) {
             if (str_starts_with($phone, $cc)) return $cur;
         }
-        // fallback by user's selected country
-        $country = Country::where('id', auth()->user()?->country_id)->first();
-        return $country?->currency ?? 'USD';
+        
+        return 'USD';
     }
 }
 

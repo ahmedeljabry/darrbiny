@@ -37,13 +37,65 @@
             "name": "Authentication",
             "item": [
                 {
+                    "name": "Sign Up (User)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"John Doe\",\n    \"phone_with_cc\": \"+966501234567\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"type\": \"user\",\n    \"referral_code\": \"ABC123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Sign Up (Captain)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Captain Name\",\n    \"phone_with_cc\": \"+966509876543\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"type\": \"captain\",\n    \"referral_code\": \"ABC123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
                     "name": "Login",
                     "request": {
                         "method": "POST",
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+                            "raw": "{\n    \"phone_with_cc\": \"+966501234567\",\n    \"password\": \"password123\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"

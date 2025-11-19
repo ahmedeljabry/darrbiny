@@ -12,6 +12,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
         // Auth
         Route::prefix('auth')->middleware('throttle:auth')->group(function () {
+            Route::post('/register', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'register']);
             Route::post('/login', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'login']);
         });
 

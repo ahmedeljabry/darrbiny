@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -29,6 +30,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone_with_cc',
+        'user_type',
         'whatsapp_enabled',
         'country_id',
         'city_id',
@@ -63,6 +65,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'user_type' => UserType::class,
             'whatsapp_enabled' => 'bool',
             'points_balance' => 'integer',
             'version' => 'integer',
@@ -75,6 +78,9 @@ class User extends Authenticatable
         static::creating(function (self $user) {
             if (empty($user->referral_code)) {
                 $user->referral_code = substr(bin2hex(random_bytes(6)), 0, 12);
+            }
+            if (empty($user->user_type)) {
+                $user->user_type = UserType::USER;
             }
         });
         static::updating(function (self $user) {
@@ -112,5 +118,15 @@ class User extends Authenticatable
     public function bankCountry()
     {
         return $this->belongsTo(Country::class, 'bank_country_id');
+    }
+
+    public function isCaptain(): bool
+    {
+        return $this->user_type === UserType::CAPTAIN;
+    }
+
+    public function isUser(): bool
+    {
+        return $this->user_type === UserType::USER;
     }
 }
