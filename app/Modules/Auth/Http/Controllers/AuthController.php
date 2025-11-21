@@ -137,7 +137,6 @@ class AuthController extends BaseController
         $user = $request->user();
         $userResource = new UserResource($user);
         $data = $userResource->resolve();        
-        $data['is_trainer'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN;
         $data['user_type'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN ? 'trainer' : 'user';
         
         return response()->json(['data' => $data]);
