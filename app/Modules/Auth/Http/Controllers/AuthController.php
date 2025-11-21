@@ -135,7 +135,12 @@ class AuthController extends BaseController
     public function me(Request $request)
     {
         $user = $request->user();
-        return response()->json(['data' => new UserResource($user)]);
+        $userResource = new UserResource($user);
+        $data = $userResource->resolve();        
+        $data['is_trainer'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN;
+        $data['user_type'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN ? 'trainer' : 'user';
+        
+        return response()->json(['data' => $data]);
     }
 
     public function logout(Request $request)
