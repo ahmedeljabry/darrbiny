@@ -13,11 +13,14 @@ class UserRequestResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'trainer_id' => $this->trainer_id,
             'plan_id' => $this->plan_id,
             'start_date' => $this->start_date?->format('Y-m-d'),
             'has_user_car' => $this->has_user_car,
             'wants_trainer_car' => $this->wants_trainer_car,
             'needs_pickup' => $this->needs_pickup,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'status' => $this->status,
             'currency' => $this->currency,
             'app_fee_reserved_minor' => $this->app_fee_reserved_minor,
@@ -30,6 +33,10 @@ class UserRequestResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'phone_with_cc' => $this->user->phone_with_cc,
+            ]),
+            'trainer' => $this->whenLoaded('trainer', fn () => [
+                'id' => $this->trainer->id,
+                'name' => $this->trainer->name,
             ]),
             'plan' => $this->whenLoaded('plan', fn () => [
                 'id' => $this->plan->id,

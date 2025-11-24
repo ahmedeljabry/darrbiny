@@ -30,28 +30,22 @@ class UserRequestController extends BaseController
             $q->where('user_id', $request->user()->id);
         }
         
-        // Search by trainer ID (exact match)
         if ($trainerId) {
             $q->where(function ($query) use ($trainerId) {
-                // Bookings where trainer made an offer
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                     $offerQuery->where('trainer_id', $trainerId);
                 })
-                // Or bookings where trainer is doing training
                 ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
                     $trainingQuery->where('trainer_id', $trainerId);
                 });
             });
         }
         
-        // Search by trainer name (partial match)
         if ($trainerName) {
             $q->where(function ($query) use ($trainerName) {
-                // Bookings where trainer name matches in offers
                 $query->whereHas('offers.trainer', function ($trainerQuery) use ($trainerName) {
                     $trainerQuery->where('name', 'like', "%{$trainerName}%");
                 })
-                // Or bookings where trainer name matches in training days
                 ->orWhereHas('trainingDays.trainer', function ($trainerQuery) use ($trainerName) {
                     $trainerQuery->where('name', 'like', "%{$trainerName}%");
                 });
@@ -82,7 +76,11 @@ class UserRequestController extends BaseController
     public function store(StoreUserRequest $request)
     {
         $req = $this->service->create($request->validated(), $request->user()->id);
-        $req->load(['user', 'plan', 'plan.country', 'plan.city']);
+        $relationships = ['user', 'plan', 'plan.country', 'plan.city'];
+        if ($req->trainer_id) {
+            $relationships[] = 'trainer';
+        }
+        $req->load($relationships);
         return response()->json(['data' => new UserRequestResource($req)], 201);
     }
 

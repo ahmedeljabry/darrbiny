@@ -15,7 +15,7 @@ class UserRequest extends BaseModel
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'user_id','plan_id','start_date','has_user_car','wants_trainer_car','needs_pickup','status','currency','app_fee_reserved_minor','total_paid_minor','version'
+        'user_id','trainer_id','plan_id','start_date','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','version'
     ];
 
     protected $casts = [
@@ -23,6 +23,8 @@ class UserRequest extends BaseModel
         'has_user_car' => 'bool',
         'wants_trainer_car' => 'bool',
         'needs_pickup' => 'bool',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
         'app_fee_reserved_minor' => 'integer',
         'total_paid_minor' => 'integer',
         'version' => 'integer',
@@ -31,6 +33,11 @@ class UserRequest extends BaseModel
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function trainer()
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
     }
 
     public function plan()

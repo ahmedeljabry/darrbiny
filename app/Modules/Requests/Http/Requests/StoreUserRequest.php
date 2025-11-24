@@ -14,10 +14,13 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'plan_id' => ['required','uuid'],
+            'trainer_id' => ['nullable','uuid','exists:users,id'],
             'start_date' => ['required','date','after_or_equal:today'],
             'has_user_car' => ['required','boolean'],
             'wants_trainer_car' => ['required','boolean'],
             'needs_pickup' => ['required','boolean'],
+            'latitude' => ['nullable','numeric','between:-90,90'],
+            'longitude' => ['nullable','numeric','between:-180,180'],
         ];
     }
 }
