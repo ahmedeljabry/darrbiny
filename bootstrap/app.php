@@ -19,10 +19,33 @@ return Application::configure(basePath: dirname(__DIR__))
             'sanitize' => \App\Http\Middleware\SanitizeInput::class,
             'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
+        
+        // Force JSON for all API routes
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Handle authentication exceptions for API routes
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'meta' => [
+                        'request_id' => $request->headers->get('X-Request-Id') ?? $request->attributes->get('request_id'),
+                    ],
+                    'errors' => [[
+                        'code' => 401,
+                        'message' => 'Unauthenticated',
+                    ]],
+                ], 401);
+            }
+        });
+        
+        // Handle all other exceptions for API routes
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
-            if ($request->expectsJson()) {
+            if ($request->is('api/*') || $request->expectsJson()) {
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 $code = $e->getCode();
                 $message = config('app.debug') ? $e->getMessage() : __('Server error');
@@ -34,7 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
                         'request_id' => $request->headers->get('X-Request-Id') ?? $request->attributes->get('request_id'),
                     ],
                     'errors' => [[
-                        'code' => $code,
+                        'code' => $code ?: $status,
                         'message' => $message,
                     ]],
                 ], $status);
