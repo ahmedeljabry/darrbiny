@@ -73,7 +73,7 @@ class UserRequestController extends BaseController
         return response()->json(['data' => new UserRequestResource($req)]);
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
         $req = $this->service->create($request->validated(), $request->user()->id);
         $relationships = ['user', 'plan', 'plan.country', 'plan.city'];
