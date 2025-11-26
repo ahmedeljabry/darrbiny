@@ -52,6 +52,8 @@ final class SettingsService
         $this->save('payment.tap.public_key', $data['tap_public_key'] ?? null);
         $this->save('payment.tap.secret_key', $data['tap_secret_key'] ?? null);
         $this->save('payment.tap.webhook_secret', $data['tap_webhook_secret'] ?? null);
+        $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
+        $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
         if ($video) {
             $disk = config('filesystems.default', 'public');
             $path = $video->store('videos', $disk);

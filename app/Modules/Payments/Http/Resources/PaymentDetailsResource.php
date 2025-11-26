@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Payments\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Support\Fees;
 
 class PaymentDetailsResource extends JsonResource
 {
@@ -19,7 +20,7 @@ class PaymentDetailsResource extends JsonResource
         
         if ($isReservationFee) {
             // Reservation fee payment
-            $serviceFeeMinor = (int) config('app.reservation_fee_minor', 1000);
+            $serviceFeeMinor = Fees::reservationFeeMinor();
             $serviceFee = $serviceFeeMinor / 100;
             $vatPercent = (float) config('app.vat_percent', 0.0);
             $vatAmount = ($serviceFee * $vatPercent) / 100;

@@ -56,6 +56,28 @@ class WalletService
     }
 
     /**
+     * Admin adjustment (credit) directly to wallet
+     */
+    public function addAdjustment(User $user, int $amount, User $admin, ?string $notes = null): WalletTransaction
+    {
+        return DB::transaction(function () use ($user, $amount, $admin, $notes) {
+            $txn = WalletTransaction::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'type' => WalletTransaction::TYPE_ADJUSTMENT,
+                'status' => WalletTransaction::STATUS_APPROVED,
+                'notes' => $notes,
+                'processed_by' => $admin->id,
+                'processed_at' => now(),
+            ]);
+
+            $user->increment('points_balance', $amount);
+
+            return $txn;
+        });
+    }
+
+    /**
      * Reject wallet top-up request
      */
     public function rejectTopup(WalletTransaction $transaction, User $admin, string $reason): void

@@ -4,7 +4,9 @@
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">بيانات المستخدم</h5>
-      <a class="btn btn-sm btn-primary" href="{{ route('admin.users.edit',$user->id) }}">تعديل</a>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-primary" href="{{ route('admin.users.edit',$user->id) }}">تعديل</a>
+      </div>
     </div>
     <div class="card-body">
       <div class="row g-4">

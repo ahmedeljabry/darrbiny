@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\TrainerOffer;
 use App\Models\UserRequest;
 use App\Modules\Requests\Services\RequestService;
+use App\Support\Fees;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -32,7 +33,7 @@ class PaymentService
         abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
         
         return DB::transaction(function () use ($req, $userId, $provider, $providerRef, $status, $transactionData) {
-            $serviceFeeMinor = (int) config('app.reservation_fee_minor', 1000);
+            $serviceFeeMinor = Fees::reservationFeeMinor();
             
             $payment = Payment::create([
                 'user_id' => $userId,
@@ -77,7 +78,7 @@ class PaymentService
             ->firstOrFail();
 
         return DB::transaction(function () use ($req, $offer, $userId, $provider, $providerRef, $status, $transactionData) {
-            $feePercent = (float) config('app.app_fee_percent', 10.0);
+            $feePercent = Fees::appFeePercent();
             $appFee = (int) round($offer->price_minor * ($feePercent / 100));
             $trainerNet = $offer->price_minor - $appFee;
             
@@ -176,7 +177,7 @@ class PaymentService
         $offer = null;
         if ($paymentType === Payment::TYPE_RESERVATION_FEE) {
             abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
-            $amountMinor = (int) config('app.reservation_fee_minor', 1000);
+            $amountMinor = Fees::reservationFeeMinor();
         } else {
             abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
             $offer = TrainerOffer::where('user_request_id', $req->id)
@@ -195,9 +196,10 @@ class PaymentService
             $user->decrement('points_balance', $amount);
             
             // Calculate fees
+            $feePercent = Fees::appFeePercent();
             $appFeeMinor = $paymentType === Payment::TYPE_RESERVATION_FEE 
                 ? $amountMinor 
-                : (int) round($amountMinor * ((float) config('app.app_fee_percent', 10.0) / 100));
+                : (int) round($amountMinor * ($feePercent / 100));
             
             $trainerNetMinor = $paymentType === Payment::TYPE_RESERVATION_FEE 
                 ? 0 
@@ -249,4 +251,3 @@ class PaymentService
         return $this->storePlanPayment($req, $userId, 'mobile_app', (string) \Str::uuid(), Payment::STATUS_SUCCEEDED);
     }
 }
-

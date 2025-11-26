@@ -136,7 +136,7 @@ class BookingsController extends BaseController
                 'needs_pickup' => $validated['needs_pickup'] ?? false,
                 'status' => UserRequest::STATUS_PENDING_PAYMENT,
                 'currency' => $user->currency ?? 'USD',
-                'app_fee_reserved_minor' => (int) config('app.reservation_fee_minor', 1000),
+                'app_fee_reserved_minor' => \App\Support\Fees::reservationFeeMinor(),
                 'total_paid_minor' => 0,
             ]);
             $booking->save();

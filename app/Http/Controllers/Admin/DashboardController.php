@@ -9,8 +9,16 @@ use Illuminate\Support\Carbon;
 
 class DashboardController extends BaseController
 {
-    public function __invoke()
+    public function __invoke(\Illuminate\Http\Request $request)
     {
+        $range = $request->query('range', 'day');
+        $now = Carbon::now();
+        $from = match ($range) {
+            'month' => $now->copy()->startOfMonth(),
+            'year' => $now->copy()->startOfYear(),
+            default => $now->copy()->startOfDay(),
+        };
+
         $planCount = \App\Models\Plan::count();
         $countriesCount = \App\Models\Country::count();
         $citiesCount = \App\Models\City::count();
@@ -20,11 +28,20 @@ class DashboardController extends BaseController
         $pendingBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_PENDING_PAYMENT)->count();
         $activeBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_IN_TRAINING)->count();
         $completedBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_COMPLETED)->count();
+        $awaitingOffers = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_AWAITING_OFFERS)->count();
         $pendingCancellations = \App\Models\CancellationRequest::where('status', 'pending')->count();
         $pendingWalletRequests = \App\Models\WalletTransaction::where('status', 'pending')->count();
         $pendingPrizeRequests = \App\Models\RewardRedemption::where('status', 'pending')->count();
         $pendingSupportTickets = \App\Models\SupportTicket::where('status', 'open')->count();
         $unreadNotifications = auth()->user()->unreadNotifications()->count();
+
+        $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+            ->whereBetween('created_at', [$from, $now]);
+        $salesMinor = (int) $succeededPayments->clone()->sum('amount_minor');
+        $appFeesMinor = (int) $succeededPayments->clone()->sum('app_fee_minor');
+        $trainerPayoutMinor = (int) $succeededPayments->clone()
+            ->whereHas('userRequest', fn($q) => $q->where('status', \App\Models\UserRequest::STATUS_COMPLETED))
+            ->sum('trainer_net_minor');
 
         $labels = [];
         $userSeries = [];
@@ -43,7 +60,8 @@ class DashboardController extends BaseController
             'bookingsCount','pendingBookings','activeBookings','completedBookings',
             'pendingCancellations','pendingWalletRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
-            'labels','userSeries','planSeries','bookingSeries'
+            'labels','userSeries','planSeries','bookingSeries',
+            'range','salesMinor','appFeesMinor','trainerPayoutMinor','awaitingOffers'
         ));
     }
 

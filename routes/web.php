@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\PlansController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\Auth\LoginController as AdminLoginController;
+use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\AdvancedReportsController;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
@@ -50,6 +52,7 @@ Route::middleware(['web'])
             Route::post('/users/{id}/freeze', [AdminUsersController::class, 'freeze'])->name('users.freeze');
             Route::post('/users/{id}/ban', [AdminUsersController::class, 'ban'])->name('users.ban');
             Route::post('/users/{id}/unban', [AdminUsersController::class, 'unban'])->name('users.unban');
+            Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'start'])->name('users.impersonate');
 
             Route::resource('plans' , PlansController::class)->names('plans');
             Route::get('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'index'])->name('plans.schedule.index');
@@ -72,6 +75,17 @@ Route::middleware(['web'])
             Route::get('/reports/sales', [\App\Http\Controllers\Admin\ReportsController::class, 'sales'])->name('reports.sales');
             Route::get('/reports/payments', [\App\Http\Controllers\Admin\ReportsController::class, 'payments'])->name('reports.payments');
             Route::get('/reports/subscriptions', [\App\Http\Controllers\Admin\ReportsController::class, 'subscriptions'])->name('reports.subscriptions');
+            Route::get('/reports/plan-sales', [\App\Http\Controllers\Admin\ReportsController::class, 'planSales'])->name('reports.plan-sales');
+            Route::get('/reports/app-fees', [\App\Http\Controllers\Admin\ReportsController::class, 'appFees'])->name('reports.app-fees');
+            Route::get('/reports/vat', [\App\Http\Controllers\Admin\ReportsController::class, 'vat'])->name('reports.vat');
+            Route::get('/reports/completed-payouts', [AdvancedReportsController::class, 'completedPayouts'])->name('reports.completed-payouts');
+            Route::get('/reports/active-courses', [AdvancedReportsController::class, 'activeCourses'])->name('reports.active-courses');
+            Route::get('/reports/awaiting-offers', [AdvancedReportsController::class, 'awaitingOffers'])->name('reports.awaiting-offers');
+            Route::get('/reports/rejected-progress', [AdvancedReportsController::class, 'rejectedProgress'])->name('reports.rejected-progress');
+            Route::get('/reports/wallet-balances', [AdvancedReportsController::class, 'walletBalances'])->name('reports.wallet-balances');
+            Route::get('/reports/points-balances', [AdvancedReportsController::class, 'pointsBalances'])->name('reports.points-balances');
+            Route::get('/reports/reward-redemptions', [AdvancedReportsController::class, 'rewardRedemptions'])->name('reports.reward-redemptions');
+            Route::get('/reports/wallet-payments', [AdvancedReportsController::class, 'walletPayments'])->name('reports.wallet-payments');
             Route::get('/geo', [\App\Http\Controllers\Admin\GeoAdminController::class, 'index'])->name('geo.index');
             Route::get('/geo/countries/create', [\App\Http\Controllers\Admin\GeoAdminController::class, 'createCountry'])->name('geo.countries.create');
             Route::get('/geo/countries/{id}/edit', [\App\Http\Controllers\Admin\GeoAdminController::class, 'editCountry'])->name('geo.countries.edit');
@@ -82,7 +96,10 @@ Route::middleware(['web'])
             Route::put('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCity'])->name('geo.cities.update');
             Route::delete('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCity'])->name('geo.cities.destroy');
             Route::get('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'index'])->name('ratings.index');
+            Route::put('/ratings/{rating}', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'update'])->name('ratings.update');
+            Route::delete('/ratings/{rating}', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'destroy'])->name('ratings.destroy');
             Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');
+            Route::post('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'store'])->name('wallets.store');
             Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'index'])->name('notifications.index');
             Route::get('/notifications/view', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'view'])->name('notifications.view');
             Route::get('/notifications/{id}', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'show'])->name('notifications.show');
@@ -135,6 +152,11 @@ Route::middleware(['web'])
             Route::post('/settings/how-it-works', [\App\Http\Controllers\Admin\HowItWorksController::class, 'update'])->name('settings.howitworks.update');
         });
     });
+
+// Allow exiting impersonation even بعد تسجيل الدخول كـ مستخدم
+Route::match(['get', 'post'], '/admin/impersonation/stop', [ImpersonationController::class, 'stop'])
+    ->middleware('auth')
+    ->name('admin.impersonation.stop');
 
 if (app()->environment('local')) {
     Route::get('/admin/dev-login', function () {

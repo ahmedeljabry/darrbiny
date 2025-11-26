@@ -24,7 +24,6 @@ class ConversationController extends BaseController
         ];
 
         $conversations = $this->service->getConversationsForUser($request->user(), $filters);
-
         return \App\Modules\Messages\Http\Resources\ConversationResource::collection($conversations)->response();
     }
 
@@ -37,7 +36,6 @@ class ConversationController extends BaseController
             ->forUser($request->user())
             ->findOrFail($id);
 
-        // Verify user is a participant and conversation is not deleted by them
         if ($conversation->isDeletedBy($request->user())) {
             abort(404, 'Conversation not found');
         }

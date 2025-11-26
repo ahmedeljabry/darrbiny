@@ -37,4 +37,28 @@ class ReportsController extends BaseController
         $subs = $service->subscriptionsList($request->query('status'));
         return view('admin.reports.subscriptions', compact('subs'));
     }
+
+    public function planSales(Request $request, ReportsService $service)
+    {
+        $from = $request->date('from');
+        $to = $request->date('to');
+        ['payments' => $payments, 'totalMinor' => $total] = $service->planSales($from, $to);
+        return view('admin.reports.plan-sales', compact('payments', 'from', 'to', 'total'));
+    }
+
+    public function appFees(Request $request, ReportsService $service)
+    {
+        $from = $request->date('from');
+        $to = $request->date('to');
+        ['payments' => $payments, 'totalMinor' => $total] = $service->appFees($from, $to);
+        return view('admin.reports.app-fees', compact('payments', 'from', 'to', 'total'));
+    }
+
+    public function vat(Request $request, ReportsService $service)
+    {
+        $from = $request->date('from');
+        $to = $request->date('to');
+        ['payments' => $payments, 'vatPercent' => $vatPercent, 'vatTotalMinor' => $vatTotalMinor] = $service->vatReport($from, $to);
+        return view('admin.reports.vat', compact('payments', 'from', 'to', 'vatPercent', 'vatTotalMinor'));
+    }
 }

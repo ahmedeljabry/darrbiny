@@ -25,8 +25,18 @@
 
   <div class="menu-inner-shadow"></div>
 
+  @php
+    $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*');
+    $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
+    $financeOpen = request()->routeIs('admin.payments.*','admin.wallets.*','admin.wallet-transactions.*');
+    $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*');
+    $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
+    $reportsOpen = request()->routeIs('admin.reports.*');
+    $geoOpen = request()->routeIs('admin.geo.*');
+    $systemOpen = request()->routeIs('admin.roles.*','admin.permissions.*','admin.settings.*');
+  @endphp
+
   <ul class="menu-inner py-1">
-    <!-- Dashboard Section -->
     <li class="menu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
       <a href="{{ route('admin.dashboard') }}" class="menu-link">
         <i class="menu-icon icon-base ti tabler-smart-home"></i>
@@ -34,181 +44,167 @@
       </a>
     </li>
 
-    <!-- Menu Header Label for Management -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Management">الإدارة</span>
+    <li class="menu-item {{ $opsOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        <i class="menu-icon icon-base ti tabler-settings-automation"></i>
+        <div>العمليات</div>
+      </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.bookings.index') }}" class="menu-link">الحجوزات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.cancellation-requests.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.cancellation-requests.index') }}" class="menu-link">طلبات الإلغاء</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.course.details') ? 'active' : '' }}">
+          <a href="{{ route('admin.course.details') }}" class="menu-link">تفاصيل الدورات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.plans.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.plans.index') }}" class="menu-link">الخطط</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.subscriptions.index') }}" class="menu-link">الاشتراكات</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- User Management Section -->
-    <li class="menu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.users.index') }}" class="menu-link">
+    <li class="menu-item {{ $usersOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-users"></i>
         <div>المستخدمون</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.users.index') }}" class="menu-link">إدارة المستخدمين</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.ratings.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.ratings.index') }}" class="menu-link">التقييمات</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- Plans Section -->
-    <li class="menu-item {{ request()->routeIs('admin.plans.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.plans.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-package"></i>
-        <div>الخطط</div>
-      </a>
-    </li>
-
-    <!-- Course Details Section -->
-    <li class="menu-item {{ request()->routeIs('admin.course.details') ? 'active' : '' }}">
-      <a href="{{ route('admin.course.details') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-book"></i>
-        <div>تفاصيل الدورات</div>
-      </a>
-    </li>
-
-    <!-- Bookings Section -->
-    <li class="menu-item {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.bookings.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-calendar-event"></i>
-        <div>الحجوزات</div>
-      </a>
-    </li>
-
-    <!-- Cancellation Requests Section -->
-    <li class="menu-item {{ request()->routeIs('admin.cancellation-requests.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.cancellation-requests.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-x"></i>
-        <div>طلبات الإلغاء</div>
-      </a>
-    </li>
-
-    <!-- Subscriptions Section -->
-    <li class="menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.subscriptions.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-badge"></i>
-        <div>الاشتراكات</div>
-      </a>
-    </li>
-
-    <!-- Menu Header Label for Finance -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Finance">المالية</span>
-    </li>
-
-    <!-- Payments Section -->
-    <li class="menu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.payments.index') }}" class="menu-link">
+    <li class="menu-item {{ $financeOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-credit-card"></i>
-        <div>المدفوعات</div>
+        <div>المالية</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.payments.index') }}" class="menu-link">المدفوعات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.wallets.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.wallets.index') }}" class="menu-link">المحافظ</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">طلبات المحفظة</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- Menu Header Label for Engagement -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Engagement">التفاعل</span>
-    </li>
-
-    <!-- Ratings Section -->
-    <li class="menu-item {{ request()->routeIs('admin.ratings.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.ratings.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-star"></i>
-        <div>التقييمات</div>
-      </a>
-    </li>
-
-    <!-- Wallet Management -->
-    <li class="menu-item {{ request()->routeIs('admin.wallets.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.wallets.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-wallet"></i>
-        <div>المحافظ</div>
-      </a>
-    </li>
-
-    <!-- Wallet Transactions -->
-    <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-currency-dollar"></i>
-        <div>طلبات المحفظة</div>
-      </a>
-    </li>
-
-    <!-- Prizes Management -->
-    <li class="menu-item {{ request()->routeIs('admin.prizes.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.prizes.index') }}" class="menu-link">
+    <li class="menu-item {{ $rewardsOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-gift"></i>
-        <div>الجوائز</div>
+        <div>المكافآت</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.prizes.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.prizes.index') }}" class="menu-link">الجوائز</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.prize-redemptions.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.prize-redemptions.index') }}" class="menu-link">طلبات الجوائز</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- Prize Redemptions -->
-    <li class="menu-item {{ request()->routeIs('admin.prize-redemptions.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.prize-redemptions.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-ticket"></i>
-        <div>طلبات الجوائز</div>
-      </a>
-    </li>
-
-    <!-- Notifications Section -->
-    <li class="menu-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.notifications.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-bell"></i>
-        <div>الإشعارات</div>
-      </a>
-    </li>
-
-    <!-- Messages Section -->
-    <li class="menu-item {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.messages.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-message"></i>
-        <div>الرسائل</div>
-      </a>
-    </li>
-
-    <!-- Support Section -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Support">الدعم</span>
-    </li>
-    <li class="menu-item {{ request()->routeIs('admin.support.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.support.index') }}" class="menu-link">
+    <li class="menu-item {{ $commsOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-headset"></i>
-        <div>تذاكر الدعم</div>
+        <div>التواصل والدعم</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.notifications.index') }}" class="menu-link">الإشعارات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.messages.index') }}" class="menu-link">الرسائل</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.support.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.support.index') }}" class="menu-link">تذاكر الدعم</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- Menu Header Label for Locations -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="Locations">المناطق</span>
+    <li class="menu-item {{ $reportsOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        <i class="menu-icon icon-base ti tabler-chart-donut-3"></i>
+        <div>التقارير</div>
+      </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.reports.sales') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.sales') }}" class="menu-link">مبيعات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.plan-sales') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.plan-sales') }}" class="menu-link">مبيعات الباقات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.app-fees') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.app-fees') }}" class="menu-link">رسوم التطبيق</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.vat') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.vat') }}" class="menu-link">ضريبة القيمة المضافة</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.completed-payouts') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.completed-payouts') }}" class="menu-link">مستحقات المدربين</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.active-courses') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.active-courses') }}" class="menu-link">الكورسات النشطة</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.awaiting-offers') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.awaiting-offers') }}" class="menu-link">بانتظار العروض</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.rejected-progress') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.rejected-progress') }}" class="menu-link">رفض الإنجاز اليومي</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.wallet-balances') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.wallet-balances') }}" class="menu-link">أرصدة المحافظ</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.points-balances') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.points-balances') }}" class="menu-link">النقاط</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.reward-redemptions') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.reward-redemptions') }}" class="menu-link">استبدال المكافآت</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.wallet-payments') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.wallet-payments') }}" class="menu-link">دفع عبر المحفظة</a>
+        </li>
+      </ul>
     </li>
 
-    <!-- Geo Management Section (Countries & Cities) -->
-    <li class="menu-item {{ request()->routeIs('admin.geo.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.geo.index') }}" class="menu-link">
+    <li class="menu-item {{ $geoOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-world"></i>
-        <div>الدول والمدن</div>
+        <div>النطاق الجغرافي</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.geo.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.geo.index') }}" class="menu-link">الدول والمدن</a>
+        </li>
+      </ul>
     </li>
 
-
-
-    <!-- Menu Header Label for System -->
-    <li class="menu-header small">
-      <span class="menu-header-text" data-i18n="System">النظام</span>
-    </li>
-
-    <!-- Roles & Permissions Section -->
-    <li class="menu-item {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.roles.index') }}" class="menu-link">
-        <i class="menu-icon icon-base ti tabler-lock"></i>
-        <div>الأدوار والصلاحيات</div>
-      </a>
-    </li>
-
-    <!-- Settings Section -->
-    <li class="menu-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-      <a href="{{ route('admin.settings.index') }}" class="menu-link">
+    <li class="menu-item {{ $systemOpen ? 'open' : '' }}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon icon-base ti tabler-settings"></i>
-        <div>الإعدادات</div>
+        <div>النظام</div>
       </a>
+      <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.roles.index') }}" class="menu-link">الأدوار والصلاحيات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+          <a href="{{ route('admin.settings.index') }}" class="menu-link">الإعدادات</a>
+        </li>
+      </ul>
     </li>
-
-
   </ul>
 </aside>
 

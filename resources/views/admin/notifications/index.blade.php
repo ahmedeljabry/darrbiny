@@ -22,7 +22,7 @@
   <div class="card-header d-flex align-items-center justify-content-between">
     <div>
       <h5 class="mb-0">إرسال إشعار</h5>
-      <small class="text-body-secondary">أرسل إشعارًا لمستخدم محدد أو لجميع المدربين</small>
+      <small class="text-body-secondary">أرسل إشعارًا لمستخدم محدد، جميع المدربين أو جميع المتدربين</small>
     </div>
   </div>
   <div class="card-body">
@@ -34,6 +34,7 @@
             <span class="input-group-text"><i class="ti tabler-megaphone"></i></span>
             <select class="form-select js-audience" name="audience" required>
               <option value="trainers">جميع المدربين</option>
+              <option value="trainees">جميع المتدربين</option>
               <option value="user">مستخدم واحد</option>
             </select>
           </div>

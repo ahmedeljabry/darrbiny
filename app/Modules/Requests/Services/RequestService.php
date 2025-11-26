@@ -8,6 +8,8 @@ use App\Models\Plan;
 use App\Models\TrainerOffer;
 use App\Models\UserRequest;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\NotifyEligibleTrainers;
+use App\Services\ConversationService;
 
 class RequestService
 {
@@ -19,13 +21,14 @@ class RequestService
             $req->user_id = $userId;
             $req->status = UserRequest::STATUS_PENDING_PAYMENT;
             $req->currency = auth()->user()?->currency ?? 'USD';
-            $req->app_fee_reserved_minor = (int) config('app.reservation_fee_minor', 1000);
+            $req->app_fee_reserved_minor = \App\Support\Fees::reservationFeeMinor();
             $req->save();
-            
+
             // Initialize schedule progress when user subscribes
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
-            
-            // TODO: dispatch broadcast job to eligible trainers
+
+            // Dispatch notifications to eligible trainers
+            NotifyEligibleTrainers::dispatch($req);
             return $req;
         });
     }
@@ -34,13 +37,14 @@ class RequestService
     {
         $req->status = UserRequest::STATUS_AWAITING_OFFERS;
         $req->save();
-        // TODO: notify trainers in same city/country
+        NotifyEligibleTrainers::dispatch($req);
     }
 
     public function selectOffer(UserRequest $req, TrainerOffer $offer): void
     {
         DB::transaction(function () use ($req, $offer) {
             $req->status = UserRequest::STATUS_OFFER_SELECTED;
+            $req->trainer_id = $offer->trainer_id;
             $req->save();
             TrainerOffer::where('user_request_id', $req->id)
                 ->where('id', '!=', $offer->id)
@@ -54,14 +58,21 @@ class RequestService
     {
         $req->status = UserRequest::STATUS_IN_TRAINING;
         $req->save();
-        
+
         // Ensure schedule progress is initialized if not already
         $progressCount = \App\Models\UserScheduleProgress::where('user_request_id', $req->id)->count();
         if ($progressCount === 0) {
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
         }
-        
-        // TODO: create secure conversation stub
+
+        // Ensure conversation exists between المتدرب والمدرب
+        if ($req->trainer_id && $req->user_id) {
+            $trainer = \App\Models\User::find($req->trainer_id);
+            $user = \App\Models\User::find($req->user_id);
+            if ($trainer && $user) {
+                app(ConversationService::class)->findOrCreateConversation($trainer, $user);
+            }
+        }
     }
 
     public function complete(UserRequest $req): void
@@ -70,4 +81,3 @@ class RequestService
         $req->save();
     }
 }
-

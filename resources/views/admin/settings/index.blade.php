@@ -18,214 +18,355 @@
   </div>
 @endif
 
-<ul class="nav nav-tabs" id="settingsTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab" aria-controls="site" aria-selected="true">
-      <i class="ti tabler-settings"></i> إعدادات الموقع
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab" aria-controls="videos" aria-selected="false">
-      <i class="ti tabler-video"></i> فيديو التطبيق
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="pages-tab" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab" aria-controls="pages" aria-selected="false">
-      <i class="ti tabler-file-text"></i> الصفحات
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="howitworks-tab" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab" aria-controls="howitworks" aria-selected="false">
-      <i class="ti tabler-list-details"></i> كيف تعمل الخدمة
-    </button>
-  </li>
-</ul>
-
-<div class="tab-content mt-4" id="settingsTabsContent">
-  <div class="tab-pane fade show active" id="site" role="tabpanel" aria-labelledby="site-tab">
-    <div class="row g-4">
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header"><h6 class="mb-0">العلامة التجارية</h6></div>
-          <div class="card-body">
-            <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
-          <div class="mb-3">
-            <label class="form-label">اسم العلامة</label>
-            <div class="input-group input-group-merge">
-              <span class="input-group-text"><i class="ti tabler-edit"></i></span>
-              <input class="form-control" name="brand_name" value="{{ $settings['brand.name'] ?? '' }}">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">الشعار</label>
-            <input type="file" name="logo" class="form-control">
-            @if(!empty($settings['brand.logo_path']))
-              <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.logo_path']) }}" alt="logo" height="48"></div>
-            @endif
-          </div>
-          <div class="mb-3">
-            <label class="form-label">الأيقونة (Favicon)</label>
-            <input type="file" name="favicon" class="form-control" accept="image/x-icon,image/png">
-            @if(!empty($settings['brand.favicon_path']))
-              <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.favicon_path']) }}" alt="favicon" height="32"></div>
-            @endif
-          </div>
-          <button class="btn btn-primary">حفظ</button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header"><h6 class="mb-0">بوابة الدفع: TAP</h6></div>
-          <div class="card-body">
-            <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-              <div class="mb-3">
-                <label class="form-label">المفتاح العام</label>
-                <div class="input-group input-group-merge">
-                  <span class="input-group-text"><i class="ti tabler-key"></i></span>
-                  <input class="form-control" name="tap_public_key" value="{{ $settings['payment.tap.public_key'] ?? '' }}">
-                </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">المفتاح السري</label>
-                <div class="input-group input-group-merge">
-                  <span class="input-group-text"><i class="ti tabler-lock"></i></span>
-                  <input class="form-control" name="tap_secret_key" value="{{ $settings['payment.tap.secret_key'] ?? '' }}">
-                </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">سر الويب هوك</label>
-                <div class="input-group input-group-merge">
-                  <span class="input-group-text"><i class="ti tabler-webhook"></i></span>
-                  <input class="form-control" name="tap_webhook_secret" value="{{ $settings['payment.tap.webhook_secret'] ?? '' }}">
-                </div>
-              </div>
-              <button class="btn btn-primary">حفظ</button>
-            </form>
-          </div>
-        </div>
-      </div>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h4 class="mb-1 text-dark">لوحة إعدادات المنصة</h4>
+      <p class="mb-0 text-muted">تحكم بالعلامة التجارية، الدفع، الرسوم، المحتوى، والفيديوهات.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="badge bg-label-primary">حفظ فوري بعد كل تبويب</span>
+      <span class="badge bg-label-success">تحديث مباشر</span>
     </div>
   </div>
+</div>
 
-  <div class="tab-pane fade" id="videos" role="tabpanel" aria-labelledby="videos-tab">
-    <div class="card">
-      <div class="card-header"><h6 class="mb-0">فيديو التطبيق</h6></div>
-      <div class="card-body">
-        <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">فيديو واجهة المستخدمين</label>
-              <input type="file" name="video_app_file" accept="video/*" class="form-control">
-              <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق العميل.</small>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">فيديو واجهة الكباتن</label>
-              <input type="file" name="video_captain_file" accept="video/*" class="form-control">
-              <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق الكابتن.</small>
-            </div>
-          </div>
-          @if(!empty($settings['video.app.path']) || !empty($settings['video.captain.path']))
-            <div class="row g-4 mt-1">
-              @if(!empty($settings['video.app.path']))
-                <div class="col-md-6">
-                  <label class="form-label d-block">الفيديو الحالي للمستخدمين</label>
-                  <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
-                </div>
-              @endif
-              @if(!empty($settings['video.captain.path']))
-                <div class="col-md-6">
-                  <label class="form-label d-block">الفيديو الحالي للكباتن</label>
-                  <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.captain.path']) }}" controls style="max-width:100%; height:auto;"></video>
-                </div>
-              @endif
-            </div>
-          @endif
-          <div class="mt-3">
-            <button class="btn btn-primary">حفظ</button>
-          </div>
-        </form>
+<div class="row g-4">
+  <div class="col-lg-12r">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header border-0">
+        <ul class="nav nav-pills settings-tabs" id="settingsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab">الموقع</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">الفيديو</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pages-tab" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab">الصفحات</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="howitworks-tab" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab">كيف تعمل الخدمة</button>
+          </li>
+        </ul>
       </div>
-    </div>
-  </div>
-  </div>
+      <div class="card-body">
+        <div class="tab-content" id="settingsTabsContent">
+          <div class="tab-pane fade show active" id="site" role="tabpanel" aria-labelledby="site-tab">
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <div class="card h-100 border-0 surface">
+                  <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-0">العلامة التجارية</h6>
+                      <small class="text-muted">الاسم والشعار والأيقونة</small>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
+                      <div class="mb-3">
+                        <label class="form-label">اسم العلامة</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-edit"></i></span>
+                          <input class="form-control" name="brand_name" value="{{ $settings['brand.name'] ?? '' }}">
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">الشعار</label>
+                        <input type="file" name="logo" class="form-control">
+                        @if(!empty($settings['brand.logo_path']))
+                          <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.logo_path']) }}" alt="logo" height="48"></div>
+                        @endif
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">الأيقونة (Favicon)</label>
+                        <input type="file" name="favicon" class="form-control" accept="image/x-icon,image/png">
+                        @if(!empty($settings['brand.favicon_path']))
+                          <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.favicon_path']) }}" alt="favicon" height="32"></div>
+                        @endif
+                      </div>
+                      <button class="btn btn-primary w-100">حفظ</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
 
-<div class="tab-content mt-4" id="settingsTabsContentPages">
-  <div class="tab-pane fade" id="pages" role="tabpanel" aria-labelledby="pages-tab">
-    <div class="card">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div>
-          <h6 class="mb-0">صفحات الموقع</h6>
-          <small class="text-body-secondary">تحكم في محتوى الصفحات القانونية والمساعدة</small>
+              <div class="col-lg-6">
+                <div class="card h-100 border-0 surface">
+                  <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-0">بوابة الدفع: TAP</h6>
+                      <small class="text-muted">المفاتيح والويب هوك</small>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                      <div class="mb-3">
+                        <label class="form-label">المفتاح العام</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-key"></i></span>
+                          <input class="form-control" name="tap_public_key" value="{{ $settings['payment.tap.public_key'] ?? '' }}">
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">المفتاح السري</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-lock"></i></span>
+                          <input class="form-control" name="tap_secret_key" value="{{ $settings['payment.tap.secret_key'] ?? '' }}">
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">سر الويب هوك</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-webhook"></i></span>
+                          <input class="form-control" name="tap_webhook_secret" value="{{ $settings['payment.tap.webhook_secret'] ?? '' }}">
+                        </div>
+                      </div>
+                      <button class="btn btn-primary w-100">حفظ</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-12">
+                <div class="card h-100 border-0 surface">
+                  <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-0">الرسوم والعمولات</h6>
+                      <small class="text-muted">تعديل الرسوم بسهولة</small>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">نسبة عمولة التطبيق (%)</label>
+                          <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="ti tabler-percentage"></i></span>
+                            <input type="number" step="0.1" min="0" class="form-control" name="app_fee_percent" value="{{ $settings['fees.app_fee_percent'] ?? config('app.app_fee_percent', 10) }}">
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">رسوم الحجز (minor، مثال 1000 = 10.00)</label>
+                          <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="ti tabler-currency-dollar"></i></span>
+                            <input type="number" step="50" min="0" class="form-control" name="reservation_fee_minor" value="{{ $settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000) }}">
+                          </div>
+                        </div>
+                      </div>
+                      <button class="btn btn-primary mt-3">حفظ</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="videos" role="tabpanel" aria-labelledby="videos-tab">
+            <div class="card border-0 surface">
+              <div class="card-header border-0">
+                <h6 class="mb-0">فيديو التطبيق</h6>
+                <small class="text-muted">تحميل فيديو واجهة المستخدم والكابتن</small>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">فيديو واجهة المستخدمين</label>
+                      <input type="file" name="video_app_file" accept="video/*" class="form-control">
+                      <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق العميل.</small>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">فيديو واجهة الكباتن</label>
+                      <input type="file" name="video_captain_file" accept="video/*" class="form-control">
+                      <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق الكابتن.</small>
+                    </div>
+                  </div>
+                  @if(!empty($settings['video.app.path']) || !empty($settings['video.captain.path']))
+                    <div class="row g-4 mt-1">
+                      @if(!empty($settings['video.app.path']))
+                        <div class="col-md-6">
+                          <label class="form-label d-block">الفيديو الحالي للمستخدمين</label>
+                          <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                        </div>
+                      @endif
+                      @if(!empty($settings['video.captain.path']))
+                        <div class="col-md-6">
+                          <label class="form-label d-block">الفيديو الحالي للكباتن</label>
+                          <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.captain.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                        </div>
+                      @endif
+                    </div>
+                  @endif
+                  <div class="mt-3">
+                    <button class="btn btn-primary">حفظ</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="pages" role="tabpanel" aria-labelledby="pages-tab">
+            <div class="card border-0 surface">
+              <div class="card-header border-0 d-flex align-items-center justify-content-between">
+                <div>
+                  <h6 class="mb-0">صفحات الموقع</h6>
+                  <small class="text-body-secondary">الصفحات القانونية والمساعدة</small>
+                </div>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                  <div class="mb-3">
+                    <label class="form-label">سياسة الاستخدام</label>
+                    <div class="input-group input-group-merge">
+                      <span class="input-group-text"><i class="ti tabler-shield"></i></span>
+                      <textarea name="page_usage_policy" class="form-control" rows="6" placeholder="اكتب سياسة الاستخدام">{{ $settings['pages.usage'] ?? '' }}</textarea>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">سياسة الخصوصية</label>
+                    <input id="privacy_editor" type="hidden" name="page_privacy_policy" value="{{ $settings['pages.privacy'] ?? '' }}">
+                    <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
+
+                  @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])
+                  <div class="mb-3">
+                    <label class="form-label d-block">الأسئلة الشائعة</label>
+                    <div id="faq-list" class="d-flex flex-column gap-2">
+                      @if(empty($decodedFaqs))
+                        @php($decodedFaqs = [[ 'question' => '', 'answer' => '' ]])
+                      @endif
+                      @foreach($decodedFaqs as $i => $faq)
+                        <div class="border rounded p-2 faq-row">
+                          <div class="row g-2 align-items-start">
+                            <div class="col-md-5">
+                              <label class="form-label">السؤال</label>
+                              <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ti tabler-question-mark"></i></span>
+                                <input type="text" name="faqs[{{ $i }}][question]" class="form-control" value="{{ $faq['question'] ?? '' }}" placeholder="اكتب السؤال">
+                              </div>
+                            </div>
+                            <div class="col-md-7">
+                              <label class="form-label">الإجابة</label>
+                              <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ti tabler-message"></i></span>
+                                <textarea name="faqs[{{ $i }}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة">{{ $faq['answer'] ?? '' }}</textarea>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="d-flex justify-content-end mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger js-remove-faq">حذف</button>
+                          </div>
+                        </div>
+                      @endforeach
+                    </div>
+                    <div class="mt-2">
+                      <button type="button" class="btn btn-sm btn-outline-primary js-add-faq"><i class="ti tabler-plus"></i> إضافة سؤال</button>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">تواصل معنا</label>
+                    <div class="input-group input-group-merge">
+                      <span class="input-group-text"><i class="ti tabler-mail"></i></span>
+                      <textarea name="page_contact" class="form-control" rows="4" placeholder="بيانات التواصل، البريد، الهاتف...">{{ $settings['pages.contact'] ?? '' }}</textarea>
+                    </div>
+                  </div>
+                  <div class="mt-3">
+                    <button class="btn btn-primary">حفظ</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="howitworks" role="tabpanel" aria-labelledby="howitworks-tab">
+            <div class="card border-0 surface">
+              <div class="card-header border-0 d-flex align-items-center justify-content-between">
+                <div>
+                  <h6 class="mb-0">كيف تعمل الخدمة</h6>
+                  <small class="text-body-secondary">إدارة الأقسام والخطوات</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-section">
+                  <i class="ti tabler-plus"></i> إضافة قسم
+                </button>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.howitworks.update') }}">@csrf
+                  @php($hiw = \App\Models\HowItWorksSection::with('steps')->get())
+                  <div id="hiw-list" class="d-flex flex-column gap-2">
+                    @if ($hiw->isEmpty())
+                      <div class="border rounded p-2 hiw-row">
+                        <div class="mb-2">
+                          <label class="form-label">العنوان</label>
+                          <input type="text" class="form-control" name="sections[0][title]" placeholder="اكتب العنوان">
+                        </div>
+                        <div class="mb-2">
+                          <label class="form-label d-block">الخطوات</label>
+                          <div class="d-flex flex-column gap-2 steps">
+                            <div class="input-group">
+                              <span class="input-group-text"><i class="ti tabler-check"></i></span>
+                              <input type="text" class="form-control" name="sections[0][steps][0]" placeholder="اكتب الخطوة">
+                              <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
+                            </div>
+                          </div>
+                          <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
+                          </div>
+                        </div>
+                        <div class="d-flex justify-content-end mt-1">
+                          <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
+                        </div>
+                      </div>
+                    @else
+                      @foreach($hiw as $i => $section)
+                        <div class="border rounded p-2 hiw-row">
+                          <div class="mb-2">
+                            <label class="form-label">العنوان</label>
+                            <input type="text" class="form-control" name="sections[{{ $i }}][title]" value="{{ $section->title }}" placeholder="اكتب العنوان">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label d-block">الخطوات</label>
+                            <div class="d-flex flex-column gap-2 steps">
+                              @foreach($section->steps as $j => $step)
+                                <div class="input-group">
+                                  <span class="input-group-text"><i class="ti tabler-check"></i></span>
+                                  <input type="text" class="form-control" name="sections[{{ $i }}][steps][{{ $j }}]" value="{{ $step->title }}" placeholder="اكتب الخطوة">
+                                  <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
+                                </div>
+                              @endforeach
+                            </div>
+                            <div class="mt-2">
+                              <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
+                            </div>
+                          </div>
+                          <div class="d-flex justify_content-end mt-1">
+                            <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
+                          </div>
+                        </div>
+                      @endforeach
+                    @endif
+                  </div>
+                  <div class="mt-3">
+                    <button class="btn btn-primary">حفظ</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
         </div>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-          <div class="mb-3">
-            <label class="form-label">سياسة الاستخدام</label>
-            <div class="input-group input-group-merge">
-              <span class="input-group-text"><i class="ti tabler-shield"></i></span>
-              <textarea name="page_usage_policy" class="form-control" rows="6" placeholder="اكتب سياسة الاستخدام">{{ $settings['pages.usage'] ?? '' }}</textarea>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">سياسة الخصوصية</label>
-            <input id="privacy_editor" type="hidden" name="page_privacy_policy" value="{{ $settings['pages.privacy'] ?? '' }}">
-            <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
-          </div>
-
-          @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])
-          <div class="mb-3">
-            <label class="form-label d-block">الأسئلة الشائعة</label>
-            <div id="faq-list" class="d-flex flex-column gap-2">
-              @if(empty($decodedFaqs))
-                @php($decodedFaqs = [[ 'question' => '', 'answer' => '' ]])
-              @endif
-              @foreach($decodedFaqs as $i => $faq)
-                <div class="border rounded p-2 faq-row">
-                  <div class="row g-2 align-items-start">
-                    <div class="col-md-5">
-                      <label class="form-label">السؤال</label>
-                      <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ti tabler-question-mark"></i></span>
-                        <input type="text" name="faqs[{{ $i }}][question]" class="form-control" value="{{ $faq['question'] ?? '' }}" placeholder="اكتب السؤال">
-                      </div>
-                    </div>
-                    <div class="col-md-7">
-                      <label class="form-label">الإجابة</label>
-                      <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ti tabler-message"></i></span>
-                        <textarea name="faqs[{{ $i }}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة">{{ $faq['answer'] ?? '' }}</textarea>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="d-flex justify-content-end mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-danger js-remove-faq">حذف</button>
-                  </div>
-                </div>
-              @endforeach
-            </div>
-            <div class="mt-2">
-              <button type="button" class="btn btn-sm btn-outline-primary js-add-faq"><i class="ti tabler-plus"></i> إضافة سؤال</button>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">تواصل معنا</label>
-            <div class="input-group input-group-merge">
-              <span class="input-group-text"><i class="ti tabler-mail"></i></span>
-              <textarea name="page_contact" class="form-control" rows="4" placeholder="بيانات التواصل، البريد، الهاتف...">{{ $settings['pages.contact'] ?? '' }}</textarea>
-            </div>
-          </div>
-          <div class="mt-3">
-            <button class="btn btn-primary">حفظ</button>
-          </div>
-        </form>
       </div>
     </div>
   </div>
 </div>
+
+@push('styles')
+<style>
+  .surface { background: #f9fafb; border: 1px solid #eef2f6; }
+  .settings-tabs .nav-link { border-radius: 10px; }
+  .settings-tabs .nav-link.active { background: #4f46e5; color: #fff; }
+</style>
+@endpush
 
 @push('scripts')
   <script src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
@@ -290,7 +431,6 @@
 @push('scripts')
   <script>
   document.addEventListener('DOMContentLoaded', function(){
-    // How It Works tab dynamic UI
     function addHiwSection(title = '', steps = ['']){
       const idx = document.querySelectorAll('#hiw-list .hiw-row').length;
       const el = document.createElement('div');
@@ -354,82 +494,5 @@
   });
   </script>
 @endpush
-
-<div class="tab-content mt-4" id="settingsTabsContentHowItWorks">
-  <div class="tab-pane fade" id="howitworks" role="tabpanel" aria-labelledby="howitworks-tab">
-    <div class="card">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div>
-          <h6 class="mb-0">كيف تعمل الخدمة</h6>
-          <small class="text-body-secondary">تحكم في الأقسام والخطوات الظاهرة للمستخدم</small>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-section">
-          <i class="ti tabler-plus"></i> إضافة قسم
-        </button>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{{ route('admin.settings.howitworks.update') }}">@csrf
-          @php($hiw = \App\Models\HowItWorksSection::with('steps')->get())
-          <div id="hiw-list" class="d-flex flex-column gap-2">
-            @if ($hiw->isEmpty())
-              <div class="border rounded p-2 hiw-row">
-                <div class="mb-2">
-                  <label class="form-label">العنوان</label>
-                  <input type="text" class="form-control" name="sections[0][title]" placeholder="اكتب العنوان">
-                </div>
-                <div class="mb-2">
-                  <label class="form-label d-block">الخطوات</label>
-                  <div class="d-flex flex-column gap-2 steps">
-                    <div class="input-group">
-                      <span class="input-group-text"><i class="ti tabler-check"></i></span>
-                      <input type="text" class="form-control" name="sections[0][steps][0]" placeholder="اكتب الخطوة">
-                      <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
-                    </div>
-                  </div>
-                  <div class="mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
-                  </div>
-                </div>
-                <div class="d-flex justify-content-end mt-1">
-                  <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
-                </div>
-              </div>
-            @else
-              @foreach($hiw as $i => $section)
-                <div class="border rounded p-2 hiw-row">
-                  <div class="mb-2">
-                    <label class="form-label">العنوان</label>
-                    <input type="text" class="form-control" name="sections[{{ $i }}][title]" value="{{ $section->title }}" placeholder="اكتب العنوان">
-                  </div>
-                  <div class="mb-2">
-                    <label class="form-label d-block">الخطوات</label>
-                    <div class="d-flex flex-column gap-2 steps">
-                      @foreach($section->steps as $j => $step)
-                        <div class="input-group">
-                          <span class="input-group-text"><i class="ti tabler-check"></i></span>
-                          <input type="text" class="form-control" name="sections[{{ $i }}][steps][{{ $j }}]" value="{{ $step->title }}" placeholder="اكتب الخطوة">
-                          <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>
-                        </div>
-                      @endforeach
-                    </div>
-                    <div class="mt-2">
-                      <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
-                    </div>
-                  </div>
-                  <div class="d-flex justify-content-end mt-1">
-                    <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
-                  </div>
-                </div>
-              @endforeach
-            @endif
-          </div>
-          <div class="mt-3">
-            <button class="btn btn-primary">حفظ</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 
 @endsection

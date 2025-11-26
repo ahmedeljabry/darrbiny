@@ -11,9 +11,12 @@ use App\Modules\Payments\Http\Resources\PaymentResource;
 use App\Modules\Payments\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PaymentController extends BaseController
 {
+    use AuthorizesRequests;
+
     public function __construct(private readonly PaymentService $service) {}
 
     /**
@@ -39,13 +42,12 @@ class PaymentController extends BaseController
             'provider' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'in:apple_pay,stripe,paypal,moyasar,tap'],
             'provider_ref' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:pending,succeeded,failed'],
-            'transaction_data' => ['nullable', 'array'], // Additional transaction metadata from mobile
+            'transaction_data' => ['nullable', 'array'],
         ]);
 
         $req = UserRequest::findOrFail($validated['user_request_id']);
         $this->authorize('update', $req);
-        
-        // If wallet payment, check balance and deduct
+
         if ($validated['payment_method'] === 'wallet') {
             $payment = $this->service->payWithWallet(
                 $req,
@@ -54,7 +56,7 @@ class PaymentController extends BaseController
             );
         } else {
             $payment = $this->service->storeReservationPayment(
-                $req, 
+                $req,
                 $request->user()->id,
                 $validated['provider'],
                 $validated['provider_ref'],
@@ -78,13 +80,12 @@ class PaymentController extends BaseController
             'provider' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'in:apple_pay,stripe,paypal,moyasar,tap'],
             'provider_ref' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:pending,succeeded,failed'],
-            'transaction_data' => ['nullable', 'array'], // Additional transaction metadata from mobile
+            'transaction_data' => ['nullable', 'array'],
         ]);
 
         $req = UserRequest::findOrFail($validated['user_request_id']);
         $this->authorize('update', $req);
-        
-        // If wallet payment, check balance and deduct
+
         if ($validated['payment_method'] === 'wallet') {
             $payment = $this->service->payWithWallet(
                 $req,
@@ -105,19 +106,4 @@ class PaymentController extends BaseController
         return response()->json(['data' => new PaymentResource($payment)], 201);
     }
 
-    /**
-     * Webhook endpoint for payment providers to notify about payment status changes
-     */
-    public function webhook(Request $request, string $provider)
-    {
-        // Verify webhook signatures via provider
-        $valid = app(\App\Modules\Payments\Services\PaymentProvider::class)
-            ->validateWebhook($request->all(), $request->headers->all());
-        abort_unless($valid, 400, 'Invalid signature');
-        
-        // Update payment status based on webhook data
-        $this->service->handleWebhook($provider, $request->all());
-        
-        return response()->json(['data' => ['ok' => true]]);
-    }
 }

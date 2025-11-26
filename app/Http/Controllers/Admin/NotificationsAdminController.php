@@ -71,7 +71,7 @@ class NotificationsAdminController extends BaseController
     public function send(Request $request)
     {
         $data = $request->validate([
-            'audience' => ['required','in:user,trainers'],
+            'audience' => ['required','in:user,trainers,trainees'],
             'user_id' => ['required_if:audience,user','nullable','uuid'],
             'title' => ['required','string','max:120'],
             'message' => ['required','string','max:1000'],
@@ -82,9 +82,14 @@ class NotificationsAdminController extends BaseController
         if ($data['audience'] === 'user') {
             $user = User::findOrFail($data['user_id']);
             $user->notify($notification);
-        } else {
+        } elseif ($data['audience'] === 'trainers') {
             $trainers = User::role('TRAINER')->select('id')->cursor();
             foreach ($trainers->chunk(200) as $chunk) {
+                Notification::send($chunk->all(), $notification);
+            }
+        } else {
+            $trainees = User::role('USER')->select('id')->cursor();
+            foreach ($trainees->chunk(200) as $chunk) {
                 Notification::send($chunk->all(), $notification);
             }
         }

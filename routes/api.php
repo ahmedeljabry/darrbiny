@@ -41,7 +41,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
         // Support Tickets (public endpoint for creating tickets)
         Route::post('/support-tickets', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'store']);
-        
+
         // Support Tickets (authenticated endpoints)
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/support-tickets', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'index']);
@@ -59,7 +59,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
         Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             Route::post('/subscriptions/{id}/cancel', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'cancel']);
             Route::get('/subscriptions/{id}/cancellation-status', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'status']);
-            
+
             // Schedule endpoints
             Route::get('/subscriptions/{id}/schedule', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'index']);
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/check', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'check']);
@@ -68,7 +68,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/reject', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'reject']);
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/rate', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'rate']);
         });
-        
+
         // Trainer (Captain) profile/account endpoints
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/captain/account-details', [\App\Modules\Trainers\Http\Controllers\CaptainAccountController::class, 'show']);
@@ -90,9 +90,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
             // Payments
             Route::get('/user-requests/{id}/payment-details', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentDetails']);
-            Route::post('/payments/reservation', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'reservation']);
             Route::post('/payments/plan', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'plan']);
-            Route::post('/payments/webhook/{provider}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'webhook'])->withoutMiddleware('auth:sanctum');
 
             // Training
             Route::post('/training-days', [\App\Modules\Training\Http\Controllers\TrainingDayController::class, 'store']);
