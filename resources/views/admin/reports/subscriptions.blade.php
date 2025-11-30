@@ -1,22 +1,22 @@
 @extends('admin.layouts.app')
-@section('title','Subscription Reports')
+@section('title','تقارير الاشتراكات')
 @section('content')
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Subscriptions</h5>
+    <h5 class="mb-0">الاشتراكات</h5>
     <form class="d-flex" method="get">
       <select name="status" class="form-select me-2">
-        <option value="">All statuses</option>
+        <option value="">جميع الحالات</option>
         @foreach(['pending_payment','awaiting_offers','offer_selected','paid','in_training','completed','cancelled'] as $s)
           <option value="{{ $s }}" @selected(request('status')===$s)>{{ str_replace('_',' ',$s) }}</option>
         @endforeach
       </select>
-      <button class="btn btn-primary">Filter</button>
+      <button class="btn btn-primary">تصفية</button>
     </form>
   </div>
   <div class="table-responsive">
     <table class="table">
-      <thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Status</th><th>Start</th></tr></thead>
+      <thead><tr><th>المعرف</th><th>المستخدم</th><th>الخطة</th><th>الحالة</th><th>تاريخ البدء</th></tr></thead>
       <tbody>
         @foreach($subs as $r)
           <tr>

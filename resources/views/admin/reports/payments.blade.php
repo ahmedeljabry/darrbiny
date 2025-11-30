@@ -1,28 +1,28 @@
 @extends('admin.layouts.app')
-@section('title','Payment Reports')
+@section('title','تقارير المدفوعات')
 @section('content')
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Payments</h5>
+    <h5 class="mb-0">المدفوعات</h5>
     <form class="d-flex" method="get">
       <select name="type" class="form-select me-2">
-        <option value="">All types</option>
+        <option value="">جميع الأنواع</option>
         @foreach(['reservation_fee','plan_full'] as $t)
           <option value="{{ $t }}" @selected(request('type')===$t)>{{ $t }}</option>
         @endforeach
       </select>
       <select name="status" class="form-select me-2">
-        <option value="">All status</option>
+        <option value="">جميع الحالات</option>
         @foreach(['pending','succeeded','failed'] as $s)
           <option value="{{ $s }}" @selected(request('status')===$s)>{{ $s }}</option>
         @endforeach
       </select>
-      <button class="btn btn-primary">Filter</button>
+      <button class="btn btn-primary">تصفية</button>
     </form>
   </div>
   <div class="table-responsive">
     <table class="table">
-      <thead><tr><th>ID</th><th>User</th><th>Request</th><th>Amount</th><th>Type</th><th>Status</th><th>Provider</th><th>Date</th></tr></thead>
+      <thead><tr><th>المعرف</th><th>المستخدم</th><th>الطلب</th><th>المبلغ</th><th>النوع</th><th>الحالة</th><th>المزود</th><th>التاريخ</th></tr></thead>
       <tbody>
         @foreach($payments as $p)
           <tr>
