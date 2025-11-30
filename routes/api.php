@@ -55,6 +55,9 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
         Route::get('/plans/{plan}', [\App\Modules\Catalog\Http\Controllers\PlanController::class, 'show']);
         Route::get('/trainers', [\App\Modules\Catalog\Http\Controllers\TrainerController::class, 'index']);
 
+        // Settings
+        Route::get('/settings/fees', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'fees']);
+
         // User Routes (User-specific endpoints)
         Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             Route::post('/subscriptions/{id}/cancel', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'cancel']);

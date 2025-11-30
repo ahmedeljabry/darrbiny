@@ -141,28 +141,89 @@
                   <div class="card-header border-0 d-flex justify-content-between align-items-center">
                     <div>
                       <h6 class="mb-0">الرسوم والعمولات</h6>
-                      <small class="text-muted">تعديل الرسوم بسهولة</small>
+                      <small class="text-muted">إدارة رسوم التطبيق ورسوم الحجز</small>
                     </div>
                   </div>
                   <div class="card-body">
                     <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-                      <div class="row g-3">
+                      <div class="row g-4">
                         <div class="col-md-6">
-                          <label class="form-label">نسبة عمولة التطبيق (%)</label>
-                          <div class="input-group input-group-merge">
-                            <span class="input-group-text"><i class="ti tabler-percentage"></i></span>
-                            <input type="number" step="0.1" min="0" class="form-control" name="app_fee_percent" value="{{ $settings['fees.app_fee_percent'] ?? config('app.app_fee_percent', 10) }}">
+                          <div class="card border border-primary h-100">
+                            <div class="card-body">
+                              <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="avatar-initial rounded bg-label-primary">
+                                  <i class="icon-base ti tabler-currency-dollar"></i>
+                                </span>
+                                <div>
+                                  <h6 class="mb-0">رسوم الحجز (الجاهزة)</h6>
+                                  <small class="text-muted">Reservation Fee</small>
+                                </div>
+                              </div>
+                              <p class="text-body-secondary small mb-3">
+                                قيمة ثابتة تدفع في البداية وقبل إرسال أي طلب. هذه الرسوم مطلوبة لبدء العملية.
+                              </p>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">المبلغ (بالقروش)</label>
+                                <div class="input-group input-group-merge">
+                                  <span class="input-group-text"><i class="ti tabler-currency-dollar"></i></span>
+                                  <input type="number" step="50" min="0" class="form-control" name="reservation_fee_minor" value="{{ $settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000) }}" placeholder="مثال: 1000 = 10.00">
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                  القيمة الحالية: <strong>{{ number_format(($settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000)) / 100, 2) }}</strong>
+                                </small>
+                              </div>
+                            </div>
                           </div>
                         </div>
+
                         <div class="col-md-6">
-                          <label class="form-label">رسوم الحجز (minor، مثال 1000 = 10.00)</label>
-                          <div class="input-group input-group-merge">
-                            <span class="input-group-text"><i class="ti tabler-currency-dollar"></i></span>
-                            <input type="number" step="50" min="0" class="form-control" name="reservation_fee_minor" value="{{ $settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000) }}">
+                          <div class="card border border-success h-100">
+                            <div class="card-body">
+                              <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="avatar-initial rounded bg-label-success">
+                                  <i class="icon-base ti tabler-percentage"></i>
+                                </span>
+                                <div>
+                                  <h6 class="mb-0">رسوم التطبيق (النسبة)</h6>
+                                  <small class="text-muted">App Fee Percentage</small>
+                                </div>
+                              </div>
+                              <p class="text-body-secondary small mb-3">
+                                نسبة معينة (مثلاً 10%) تخصم مباشرة من قيمة الباقة المحولة للمدرب. يتم حسابها تلقائياً عند الدفع.
+                              </p>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">النسبة المئوية (%)</label>
+                                <div class="input-group input-group-merge">
+                                  <span class="input-group-text"><i class="ti tabler-percentage"></i></span>
+                                  <input type="number" step="0.1" min="0" max="100" class="form-control" name="app_fee_percent" value="{{ $settings['fees.app_fee_percent'] ?? config('app.app_fee_percent', 10) }}" placeholder="مثال: 10 = 10%">
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                  القيمة الحالية: <strong>{{ $settings['fees.app_fee_percent'] ?? config('app.app_fee_percent', 10) }}%</strong>
+                                </small>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <button class="btn btn-primary mt-3">حفظ</button>
+
+                      <div class="alert alert-info mt-4 mb-0">
+                        <div class="d-flex align-items-start gap-2">
+                          <i class="icon-base ti tabler-info-circle mt-1"></i>
+                          <div>
+                            <strong>مثال توضيحي:</strong>
+                            <ul class="mb-0 mt-2 small">
+                              <li>إذا كانت <strong>رسوم الحجز = 10.00</strong> و <strong>رسوم التطبيق = 10%</strong></li>
+                              <li>المستخدم يدفع <strong>10.00</strong> كرسوم حجز في البداية</li>
+                              <li>عند اختيار باقة بقيمة <strong>1000.00</strong>، يتم خصم <strong>100.00</strong> (10%) كرسوم تطبيق</li>
+                              <li>المدرب يستلم <strong>900.00</strong> والتطبيق يحصل على <strong>100.00</strong></li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button class="btn btn-primary mt-3">
+                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ الرسوم
+                      </button>
                     </form>
                   </div>
                 </div>
