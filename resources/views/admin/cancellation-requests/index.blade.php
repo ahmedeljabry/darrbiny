@@ -2,6 +2,14 @@
 @section('title', 'طلبات الإلغاء')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item active" aria-current="page">طلبات الإلغاء</li>
+  </ol>
+</nav>
+
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}
@@ -13,7 +21,15 @@
     <div class="col-12">
         <div class="card h-100">
             <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h5 class="mb-0">طلبات إلغاء الدورات</h5>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar-initial rounded bg-label-primary">
+                    <i class="icon-base ti tabler-x-circle"></i>
+                  </span>
+                  <div>
+                    <h5 class="mb-0">طلبات إلغاء الدورات</h5>
+                    <small class="text-body-secondary">إدارة طلبات إلغاء الحجوزات</small>
+                  </div>
+                </div>
                 <form method="get" class="d-flex align-items-end gap-2">
                     <div>
                         <label class="form-label">الحالة</label>
@@ -32,7 +48,7 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
                             <th>المستخدم</th>
                             <th>رقم الدورة</th>

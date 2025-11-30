@@ -2,6 +2,14 @@
 @section('title','الإشعارات')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item active" aria-current="page">الإشعارات</li>
+  </ol>
+</nav>
+
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}
@@ -19,7 +27,10 @@
 @endif
 
 <div class="card">
-  <div class="card-header d-flex align-items-center justify-content-between">
+  <div class="card-header d-flex align-items-center gap-2">
+    <span class="avatar-initial rounded bg-label-primary">
+      <i class="icon-base ti tabler-bell"></i>
+    </span>
     <div>
       <h5 class="mb-0">إرسال إشعار</h5>
       <small class="text-body-secondary">أرسل إشعارًا لمستخدم محدد، جميع المدربين أو جميع المتدربين</small>

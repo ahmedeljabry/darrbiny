@@ -1,6 +1,16 @@
 @extends('admin.layouts.app')
 @section('title','تعديل خطة')
 @section('content')
+
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.plans.index') }}">الخطط</a></li>
+    <li class="breadcrumb-item active" aria-current="page">تعديل خطة</li>
+  </ol>
+</nav>
+
 <form method="post" action="{{ route('admin.plans.update', $plan->id) }}">
   @csrf
   @method('PUT')

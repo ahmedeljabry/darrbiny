@@ -2,6 +2,15 @@
 @section('title', 'جدول المتابعة - ' . $plan->title)
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.plans.index') }}">الخطط</a></li>
+    <li class="breadcrumb-item active" aria-current="page">جدول المتابعة</li>
+  </ol>
+</nav>
+
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}

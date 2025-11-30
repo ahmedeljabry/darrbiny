@@ -2,6 +2,15 @@
 @section('title', 'تفاصيل المحادثة')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.messages.index') }}">المحادثات</a></li>
+    <li class="breadcrumb-item active" aria-current="page">تفاصيل المحادثة</li>
+  </ol>
+</nav>
+
 <div class="row g-6">
     <div class="col-12">
         <div class="card">

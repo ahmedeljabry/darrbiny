@@ -2,6 +2,14 @@
 @section('title','الأدوار والصلاحيات')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item active" aria-current="page">الأدوار والصلاحيات</li>
+  </ol>
+</nav>
+
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}
@@ -21,9 +29,14 @@
 <div class="row g-4">
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header border-0">
-        <h5 class="mb-1">إنشاء دور جديد</h5>
-        <small class="text-muted">أدخل اسم الدور ثم أضف صلاحياته من الجدول.</small>
+      <div class="card-header border-0 d-flex align-items-center gap-2">
+        <span class="avatar-initial rounded bg-label-primary">
+          <i class="icon-base ti tabler-user-plus"></i>
+        </span>
+        <div>
+          <h5 class="mb-1">إنشاء دور جديد</h5>
+          <small class="text-muted">أدخل اسم الدور ثم أضف صلاحياته من الجدول.</small>
+        </div>
       </div>
       <div class="card-body">
         <form method="post" action="{{ route('admin.roles.store') }}">@csrf
@@ -39,7 +52,10 @@
 
   <div class="col-lg-8">
     <div class="card border-0 shadow-sm">
-      <div class="card-header border-0 d-flex align-items-center justify-content-between">
+      <div class="card-header border-0 d-flex align-items-center gap-2">
+        <span class="avatar-initial rounded bg-label-primary">
+          <i class="icon-base ti tabler-shield"></i>
+        </span>
         <div>
           <h5 class="mb-1">إدارة الأدوار</h5>
           <small class="text-muted">تعديل الصلاحيات أو عرض المستخدمين لكل دور.</small>

@@ -2,6 +2,14 @@
 @section('title','الإعدادات')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item active" aria-current="page">الإعدادات</li>
+  </ol>
+</nav>
+
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}

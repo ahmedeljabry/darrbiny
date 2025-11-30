@@ -2,6 +2,15 @@
 @section('title', 'إضافة جائزة')
 @section('content')
 
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.prizes.index') }}">الجوائز</a></li>
+    <li class="breadcrumb-item active" aria-current="page">إضافة جائزة</li>
+  </ol>
+</nav>
+
 @if ($errors->any())
   <div class="alert alert-danger alert-dismissible" role="alert">
     <ul class="mb-0">

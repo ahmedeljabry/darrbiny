@@ -1,6 +1,15 @@
 @extends('admin.layouts.app')
 @section('title','المستخدمون')
 @section('content')
+
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item active" aria-current="page">المستخدمون</li>
+  </ol>
+</nav>
+
 <div class="row g-6 mb-6">
   <div class="col-sm-6 col-xl-3">
     <div class="card h-100">

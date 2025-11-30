@@ -32,4 +32,17 @@ class WalletsController extends BaseController
 
         return back()->with('status', 'تم إضافة الرصيد إلى المحفظة');
     }
+
+    public function update(Request $request, string $id)
+    {
+        $data = $request->validate([
+            'balance' => ['required', 'integer', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $user = User::findOrFail($id);
+        $this->wallets->setBalance($user, (int) $data['balance'], $request->user(), $data['notes'] ?? null);
+
+        return back()->with('status', 'تم تحديث رصيد المحفظة بنجاح');
+    }
 }

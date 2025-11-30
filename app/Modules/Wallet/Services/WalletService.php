@@ -78,6 +78,45 @@ class WalletService
     }
 
     /**
+     * Set wallet balance directly (admin edit)
+     */
+    public function setBalance(User $user, int $newBalance, User $admin, ?string $notes = null): WalletTransaction
+    {
+        return DB::transaction(function () use ($user, $newBalance, $admin, $notes) {
+            $oldBalance = $user->points_balance;
+            $difference = $newBalance - $oldBalance;
+
+            if ($difference === 0) {
+                // No change needed
+                return WalletTransaction::create([
+                    'user_id' => $user->id,
+                    'amount' => 0,
+                    'type' => WalletTransaction::TYPE_ADJUSTMENT,
+                    'status' => WalletTransaction::STATUS_APPROVED,
+                    'notes' => $notes ?? 'لا يوجد تغيير في الرصيد',
+                    'processed_by' => $admin->id,
+                    'processed_at' => now(),
+                ]);
+            }
+
+            $txn = WalletTransaction::create([
+                'user_id' => $user->id,
+                'amount' => abs($difference),
+                'type' => WalletTransaction::TYPE_ADJUSTMENT,
+                'status' => WalletTransaction::STATUS_APPROVED,
+                'notes' => $notes ?? "تعديل الرصيد من {$oldBalance} إلى {$newBalance}",
+                'processed_by' => $admin->id,
+                'processed_at' => now(),
+            ]);
+
+            $user->points_balance = $newBalance;
+            $user->save();
+
+            return $txn;
+        });
+    }
+
+    /**
      * Reject wallet top-up request
      */
     public function rejectTopup(WalletTransaction $transaction, User $admin, string $reason): void

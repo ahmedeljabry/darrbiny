@@ -1,6 +1,16 @@
 @extends('admin.layouts.app')
 @section('title','تقرير رسوم التطبيق')
 @section('content')
+
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.reports.index') }}">التقارير</a></li>
+    <li class="breadcrumb-item active" aria-current="page">تقرير رسوم التطبيق</li>
+  </ol>
+</nav>
+
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>

@@ -100,6 +100,7 @@ Route::middleware(['web'])
             Route::delete('/ratings/{rating}', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'destroy'])->name('ratings.destroy');
             Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');
             Route::post('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'store'])->name('wallets.store');
+            Route::put('/wallets/{id}', [\App\Http\Controllers\Admin\WalletsController::class, 'update'])->name('wallets.update');
             Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'index'])->name('notifications.index');
             Route::get('/notifications/view', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'view'])->name('notifications.view');
             Route::get('/notifications/{id}', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'show'])->name('notifications.show');
