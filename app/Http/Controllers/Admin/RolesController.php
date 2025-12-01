@@ -20,19 +20,23 @@ class RolesController extends BaseController
     {
         $data = $request->validate(['name' => ['required','string','max:64']]);
         $service->create($data['name']);
-        return back()->with('status','Role created');
+        return back()->with('status','تم إنشاء الدور بنجاح');
     }
 
     public function update(Request $request, string $id, RolesService $service)
     {
         $data = $request->validate(['permissions' => ['array']]);
         $service->updatePermissions($id, (array)($data['permissions'] ?? []));
-        return back()->with('status','Role updated');
+        return back()->with('status','تم تحديث الصلاحيات بنجاح');
     }
 
     public function destroy(string $id, RolesService $service)
     {
-        $service->delete($id);
-        return back()->with('status','Role deleted');
+        try {
+            $service->delete($id);
+            return back()->with('status','تم حذف الدور بنجاح');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'لا يمكن حذف هذا الدور']);
+        }
     }
 }

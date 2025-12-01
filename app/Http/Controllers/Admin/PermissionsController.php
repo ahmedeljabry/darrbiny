@@ -20,13 +20,13 @@ class PermissionsController extends BaseController
     {
         $data = $request->validate(['name' => ['required','string','max:64']]);
         Permission::firstOrCreate(['name' => $data['name']]);
-        return back()->with('status','Permission created');
+        return back()->with('status','تم إنشاء الصلاحية بنجاح');
     }
 
     public function destroy(string $id)
     {
         Permission::findById($id)->delete();
-        return back()->with('status','Permission deleted');
+        return back()->with('status','تم حذف الصلاحية بنجاح');
     }
 }
 

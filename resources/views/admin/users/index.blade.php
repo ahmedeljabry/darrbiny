@@ -109,47 +109,113 @@
   </div>
 @endif
 
-<div class="card">
-  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0">التصفية</h5>
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">إضافة مستخدم</a>
-    <form method="get" class="row pt-4 g-3 align-items-end">
+<div class="card border-0 shadow-sm">
+  <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="avatar-initial rounded bg-label-primary">
+        <i class="icon-base ti tabler-users"></i>
+      </span>
+      <div>
+        <h5 class="mb-0">المستخدمون</h5>
+        <small class="text-muted">إدارة جميع المستخدمين والمدربين</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="trainersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="icon-base ti tabler-school me-1"></i> المدربون
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="trainersDropdown">
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'active']) }}">
+            <i class="icon-base ti tabler-user-check me-2"></i> المدربون النشطون
+          </a></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'banned']) }}">
+            <i class="icon-base ti tabler-user-exclamation me-2"></i> المدربون المحظورون
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer']) }}">
+            <i class="icon-base ti tabler-users me-2"></i> جميع المدربين
+          </a></li>
+        </ul>
+      </div>
+      <div class="dropdown">
+        <button class="btn btn-outline-success dropdown-toggle" type="button" id="usersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="icon-base ti tabler-user me-1"></i> المستخدمون
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="usersDropdown">
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'user', 'status' => 'active']) }}">
+            <i class="icon-base ti tabler-user-check me-2"></i> المستخدمون النشطون
+          </a></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'user', 'status' => 'banned']) }}">
+            <i class="icon-base ti tabler-user-exclamation me-2"></i> المستخدمون المحظورون
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'user']) }}">
+            <i class="icon-base ti tabler-users me-2"></i> جميع المستخدمين
+          </a></li>
+        </ul>
+      </div>
+      <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+        <i class="icon-base ti tabler-plus me-1"></i> إضافة مستخدم
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 mb-4">
       <div class="col-md-3">
-        <label class="form-label">الدور</label>
-        <select name="role" class="form-select">
-          <option value="">الكل</option>
-          <option value="trainer" {{ ($role==='trainer') ? 'selected' : '' }}>مدرب</option>
-          <option value="admin" {{ ($role==='admin') ? 'selected' : '' }}>مشرف</option>
-          <option value="user" {{ ($role==='user') ? 'selected' : '' }}>مستخدم</option>
-        </select>
+        <label class="form-label fw-semibold">
+          <i class="icon-base ti tabler-shield me-1"></i> الدور
+        </label>
+        <div class="input-group input-group-merge">
+          <span class="input-group-text"><i class="icon-base ti tabler-shield"></i></span>
+          <select name="role" class="form-select">
+            <option value="">الكل</option>
+            <option value="trainer" {{ ($role==='trainer') ? 'selected' : '' }}>مدرب</option>
+            <option value="admin" {{ ($role==='admin') ? 'selected' : '' }}>مشرف</option>
+            <option value="user" {{ ($role==='user') ? 'selected' : '' }}>مستخدم</option>
+          </select>
+        </div>
       </div>
       <div class="col-md-3">
-        <label class="form-label">الحالة</label>
-        <select name="status" class="form-select">
-          <option value="">الكل</option>
-          <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
-          <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
-        </select>
+        <label class="form-label fw-semibold">
+          <i class="icon-base ti tabler-info-circle me-1"></i> الحالة
+        </label>
+        <div class="input-group input-group-merge">
+          <span class="input-group-text"><i class="icon-base ti tabler-info-circle"></i></span>
+          <select name="status" class="form-select">
+            <option value="">الكل</option>
+            <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
+            <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
+          </select>
+        </div>
       </div>
       <div class="col-md-4">
-        <label class="form-label">بحث</label>
-        <input type="text" name="search" class="form-control" value="{{ $s ?? '' }}" placeholder="اسم، بريد، هاتف">
+        <label class="form-label fw-semibold">
+          <i class="icon-base ti tabler-search me-1"></i> بحث
+        </label>
+        <div class="input-group input-group-merge">
+          <span class="input-group-text"><i class="icon-base ti tabler-search"></i></span>
+          <input type="text" name="search" class="form-control" value="{{ $s ?? '' }}" placeholder="اسم، بريد، هاتف">
+        </div>
       </div>
       <div class="col-md-2 d-grid">
-        <button class="btn btn-primary" type="submit">تطبيق</button>
+        <label class="form-label d-none d-md-block">&nbsp;</label>
+        <button class="btn btn-primary" type="submit">
+          <i class="icon-base ti tabler-filter me-1"></i> تطبيق
+        </button>
       </div>
     </form>
   </div>
   <div class="card-datatable table-responsive p-3">
-    <table class="table table-striped" id="usersTable">
-      <thead class="border-top">
+    <table class="table table-hover align-middle" id="usersTable">
+      <thead class="table-light border-top">
         <tr>
-          <th>المستخدم</th>
-          <th>البريد</th>
-          <th>الهاتف</th>
-          <th>الأدوار</th>
-          <th>الحالة</th>
-          <th>إجراءات</th>
+          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
+          <th><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
+          <th><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
+          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
@@ -160,29 +226,53 @@
             <td>{{ $u->phone_with_cc }}</td>
             <td>
               @foreach($u->getRoleNames() as $r)
-                <span class="badge bg-label-dark me-1">{{ $r }}</span>
+                @if($r === 'TRAINER')
+                  <span class="badge bg-label-success me-1">
+                    <i class="icon-base ti tabler-school me-1"></i>{{ $r }}
+                  </span>
+                @elseif($r === 'ADMIN')
+                  <span class="badge bg-label-primary me-1">
+                    <i class="icon-base ti tabler-shield-check me-1"></i>{{ $r }}
+                  </span>
+                @else
+                  <span class="badge bg-label-info me-1">
+                    <i class="icon-base ti tabler-user me-1"></i>{{ $r }}
+                  </span>
+                @endif
               @endforeach
             </td>
             <td>
               @if($u->isBanned())
-                <span class="badge bg-label-danger">محظور</span>
+                <span class="badge bg-label-danger">
+                  <i class="icon-base ti tabler-user-exclamation me-1"></i>محظور
+                </span>
               @else
-                <span class="badge bg-label-success">نشط</span>
+                <span class="badge bg-label-success">
+                  <i class="icon-base ti tabler-user-check me-1"></i>نشط
+                </span>
               @endif
             </td>
-            <td class="d-flex gap-2 flex-wrap">
-              <a href="{{ route('admin.users.show', $u->id) }}" class="btn btn-sm btn-outline-secondary">عرض</a>
-              <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-              @if(!$u->isBanned())
-                <button class="btn btn-sm btn-outline-warning" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBanUser" data-user-id="{{ $u->id }}" data-user-name="{{ $u->name ?? $u->email }}">
-                  حظر
-                </button>
-              @else
-                <form method="post" action="{{ route('admin.users.unban', $u->id) }}">
-                  @csrf
-                  <button type="submit" class="btn btn-sm btn-outline-success">إلغاء الحظر</button>
-                </form>
-              @endif
+            <td>
+              <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <a href="{{ route('admin.users.show', $u->id) }}" class="btn btn-sm btn-outline-info" title="عرض">
+                  <i class="icon-base ti tabler-eye"></i>
+                </a>
+                <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
+                  <i class="icon-base ti tabler-edit"></i>
+                </a>
+                @if(!$u->isBanned())
+                  <button class="btn btn-sm btn-outline-warning" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBanUser" data-user-id="{{ $u->id }}" data-user-name="{{ $u->name ?? $u->email }}" title="حظر">
+                    <i class="icon-base ti tabler-ban"></i>
+                  </button>
+                @else
+                  <form method="post" action="{{ route('admin.users.unban', $u->id) }}" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="إلغاء الحظر">
+                      <i class="icon-base ti tabler-user-check"></i>
+                    </button>
+                  </form>
+                @endif
+              </div>
             </td>
           </tr>
         @endforeach
