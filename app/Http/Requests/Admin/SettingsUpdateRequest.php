@@ -29,6 +29,8 @@ class SettingsUpdateRequest extends FormRequest
             'page_contact' => ['nullable','string'],
             'app_fee_percent' => ['nullable','numeric','min:0','max:100'],
             'reservation_fee_minor' => ['nullable','integer','min:0'],
+            'country_fees' => ['nullable','array'],
+            'country_fees.*' => ['nullable','integer','min:0'],
         ];
     }
 }

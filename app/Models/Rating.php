@@ -12,5 +12,20 @@ class Rating extends BaseModel
         'stars' => 'integer',
         'version' => 'integer',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function trainer()
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
+    }
+
+    public function userRequest()
+    {
+        return $this->belongsTo(UserRequest::class);
+    }
 }
 

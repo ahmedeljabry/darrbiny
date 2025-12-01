@@ -65,19 +65,20 @@
       </div>
 
       <div class="row g-3 mt-0">
-        <div class="col-md-4">
+        <div class="col-md-12">
           <label class="form-label">عنوان الإشعار</label>
           <div class="input-group input-group-merge">
-            <span class="input-group-text"><i class="ti tabler-bell"></i></span>
+            <span class="input-group-text"><i class="icon-base ti tabler-bell"></i></span>
             <input type="text" class="form-control" name="title" maxlength="120" required placeholder="عنوان مختصر">
           </div>
         </div>
-        <div class="col-md-8">
+        <div class="col-md-12">
           <label class="form-label">نص الإشعار</label>
           <div class="input-group input-group-merge">
-            <span class="input-group-text"><i class="ti tabler-message"></i></span>
-            <input type="text" class="form-control" name="message" maxlength="1000" required placeholder="اكتب الرسالة هنا">
+            <span class="input-group-text align-items-start pt-2"><i class="icon-base ti tabler-message"></i></span>
+            <textarea class="form-control" name="message" rows="5" maxlength="1000" required placeholder="اكتب الرسالة هنا..."></textarea>
           </div>
+          <small class="text-muted">الحد الأقصى 1000 حرف</small>
         </div>
       </div>
 

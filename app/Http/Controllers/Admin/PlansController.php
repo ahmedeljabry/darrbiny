@@ -45,13 +45,13 @@ class PlansController extends BaseController
 
     public function store(PlanStoreRequest $request, PlansService $service)
     {
-        $service->create($request->validated());
+        $service->create($request->validated(), $request->file('image'));
         return back()->with('status', 'تم إنشاء الخطة');
     }
 
     public function update(PlanUpdateRequest $request, string $id, PlansService $service)
     {
-        $service->update($id, $request->validated());
+        $service->update($id, $request->validated(), $request->file('image'));
         return back()->with('status', 'تم تحديث الخطة');
     }
 

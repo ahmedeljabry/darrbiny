@@ -26,14 +26,19 @@
   </div>
 @endif
 <div class="card">
-  <div class="card-header d-flex align-items-center gap-2">
-    <span class="avatar-initial rounded bg-label-primary">
-      <i class="icon-base ti tabler-star"></i>
-    </span>
-    <div>
-      <h5 class="mb-0">التقييمات</h5>
-      <small class="text-body-secondary">إدارة تقييمات المستخدمين والمدربين</small>
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <span class="avatar-initial rounded bg-label-primary">
+        <i class="icon-base ti tabler-star"></i>
+      </span>
+      <div>
+        <h5 class="mb-0">التقييمات</h5>
+        <small class="text-body-secondary">إدارة تقييمات المستخدمين والمدربين</small>
+      </div>
     </div>
+    <a href="{{ route('admin.ratings.create') }}" class="btn btn-primary">
+      <i class="icon-base ti tabler-plus me-1"></i> إضافة تقييم
+    </a>
   </div>
   <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
@@ -68,37 +73,32 @@
               </a>
             </td>
             <td>
-              <form method="post" action="{{ route('admin.ratings.update', $r) }}" class="d-flex align-items-center gap-2">
-                @csrf
-                @method('PUT')
-                <input type="number" name="stars" min="1" max="5" value="{{ $r->stars }}" class="form-control form-control-sm" style="width:90px">
-                <button class="btn btn-sm btn-outline-primary" type="submit">
-                  <i class="icon-base ti tabler-check"></i>
-                </button>
-              </form>
+              <div class="d-flex align-items-center gap-1">
+                @for($i = 1; $i <= 5; $i++)
+                  <i class="icon-base ti tabler-star{{ $i <= $r->stars ? '-filled' : '' }} text-warning"></i>
+                @endfor
+                <span class="ms-1 fw-semibold">{{ $r->stars }}</span>
+              </div>
             </td>
             <td>
-              <form method="post" action="{{ route('admin.ratings.update', $r) }}">
-                @csrf
-                @method('PUT')
-                <div class="input-group input-group-sm">
-                  <input type="hidden" name="stars" value="{{ $r->stars }}">
-                  <input type="text" name="comment" value="{{ $r->comment }}" class="form-control" placeholder="تعديل التعليق">
-                  <button class="btn btn-outline-primary" type="submit">
-                    <i class="icon-base ti tabler-check"></i>
-                  </button>
-                </div>
-              </form>
+              <div class="text-break" style="max-width: 300px;">
+                {{ $r->comment ?? '—' }}
+              </div>
               <small class="text-muted d-block mt-1">{{ $r->created_at->format('Y-m-d H:i') }}</small>
             </td>
             <td>
-              <form method="post" action="{{ route('admin.ratings.destroy', $r) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا التقييم؟');">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger" type="submit">
-                  <i class="icon-base ti tabler-trash"></i>
-                </button>
-              </form>
+              <div class="d-flex gap-1">
+                <a href="{{ route('admin.ratings.edit', $r) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
+                  <i class="icon-base ti tabler-edit"></i>
+                </a>
+                <form method="post" action="{{ route('admin.ratings.destroy', $r) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا التقييم؟');">
+                  @csrf
+                  @method('DELETE')
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="حذف">
+                    <i class="icon-base ti tabler-trash"></i>
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
         @empty

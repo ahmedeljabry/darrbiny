@@ -11,7 +11,7 @@
   </ol>
 </nav>
 
-<form method="post" action="{{ route('admin.plans.store') }}">
+<form method="post" action="{{ route('admin.plans.store') }}" enctype="multipart/form-data">
   @csrf
   <div class="row g-6">
       <div class="card">

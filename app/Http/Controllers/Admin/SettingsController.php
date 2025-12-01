@@ -13,7 +13,8 @@ class SettingsController extends BaseController
     public function index(SettingsService $service)
     {
         $settings = $service->allKeyed();
-        return view('admin.settings.index', compact('settings'));
+        $countries = \App\Models\Country::orderBy('name')->get();
+        return view('admin.settings.index', compact('settings', 'countries'));
     }
 
     public function update(SettingsUpdateRequest $request, SettingsService $service)

@@ -20,7 +20,11 @@ class PaymentDetailsResource extends JsonResource
         
         if ($isReservationFee) {
             // Reservation fee payment
-            $serviceFeeMinor = Fees::reservationFeeMinor();
+            if (!$this->relationLoaded('plan')) {
+                $this->load('plan');
+            }
+            $countryId = $this->plan?->country_id;
+            $serviceFeeMinor = Fees::reservationFeeMinor($countryId);
             $serviceFee = $serviceFeeMinor / 100;
             $vatPercent = (float) config('app.vat_percent', 0.0);
             $vatAmount = ($serviceFee * $vatPercent) / 100;

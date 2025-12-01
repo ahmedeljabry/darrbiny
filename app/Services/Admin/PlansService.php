@@ -6,7 +6,10 @@ namespace App\Services\Admin;
 
 use App\Models\Plan;
 use App\Models\PlanFeature;
+use App\Models\Upload;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 final class PlansService
 {
@@ -15,11 +18,23 @@ final class PlansService
         return Plan::latest()->paginate(20);
     }
 
-    public function create(array $data): Plan
+    public function create(array $data, ?UploadedFile $image = null): Plan
     {
         $features = $data['features'] ?? null;
         $schedule = $data['schedule'] ?? null;
         unset($data['features'], $data['schedule']);
+
+        if ($image) {
+            $disk = config('filesystems.default', 'public');
+            $path = $image->store('plans', $disk);
+            Upload::create([
+                'disk' => $disk,
+                'path' => $path,
+                'mime' => $image->getMimeType(),
+                'size' => $image->getSize(),
+            ]);
+            $data['image'] = $path;
+        }
 
         $plan = Plan::create($data);
 
@@ -40,13 +55,29 @@ final class PlansService
         return $plan;
     }
 
-    public function update(string $id, array $data): Plan
+    public function update(string $id, array $data, ?UploadedFile $image = null): Plan
     {
         $plan = Plan::findOrFail($id);
         $oldDurationDays = $plan->duration_days;
         $features = $data['features'] ?? null;
         $schedule = $data['schedule'] ?? null;
         unset($data['features'], $data['schedule']);
+
+        if ($image) {
+            if ($plan->image) {
+                Storage::disk(config('filesystems.default', 'public'))->delete($plan->image);
+            }
+            
+            $disk = config('filesystems.default', 'public');
+            $path = $image->store('plans', $disk);
+            Upload::create([
+                'disk' => $disk,
+                'path' => $path,
+                'mime' => $image->getMimeType(),
+                'size' => $image->getSize(),
+            ]);
+            $data['image'] = $path;
+        }
 
         $plan->update($data);
 

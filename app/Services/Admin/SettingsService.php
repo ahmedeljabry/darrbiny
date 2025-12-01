@@ -54,6 +54,16 @@ final class SettingsService
         $this->save('payment.tap.webhook_secret', $data['tap_webhook_secret'] ?? null);
         $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
+        
+        if (!empty($data['country_fees']) && is_array($data['country_fees'])) {
+            foreach ($data['country_fees'] as $countryId => $feeMinor) {
+                if ($feeMinor !== null && $feeMinor !== '') {
+                    \App\Models\Country::where('id', $countryId)->update([
+                        'reservation_fee_minor' => (int) $feeMinor
+                    ]);
+                }
+            }
+        }
         if ($video) {
             $disk = config('filesystems.default', 'public');
             $path = $video->store('videos', $disk);

@@ -33,7 +33,11 @@ class PaymentService
         abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
         
         return DB::transaction(function () use ($req, $userId, $provider, $providerRef, $status, $transactionData) {
-            $serviceFeeMinor = Fees::reservationFeeMinor();
+            if (!$req->relationLoaded('plan')) {
+                $req->load('plan');
+            }
+            $countryId = $req->plan?->country_id;
+            $serviceFeeMinor = Fees::reservationFeeMinor($countryId);
             
             $payment = Payment::create([
                 'user_id' => $userId,
@@ -177,7 +181,11 @@ class PaymentService
         $offer = null;
         if ($paymentType === Payment::TYPE_RESERVATION_FEE) {
             abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
-            $amountMinor = Fees::reservationFeeMinor();
+            if (!$req->relationLoaded('plan')) {
+                $req->load('plan');
+            }
+            $countryId = $req->plan?->country_id;
+            $amountMinor = Fees::reservationFeeMinor($countryId);
         } else {
             abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
             $offer = TrainerOffer::where('user_request_id', $req->id)

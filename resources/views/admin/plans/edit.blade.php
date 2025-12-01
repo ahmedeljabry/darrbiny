@@ -11,7 +11,7 @@
   </ol>
 </nav>
 
-<form method="post" action="{{ route('admin.plans.update', $plan->id) }}">
+<form method="post" action="{{ route('admin.plans.update', $plan->id) }}" enctype="multipart/form-data">
   @csrf
   @method('PUT')
   <div class="row g-6">

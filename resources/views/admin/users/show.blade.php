@@ -48,6 +48,15 @@
           <div class="fw-medium text-body-secondary">سبب الحظر</div>
           <div class="text-heading">{{ $user->banned_reason ?: '-' }}</div>
         </div>
+        <div class="col-md-6">
+          <div class="fw-medium text-body-secondary">النقاط</div>
+          <div class="text-heading">
+            <span class="badge bg-label-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
+              <i class="icon-base ti tabler-coins me-1"></i>
+              {{ number_format($user->points_balance ?? 0) }} نقطة
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

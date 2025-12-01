@@ -96,6 +96,9 @@ Route::middleware(['web'])
             Route::put('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCity'])->name('geo.cities.update');
             Route::delete('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCity'])->name('geo.cities.destroy');
             Route::get('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'index'])->name('ratings.index');
+            Route::get('/ratings/create', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'create'])->name('ratings.create');
+            Route::post('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'store'])->name('ratings.store');
+            Route::get('/ratings/{rating}/edit', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'edit'])->name('ratings.edit');
             Route::put('/ratings/{rating}', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'update'])->name('ratings.update');
             Route::delete('/ratings/{rating}', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'destroy'])->name('ratings.destroy');
             Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');

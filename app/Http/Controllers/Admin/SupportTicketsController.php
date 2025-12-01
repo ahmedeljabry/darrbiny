@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\SupportTicketsExport;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SupportTicketsController extends BaseController
 {
@@ -17,7 +19,7 @@ class SupportTicketsController extends BaseController
     {
         $status = $request->query('status');
         $search = $request->query('q');
-        $q = SupportTicket::with('user')->latest();
+        $q = SupportTicket::with('user')->withCount('messages')->latest();
         if ($status) $q->where('status', $status);
         if ($search) {
             $q->where(function($w) use ($search){
@@ -27,6 +29,15 @@ class SupportTicketsController extends BaseController
                   ->orWhere('phone_with_cc','like',"%$search%");
             });
         }
+        
+        if ($request->query('export') === 'excel') {
+            $allTickets = $q->get();
+            return Excel::download(
+                new SupportTicketsExport($allTickets),
+                'support-tickets-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+        
         $tickets = $q->paginate(20)->withQueryString();
         return view('admin.support.index', [
             'tickets' => $tickets,

@@ -9,6 +9,7 @@ class Plan extends BaseModel
     protected $fillable = [
         'title',
         'description',
+        'image',
         'price_min',
         'badge_discount',
         'deposit_amount',

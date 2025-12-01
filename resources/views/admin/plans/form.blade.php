@@ -25,6 +25,26 @@
     </div>
 </div>
 
+<div class="mb-3 mt-3">
+    <label class="form-label">صورة الخطة</label>
+    <div class="input-group input-group-merge">
+        <span class="input-group-text"><i class="icon-base ti tabler-photo"></i></span>
+        <input type="file" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp">
+    </div>
+    @if(!empty($plan->image))
+        <div class="mt-2">
+            <img src="{{ Storage::disk(config('filesystems.default', 'public'))->url($plan->image) }}" 
+                 alt="صورة الخطة" 
+                 style="max-width: 300px; max-height: 200px; border-radius: 8px; border: 1px solid #e0e0e0;">
+            <div class="mt-2">
+                <small class="text-muted">الصورة الحالية</small>
+            </div>
+        </div>
+    @else
+        <small class="text-muted d-block mt-1">لا توجد صورة حالياً</small>
+    @endif
+</div>
+
 <div class="row g-3">
     <div class="col-md-4">
         <label class="form-label">السعر الأدنى</label>

@@ -11,49 +11,98 @@
   </ol>
 </nav>
 
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-      <h5 class="mb-0">تقرير مبيعات الباقات</h5>
-      <small class="text-body-secondary">يشمل المدفوعات المكتملة فقط</small>
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="avatar-initial rounded bg-label-info">
+        <i class="icon-base ti tabler-package"></i>
+      </span>
+      <div>
+        <h5 class="mb-0">تقرير مبيعات الباقات</h5>
+        <small class="text-body-secondary">يشمل المدفوعات المكتملة فقط</small>
+      </div>
     </div>
-    <form class="d-flex flex-wrap gap-2" method="get">
-      <input type="date" name="from" value="{{ request('from') }}" class="form-control">
-      <input type="date" name="to" value="{{ request('to') }}" class="form-control">
-      <button class="btn btn-primary">تصفية</button>
-    </form>
+    <a href="{{ route('admin.reports.plan-sales', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success">
+      <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+    </a>
   </div>
   <div class="card-body">
-    <div class="mb-3">إجمالي المبيعات: <strong>{{ number_format(($total ?? 0)/100, 2) }}</strong></div>
+    <div class="row g-3 mb-4">
+      <div class="col-md-12">
+        <form class="d-flex gap-2 flex-wrap" method="get">
+          <div class="flex-grow-1 d-flex gap-2">
+            <input type="date" name="from" value="{{ request('from') }}" class="form-control" placeholder="من تاريخ">
+            <input type="date" name="to" value="{{ request('to') }}" class="form-control" placeholder="إلى تاريخ">
+          </div>
+          <button class="btn btn-primary">
+            <i class="icon-base ti tabler-filter me-1"></i> تصفية
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
+      <i class="icon-base ti tabler-currency-dollar"></i>
+      <div>
+        <strong>إجمالي المبيعات:</strong> <span class="fw-bold text-info">{{ number_format(($total ?? 0)/100, 2) }} {{ $payments->first()?->currency ?? 'SAR' }}</span>
+      </div>
+    </div>
+    
     <div class="table-responsive">
-      <table class="table">
-        <thead>
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
           <tr>
-            <th>المعرف</th>
-            <th>المستخدم</th>
-            <th>المدرب</th>
-            <th>الباقة</th>
-            <th>المبلغ</th>
-            <th>العمولة</th>
-            <th>تاريخ/وقت</th>
+            <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+            <th><i class="icon-base ti tabler-user-star me-1"></i> المدرب</th>
+            <th><i class="icon-base ti tabler-package me-1"></i> الباقة</th>
+            <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
+            <th><i class="icon-base ti tabler-percentage me-1"></i> العمولة</th>
+            <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ/وقت</th>
           </tr>
         </thead>
         <tbody>
-          @foreach($payments as $p)
+          @forelse($payments as $p)
             <tr>
-              <td>{{ $p->id }}</td>
-              <td>{{ $p->user?->name ?? $p->user_id }}</td>
-              <td>{{ optional($p->userRequest?->trainer)->name ?? '-' }}</td>
-              <td>{{ optional($p->userRequest?->plan)->title ?? '-' }}</td>
-              <td>{{ number_format($p->amount_minor/100, 2) }} {{ $p->currency }}</td>
-              <td>{{ number_format($p->app_fee_minor/100, 2) }} {{ $p->currency }}</td>
-              <td>{{ $p->created_at }}</td>
+              <td><code class="text-primary">{{ substr($p->id, 0, 8) }}</code></td>
+              <td>
+                <div class="d-flex flex-column">
+                  <span class="fw-semibold">{{ $p->user?->name ?? 'غير معروف' }}</span>
+                  <small class="text-muted">{{ substr($p->user_id, 0, 8) }}</small>
+                </div>
+              </td>
+              <td>
+                <span class="fw-semibold">{{ $p->userRequest?->trainer?->name ?? '—' }}</span>
+              </td>
+              <td>
+                <span class="badge bg-label-primary">{{ $p->userRequest?->plan?->title ?? '—' }}</span>
+              </td>
+              <td>
+                <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100, 2) }} {{ $p->currency }}</span>
+              </td>
+              <td>
+                <span class="fw-semibold text-warning">{{ number_format($p->app_fee_minor/100, 2) }} {{ $p->currency }}</span>
+              </td>
+              <td><small class="text-muted">{{ $p->created_at?->format('Y-m-d H:i') }}</small></td>
             </tr>
-          @endforeach
+          @empty
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="d-flex flex-column align-items-center">
+                  <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
+                    <i class="icon-base ti tabler-package" style="font-size: 32px;"></i>
+                  </span>
+                  <p class="text-muted mb-0">لا توجد بيانات</p>
+                </div>
+              </td>
+            </tr>
+          @endforelse
         </tbody>
       </table>
     </div>
-    {{ $payments->withQueryString()->links() }}
+    @if($payments->hasPages())
+      <div class="card-footer border-0">{{ $payments->withQueryString()->links() }}</div>
+    @endif
   </div>
 </div>
 @endsection

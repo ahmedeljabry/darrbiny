@@ -15,6 +15,7 @@ class PlanStoreRequest extends FormRequest
         return [
             'title' => ['required','string','max:120'],
             'description' => ['nullable','string'],
+            'image' => ['nullable','image','mimes:jpeg,png,jpg,webp','max:5120'],
             'price_min' => ['required','numeric','min:0'],
             'badge_discount' => ['nullable','string','max:50'],
             'deposit_amount' => ['nullable','numeric','min:0'],
