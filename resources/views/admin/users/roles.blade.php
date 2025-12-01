@@ -17,7 +17,7 @@
     <form method="post" action="{{ route('admin.users.roles.update',$user->id) }}">@csrf @method('put')
       <div class="mb-3">
         <label class="form-label">Roles</label>
-        <select multiple name="roles[]" class="form-select" size="8">
+        <select multiple name="roles[]" class="form-select select2" size="8">
           @foreach($roles as $r)
             <option value="{{ $r->name }}" @selected($user->hasRole($r->name))>{{ $r->name }}</option>
           @endforeach

@@ -45,7 +45,7 @@
                         </div>
                         <div>
                             <label class="form-label">غير مقروءة</label>
-                            <select name="unread" class="form-select">
+                            <select name="unread" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="1" @selected(request('unread') == '1')>غير مقروءة فقط</option>
                             </select>

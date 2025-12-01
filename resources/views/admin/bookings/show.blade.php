@@ -77,7 +77,7 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">الحالة الجديدة</label>
-                                            <select name="status" class="form-select" required>
+                                            <select name="status" class="form-select select2" required>
                                                 @foreach($statuses as $key => $label)
                                                     <option value="{{ $key }}" @selected($booking->status === $key)>{{ $label }}</option>
                                                 @endforeach

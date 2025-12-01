@@ -30,7 +30,7 @@
     <form class="row g-3 mb-4" method="get">
       <div class="col-md-6">
         <label class="form-label">الحالة</label>
-        <select name="status" class="form-select">
+        <select name="status" class="form-select select2">
           <option value="">جميع الحالات</option>
           @foreach(['pending_payment','awaiting_offers','offer_selected','paid','in_training','completed','cancelled'] as $s)
             <option value="{{ $s }}" @selected(request('status')===$s)>{{ str_replace('_',' ',$s) }}</option>

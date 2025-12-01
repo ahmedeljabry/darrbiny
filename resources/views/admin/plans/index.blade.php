@@ -12,9 +12,17 @@
 
 <div class="row g-6">
     <div class="col-12">
-    <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h5 class="mb-0">قائمة الخطط</h5>
+    <div class="card border-0 shadow-sm h-100">
+            <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar-initial rounded bg-label-primary">
+                    <i class="icon-base ti tabler-file-check"></i>
+                  </span>
+                  <div>
+                    <h5 class="mb-0">قائمة الخطط</h5>
+                    <small class="text-body-secondary">إدارة جميع الخطط والدورات</small>
+                  </div>
+                </div>
                 <div class="d-flex align-items-end gap-2 flex-wrap">
                     <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
                         <div>
@@ -23,7 +31,7 @@
                         </div>
                         <div>
                             <label class="form-label">الحالة</label>
-                            <select name="status" class="form-select">
+                            <select name="status" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="active" @selected(request('status')==='active')>نشطة</option>
                                 <option value="inactive" @selected(request('status')==='inactive')>غير نشطة</option>
@@ -57,15 +65,15 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
-                            <th>العنوان</th>
-                            <th>الساعات</th>
-                            <th>الجلسات</th>
-                            <th>السعر الأدنى</th>
-                            <th>الدفعة</th>
-                            <th>الحالة</th>
-                            <th>إجراءات</th>
+                            <th><i class="icon-base ti tabler-file-text me-1"></i> العنوان</th>
+                            <th><i class="icon-base ti tabler-clock me-1"></i> الساعات</th>
+                            <th><i class="icon-base ti tabler-calendar me-1"></i> الجلسات</th>
+                            <th><i class="icon-base ti tabler-currency-dollar me-1"></i> السعر الأدنى</th>
+                            <th><i class="icon-base ti tabler-wallet me-1"></i> الدفعة</th>
+                            <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+                            <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>

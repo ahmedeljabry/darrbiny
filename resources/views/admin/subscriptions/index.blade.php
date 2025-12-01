@@ -21,8 +21,8 @@
     'cancelled' => 'ملغى',
   ];
 @endphp
-<div class="card">
-  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+<div class="card border-0 shadow-sm">
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
       <span class="avatar-initial rounded bg-label-primary">
         <i class="icon-base ti tabler-calendar-event"></i>
@@ -35,7 +35,7 @@
     <form class="d-flex flex-wrap gap-2 align-items-end" method="get">
       <div>
         <label class="form-label mb-1">النطاق</label>
-        <select name="scope" class="form-select form-select-sm">
+        <select name="scope" class="form-select form-select-sm select2">
           <option value="">جميع الحالات</option>
           <option value="active" @selected(($scope ?? request('scope'))==='active')>نشطة</option>
           <option value="completed" @selected(($scope ?? request('scope'))==='completed')>مكتملة</option>
@@ -44,7 +44,7 @@
       </div>
       <div>
         <label class="form-label mb-1">الحالة</label>
-        <select name="status" class="form-select form-select-sm">
+        <select name="status" class="form-select form-select-sm select2">
           <option value="">حالة محددة</option>
           @foreach($statusLabels as $key => $label)
             <option value="{{ $key }}" @selected(($status ?? request('status'))===$key)>{{ $label }}</option>
@@ -65,12 +65,12 @@
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th>المعرف</th>
-          <th>المستخدم</th>
-          <th>الخطة</th>
-          <th>الحالة</th>
-          <th>تاريخ البدء</th>
-          <th>إجراءات</th>
+          <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
+          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
+          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
@@ -118,8 +118,8 @@
                 <span class="text-muted">-</span>
               @endif
             </td>
-            <td>
-              <a href="{{ route('admin.bookings.show', $r->id) }}" class="btn btn-sm btn-outline-primary">
+            <td class="text-center">
+              <a href="{{ route('admin.bookings.show', $r->id) }}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
                 <i class="icon-base ti tabler-eye"></i>
               </a>
             </td>

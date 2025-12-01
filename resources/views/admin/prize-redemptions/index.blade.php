@@ -19,8 +19,8 @@
 
 <div class="row g-6">
     <div class="col-12">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <span class="avatar-initial rounded bg-label-primary">
                     <i class="icon-base ti tabler-gift"></i>
@@ -38,7 +38,7 @@
                         </div>
                         <div>
                             <label class="form-label">الحالة</label>
-                            <select name="status" class="form-select">
+                            <select name="status" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="pending" @selected(request('status') == 'pending')>معلق</option>
                                 <option value="approved" @selected(request('status') == 'approved')>موافق عليه</option>
@@ -56,12 +56,12 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>المستخدم</th>
-                            <th>الجائزة</th>
-                            <th>النقاط المستخدمة</th>
-                            <th>الحالة</th>
-                            <th>تاريخ الطلب</th>
-                            <th>إجراءات</th>
+                            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+                            <th><i class="icon-base ti tabler-trophy me-1"></i> الجائزة</th>
+                            <th><i class="icon-base ti tabler-coins me-1"></i> النقاط المستخدمة</th>
+                            <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+                            <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الطلب</th>
+                            <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,15 +83,22 @@
                                     @endif
                                 </td>
                                 <td>{{ $redemption->created_at->format('Y-m-d H:i') }}</td>
-                                <td>
-                                    <a href="{{ route('admin.prize-redemptions.show', $redemption->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="icon-base ti tabler-eye"></i> عرض
+                                <td class="text-center">
+                                    <a href="{{ route('admin.prize-redemptions.show', $redemption->id) }}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+                                        <i class="icon-base ti tabler-eye"></i>
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted">لا توجد طلبات</td>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
+                                            <i class="icon-base ti tabler-gift" style="font-size: 32px;"></i>
+                                        </span>
+                                        <p class="text-muted mb-0">لا توجد طلبات</p>
+                                    </div>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>

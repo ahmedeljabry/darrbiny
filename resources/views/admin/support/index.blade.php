@@ -43,7 +43,7 @@
       </div>
       <div class="col-md-4">
         <label class="form-label">الحالة</label>
-        <select name="status" class="form-select">
+        <select name="status" class="form-select select2">
           <option value="">جميع الحالات</option>
           <option value="open" @selected($status==='open')>مفتوحة</option>
           <option value="pending" @selected($status==='pending')>قيد المعالجة</option>

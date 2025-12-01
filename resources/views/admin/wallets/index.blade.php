@@ -26,18 +26,26 @@
   </div>
 @endif
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">أرصدة المحافظ</h5>
+<div class="card border-0 shadow-sm">
+  <div class="card-header border-0 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <span class="avatar-initial rounded bg-label-primary">
+        <i class="icon-base ti tabler-wallet"></i>
+      </span>
+      <div>
+        <h5 class="mb-0">أرصدة المحافظ</h5>
+        <small class="text-body-secondary">إدارة أرصدة المستخدمين</small>
+      </div>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
-      <thead>
+      <thead class="table-light">
         <tr>
-          <th>المستخدم</th>
-          <th>رقم الجوال</th>
-          <th>الرصيد</th>
-          <th>إجراءات</th>
+          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th><i class="icon-base ti tabler-phone me-1"></i> رقم الجوال</th>
+          <th><i class="icon-base ti tabler-coins me-1"></i> الرصيد</th>
+          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
@@ -47,12 +55,12 @@
             <td>{{ $u->phone_with_cc }}</td>
             <td><strong>{{ number_format($u->points_balance) }}</strong></td>
             <td>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editWalletModal{{ $u->id }}">
-                  <i class="icon-base ti tabler-edit me-1"></i> تعديل
+              <div class="d-flex gap-2 justify-content-center">
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editWalletModal{{ $u->id }}" title="تعديل الرصيد">
+                  <i class="icon-base ti tabler-edit"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addBalanceModal{{ $u->id }}">
-                  <i class="icon-base ti tabler-plus me-1"></i> إضافة رصيد
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addBalanceModal{{ $u->id }}" title="إضافة رصيد">
+                  <i class="icon-base ti tabler-plus"></i>
                 </button>
               </div>
             </td>

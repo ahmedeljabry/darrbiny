@@ -10,8 +10,8 @@
   </ol>
 </nav>
 
-<div class="card">
-  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+<div class="card border-0 shadow-sm">
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
       <span class="avatar-initial rounded bg-label-primary">
         <i class="icon-base ti tabler-credit-card"></i>
@@ -24,7 +24,7 @@
     <form class="d-flex flex-wrap gap-2 align-items-end" method="get">
       <div>
         <label class="form-label mb-1">النوع</label>
-        <select name="type" class="form-select form-select-sm">
+        <select name="type" class="form-select form-select-sm select2">
           <option value="">جميع الأنواع</option>
           <option value="reservation_fee" @selected(request('type')==='reservation_fee')>رسوم الحجز</option>
           <option value="plan_full" @selected(request('type')==='plan_full')>دفعة كاملة</option>
@@ -32,7 +32,7 @@
       </div>
       <div>
         <label class="form-label mb-1">الحالة</label>
-        <select name="status" class="form-select form-select-sm">
+        <select name="status" class="form-select form-select-sm select2">
           <option value="">جميع الحالات</option>
           <option value="pending" @selected(request('status')==='pending')>قيد الانتظار</option>
           <option value="succeeded" @selected(request('status')==='succeeded')>نجحت</option>
@@ -53,14 +53,14 @@
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th>المعرف</th>
-          <th>المستخدم</th>
-          <th>الطلب</th>
-          <th>المبلغ</th>
-          <th>النوع</th>
-          <th>الحالة</th>
-          <th>المزود</th>
-          <th>التاريخ</th>
+          <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th><i class="icon-base ti tabler-file-text me-1"></i> الطلب</th>
+          <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
+          <th><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
+          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th><i class="icon-base ti tabler-building me-1"></i> المزود</th>
+          <th><i class="icon-base ti tabler-calendar me-1"></i> التاريخ</th>
         </tr>
       </thead>
       <tbody>

@@ -168,7 +168,7 @@
         </label>
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="icon-base ti tabler-shield"></i></span>
-          <select name="role" class="form-select">
+          <select name="role" class="form-select select2">
             <option value="">الكل</option>
             <option value="trainer" {{ ($role==='trainer') ? 'selected' : '' }}>مدرب</option>
             <option value="admin" {{ ($role==='admin') ? 'selected' : '' }}>مشرف</option>
@@ -182,7 +182,7 @@
         </label>
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="icon-base ti tabler-info-circle"></i></span>
-          <select name="status" class="form-select">
+          <select name="status" class="form-select select2">
             <option value="">الكل</option>
             <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
             <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>

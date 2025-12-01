@@ -26,8 +26,8 @@
   </div>
 @endif
 
-<div class="card">
-  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+<div class="card border-0 shadow-sm">
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
       <span class="avatar-initial rounded bg-label-primary">
         <i class="icon-base ti tabler-world"></i>
@@ -55,10 +55,10 @@
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th>ISO</th>
-          <th>الاسم</th>
-          <th>العملة</th>
-          <th>إجراءات</th>
+          <th><i class="icon-base ti tabler-world me-1"></i> ISO</th>
+          <th><i class="icon-base ti tabler-map-pin me-1"></i> الاسم</th>
+          <th><i class="icon-base ti tabler-currency-dollar me-1"></i> العملة</th>
+          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
@@ -67,11 +67,17 @@
             <td>{{ $c->iso2 }}</td>
             <td>{{ $c->name }}</td>
             <td>{{ $c->currency }}</td>
-            <td class="d-flex gap-2">
-              <a href="{{ route('admin.geo.countries.edit', $c->id) }}" class="btn btn-sm btn-outline-secondary">تعديل</a>
-              <form method="post" action="{{ route('admin.geo.countries.destroy', $c->id) }}" data-confirm="delete">@csrf @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
-              </form>
+            <td>
+              <div class="d-flex gap-2 justify-content-center">
+                <a href="{{ route('admin.geo.countries.edit', $c->id) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
+                  <i class="icon-base ti tabler-edit"></i>
+                </a>
+                <form method="post" action="{{ route('admin.geo.countries.destroy', $c->id) }}" data-confirm="delete" class="d-inline">@csrf @method('DELETE')
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="حذف">
+                    <i class="icon-base ti tabler-trash"></i>
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
         @endforeach

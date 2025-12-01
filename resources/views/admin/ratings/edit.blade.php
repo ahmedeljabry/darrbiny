@@ -47,7 +47,7 @@
           <label class="form-label">المستخدم <span class="text-danger">*</span></label>
           <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-user"></i></span>
-            <select name="user_id" class="form-select" required>
+            <select name="user_id" class="form-select select2" required>
               <option value="">— اختر المستخدم —</option>
               @foreach($users as $user)
                 <option value="{{ $user->id }}" @selected(old('user_id', $rating->user_id) === $user->id)>
@@ -62,7 +62,7 @@
           <label class="form-label">المدرب <span class="text-danger">*</span></label>
           <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-user-star"></i></span>
-            <select name="trainer_id" class="form-select" required>
+            <select name="trainer_id" class="form-select select2" required>
               <option value="">— اختر المدرب —</option>
               @foreach($trainers as $trainer)
                 <option value="{{ $trainer->id }}" @selected(old('trainer_id', $rating->trainer_id) === $trainer->id)>
@@ -77,7 +77,7 @@
           <label class="form-label">الطلب <span class="text-danger">*</span></label>
           <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-file-text"></i></span>
-            <select name="user_request_id" class="form-select" required>
+            <select name="user_request_id" class="form-select select2" required>
               <option value="">— اختر الطلب —</option>
               @foreach($userRequests as $request)
                 <option value="{{ $request->id }}" @selected(old('user_request_id', $rating->user_request_id) === $request->id)>

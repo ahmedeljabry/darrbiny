@@ -87,4 +87,28 @@
       });
     }, true);
   });
+
+  // Initialize Select2 for all select elements
+  if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+    jQuery(document).ready(function($) {
+      const dir = document.documentElement.dir || 'rtl';
+      $('.select2').each(function() {
+        const $this = $(this);
+        if (!$this.data('select2')) {
+          $this.select2({
+            dir: dir,
+            width: '100%',
+            language: {
+              noResults: function() {
+                return 'لا توجد نتائج';
+              },
+              searching: function() {
+                return 'جاري البحث...';
+              }
+            }
+          });
+        }
+      });
+    });
+  }
 </script>

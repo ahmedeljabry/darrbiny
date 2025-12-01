@@ -12,8 +12,8 @@
 
 <div class="row g-6">
     <div class="col-12">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <span class="avatar-initial rounded bg-label-primary">
                     <i class="icon-base ti tabler-message-circle"></i>
@@ -42,7 +42,7 @@
                         </div>
                         <div>
                             <label class="form-label">غير مقروءة</label>
-                            <select name="unread" class="form-select">
+                            <select name="unread" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="1" @selected(request('unread') == '1')>غير مقروءة فقط</option>
                             </select>
@@ -67,12 +67,12 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>المستخدم الأول</th>
-                            <th>المستخدم الثاني</th>
-                            <th>آخر رسالة</th>
-                            <th>غير مقروء</th>
-                            <th>تاريخ آخر رسالة</th>
-                            <th>إجراءات</th>
+                            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم الأول</th>
+                            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم الثاني</th>
+                            <th><i class="icon-base ti tabler-message me-1"></i> آخر رسالة</th>
+                            <th><i class="icon-base ti tabler-bell me-1"></i> غير مقروء</th>
+                            <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ آخر رسالة</th>
+                            <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>

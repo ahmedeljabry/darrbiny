@@ -95,7 +95,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">تحديث الحالة</label>
-              <select name="status" class="form-select">
+              <select name="status" class="form-select select2">
                 <option value="">— دون تغيير —</option>
                 <option value="open" @selected($ticket->status==='open')>مفتوحة</option>
                 <option value="pending" @selected($ticket->status==='pending')>قيد المعالجة</option>

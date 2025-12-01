@@ -30,7 +30,7 @@
     <form class="row g-3 mb-4" method="get">
       <div class="col-md-4">
         <label class="form-label">النوع</label>
-        <select name="type" class="form-select">
+        <select name="type" class="form-select select2">
           <option value="">جميع الأنواع</option>
           @foreach(['reservation_fee','plan_full'] as $t)
             <option value="{{ $t }}" @selected(request('type')===$t)>{{ $t }}</option>
@@ -39,7 +39,7 @@
       </div>
       <div class="col-md-4">
         <label class="form-label">الحالة</label>
-        <select name="status" class="form-select">
+        <select name="status" class="form-select select2">
           <option value="">جميع الحالات</option>
           @foreach(['pending','succeeded','failed'] as $s)
             <option value="{{ $s }}" @selected(request('status')===$s)>{{ $s }}</option>

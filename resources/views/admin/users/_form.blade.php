@@ -30,7 +30,7 @@
   </div>
   <div class="col-md-6">
     <label class="form-label">الدولة</label>
-    <select name="country_id" class="form-select">
+    <select name="country_id" class="form-select select2">
       <option value="">—</option>
       @foreach($countries as $c)
         <option value="{{ $c->id }}" @selected(old('country_id', $editing ? $user->country_id : null) == $c->id)>{{ $c->name }}</option>
@@ -39,7 +39,7 @@
   </div>
   <div class="col-md-6">
     <label class="form-label">المدينة</label>
-    <select name="city_id" class="form-select">
+    <select name="city_id" class="form-select select2">
       <option value="">—</option>
       @foreach($cities as $ct)
         <option value="{{ $ct->id }}" @selected(old('city_id', $editing ? $user->city_id : null) == $ct->id)>{{ $ct->name }}</option>

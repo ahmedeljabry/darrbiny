@@ -27,7 +27,7 @@
                     <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
                         <div>
                             <label class="form-label">النوع</label>
-                            <select name="type" class="form-select">
+                            <select name="type" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="SupportTicketCreated" @selected(request('type') == 'SupportTicketCreated')>تذاكر الدعم</option>
                                 <option value="PrizeRequest" @selected(request('type') == 'PrizeRequest')>طلبات الجوائز</option>
@@ -38,7 +38,7 @@
                         </div>
                         <div>
                             <label class="form-label">الحالة</label>
-                            <select name="read" class="form-select">
+                            <select name="read" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="unread" @selected(request('read') == 'unread')>غير مقروء</option>
                                 <option value="read" @selected(request('read') == 'read')>مقروء</option>

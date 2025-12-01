@@ -94,7 +94,7 @@
                   <td>
                     <form method="post" action="{{ route('admin.roles.update',$role->id) }}" class="d-flex flex-column flex-lg-row gap-2 align-items-start align-items-lg-center">
                       @csrf @method('put')
-                      <select multiple size="6" name="permissions[]" class="form-select" style="min-width: 280px;">
+                      <select multiple name="permissions[]" class="form-select select2" style="min-width: 280px;">
                         @foreach($perms as $p)
                           <option value="{{ $p->name }}" @selected($role->hasPermissionTo($p->name))>{{ $p->name }}</option>
                         @endforeach

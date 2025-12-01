@@ -19,8 +19,8 @@
 
 <div class="row g-6">
     <div class="col-12">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <span class="avatar-initial rounded bg-label-primary">
                     <i class="icon-base ti tabler-trophy"></i>
@@ -38,7 +38,7 @@
                         </div>
                         <div>
                             <label class="form-label">الحالة</label>
-                            <select name="status" class="form-select">
+                            <select name="status" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="active" @selected(request('status') == 'active')>نشط</option>
                                 <option value="inactive" @selected(request('status') == 'inactive')>غير نشط</option>
@@ -58,12 +58,12 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>الصورة</th>
-                            <th>الترتيب</th>
-                            <th>العنوان</th>
-                            <th>النقاط المطلوبة</th>
-                            <th>الحالة</th>
-                            <th>إجراءات</th>
+                            <th><i class="icon-base ti tabler-photo me-1"></i> الصورة</th>
+                            <th><i class="icon-base ti tabler-sort-ascending me-1"></i> الترتيب</th>
+                            <th><i class="icon-base ti tabler-trophy me-1"></i> العنوان</th>
+                            <th><i class="icon-base ti tabler-coins me-1"></i> النقاط المطلوبة</th>
+                            <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+                            <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -87,17 +87,17 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-2">
-                                        <a href="{{ route('admin.prizes.show', $prize->id) }}" class="btn btn-sm btn-outline-primary">
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a href="{{ route('admin.prizes.show', $prize->id) }}" class="btn btn-sm btn-outline-info" title="عرض">
                                             <i class="icon-base ti tabler-eye"></i>
                                         </a>
-                                        <a href="{{ route('admin.prizes.edit', $prize->id) }}" class="btn btn-sm btn-outline-warning">
+                                        <a href="{{ route('admin.prizes.edit', $prize->id) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
                                             <i class="icon-base ti tabler-edit"></i>
                                         </a>
-                                        <form action="{{ route('admin.prizes.destroy', $prize->id) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذه الجائزة؟')">
+                                        <form action="{{ route('admin.prizes.destroy', $prize->id) }}" method="POST" data-confirm="delete" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
                                                 <i class="icon-base ti tabler-trash"></i>
                                             </button>
                                         </form>

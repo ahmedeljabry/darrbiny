@@ -19,8 +19,8 @@
 
 <div class="row g-6">
     <div class="col-12">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <span class="avatar-initial rounded bg-label-primary">
                     <i class="icon-base ti tabler-x-circle"></i>
@@ -33,7 +33,7 @@
                 <form method="get" class="d-flex align-items-end gap-2">
                     <div>
                         <label class="form-label">الحالة</label>
-                        <select name="status" class="form-select">
+                        <select name="status" class="form-select select2">
                             <option value="">الكل</option>
                             <option value="pending" @selected($status === 'pending')>قيد الانتظار</option>
                             <option value="approved" @selected($status === 'approved')>مقبولة</option>
@@ -50,12 +50,12 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>المستخدم</th>
-                            <th>رقم الدورة</th>
-                            <th>سبب الإلغاء</th>
-                            <th>الحالة</th>
-                            <th>تاريخ الطلب</th>
-                            <th>إجراءات</th>
+                            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+                            <th><i class="icon-base ti tabler-file-text me-1"></i> رقم الدورة</th>
+                            <th><i class="icon-base ti tabler-info-circle me-1"></i> سبب الإلغاء</th>
+                            <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+                            <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الطلب</th>
+                            <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,23 +90,21 @@
                                     <span class="badge bg-label-{{ $color }}">{{ $statusLabels[$req->status] ?? $req->status }}</span>
                                 </td>
                                 <td>{{ $req->created_at->format('Y-m-d H:i') }}</td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                            <i class="icon-base ti tabler-dots-vertical"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin.cancellation-requests.show', $req->id) }}">
-                                                <i class="icon-base ti tabler-eye me-1"></i> عرض التفاصيل
-                                            </a>
-                                        </div>
-                                    </div>
+                                <td class="text-center">
+                                    <a href="{{ route('admin.cancellation-requests.show', $req->id) }}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+                                        <i class="icon-base ti tabler-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <p class="text-muted mb-0">لا توجد طلبات إلغاء</p>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
+                                            <i class="icon-base ti tabler-x-circle" style="font-size: 32px;"></i>
+                                        </span>
+                                        <p class="text-muted mb-0">لا توجد طلبات إلغاء</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
