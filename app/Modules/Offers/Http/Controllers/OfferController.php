@@ -17,7 +17,10 @@ class OfferController extends BaseController
 
     public function listForRequest(string $id)
     {
-        $req = UserRequest::findOrFail($id);
+        $req = UserRequest::find($id);
+        if (!$req) {
+            abort(404, 'Course not found');
+        }
         $this->authorize('view', $req);
         $offers = TrainerOffer::where('user_request_id', $id)->latest()->get();
         return response()->json(['data' => $offers]);
@@ -31,8 +34,14 @@ class OfferController extends BaseController
 
     public function accept(Request $request, string $id)
     {
-        $offer = TrainerOffer::findOrFail($id);
-        $req = UserRequest::findOrFail($offer->user_request_id);
+        $offer = TrainerOffer::find($id);
+        if (!$offer) {
+            abort(404, 'Offer not found');
+        }
+        $req = UserRequest::find($offer->user_request_id);
+        if (!$req) {
+            abort(404, 'Course not found');
+        }
         $this->authorize('acceptOffer', $req);
         $this->service->accept($req, $offer);
         return response()->json(['data' => $req->fresh()]);

@@ -24,7 +24,10 @@ class CancellationController extends BaseController
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $userRequest = UserRequest::with(['user', 'plan'])->findOrFail($id);
+        $userRequest = UserRequest::with(['user', 'plan'])->find($id);
+        if (!$userRequest) {
+            abort(404, 'Course not found');
+        }
         
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
@@ -98,7 +101,11 @@ class CancellationController extends BaseController
             'offers.trainer.trainerProfile',
             'cancellationRequest',
             'cancellationRequest.processedBy',
-        ])->findOrFail($id);
+        ])->find($id);
+        
+        if (!$userRequest) {
+            abort(404, 'Course not found');
+        }
         
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
