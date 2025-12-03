@@ -11,6 +11,7 @@ abstract class BaseModel extends Model
 {
     use HasUuids;
 
+    public $incrementing = false;
     protected $keyType = 'string';
 
     protected static function booted(): void
