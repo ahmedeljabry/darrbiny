@@ -2092,6 +2092,78 @@
             "name": "Wallet",
             "item": [
                 {
+                    "name": "Get Wallet Balance",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/wallet",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "wallet"
+                            ]
+                        },
+                        "description": "Get wallet balance, currency, and transaction statistics for the authenticated user."
+                    }
+                },
+                {
+                    "name": "Get Wallet Transactions",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/wallet/transactions?limit=20&status=&type=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "wallet",
+                                "transactions"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20",
+                                    "description": "Number of transactions per page (default: 20)"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "",
+                                    "description": "Filter by status: pending, approved, rejected (optional)"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "",
+                                    "description": "Filter by type: topup_request, refund, payment, adjustment (optional)"
+                                }
+                            ]
+                        },
+                        "description": "Get paginated wallet transactions with optional filters. Query parameters: limit (default 20), status (pending/approved/rejected), type (topup_request/refund/payment/adjustment)."
+                    }
+                },
+                {
                     "name": "Request Top-up",
                     "request": {
                         "auth": {
@@ -2124,11 +2196,12 @@
                                 "wallet",
                                 "topup-request"
                             ]
-                        }
+                        },
+                        "description": "Request a wallet top-up. The request will be pending until an admin approves it."
                     }
                 },
                 {
-                    "name": "Get Latest Transactions",
+                    "name": "Deduct from Wallet",
                     "request": {
                         "auth": {
                             "type": "bearer",
@@ -2140,10 +2213,19 @@
                                 }
                             ]
                         },
-                        "method": "GET",
+                        "method": "POST",
                         "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 50,\n    \"notes\": \"Payment for service\",\n    \"reference\": \"order_123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
                         "url": {
-                            "raw": "{{base_url}}/wallet/transactions",
+                            "raw": "{{base_url}}/wallet/deduct",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2151,7 +2233,8 @@
                                 "wallet",
                                 "transactions"
                             ]
-                        }
+                        },
+                        "description": "Deduct amount from wallet. Creates a payment transaction and deducts from balance. Requires sufficient balance. Fields: amount (required, integer, min: 1), notes (optional), reference (optional)."
                     }
                 }
             ]

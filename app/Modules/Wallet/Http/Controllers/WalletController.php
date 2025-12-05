@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Wallet\Http\Controllers;
 
+use App\Modules\Wallet\Http\Requests\DeductWalletRequest;
 use App\Modules\Wallet\Http\Requests\TopupRequestRequest;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
@@ -48,9 +49,15 @@ class WalletController extends BaseController
             ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
             ->count();
 
+        // Calculate balance from transactions (for verification)
+        $calculatedBalance = $this->service->calculateBalanceFromTransactions($user);
+        $balanceMatches = $user->points_balance === $calculatedBalance;
+
         return response()->json([
             'data' => [
                 'balance' => $user->points_balance,
+                'calculated_balance' => $calculatedBalance, // Balance calculated from transactions
+                'balance_verified' => $balanceMatches, // True if stored balance matches calculated
                 'currency' => $user->currency ?? 'USD',
                 'statistics' => [
                     'total_transactions' => $totalTransactions,
@@ -85,6 +92,39 @@ class WalletController extends BaseController
             ->paginate($limit);
 
         return \App\Modules\Wallet\Http\Resources\WalletTransactionResource::collection($transactions)->response();
+    }
+
+    /**
+     * Deduct amount from wallet
+     * Creates a payment transaction and deducts from balance
+     */
+    public function deduct(DeductWalletRequest $request)
+    {
+        $user = $request->user();
+
+        try {
+            $transaction = $this->service->deduct(
+                $user,
+                $request->input('amount'),
+                $request->input('notes'),
+                $request->input('reference')
+            );
+
+            return response()->json([
+                'message' => 'تم خصم المبلغ من المحفظة بنجاح',
+                'data' => [
+                    'transaction' => new \App\Modules\Wallet\Http\Resources\WalletTransactionResource($transaction),
+                    'new_balance' => $user->fresh()->points_balance,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => [
+                    'amount' => [$e->getMessage()],
+                ],
+            ], 422);
+        }
     }
 
     /**

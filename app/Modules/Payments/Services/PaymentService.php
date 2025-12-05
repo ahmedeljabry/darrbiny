@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\TrainerOffer;
 use App\Models\UserRequest;
 use App\Modules\Requests\Services\RequestService;
+use App\Modules\Wallet\Services\WalletService;
 use App\Support\Fees;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +17,7 @@ class PaymentService
     public function __construct(
         private readonly PaymentProvider $provider,
         private readonly RequestService $requests,
+        private readonly WalletService $wallet,
     ) {}
 
     /**
@@ -196,12 +198,14 @@ class PaymentService
 
         $amount = $amountMinor / 100;
         
-        // Check wallet balance (points_balance stores amount in major units)
-        abort_unless($user->points_balance >= $amount, 422, 'Insufficient wallet balance');
-
         return DB::transaction(function () use ($req, $user, $paymentType, $amountMinor, $amount) {
-            // Deduct from wallet
-            $user->decrement('points_balance', $amount);
+            // Deduct from wallet (creates WalletTransaction record)
+            $walletTransaction = $this->wallet->deduct(
+                $user,
+                $amount,
+                "Payment for {$paymentType} - Request #{$req->id}",
+                "payment_{$req->id}"
+            );
             
             // Calculate fees
             $feePercent = Fees::appFeePercent();
