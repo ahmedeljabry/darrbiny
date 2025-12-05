@@ -257,6 +257,75 @@
                     }
                 },
                 {
+                    "name": "Update Profile",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "name",
+                                    "value": "Updated Name",
+                                    "type": "text",
+                                    "description": "User's full name"
+                                },
+                                {
+                                    "key": "email",
+                                    "value": "user@example.com",
+                                    "type": "text",
+                                    "description": "User's email address (must be unique)"
+                                },
+                                {
+                                    "key": "phone_with_cc",
+                                    "value": "+966501234567",
+                                    "type": "text",
+                                    "description": "Phone number with country code (must be unique)"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "newpassword123",
+                                    "type": "text",
+                                    "description": "New password (min 8 characters)"
+                                },
+                                {
+                                    "key": "password_confirmation",
+                                    "value": "newpassword123",
+                                    "type": "text",
+                                    "description": "Password confirmation (must match password)"
+                                },
+                                {
+                                    "key": "profile_picture",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Profile picture image (jpeg, png, jpg, webp, max 5MB)"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "profile"
+                            ]
+                        },
+                        "description": "Update user profile information. All fields are optional. You can update name, email, phone, password, and/or profile picture. For password update, both password and password_confirmation are required."
+                    }
+                },
+                {
                     "name": "Get Bank Account",
                     "request": {
                         "auth": {

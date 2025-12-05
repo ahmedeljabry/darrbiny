@@ -56,6 +56,8 @@ class SubscriptionResource extends JsonResource
             'course_id' => $courseId,
             'status' => $this->status,
             'status_category' => $statusCategory,
+            'trainer_rate' => $trainerProfile ? (float) ($trainerProfile->rating_avg ?? 0) : null,
+            'trainer_name' => $trainer ? $trainer->name : null,
 
             'title' => 'كورس تدريب',
             'duration' => [

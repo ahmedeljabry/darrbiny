@@ -34,6 +34,7 @@ class User extends Authenticatable
         'whatsapp_enabled',
         'country_id',
         'city_id',
+        'profile_picture_id',
         'currency',
         'referral_code',
         'referred_by',
@@ -118,6 +119,24 @@ class User extends Authenticatable
     public function bankCountry()
     {
         return $this->belongsTo(Country::class, 'bank_country_id');
+    }
+
+    public function profilePicture()
+    {
+        return $this->belongsTo(Upload::class, 'profile_picture_id');
+    }
+
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        if (!$this->profile_picture_id || !$this->relationLoaded('profilePicture')) {
+            $this->load('profilePicture');
+        }
+        
+        if (!$this->profilePicture) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($this->profilePicture->disk)->url($this->profilePicture->path);
     }
 
     public function isCaptain(): bool

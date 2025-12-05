@@ -13,9 +13,11 @@ use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\RequestOtpRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
+use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
 use App\Notifications\UserAccountDeletedNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Models\Upload;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Auth\Services\OtpService;
@@ -23,6 +25,7 @@ use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AuthController extends BaseController
@@ -222,6 +225,67 @@ class AuthController extends BaseController
                     'name' => $user->bankCountry->name,
                 ] : null,
             ],
+        ]);
+    }
+
+    public function updateProfile(UpdateProfileRequest $request)
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        // Update name if provided
+        if (isset($data['name'])) {
+            $user->name = $data['name'];
+        }
+
+        // Update email if provided
+        if (isset($data['email'])) {
+            $user->email = $data['email'];
+        }
+
+        // Update phone if provided
+        if (isset($data['phone_with_cc'])) {
+            $user->phone_with_cc = $data['phone_with_cc'];
+        }
+
+        // Update password if provided
+        if (isset($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($user->profile_picture_id) {
+                $oldUpload = Upload::find($user->profile_picture_id);
+                if ($oldUpload) {
+                    Storage::disk($oldUpload->disk)->delete($oldUpload->path);
+                    $oldUpload->delete();
+                }
+            }
+
+            // Store new profile picture
+            $disk = config('filesystems.default', 'public');
+            $path = $request->file('profile_picture')->store('profiles', $disk);
+            
+            $upload = Upload::create([
+                'disk' => $disk,
+                'path' => $path,
+                'mime' => $request->file('profile_picture')->getMimeType(),
+                'size' => $request->file('profile_picture')->getSize(),
+            ]);
+
+            $user->profile_picture_id = $upload->id;
+        }
+
+        $user->save();
+
+        // Reload user with profile picture relationship
+        $user->load('profilePicture');
+
+        return response()->json([
+            'message' => 'تم تحديث الملف الشخصي بنجاح',
+            'data' => new UserResource($user),
         ]);
     }
 

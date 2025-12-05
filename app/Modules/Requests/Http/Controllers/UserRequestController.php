@@ -11,11 +11,14 @@ use App\Modules\Requests\Http\Requests\StoreUserRequest;
 use App\Modules\Requests\Http\Resources\SubscriptionResource;
 use App\Modules\Requests\Http\Resources\UserRequestResource;
 use App\Modules\Requests\Services\RequestService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
 class UserRequestController extends BaseController
 {
+    use AuthorizesRequests;
+
     public function __construct(private readonly RequestService $service) {}
 
     public function index(Request $request)
