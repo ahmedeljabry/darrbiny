@@ -1745,7 +1745,8 @@
                                 "me",
                                 "referral"
                             ]
-                        }
+                        },
+                        "description": "Get referral information including referred users and their payment status. Each referred user includes: has_paid_subscription (boolean), has_successful_payment (boolean), subscription_count (number), and total_paid (amount in major units)."
                     }
                 },
                 {

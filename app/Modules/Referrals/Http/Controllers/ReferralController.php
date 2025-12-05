@@ -26,11 +26,41 @@ class ReferralController extends BaseController
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($referredUser) {
+                // Check if user has paid subscriptions (in_training or completed)
+                $hasPaidSubscription = \App\Models\UserRequest::where('user_id', $referredUser->id)
+                    ->whereIn('status', [
+                        \App\Models\UserRequest::STATUS_IN_TRAINING,
+                        \App\Models\UserRequest::STATUS_COMPLETED,
+                    ])
+                    ->exists();
+
+                // Check if user has any successful payments
+                $hasSuccessfulPayment = \App\Models\Payment::where('user_id', $referredUser->id)
+                    ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+                    ->exists();
+
+                // Get subscription count
+                $subscriptionCount = \App\Models\UserRequest::where('user_id', $referredUser->id)
+                    ->whereIn('status', [
+                        \App\Models\UserRequest::STATUS_IN_TRAINING,
+                        \App\Models\UserRequest::STATUS_COMPLETED,
+                    ])
+                    ->count();
+
+                // Get total amount paid
+                $totalPaid = \App\Models\Payment::where('user_id', $referredUser->id)
+                    ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+                    ->sum('amount_minor') / 100; // Convert from minor to major units
+
                 return [
                     'id' => $referredUser->id,
                     'name' => $referredUser->name,
                     'phone_with_cc' => $referredUser->phone_with_cc,
                     'joined_at' => $referredUser->created_at?->toIso8601String(),
+                    'has_paid_subscription' => $hasPaidSubscription,
+                    'has_successful_payment' => $hasSuccessfulPayment,
+                    'subscription_count' => $subscriptionCount,
+                    'total_paid' => $totalPaid,
                 ];
             });
 
