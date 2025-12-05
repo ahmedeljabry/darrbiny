@@ -126,8 +126,9 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::get('/messages/search', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'search']);
 
             // Wallet
+            Route::get('/wallet', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'index']);
+            Route::get('/wallet/transactions', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'transactions']);
             Route::post('/wallet/topup-request', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'requestTopup']);
-            Route::get('/wallet/transactions', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'latestTransactions']);
 
 
         });
