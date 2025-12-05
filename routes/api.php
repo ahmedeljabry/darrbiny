@@ -25,7 +25,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/me', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'me']);
                 Route::post('/logout', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'logout']);
-                Route::put('/profile', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'updateProfile']);
+                Route::post('/profile', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'updateProfile']);
                 Route::post('/change-password', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'changePassword']);
                 Route::get('/bank-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'getBankAccount']);
                 Route::post('/bank-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'updateBankAccount']);
