@@ -29,6 +29,10 @@ class ConversationService
                     'user_one_id' => $userIds[0],
                     'user_two_id' => $userIds[1],
                 ]);
+            } else {
+                if (method_exists($conversation, 'restore') && $conversation->trashed()) {
+                    $conversation->restore();
+                }
             }
 
             return $conversation;
@@ -104,4 +108,3 @@ class ConversationService
             ->sum('unread_count');
     }
 }
-

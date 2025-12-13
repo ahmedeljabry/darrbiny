@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Services\ConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ConversationController extends BaseController
 {
@@ -57,22 +57,24 @@ class ConversationController extends BaseController
                 'required',
                 'uuid',
                 'exists:users,id',
-                Rule::notIn([(string) $request->user()->id]),
             ],
         ]);
 
         $authUser = $request->user();
+        if ((string) $data['user_id'] === (string) $authUser->id) {
+            throw ValidationException::withMessages([
+                'user_id' => ['You cannot create a conversation with yourself.'],
+            ]);
+        }
+
         $otherUser = User::findOrFail($data['user_id']);
 
         $conversation = $this->service->findOrCreateConversation($authUser, $otherUser);
         $wasCreated = $conversation->wasRecentlyCreated;
 
-        if ($conversation->user_one_id === $authUser->id) {
-            $conversation->user_one_deleted_at = null;
-        }
-        if ($conversation->user_two_id === $authUser->id) {
-            $conversation->user_two_deleted_at = null;
-        }
+        // Revive conversation visibility for both participants
+        $conversation->user_one_deleted_at = null;
+        $conversation->user_two_deleted_at = null;
         $conversation->save();
 
         $conversation->load([
