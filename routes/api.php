@@ -117,6 +117,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
             // Messages & Conversations
             Route::get('/conversations', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'index']);
+            Route::post('/conversations', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'store']);
             Route::get('/conversations/{id}', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'show']);
             Route::delete('/conversations/{id}', [\App\Modules\Messages\Http\Controllers\ConversationController::class, 'destroy']);
             Route::get('/conversations/{id}/messages', [\App\Modules\Messages\Http\Controllers\MessageController::class, 'index']);

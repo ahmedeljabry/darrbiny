@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Messages\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Models\User;
 use App\Services\ConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Validation\Rule;
 
 class ConversationController extends BaseController
 {
@@ -46,6 +48,45 @@ class ConversationController extends BaseController
     }
 
     /**
+     * Create (or revive) a conversation with another user
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'user_id' => [
+                'required',
+                'uuid',
+                'exists:users,id',
+                Rule::notIn([(string) $request->user()->id]),
+            ],
+        ]);
+
+        $authUser = $request->user();
+        $otherUser = User::findOrFail($data['user_id']);
+
+        $conversation = $this->service->findOrCreateConversation($authUser, $otherUser);
+        $wasCreated = $conversation->wasRecentlyCreated;
+
+        if ($conversation->user_one_id === $authUser->id) {
+            $conversation->user_one_deleted_at = null;
+        }
+        if ($conversation->user_two_id === $authUser->id) {
+            $conversation->user_two_deleted_at = null;
+        }
+        $conversation->save();
+
+        $conversation->load([
+            'userOne',
+            'userTwo',
+            'messages' => fn ($q) => $q->latest()->limit(1),
+        ]);
+
+        return response()->json([
+            'data' => new \App\Modules\Messages\Http\Resources\ConversationResource($conversation),
+        ], $wasCreated ? 201 : 200);
+    }
+
+    /**
      * Delete conversation for user
      */
     public function destroy(Request $request, string $id)
@@ -61,4 +102,3 @@ class ConversationController extends BaseController
         return response()->json(['message' => 'Conversation deleted successfully'], 200);
     }
 }
-

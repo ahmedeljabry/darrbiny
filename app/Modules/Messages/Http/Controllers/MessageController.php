@@ -31,6 +31,7 @@ class MessageController extends BaseController
         return \App\Modules\Messages\Http\Resources\MessageResource::collection($messages)->response();
     }
 
+    
     /**
      * Send a message
      */
