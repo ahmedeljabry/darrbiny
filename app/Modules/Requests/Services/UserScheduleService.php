@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Services;
 
-use App\Models\User;
 use App\Models\UserScheduleProgress;
 use App\Notifications\ScheduleItemSentNotification;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class UserScheduleService
@@ -15,10 +13,10 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule($userRequest,Request $request): array
+    public function getSchedule($userRequest,$planId): array
     {
-        $plan = $request->planId;
-        $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $plan = $planId;
+        $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $plan)
             ->ordered()
             ->get();
 
