@@ -21,7 +21,8 @@ class ScheduleController extends BaseController
     {
         $userId = $request->user_id;
 
-        $userRequest = UserRequest::where(function ($q) use ($userId) {
+        $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])
+            ->where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                 ->orWhere('trainer_id', $userId);
             })
@@ -29,6 +30,7 @@ class ScheduleController extends BaseController
             ->first();
 
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
+
         return response()->json([
             'data' => [
                 'user_request_id' => $userRequest->id,

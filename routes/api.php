@@ -65,7 +65,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::get('/subscriptions/{id}/cancellation-status', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'status']);
 
             // Schedule endpoints
-            Route::get('/subscriptions/{id}/schedule', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'index']);
+            Route::get('/subscriptions/schedule', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'index']);
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/check', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'check']);
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/uncheck', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'uncheck']);
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/accept', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'accept']);
