@@ -24,9 +24,7 @@ class ScheduleController extends BaseController
             'scheduleProgress',
         ])->findOrFail($id);
 
-        // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-
         $schedule = $this->service->getSchedule($userRequest);
 
         return response()->json([
@@ -44,7 +42,7 @@ class ScheduleController extends BaseController
      */
     public function check(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = UserRequest::whereHas('trainer' , fn ($q) => $q->findOrFail($id));
+        $userRequest = UserRequest::where('trainer_id', $id)->firstOrFail();
 
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
         abort_unless(
