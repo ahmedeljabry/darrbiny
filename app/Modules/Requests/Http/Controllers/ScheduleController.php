@@ -19,17 +19,17 @@ class ScheduleController extends BaseController
      */
     public function index(Request $request)
     {
-        $userRequest = UserRequest::with([
-            'plan',
-            'plan.scheduleItems',
-            'scheduleProgress',
-        ])
-        ->where('user_id' ,$request->user_id)
-        ->orWhere('trainer_id', $request->user_id)
-        ->first();
-            dd($userRequest);
-        $schedule = $this->service->getSchedule($userRequest,$request->planId);
+        $userId = $request->user_id;
 
+        $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                ->orWhere('trainer_id', $userId);
+            })
+            ->latest()
+            ->first();
+
+        $schedule = $this->service->getSchedule($userRequest,$request->planId);
         return response()->json([
             'data' => [
                 'user_request_id' => $userRequest->id,
