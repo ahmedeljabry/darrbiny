@@ -42,7 +42,6 @@ class OfferController extends BaseController
         if (!$req) {
             abort(404, 'Course not found');
         }
-        $this->authorize('acceptOffer', $req);
         $this->service->accept($req, $offer);
         return response()->json(['data' => $req->fresh()]);
     }
