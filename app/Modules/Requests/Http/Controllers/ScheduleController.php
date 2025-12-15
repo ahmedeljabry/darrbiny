@@ -17,7 +17,7 @@ class ScheduleController extends BaseController
     /**
      * Get schedule for a subscription
      */
-    public function index(Request $request, string $id)
+    public function index(Request $request)
     {
         if ($request->user_type === 'user') {
             $userRequest = UserRequest::where('user_id' ,$request->user_id)->with([

@@ -26,13 +26,13 @@ class UserRequestController extends BaseController
         $mine = $request->boolean('mine');
         $trainerId = $request->query('trainer_id');
         $trainerName = $request->query('trainer_name');
-        
+
         $q = UserRequest::with(['user', 'plan', 'plan.country', 'plan.city', 'offers.trainer']);
-        
+
         if ($mine) {
             $q->where('user_id', $request->user()->id);
         }
-        
+
         if ($trainerId) {
             $q->where(function ($query) use ($trainerId) {
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
@@ -43,7 +43,7 @@ class UserRequestController extends BaseController
                 });
             });
         }
-        
+
         if ($trainerName) {
             $q->where(function ($query) use ($trainerName) {
                 $query->whereHas('offers.trainer', function ($trainerQuery) use ($trainerName) {
@@ -54,7 +54,7 @@ class UserRequestController extends BaseController
                 });
             });
         }
-        
+
         $bookings = $q->latest()->paginate(20);
         return UserRequestResource::collection($bookings)->response();
     }
@@ -96,7 +96,7 @@ class UserRequestController extends BaseController
         $status = $request->query('status');
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
-        
+
         $q = UserRequest::with([
             'user',
             'plan',
@@ -120,12 +120,12 @@ class UserRequestController extends BaseController
                 $trainingQuery->where('trainer_id', $trainerId);
             });
         });
-        
+
         // Filter by status
         if ($status) {
             $q->where('status', $status);
         }
-        
+
         // Filter by date range
         if ($dateFrom) {
             $q->whereDate('start_date', '>=', $dateFrom);
@@ -133,7 +133,7 @@ class UserRequestController extends BaseController
         if ($dateTo) {
             $q->whereDate('start_date', '<=', $dateTo);
         }
-        
+
         $bookings = $q->latest()->paginate(20);
         return UserRequestResource::collection($bookings)->response();
     }
@@ -144,8 +144,8 @@ class UserRequestController extends BaseController
      */
     public function subscriptions(Request $request)
     {
-        $statusCategory = $request->query('status'); // 'active', 'pending', 'completed'
-        
+        $statusCategory = $request->query('status');
+
         $q = UserRequest::with([
             'user',
             'plan',
@@ -158,9 +158,8 @@ class UserRequestController extends BaseController
             'cancellationRequest',
             'scheduleProgress',
         ])
-        ->where('user_id', $request->user()->id);
-        
-        // Filter by status category
+        ->where('user_id', $request->user()->id)->orWhere('trainer_id', $request->user()->id);
+
         if ($statusCategory === 'active') {
             $q->where('status', UserRequest::STATUS_IN_TRAINING);
         } elseif ($statusCategory === 'completed') {
@@ -174,10 +173,8 @@ class UserRequestController extends BaseController
                 UserRequest::STATUS_CANCELLED,
             ]);
         }
-        // If no status filter, return all
-        
         $subscriptions = $q->latest()->paginate(20);
-        
+
         return SubscriptionResource::collection($subscriptions)->response();
     }
 
