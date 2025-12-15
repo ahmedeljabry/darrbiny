@@ -39,7 +39,7 @@ class UserRequestResource extends JsonResource
                 'name' => $this->trainer->name,
                 'profile_picture' => $this->trainer->profile_picture_url ?? null,
             ]),
-            'rates' => $this->whenLoaded('rates', fn () => $this->rates->map(fn ($rate) => [
+            'rates' => $this->whenLoaded('user.rates', fn () => $this->rates->map(fn ($rate) => [
                 'id' => $rate->id,
                 'rating' => $rate->rating,
                 'comment' => $rate->comment,

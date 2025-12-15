@@ -117,6 +117,11 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function rates()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
     public function bankCountry()
     {
         return $this->belongsTo(Country::class, 'bank_country_id');
