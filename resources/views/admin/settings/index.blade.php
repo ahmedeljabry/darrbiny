@@ -103,14 +103,14 @@
                         <label class="form-label">الشعار</label>
                         <input type="file" name="logo" class="form-control">
                         @if(!empty($settings['brand.logo_path']))
-                          <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.logo_path']) }}" alt="logo" height="48"></div>
+                          <div class="mt-2"><img src="{{ \App\Support\StorageUrl::make($settings['brand.logo_path']) }}" alt="logo" height="48"></div>
                         @endif
                       </div>
                       <div class="mb-3">
                         <label class="form-label">الأيقونة (Favicon)</label>
                         <input type="file" name="favicon" class="form-control" accept="image/x-icon,image/png">
                         @if(!empty($settings['brand.favicon_path']))
-                          <div class="mt-2"><img src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['brand.favicon_path']) }}" alt="favicon" height="32"></div>
+                          <div class="mt-2"><img src="{{ \App\Support\StorageUrl::make($settings['brand.favicon_path']) }}" alt="favicon" height="32"></div>
                         @endif
                       </div>
                       <button class="btn btn-primary w-100">حفظ</button>
@@ -361,13 +361,13 @@
                       @if(!empty($settings['video.app.path']))
                         <div class="col-md-6">
                           <label class="form-label d-block">الفيديو الحالي للمستخدمين</label>
-                          <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                          <video src="{{ \App\Support\StorageUrl::make($settings['video.app.path']) }}" controls style="max-width:100%; height:auto;"></video>
                         </div>
                       @endif
                       @if(!empty($settings['video.captain.path']))
                         <div class="col-md-6">
                           <label class="form-label d-block">الفيديو الحالي للكباتن</label>
-                          <video src="{{ Storage::disk(config('filesystems.default','public'))->url($settings['video.captain.path']) }}" controls style="max-width:100%; height:auto;"></video>
+                          <video src="{{ \App\Support\StorageUrl::make($settings['video.captain.path']) }}" controls style="max-width:100%; height:auto;"></video>
                         </div>
                       @endif
                     </div>

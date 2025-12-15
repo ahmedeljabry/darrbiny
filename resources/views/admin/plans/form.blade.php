@@ -33,7 +33,7 @@
     </div>
     @if(!empty($plan->image))
         <div class="mt-2">
-            <img src="{{ Storage::disk(config('filesystems.default', 'public'))->url($plan->image) }}" 
+            <img src="{{ \App\Support\StorageUrl::make($plan->image) }}" 
                  alt="صورة الخطة" 
                  style="max-width: 300px; max-height: 200px; border-radius: 8px; border: 1px solid #e0e0e0;">
             <div class="mt-2">

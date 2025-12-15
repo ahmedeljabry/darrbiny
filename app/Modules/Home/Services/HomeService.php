@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Home\Services;
 
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\{Cache, Storage, DB, Auth};
+use Illuminate\Support\Facades\{Cache, DB, Auth};
 use App\Models\{Setting, TrainerProfile, Plan, Favorite, City, HowItWorksSection};
+use App\Support\StorageUrl;
 
 class HomeService
 {
@@ -66,12 +67,11 @@ class HomeService
 
     protected function getVideo(): array
     {
-        $disk = config('filesystems.default', 'public');
         $userPath = Setting::where('key', 'video.app.path')->value('value');
         $captainPath = Setting::where('key', 'video.captain.path')->value('value');
 
-        $userUrl = $userPath ? Storage::disk($disk)->url($userPath) : null;
-        $captainUrl = $captainPath ? Storage::disk($disk)->url($captainPath) : null;
+        $userUrl = StorageUrl::make($userPath);
+        $captainUrl = StorageUrl::make($captainPath);
 
         return [
             'url' => $userUrl,

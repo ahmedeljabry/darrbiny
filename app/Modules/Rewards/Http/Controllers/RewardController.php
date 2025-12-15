@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Storage;
+use App\Support\StorageUrl;
 
 class RewardController extends BaseController
 {
@@ -29,7 +29,7 @@ class RewardController extends BaseController
                     'title' => $prize->title,
                     'required_points' => $prize->required_points,
                     'order' => $prize->order,
-                    'image' => $prize->image ? Storage::disk(config('filesystems.default', 'public'))->url($prize->image) : null,
+                    'image' => StorageUrl::make($prize->image),
                 ];
             });
 
@@ -79,4 +79,3 @@ class RewardController extends BaseController
         });
     }
 }
-

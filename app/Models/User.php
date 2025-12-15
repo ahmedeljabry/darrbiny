@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use App\Support\StorageUrl;
 
 class User extends Authenticatable
 {
@@ -136,7 +137,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk($this->profilePicture->disk)->url($this->profilePicture->path);
+        return StorageUrl::make($this->profilePicture->path, $this->profilePicture->disk);
     }
 
     public function isCaptain(): bool

@@ -71,7 +71,7 @@
                             <tr>
                                 <td>
                                     @if($prize->image)
-                                        <img src="{{ Storage::disk(config('filesystems.default', 'public'))->url($prize->image) }}" alt="{{ $prize->title }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                        <img src="{{ \App\Support\StorageUrl::make($prize->image) }}" alt="{{ $prize->title }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
@@ -125,4 +125,3 @@
 </div>
 
 @endsection
-

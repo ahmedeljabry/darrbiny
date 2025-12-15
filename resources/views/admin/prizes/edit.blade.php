@@ -54,7 +54,7 @@
                             <small class="text-muted">الحد الأقصى: 5MB</small>
                             @if($prize->image)
                                 <div class="mt-2">
-                                    <img src="{{ Storage::disk(config('filesystems.default', 'public'))->url($prize->image) }}" alt="{{ $prize->title }}" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                                    <img src="{{ \App\Support\StorageUrl::make($prize->image) }}" alt="{{ $prize->title }}" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
                                 </div>
                             @endif
                         </div>
@@ -76,4 +76,3 @@
 </div>
 
 @endsection
-

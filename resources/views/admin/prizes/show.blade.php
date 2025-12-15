@@ -44,7 +44,7 @@
                     <div class="col-md-6">
                         @if($prize->image)
                             <h6>الصورة</h6>
-                            <img src="{{ Storage::disk(config('filesystems.default', 'public'))->url($prize->image) }}" alt="{{ $prize->title }}" style="max-width: 300px; max-height: 300px; border-radius: 4px;">
+                            <img src="{{ \App\Support\StorageUrl::make($prize->image) }}" alt="{{ $prize->title }}" style="max-width: 300px; max-height: 300px; border-radius: 4px;">
                         @endif
                     </div>
                 </div>
@@ -96,4 +96,3 @@
 </div>
 
 @endsection
-

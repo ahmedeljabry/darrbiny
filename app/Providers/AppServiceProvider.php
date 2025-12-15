@@ -15,7 +15,7 @@ use App\Modules\Payments\Services\DummyProvider;
 use App\Modules\Payments\Services\TapProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Setting;
-use Illuminate\Support\Facades\Storage;
+use App\Support\StorageUrl;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -44,10 +44,9 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             $all = [];
         }
-        $disk = config('filesystems.default', 'public');
         $brandName = $all['brand.name'] ?? config('app.name', 'لوحة الإدارة');
-        $logoUrl = !empty($all['brand.logo_path']) ? Storage::disk($disk)->url($all['brand.logo_path']) : null;
-        $faviconUrl = !empty($all['brand.favicon_path']) ? Storage::disk($disk)->url($all['brand.favicon_path']) : null;
+        $logoUrl = StorageUrl::make($all['brand.logo_path'] ?? null);
+        $faviconUrl = StorageUrl::make($all['brand.favicon_path'] ?? null);
         View::share('appSettings', [
             'brand' => [
                 'name' => $brandName,
