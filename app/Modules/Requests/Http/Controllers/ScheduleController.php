@@ -27,11 +27,12 @@ class ScheduleController extends BaseController
         ->where('user_id' ,$request->user_id)
         ->orWhere('trainer_id', $request->user_id)
         ->first();
-
+            dd($userRequest);
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
             'data' => [
+                'user_request_id' => $userRequest->id,
                 'plan_id' => $userRequest->plan_id,
                 'duration_days' => (int) ($userRequest->plan->duration_days ?? 0),
                 'schedule' => $schedule,
