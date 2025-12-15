@@ -23,7 +23,7 @@ class ScheduleController extends BaseController
             'plan.scheduleItems',
             'scheduleProgress',
         ])->findOrFail($id);
-        
+
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
@@ -42,14 +42,9 @@ class ScheduleController extends BaseController
     /**
      * Check a schedule day as completed
      */
-    public function check(Request $request, string $id, int $dayNumber)
+    public function check(string $id, int $dayNumber)
     {
         $userRequest = UserRequest::findOrFail($id);
-        
-        // Check if user owns this request
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-
-        // Validate course is in training
         abort_unless(
             $userRequest->status === UserRequest::STATUS_IN_TRAINING,
             422,
@@ -74,7 +69,7 @@ class ScheduleController extends BaseController
     public function uncheck(Request $request, string $id, int $dayNumber)
     {
         $userRequest = UserRequest::findOrFail($id);
-        
+
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
@@ -96,7 +91,7 @@ class ScheduleController extends BaseController
     public function accept(Request $request, string $id, int $dayNumber)
     {
         $userRequest = UserRequest::findOrFail($id);
-        
+
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
@@ -123,7 +118,7 @@ class ScheduleController extends BaseController
         ]);
 
         $userRequest = UserRequest::findOrFail($id);
-        
+
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
@@ -152,7 +147,7 @@ class ScheduleController extends BaseController
         ]);
 
         $userRequest = UserRequest::findOrFail($id);
-        
+
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
