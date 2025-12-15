@@ -69,9 +69,9 @@ class ScheduleController extends BaseController
      */
     public function uncheck(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = UserRequest::findOrFail($id);
+        $userRequest = User::findOrFail($id);
 
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
+        abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
         $progress = $this->service->uncheckDay($userRequest, $dayNumber);
 
         return response()->json([
@@ -89,10 +89,8 @@ class ScheduleController extends BaseController
      */
     public function accept(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = UserRequest::findOrFail($id);
-
-        // Check if user owns this request
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
+        $userRequest = User::findOrFail($id);
+        abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
 
         $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber);
 
@@ -116,10 +114,8 @@ class ScheduleController extends BaseController
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $userRequest = UserRequest::findOrFail($id);
-
-        // Check if user owns this request
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
+        $userRequest = User::findOrFail($id);
+        abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
 
         $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber, $request->input('reason'));
 
@@ -146,8 +142,6 @@ class ScheduleController extends BaseController
         ]);
 
         $userRequest = UserRequest::findOrFail($id);
-
-        // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
         $progress = $this->service->rateScheduleItem(
