@@ -17,20 +17,20 @@ class ScheduleController extends BaseController
     /**
      * Get schedule for a subscription
      */
-    public function index(Request $request, string $id , $user_type,$user_id)
+    public function index(Request $request, string $id)
     {
-        if ($user_type === 'user') {
-            $userRequest = UserRequest::where('user_id' ,$user_id)->with([
+        if ($request->user_type === 'user') {
+            $userRequest = UserRequest::where('user_id' ,$request->user_id)->with([
                 'plan',
                 'plan.scheduleItems',
                 'scheduleProgress',
-            ])->where('user_id', $user_id)->findOrFail($id);
+            ])->where('user_id', $request->user_id)->findOrFail($id);
         } else {
-            $userRequest = UserRequest::where('trainer_id' , $user_id)->with([
+            $userRequest = UserRequest::where('trainer_id' , $request->user_id)->with([
                 'plan',
                 'plan.scheduleItems',
                 'scheduleProgress',
-            ])->where('trainer_id', $user_id)->findOrFail($id);
+            ])->where('trainer_id', $request->user_id)->findOrFail($id);
         }
         $userRequest = UserRequest::with([
             'plan',
@@ -38,7 +38,7 @@ class ScheduleController extends BaseController
             'scheduleProgress',
         ])->findOrFail($id);
 
-        abort_unless(($user_type === 'user' ? $userRequest->user_id : $userRequest->trainer_id ) === $request->user()->id, 403, 'Unauthorized');
+        abort_unless(($request->user_type === 'user' ? $userRequest->user_id : $userRequest->trainer_id ) === $request->user()->id, 403, 'Unauthorized');
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
