@@ -45,7 +45,7 @@ class ScheduleController extends BaseController
     {
         $userRequest = User::findOrFail($id);
 
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
+        abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
         abort_unless(
             $userRequest->status === UserRequest::STATUS_IN_TRAINING,
             422,
@@ -71,7 +71,6 @@ class ScheduleController extends BaseController
     {
         $userRequest = UserRequest::findOrFail($id);
 
-        // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
         $progress = $this->service->uncheckDay($userRequest, $dayNumber);
 
