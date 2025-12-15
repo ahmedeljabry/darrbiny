@@ -52,7 +52,7 @@ class ScheduleController extends BaseController
             'Course must be in training to check schedule items'
         );
 
-        $progress = $this->service->checkDay($userRequest, $dayNumber);
+        $progress = $this->service->checkDay($userRequest,$request->plan_id, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -72,7 +72,7 @@ class ScheduleController extends BaseController
         $userRequest = User::findOrFail($id);
 
         abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
-        $progress = $this->service->uncheckDay($userRequest, $dayNumber);
+        $progress = $this->service->uncheckDay($userRequest,$request->plan_id, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -92,7 +92,7 @@ class ScheduleController extends BaseController
         $userRequest = User::findOrFail($id);
         abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
 
-        $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber);
+        $progress = $this->service->acceptScheduleItem($userRequest,$request->plan_id, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -117,7 +117,7 @@ class ScheduleController extends BaseController
         $userRequest = User::findOrFail($id);
         abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
 
-        $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber, $request->input('reason'));
+        $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber,$request->plan_id, $request->input('reason'));
 
         return response()->json([
             'data' => [
@@ -148,6 +148,7 @@ class ScheduleController extends BaseController
             $userRequest,
             $dayNumber,
             $request->input('rating'),
+            $request->plan_id,
             $request->input('rating_titles'),
             $request->input('rating_comment')
         );

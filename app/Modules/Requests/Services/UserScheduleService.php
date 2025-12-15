@@ -50,17 +50,14 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay(UserRequest $userRequest, int $dayNumber): UserScheduleProgress
+    public function checkDay(UserRequest $userRequest, $planId, int $dayNumber): UserScheduleProgress
     {
-        $plan = $userRequest->plan;
-        
-        // Find the schedule item for this day
+        $plan = $planId;
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
         return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber) {
-            // Find or create progress record
             $progress = UserScheduleProgress::firstOrCreate(
                 [
                     'user_request_id' => $userRequest->id,
@@ -72,7 +69,6 @@ class UserScheduleService
                 ]
             );
 
-            // Mark as checked
             $progress->is_checked = true;
             $progress->checked_at = now();
             $progress->save();
@@ -84,11 +80,10 @@ class UserScheduleService
     /**
      * Uncheck a schedule day
      */
-    public function uncheckDay(UserRequest $userRequest, int $dayNumber): UserScheduleProgress
+    public function uncheckDay(UserRequest $userRequest, $planId, int $dayNumber): UserScheduleProgress
     {
-        $plan = $userRequest->plan;
-        
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $plan = $planId;
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -108,12 +103,11 @@ class UserScheduleService
      */
     public function sendScheduleItem(UserRequest $userRequest, int $dayNumber, string $trainerId): UserScheduleProgress
     {
-        // Verify trainer is assigned to this request
         $hasOffer = $userRequest->offers()
             ->where('trainer_id', $trainerId)
             ->where('status', \App\Models\TrainerOffer::STATUS_ACCEPTED)
             ->exists();
-        
+
         if (!$hasOffer) {
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
                 response()->json(['message' => 'Unauthorized: Trainer not assigned to this request'], 403)
@@ -154,10 +148,10 @@ class UserScheduleService
     /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem(UserRequest $userRequest, int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem(UserRequest $userRequest, $planId,int $dayNumber): UserScheduleProgress
     {
-        $plan = $userRequest->plan;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $plan = $planId;
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -182,10 +176,10 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem(UserRequest $userRequest, int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem(UserRequest $userRequest, $planId,int $dayNumber, string $reason): UserScheduleProgress
     {
-        $plan = $userRequest->plan;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $plan = $planId;
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -213,6 +207,7 @@ class UserScheduleService
         UserRequest $userRequest,
         int $dayNumber,
         int $rating,
+        $planId,
         ?array $ratingTitles = null,
         ?string $ratingComment = null
     ): UserScheduleProgress {
@@ -222,8 +217,8 @@ class UserScheduleService
             );
         }
 
-        $plan = $userRequest->plan;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $plan = $planId;
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
