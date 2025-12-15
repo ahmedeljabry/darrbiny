@@ -13,10 +13,9 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule($userRequest,$planId): array
+    public function getSchedule($userRequest, int $planId): array
     {
-        $plan = $planId;
-        $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $plan)
+        $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->ordered()
             ->get();
 
@@ -49,10 +48,9 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay($userRequest, $planId, int $dayNumber): UserScheduleProgress
+    public function checkDay($userRequest, int $planId, int $dayNumber): UserScheduleProgress
     {
-        $plan = $planId;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -79,10 +77,9 @@ class UserScheduleService
     /**
      * Uncheck a schedule day
      */
-    public function uncheckDay($userRequest, $planId, int $dayNumber): UserScheduleProgress
+    public function uncheckDay($userRequest, int $planId, int $dayNumber): UserScheduleProgress
     {
-        $plan = $planId;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -100,10 +97,9 @@ class UserScheduleService
     /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem($userRequest, $planId,int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem($userRequest, int $planId, int $dayNumber): UserScheduleProgress
     {
-        $plan = $planId;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -128,10 +124,9 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem($userRequest, $planId,int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem($userRequest, int $planId, int $dayNumber, string $reason): UserScheduleProgress
     {
-        $plan = $planId;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -159,7 +154,7 @@ class UserScheduleService
         $userRequest,
         int $dayNumber,
         int $rating,
-        $planId,
+        int $planId,
         ?array $ratingTitles = null,
         ?string $ratingComment = null
     ): UserScheduleProgress {
@@ -169,8 +164,7 @@ class UserScheduleService
             );
         }
 
-        $plan = $planId;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
+        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
@@ -192,4 +186,3 @@ class UserScheduleService
         return $progress;
     }
 }
-
