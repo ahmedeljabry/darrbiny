@@ -132,7 +132,7 @@ class User extends Authenticatable
         if (!$this->profile_picture_id || !$this->relationLoaded('profilePicture')) {
             $this->load('profilePicture');
         }
-        
+
         if (!$this->profilePicture) {
             return null;
         }
@@ -148,5 +148,10 @@ class User extends Authenticatable
     public function isUser(): bool
     {
         return $this->user_type === UserType::USER;
+    }
+
+    public function plan()
+    {
+        return $this->hasMany(Plan::class);
     }
 }

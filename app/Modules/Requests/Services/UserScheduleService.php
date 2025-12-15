@@ -15,7 +15,7 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule(Request $request,User $userRequest): array
+    public function getSchedule($userRequest,Request $request): array
     {
         $plan = $request->planId;
         $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)

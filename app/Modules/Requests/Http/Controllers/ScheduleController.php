@@ -17,8 +17,21 @@ class ScheduleController extends BaseController
     /**
      * Get schedule for a subscription
      */
-    public function index(Request $request, string $id)
+    public function index(Request $request, string $id , $user_type,$user_id)
     {
+        if ($user_type === 'user') {
+            $userRequest = UserRequest::where('user_id' ,$user_id)->with([
+                'plan',
+                'plan.scheduleItems',
+                'scheduleProgress',
+            ])->where('user_id', $user_id)->findOrFail($id);
+        } else {
+            $userRequest = UserRequest::where('trainer_id' , $user_id)->with([
+                'plan',
+                'plan.scheduleItems',
+                'scheduleProgress',
+            ])->where('trainer_id', $user_id)->findOrFail($id);
+        }
         $userRequest = UserRequest::with([
             'plan',
             'plan.scheduleItems',
@@ -26,7 +39,7 @@ class ScheduleController extends BaseController
         ])->findOrFail($id);
 
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-        $schedule = $this->service->getSchedule($userRequest);
+        $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
             'data' => [
