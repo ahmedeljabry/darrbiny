@@ -43,7 +43,7 @@ class ScheduleController extends BaseController
      */
     public function check(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = User::where('trainer_id', $id)->firstOrFail();
+        $userRequest = User::findOrFail($id);
 
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
         abort_unless(
