@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Http\Controllers;
 
+use App\Models\User;
 use App\Models\UserRequest;
 use App\Modules\Requests\Services\UserScheduleService;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class ScheduleController extends BaseController
      */
     public function check(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = UserRequest::where('trainer_id', $id)->firstOrFail();
+        $userRequest = User::where('trainer_id', $id)->firstOrFail();
 
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
         abort_unless(
