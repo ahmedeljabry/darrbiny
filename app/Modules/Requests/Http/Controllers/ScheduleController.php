@@ -21,7 +21,7 @@ class ScheduleController extends BaseController
     {
         $user = $request->user();
         $planId = $request->input('plan_id') ?? $request->input('planId');
-        $userRequestId = $request->input('user_request_id') ?? $request->input('userRequestId');
+        $userRequestId = $request->input('user_id') ?? $request->input('userRequestId');
 
         $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])
             ->where(function ($q) use ($user) {
