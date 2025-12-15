@@ -111,11 +111,9 @@ class UserRequestController extends BaseController
             }
         ])
         ->where(function ($query) use ($trainerId) {
-            // Bookings where trainer made an offer
             $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                 $offerQuery->where('trainer_id', $trainerId);
             })
-            // Or bookings where trainer is doing training
             ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
                 $trainingQuery->where('trainer_id', $trainerId);
             });

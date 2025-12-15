@@ -27,12 +27,12 @@ class UserRequestResource extends JsonResource
             'total_paid_minor' => $this->total_paid_minor,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
-            
-            // Relationships
+
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'phone_with_cc' => $this->user->phone_with_cc,
+                'profile_picture' => $this->user->profile_picture_url ?? null,
             ]),
             'trainer' => $this->whenLoaded('trainer', fn () => [
                 'id' => $this->trainer->id,
