@@ -38,7 +38,7 @@ class ScheduleController extends BaseController
             'scheduleProgress',
         ])->findOrFail($id);
 
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
+        abort_unless(($user_type === 'user' ? $userRequest->user_id : $userRequest->trainer_id ) === $request->user()->id, 403, 'Unauthorized');
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
