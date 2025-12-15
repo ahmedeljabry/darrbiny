@@ -24,19 +24,14 @@ class ScheduleController extends BaseController
                 'plan',
                 'plan.scheduleItems',
                 'scheduleProgress',
-            ])->where('user_id', $request->user_id)->findOrFail($id);
+            ])->where('user_id', $request->user_id)->first();
         } else {
             $userRequest = UserRequest::where('trainer_id' , $request->user_id)->with([
                 'plan',
                 'plan.scheduleItems',
                 'scheduleProgress',
-            ])->where('trainer_id', $request->user_id)->findOrFail($id);
+            ])->where('trainer_id', $request->user_id)->first();
         }
-        $userRequest = UserRequest::with([
-            'plan',
-            'plan.scheduleItems',
-            'scheduleProgress',
-        ])->findOrFail($id);
 
         abort_unless(($request->user_type === 'user' ? $userRequest->user_id : $userRequest->trainer_id ) === $request->user()->id, 403, 'Unauthorized');
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
