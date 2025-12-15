@@ -21,8 +21,7 @@ class ScheduleController extends BaseController
     {
         $userId = $request->user_id;
 
-        $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])
-            ->where(function ($q) use ($userId) {
+        $userRequest = UserRequest::where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                 ->orWhere('trainer_id', $userId);
             })
