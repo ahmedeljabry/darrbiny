@@ -33,7 +33,7 @@ class ScheduleController extends BaseController
             ])->where('trainer_id', $request->user_id)->first();
         }
 
-        abort_unless(($request->user_type === 'user' ? $userRequest->user_id : $userRequest->trainer_id ) === $request->user()->id, 403, 'Unauthorized');
+        abort_unless(($request->user_type === 'user' ? $userRequest->user_id : $userRequest->user_id ) === $request->user()->id, 403, 'Unauthorized');
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
