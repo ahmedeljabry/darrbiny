@@ -74,10 +74,13 @@ class SubscriptionResource extends JsonResource
                     'count' => (int) ($trainerProfile->rating_count ?? 0),
                     'display' => number_format((float) ($trainerProfile->rating_avg ?? 0), 1),
                 ],
-                'profile_picture' => $trainer->profile_picture_url ?? null,
+                'profile_picture' => $trainer->profile_picture_id ?? null,
                 'can_contact' => true,
             ] : null,
-
+            'user' => [
+                'name' => $this->user->name,
+                'profile_picture' => $this->user->profile_picture_id ?? null,
+            ],
             'course_details' => [
                 'course_id' => '#' . $courseId,
                 'start_date' => $this->start_date?->format('d M Y'),
