@@ -63,6 +63,9 @@ class UserRequestController extends BaseController
     {
         $req = UserRequest::with([
             'user',
+            'user.rates',
+            'trainer',
+            'trainer.trainerProfile',
             'plan',
             'plan.country',
             'plan.city',
