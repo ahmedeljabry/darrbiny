@@ -135,7 +135,7 @@ class ScheduleController extends BaseController
             'rating_comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $userRequest = UserRequest::findOrFail($id);
+        $userRequest = User::findOrFail($id);
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
 
         $progress = $this->service->rateScheduleItem(

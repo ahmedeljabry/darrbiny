@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Services;
 
-use App\Models\UserRequest;
+use App\Models\User;
 use App\Models\UserScheduleProgress;
 use App\Notifications\ScheduleItemSentNotification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class UserScheduleService
@@ -14,9 +15,9 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule(UserRequest $userRequest): array
+    public function getSchedule(Request $request,User $userRequest): array
     {
-        $plan = $userRequest->plan;
+        $plan = $request->planId;
         $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
             ->ordered()
             ->get();
@@ -50,7 +51,7 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay(UserRequest $userRequest, $planId, int $dayNumber): UserScheduleProgress
+    public function checkDay($userRequest, $planId, int $dayNumber): UserScheduleProgress
     {
         $plan = $planId;
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
@@ -80,7 +81,7 @@ class UserScheduleService
     /**
      * Uncheck a schedule day
      */
-    public function uncheckDay(UserRequest $userRequest, $planId, int $dayNumber): UserScheduleProgress
+    public function uncheckDay($userRequest, $planId, int $dayNumber): UserScheduleProgress
     {
         $plan = $planId;
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
@@ -99,56 +100,9 @@ class UserScheduleService
     }
 
     /**
-     * Trainer sends schedule item for today
-     */
-    public function sendScheduleItem(UserRequest $userRequest, int $dayNumber, string $trainerId): UserScheduleProgress
-    {
-        $hasOffer = $userRequest->offers()
-            ->where('trainer_id', $trainerId)
-            ->where('status', \App\Models\TrainerOffer::STATUS_ACCEPTED)
-            ->exists();
-
-        if (!$hasOffer) {
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                response()->json(['message' => 'Unauthorized: Trainer not assigned to this request'], 403)
-            );
-        }
-
-        $plan = $userRequest->plan;
-        $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan->id)
-            ->where('day_number', $dayNumber)
-            ->firstOrFail();
-
-        return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber) {
-            $progress = UserScheduleProgress::firstOrCreate(
-                [
-                    'user_request_id' => $userRequest->id,
-                    'plan_schedule_item_id' => $scheduleItem->id,
-                ],
-                [
-                    'day_number' => $dayNumber,
-                    'is_checked' => false,
-                    'status' => UserScheduleProgress::STATUS_PENDING,
-                ]
-            );
-
-            // Mark as sent
-            $progress->status = UserScheduleProgress::STATUS_SENT;
-            $progress->sent_at = now();
-            $progress->save();
-
-            // Notify user
-            $user = $userRequest->user;
-            $user->notify(new ScheduleItemSentNotification($progress));
-
-            return $progress;
-        });
-    }
-
-    /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem(UserRequest $userRequest, $planId,int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem($userRequest, $planId,int $dayNumber): UserScheduleProgress
     {
         $plan = $planId;
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
@@ -176,7 +130,7 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem(UserRequest $userRequest, $planId,int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem($userRequest, $planId,int $dayNumber, string $reason): UserScheduleProgress
     {
         $plan = $planId;
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $plan)
@@ -204,7 +158,7 @@ class UserScheduleService
      * User rates schedule item (1-5 stars) with titles and comment
      */
     public function rateScheduleItem(
-        UserRequest $userRequest,
+        $userRequest,
         int $dayNumber,
         int $rating,
         $planId,
