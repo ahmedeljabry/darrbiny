@@ -37,7 +37,19 @@ class UserRequestResource extends JsonResource
             'trainer' => $this->whenLoaded('trainer', fn () => [
                 'id' => $this->trainer->id,
                 'name' => $this->trainer->name,
+                'profile_picture' => $this->trainer->profile_picture_url ?? null,
             ]),
+            'rates' => $this->whenLoaded('rates', fn () => $this->rates->map(fn ($rate) => [
+                'id' => $rate->id,
+                'rating' => $rate->rating,
+                'comment' => $rate->comment,
+                'created_at' => $rate->created_at?->toIso8601String(),
+                'user' => $rate->relationLoaded('user') ? [
+                    'id' => $rate->user->id,
+                    'name' => $rate->user->name,
+                    'profile_picture' => $rate->user->profile_picture_url ?? null,
+                ] : null,
+            ])),
             'plan' => $this->whenLoaded('plan', fn () => [
                 'id' => $this->plan->id,
                 'title' => $this->plan->title,
