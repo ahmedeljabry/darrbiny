@@ -42,9 +42,11 @@ class ScheduleController extends BaseController
     /**
      * Check a schedule day as completed
      */
-    public function check(string $id, int $dayNumber)
+    public function check(Request $request, string $id, int $dayNumber)
     {
-        $userRequest = UserRequest::findOrFail($id);
+        $userRequest = UserRequest::whereHas('trainer' , fn ($q) => $q->findOrFail($id));
+
+        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
         abort_unless(
             $userRequest->status === UserRequest::STATUS_IN_TRAINING,
             422,
@@ -72,7 +74,6 @@ class ScheduleController extends BaseController
 
         // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-
         $progress = $this->service->uncheckDay($userRequest, $dayNumber);
 
         return response()->json([
