@@ -32,7 +32,6 @@ class ScheduleController extends BaseController
 
         return response()->json([
             'data' => [
-                'user_request_id' => $userRequest->id,
                 'plan_id' => $userRequest->plan_id,
                 'duration_days' => (int) ($userRequest->plan->duration_days ?? 0),
                 'schedule' => $schedule,
