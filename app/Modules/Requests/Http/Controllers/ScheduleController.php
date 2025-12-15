@@ -19,21 +19,14 @@ class ScheduleController extends BaseController
      */
     public function index(Request $request)
     {
-        if ($request->user_type === 'user') {
-            $userRequest = UserRequest::where('user_id' ,$request->user_id)->with([
-                'plan',
-                'plan.scheduleItems',
-                'scheduleProgress',
-            ])->where('user_id', $request->user_id)->first();
-        } else {
-            $userRequest = UserRequest::where('trainer_id' , $request->user_id)->with([
-                'plan',
-                'plan.scheduleItems',
-                'scheduleProgress',
-            ])->where('trainer_id', $request->user_id)->first();
-        }
+        $userRequest = UserRequest::where('user_id' ,$request->user_id)->with([
+            'plan',
+            'plan.scheduleItems',
+            'scheduleProgress',
+        ])->where('user_id', $request->user_id)
+            ->orWhere('trainer_id', $request->user_id)
+            ->first();
 
-        abort_unless(($request->user_type === 'user' ? $userRequest->user_id : $userRequest->user_id ) === $request->user()->id, 403, 'Unauthorized');
         $schedule = $this->service->getSchedule($userRequest,$request->planId);
 
         return response()->json([
