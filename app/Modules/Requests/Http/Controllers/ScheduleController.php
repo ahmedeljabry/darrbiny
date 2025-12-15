@@ -46,12 +46,6 @@ class ScheduleController extends BaseController
         $userRequest = User::findOrFail($id);
 
         abort_unless($userRequest->id === $request->user()->id, 403, 'Unauthorized');
-        abort_unless(
-            $userRequest->status === UserRequest::STATUS_IN_TRAINING,
-            422,
-            'Course must be in training to check schedule items'
-        );
-
         $progress = $this->service->checkDay($userRequest,$request->plan_id, $dayNumber);
 
         return response()->json([
