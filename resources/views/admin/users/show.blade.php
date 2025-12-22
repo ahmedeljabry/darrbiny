@@ -67,10 +67,31 @@
     @endphp
     <div class="card mt-4">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">بيانات الكابتن</h5>
-        <span class="badge {{ $profileComplete ? 'bg-success' : 'bg-label-warning' }}">
-          {{ $profileComplete ? 'مكتمل' : 'غير مكتمل' }}
-        </span>
+        <div>
+          <h5 class="mb-0">بيانات الكابتن</h5>
+          @if($profile->pending_approval)
+            <small class="text-warning d-block mt-1">
+              <i class="icon-base ti tabler-alert-circle me-1"></i>
+              في انتظار الموافقة على التعديلات
+            </small>
+          @endif
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge {{ $profileComplete ? 'bg-success' : 'bg-label-warning' }}">
+            {{ $profileComplete ? 'مكتمل' : 'غير مكتمل' }}
+          </span>
+          @if($profile->pending_approval)
+            <form method="post" action="{{ route('admin.users.trainer-profile.approve', $user->id) }}" class="d-inline">
+              @csrf
+              <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('هل أنت متأكد من الموافقة على تعديلات المدرب؟')">
+                <i class="icon-base ti tabler-check me-1"></i> الموافقة على التعديلات
+              </button>
+            </form>
+            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTrainerModal">
+              <i class="icon-base ti tabler-x me-1"></i> رفض التعديلات
+            </button>
+          @endif
+        </div>
       </div>
       <div class="card-body">
         <div class="row g-4">
@@ -112,6 +133,49 @@
               <span class="text-body-secondary">لا توجد نبذة</span>
             @endif
           </div>
+        </div>
+      </div>
+      @if($profile->pending_approval && $profile->pending_changes)
+        <div class="card-footer bg-label-warning">
+          <div class="d-flex align-items-start gap-2">
+            <i class="icon-base ti tabler-info-circle mt-1"></i>
+            <div>
+              <strong class="d-block mb-2">التعديلات المعلقة:</strong>
+              <ul class="mb-0 small">
+                @foreach($profile->pending_changes as $key => $value)
+                  <li><strong>{{ $key }}:</strong> {{ is_bool($value) ? ($value ? 'نعم' : 'لا') : $value }}</li>
+                @endforeach
+              </ul>
+            </div>
+          </div>
+        </div>
+      @endif
+    </div>
+  @endif
+
+  <!-- Modal: Reject Trainer Profile -->
+  @if($user->trainerProfile && $user->trainerProfile->pending_approval)
+    <div class="modal fade" id="rejectTrainerModal" tabindex="-1" aria-labelledby="rejectTrainerModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="rejectTrainerModalLabel">رفض تعديلات المدرب</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          </div>
+          <form method="post" action="{{ route('admin.users.trainer-profile.reject', $user->id) }}">
+            @csrf
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">سبب الرفض <span class="text-danger">*</span></label>
+                <textarea name="rejection_reason" class="form-control" rows="4" placeholder="اكتب سبب رفض التعديلات..." required></textarea>
+                <small class="text-muted">يجب إدخال سبب الرفض لإعلام المدرب</small>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+              <button type="submit" class="btn btn-danger">رفض التعديلات</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

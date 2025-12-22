@@ -26,15 +26,32 @@ class CancellationRequestNotification extends Notification
     {
         $userRequest = $this->cancellationRequest->userRequest;
         $user = $this->cancellationRequest->user;
+        $status = $this->cancellationRequest->status;
+        
+        $title = match($status) {
+            'approved' => 'تم قبول طلب الإلغاء',
+            'rejected' => 'تم رفض طلب الإلغاء',
+            default => 'طلب إلغاء دورة تدريبية',
+        };
+        
+        $message = match($status) {
+            'approved' => "تم قبول طلب إلغاء الدورة رقم #{$userRequest->id} وتم إرجاع المبلغ إلى محفظتك",
+            'rejected' => "تم رفض طلب إلغاء الدورة رقم #{$userRequest->id}",
+            default => "طلب المستخدم {$user->name} إلغاء الدورة رقم #{$userRequest->id}",
+        };
         
         return [
-            'title' => 'طلب إلغاء دورة تدريبية',
-            'message' => "طلب المستخدم {$user->name} إلغاء الدورة رقم #{$userRequest->id}",
+            'title' => $title,
+            'message' => $message,
             'type' => 'cancellation_request',
             'cancellation_request_id' => $this->cancellationRequest->id,
             'user_request_id' => $userRequest->id,
             'user_id' => $user->id,
+            'status' => $status,
             'reason' => $this->cancellationRequest->reason,
+            'refund_amount' => $status === 'approved' && $userRequest->total_paid_minor > 0 
+                ? (int) round($userRequest->total_paid_minor / 100) 
+                : null,
         ];
     }
 }
