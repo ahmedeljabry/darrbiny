@@ -14,9 +14,11 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h5 class="mb-0">{{ $title }}</h5>
-    <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-primary" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">تصدير Excel (CSV)</a>
-      <small class="text-body-secondary">استخدم تصدير CSV ثم افتحه في Excel/Sheets أو اطبع PDF من المتصفح.</small>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'excel']) }}">
+        <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+      </a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">تصدير CSV</a>
     </div>
   </div>
   <div class="card-body p-0">

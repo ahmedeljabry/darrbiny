@@ -58,6 +58,9 @@
         <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-sm btn-outline-secondary">
           <i class="icon-base ti tabler-refresh me-1"></i> إعادة تعيين
         </a>
+        <a href="{{ route('admin.subscriptions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-sm btn-success">
+          <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+        </a>
       </div>
     </form>
   </div>
