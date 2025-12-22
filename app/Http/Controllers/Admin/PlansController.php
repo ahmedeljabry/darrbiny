@@ -71,6 +71,59 @@ class PlansController extends BaseController
 
     public function show(string $id)
     {
-        return redirect()->route('admin.plans.edit', $id);
+        $plan = \App\Models\Plan::with(['scheduleItems', 'country', 'city'])->findOrFail($id);
+        
+        // Get all user requests for this plan
+        $userRequests = \App\Models\UserRequest::with(['user', 'trainer', 'scheduleProgress'])
+            ->where('plan_id', $id)
+            ->latest()
+            ->get();
+
+        // Get cancelled requests
+        $cancelledRequests = $userRequests->where('status', \App\Models\UserRequest::STATUS_CANCELLED);
+
+        // Get schedule progress items for review
+        $scheduleProgressItems = \App\Models\UserScheduleProgress::with(['userRequest.user', 'userRequest.trainer', 'planScheduleItem'])
+            ->whereHas('userRequest', function ($q) use ($id) {
+                $q->where('plan_id', $id);
+            })
+            ->latest()
+            ->paginate(20);
+
+        $statuses = [
+            \App\Models\UserRequest::STATUS_PENDING_PAYMENT => 'قيد الدفع',
+            \App\Models\UserRequest::STATUS_AWAITING_OFFERS => 'في انتظار العروض',
+            \App\Models\UserRequest::STATUS_OFFER_SELECTED => 'تم اختيار العرض',
+            \App\Models\UserRequest::STATUS_PAID => 'مدفوع',
+            \App\Models\UserRequest::STATUS_IN_TRAINING => 'قيد التدريب',
+            \App\Models\UserRequest::STATUS_COMPLETED => 'مكتمل',
+            \App\Models\UserRequest::STATUS_CANCELLED => 'ملغي',
+        ];
+
+        return view('admin.plans.show', compact('plan', 'userRequests', 'cancelledRequests', 'scheduleProgressItems', 'statuses'));
+    }
+
+    public function updateRequestStatus(\Illuminate\Http\Request $request, string $planId, string $requestId)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:' . implode(',', [
+                \App\Models\UserRequest::STATUS_PENDING_PAYMENT,
+                \App\Models\UserRequest::STATUS_AWAITING_OFFERS,
+                \App\Models\UserRequest::STATUS_OFFER_SELECTED,
+                \App\Models\UserRequest::STATUS_PAID,
+                \App\Models\UserRequest::STATUS_IN_TRAINING,
+                \App\Models\UserRequest::STATUS_COMPLETED,
+                \App\Models\UserRequest::STATUS_CANCELLED,
+            ])],
+        ]);
+
+        $userRequest = \App\Models\UserRequest::where('plan_id', $planId)
+            ->findOrFail($requestId);
+
+        $oldStatus = $userRequest->status;
+        $userRequest->status = $validated['status'];
+        $userRequest->save();
+
+        return back()->with('status', "تم تحديث حالة الطلب من {$oldStatus} إلى {$validated['status']}");
     }
 }

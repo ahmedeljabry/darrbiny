@@ -13,7 +13,7 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule($userRequest, int $planId): array
+    public function getSchedule($userRequest,$planId): array
     {
         $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->ordered()
@@ -48,13 +48,13 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay($userRequest, int $planId, int $dayNumber): UserScheduleProgress
+    public function checkDay($userRequest, int $planId, int $dayNumber, $user = null): UserScheduleProgress
     {
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber) {
+        return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber, $user) {
             $progress = UserScheduleProgress::firstOrCreate(
                 [
                     'user_request_id' => $userRequest->id,
@@ -63,11 +63,27 @@ class UserScheduleService
                 [
                     'day_number' => $dayNumber,
                     'is_checked' => false,
+                    'status' => UserScheduleProgress::STATUS_PENDING,
                 ]
             );
 
             $progress->is_checked = true;
             $progress->checked_at = now();
+            
+            // If trainer is checking, mark as sent so user can accept
+            // Only update status if it's still pending (not already sent/accepted/rejected)
+            if ($user && $user->id === $userRequest->trainer_id) {
+                if ($progress->status === UserScheduleProgress::STATUS_PENDING) {
+                    $progress->status = UserScheduleProgress::STATUS_SENT;
+                    $progress->sent_at = now();
+                    
+                    // Send notification to user
+                    if ($userRequest->user) {
+                        $userRequest->user->notify(new ScheduleItemSentNotification($progress));
+                    }
+                }
+            }
+            
             $progress->save();
 
             return $progress;

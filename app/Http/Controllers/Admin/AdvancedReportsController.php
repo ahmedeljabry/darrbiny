@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\ActiveCoursesExport;
+use App\Exports\CompletedPayoutsExport;
+use App\Exports\PointsBalancesExport;
+use App\Exports\WalletBalancesExport;
+use App\Exports\WalletPaymentsExport;
 use App\Models\Payment;
 use App\Models\RewardRedemption;
 use App\Models\User;
@@ -12,6 +17,7 @@ use App\Models\UserScheduleProgress;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdvancedReportsController extends BaseController
@@ -52,6 +58,13 @@ class AdvancedReportsController extends BaseController
             ->whereDate('created_at', $date)
             ->get();
 
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new CompletedPayoutsExport($payments),
+                'completed-payouts-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
         $rows = $payments->map(function (Payment $p) {
             $trainer = $p->userRequest?->trainer;
             return [
@@ -80,6 +93,13 @@ class AdvancedReportsController extends BaseController
         $courses = UserRequest::with(['trainer', 'user', 'payments' => function ($q) {
             $q->where('status', Payment::STATUS_SUCCEEDED)->orderByDesc('created_at');
         }])->where('status', UserRequest::STATUS_IN_TRAINING)->get();
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new ActiveCoursesExport($courses),
+                'active-courses-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
 
         $rows = $courses->map(function (UserRequest $req) {
             $payment = $req->payments->first();
@@ -156,6 +176,13 @@ class AdvancedReportsController extends BaseController
     {
         $users = User::where('points_balance', '>', 0)->get();
 
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new WalletBalancesExport($users),
+                'wallet-balances-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
         $rows = $users->map(fn(User $u) => [
             $u->id,
             $u->name ?? '-',
@@ -175,6 +202,14 @@ class AdvancedReportsController extends BaseController
     public function pointsBalances(Request $request)
     {
         $users = User::all();
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new PointsBalancesExport($users),
+                'points-balances-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
         $rows = $users->map(fn(User $u) => [
             $u->id,
             $u->name ?? '-',
@@ -222,6 +257,13 @@ class AdvancedReportsController extends BaseController
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->latest()
             ->get();
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new WalletPaymentsExport($items),
+                'wallet-payments-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
 
         $rows = $items->map(function (Payment $p) {
             return [

@@ -19,6 +19,9 @@ class TrainerProfile extends BaseModel
         'rating_count',
         'rating_avg',
         'verified_at',
+        'pending_approval',
+        'pending_changes',
+        'pending_approval_at',
         'version',
     ];
 
@@ -29,6 +32,9 @@ class TrainerProfile extends BaseModel
         'rating_avg' => 'float',
         'rating_count' => 'integer',
         'verified_at' => 'datetime',
+        'pending_approval' => 'bool',
+        'pending_changes' => 'array',
+        'pending_approval_at' => 'datetime',
         'version' => 'integer',
     ];
 

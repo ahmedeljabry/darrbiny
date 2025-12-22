@@ -52,9 +52,12 @@ Route::middleware(['web'])
             Route::post('/users/{id}/freeze', [AdminUsersController::class, 'freeze'])->name('users.freeze');
             Route::post('/users/{id}/ban', [AdminUsersController::class, 'ban'])->name('users.ban');
             Route::post('/users/{id}/unban', [AdminUsersController::class, 'unban'])->name('users.unban');
+            Route::post('/users/{id}/trainer-profile/approve', [AdminUsersController::class, 'approveTrainerProfile'])->name('users.trainer-profile.approve');
+            Route::post('/users/{id}/trainer-profile/reject', [AdminUsersController::class, 'rejectTrainerProfile'])->name('users.trainer-profile.reject');
             Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'start'])->name('users.impersonate');
 
             Route::resource('plans' , PlansController::class)->names('plans');
+            Route::put('/plans/{planId}/requests/{requestId}/status', [PlansController::class, 'updateRequestStatus'])->name('plans.requests.update-status');
             Route::get('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'index'])->name('plans.schedule.index');
             Route::post('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'store'])->name('plans.schedule.store');
             Route::put('/plans/schedule/{id}', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'update'])->name('plans.schedule.update');

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\BookingsExport;
 use App\Models\UserRequest;
 use App\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class BookingsController extends BaseController
 {
@@ -45,6 +47,27 @@ class BookingsController extends BaseController
             UserRequest::STATUS_COMPLETED => 'مكتمل',
             UserRequest::STATUS_CANCELLED => 'ملغي',
         ];
+
+        if ($request->query('export') === 'excel') {
+            $allBookings = UserRequest::with(['user', 'trainer', 'plan', 'plan.country', 'plan.city'])
+                ->when($q, function ($query) use ($q) {
+                    $query->whereHas('user', function ($userQuery) use ($q) {
+                        $userQuery->where('name', 'like', "%{$q}%")
+                          ->orWhere('phone_with_cc', 'like', "%{$q}%");
+                    });
+                })
+                ->when($status, fn($query) => $query->where('status', $status))
+                ->when($planId, fn($query) => $query->where('plan_id', $planId))
+                ->when($dateFrom, fn($query) => $query->whereDate('start_date', '>=', $dateFrom))
+                ->when($dateTo, fn($query) => $query->whereDate('start_date', '<=', $dateTo))
+                ->latest()
+                ->get();
+
+            return Excel::download(
+                new BookingsExport($allBookings),
+                'bookings-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
 
         return view('admin.bookings.index', compact('bookings', 'plans', 'statuses', 'q', 'status', 'planId', 'dateFrom', 'dateTo'));
     }

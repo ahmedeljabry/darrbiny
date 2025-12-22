@@ -37,7 +37,7 @@ class ScheduleController extends BaseController
             return response()->json(['message' => 'Subscription not found'], 404);
         }
 
-        $schedule = $this->service->getSchedule($userRequest, (int) $userRequest->plan_id);
+        $schedule = $this->service->getSchedule($userRequest, $userRequest->plan_id);
 
         return response()->json([
             'data' => [
@@ -55,9 +55,10 @@ class ScheduleController extends BaseController
     public function check(Request $request, string $id, int $dayNumber)
     {
         $userRequest = UserRequest::findOrFail($id);
+        $user = $request->user();
 
-        abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->checkDay($userRequest, (int) $userRequest->plan_id, $dayNumber);
+        abort_unless(in_array($user->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
+        $progress = $this->service->checkDay($userRequest, (int) $userRequest->plan_id, $dayNumber, $user);
 
         return response()->json([
             'data' => [
@@ -65,6 +66,8 @@ class ScheduleController extends BaseController
                 'day_number' => $progress->day_number,
                 'is_checked' => $progress->is_checked,
                 'checked_at' => $progress->checked_at?->toIso8601String(),
+                'status' => $progress->status,
+                'sent_at' => $progress->sent_at?->toIso8601String(),
             ],
         ]);
     }

@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\CancellationRequestsExport;
 use App\Models\CancellationRequest;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
+use App\Notifications\CancellationRequestNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CancellationRequestsController extends BaseController
 {
@@ -32,6 +37,24 @@ class CancellationRequestsController extends BaseController
         }
 
         $requests = $q->latest()->paginate(20)->withQueryString();
+
+        if ($request->query('export') === 'excel') {
+            $allRequests = CancellationRequest::with([
+                'userRequest',
+                'userRequest.user',
+                'userRequest.plan',
+                'user',
+                'processedBy'
+            ])
+            ->when($status, fn($query) => $query->where('status', $status))
+            ->latest()
+            ->get();
+
+            return Excel::download(
+                new CancellationRequestsExport($allRequests),
+                'cancellation-requests-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
 
         return view('admin.cancellation-requests.index', compact('requests', 'status'));
     }
@@ -58,7 +81,7 @@ class CancellationRequestsController extends BaseController
             'admin_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $cancellation = CancellationRequest::with(['userRequest', 'userRequest.user', 'userRequest.payments'])
+        $cancellation = CancellationRequest::with(['userRequest', 'userRequest.user', 'userRequest.trainer', 'userRequest.plan', 'userRequest.payments'])
             ->findOrFail($id);
 
         abort_unless($cancellation->status === CancellationRequest::STATUS_PENDING, 422, 'Cancellation already processed');
@@ -75,10 +98,31 @@ class CancellationRequestsController extends BaseController
             $userRequest->save();
 
             $totalPaid = $userRequest->total_paid_minor;
+            $packageValue = $userRequest->plan?->price_min ?? 0;
+            
             if ($totalPaid > 0) {
                 $refundAmount = (int) round($totalPaid / 100);
                 $user = $userRequest->user;
                 $user->increment('points_balance', $refundAmount);
+
+                // Create wallet transaction record
+                WalletTransaction::create([
+                    'user_id' => $user->id,
+                    'amount' => $refundAmount,
+                    'type' => WalletTransaction::TYPE_REFUND,
+                    'status' => WalletTransaction::STATUS_APPROVED,
+                    'processed_by' => $request->user()->id,
+                    'processed_at' => now(),
+                    'notes' => "إرجاع مبلغ طلب الإلغاء #{$cancellation->id} - قيمة الباقة: {$packageValue}",
+                ]);
+            }
+
+            // Send notifications
+            if ($userRequest->user) {
+                Notification::send($userRequest->user, new CancellationRequestNotification($cancellation));
+            }
+            if ($userRequest->trainer) {
+                Notification::send($userRequest->trainer, new CancellationRequestNotification($cancellation));
             }
         });
 

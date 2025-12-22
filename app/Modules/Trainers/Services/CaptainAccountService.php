@@ -48,13 +48,17 @@ class CaptainAccountService
             }
         }
 
-        $profile->fill($data)->save();
+        // Store current values as pending changes and suspend account
+        $currentData = $profile->only(array_keys($data));
+        $pendingChanges = array_merge($currentData, $data);
+        
+        $profile->pending_changes = $pendingChanges;
+        $profile->pending_approval = true;
+        $profile->pending_approval_at = now();
+        $profile->save();
 
-        $location = Arr::only($payload, ['country_id', 'city_id']);
-        if (!empty(array_filter($location, static fn ($value) => $value !== null))) {
-            $user->fill(array_filter($location, static fn ($value) => $value !== null));
-            $user->save();
-        }
+        // Suspend user account until approval
+        $user->update(['banned_until' => now()->addYears(10)]); // Temporary ban until approval
 
         return $profile->fresh(['country:id,name', 'city:id,name']);
     }

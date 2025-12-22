@@ -115,7 +115,69 @@ class UsersController extends BaseController
             ])
             ->findOrFail($id);
 
-        return view('admin.users.show', compact('user'));
+        // Get user requests for students
+        $userRequests = \App\Models\UserRequest::with(['plan', 'trainer'])
+            ->where('user_id', $id)
+            ->latest()
+            ->get();
+
+        return view('admin.users.show', compact('user', 'userRequests'));
+    }
+
+    public function approveTrainerProfile(string $id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        
+        abort_unless($user->hasRole('TRAINER'), 422, 'User is not a trainer');
+        abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'No pending approval');
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+            $profile = $user->trainerProfile;
+            
+            // Apply pending changes
+            if ($profile->pending_changes) {
+                $profile->fill($profile->pending_changes);
+            }
+            
+            $profile->pending_approval = false;
+            $profile->pending_changes = null;
+            $profile->pending_approval_at = null;
+            $profile->save();
+
+            // Unban user
+            $user->update(['banned_until' => null, 'banned_reason' => null]);
+        });
+
+        return back()->with('status', 'تم الموافقة على تعديلات ملف المدرب');
+    }
+
+    public function rejectTrainerProfile(Request $request, string $id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        
+        abort_unless($user->hasRole('TRAINER'), 422, 'User is not a trainer');
+        abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'No pending approval');
+
+        $validated = $request->validate([
+            'rejection_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $validated) {
+            $profile = $user->trainerProfile;
+            
+            // Clear pending changes
+            $profile->pending_approval = false;
+            $profile->pending_changes = null;
+            $profile->pending_approval_at = null;
+            $profile->save();
+
+            // Keep user banned with reason
+            $user->update([
+                'banned_reason' => $validated['rejection_reason'],
+            ]);
+        });
+
+        return back()->with('status', 'تم رفض تعديلات ملف المدرب');
     }
 
     public function edit(string $id)
