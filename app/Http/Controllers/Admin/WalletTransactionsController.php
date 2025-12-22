@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\WalletTransactionsExport;
 use App\Models\WalletTransaction;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Maatwebsite\Excel\Facades\Excel;
 
 class WalletTransactionsController extends BaseController
 {
@@ -44,6 +46,27 @@ class WalletTransactionsController extends BaseController
 
         if ($dateTo) {
             $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        if ($request->query('export') === 'excel') {
+            $allTransactions = WalletTransaction::with(['user', 'processedBy'])
+                ->when($status, fn($q) => $q->where('status', $status))
+                ->when($userId, fn($q) => $q->where('user_id', $userId))
+                ->when($search, function ($q) use ($search) {
+                    $q->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                          ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    });
+                })
+                ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->whereDate('created_at', '<=', $dateTo))
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return Excel::download(
+                new WalletTransactionsExport($allTransactions),
+                'wallet-transactions-' . now()->format('Y-m-d') . '.xlsx'
+            );
         }
 
         $transactions = $query->orderBy('created_at', 'desc')

@@ -67,6 +67,9 @@
                         <div class="d-flex gap-2 align-items-end">
                             <button class="btn btn-outline-secondary">تصفية</button>
                             <a href="{{ route('admin.wallet-transactions.index') }}" class="btn btn-outline-dark">إعادة تعيين</a>
+                            <a href="{{ route('admin.wallet-transactions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success">
+                                <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+                            </a>
                         </div>
                     </form>
                 </div>

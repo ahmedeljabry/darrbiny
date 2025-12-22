@@ -116,4 +116,87 @@
       </div>
     </div>
   @endif
+
+  @if($user->isUser() && $userRequests->count() > 0)
+    <div class="card mt-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">حجوزات الطالب</h5>
+        <span class="badge bg-label-primary">{{ $userRequests->count() }} حجز</span>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th><i class="icon-base ti tabler-hash me-1"></i> رقم الحجز</th>
+                <th><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
+                <th><i class="icon-base ti tabler-user me-1"></i> المدرب</th>
+                <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
+                <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+                <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach($userRequests as $request)
+                <tr>
+                  <td><code class="text-primary">#{{ substr($request->id, 0, 8) }}</code></td>
+                  <td>
+                    <div class="d-flex flex-column">
+                      <span class="fw-semibold">{{ $request->plan?->title ?? '-' }}</span>
+                      @if($request->plan)
+                        <small class="text-muted">{{ $request->plan->city?->name ?? '' }}, {{ $request->plan->country?->name ?? '' }}</small>
+                      @endif
+                    </div>
+                  </td>
+                  <td>
+                    @if($request->trainer)
+                      <span class="fw-semibold">{{ $request->trainer->name }}</span>
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
+                  <td>
+                    @if($request->start_date)
+                      {{ $request->start_date->format('Y-m-d') }}
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
+                  <td>
+                    @php
+                      $statusColors = [
+                        'pending_payment' => 'warning',
+                        'awaiting_offers' => 'info',
+                        'offer_selected' => 'primary',
+                        'paid' => 'success',
+                        'in_training' => 'primary',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                      ];
+                      $statusLabels = [
+                        'pending_payment' => 'قيد الدفع',
+                        'awaiting_offers' => 'في انتظار العروض',
+                        'offer_selected' => 'تم اختيار العرض',
+                        'paid' => 'مدفوع',
+                        'in_training' => 'قيد التدريب',
+                        'completed' => 'مكتمل',
+                        'cancelled' => 'ملغي',
+                      ];
+                      $color = $statusColors[$request->status] ?? 'secondary';
+                    @endphp
+                    <span class="badge bg-label-{{ $color }}">{{ $statusLabels[$request->status] ?? $request->status }}</span>
+                  </td>
+                  <td class="text-center">
+                    <a href="{{ route('admin.bookings.show', $request->id) }}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+                      <i class="icon-base ti tabler-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  @endif
 @endsection
