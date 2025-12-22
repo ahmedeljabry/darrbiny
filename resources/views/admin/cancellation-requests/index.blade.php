@@ -64,6 +64,7 @@
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-file-text me-1"></i> رقم الدورة</th>
                             <th><i class="icon-base ti tabler-info-circle me-1"></i> سبب الإلغاء</th>
+                            <th style="width: 150px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الطلب</th>
                             <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
@@ -97,6 +98,37 @@
                                 </td>
                                 <td>
                                     @php
+                                        $userRequest = $req->userRequest;
+                                        $packageValue = $userRequest?->plan?->price_min ?? 0;
+                                        $totalPaid = $userRequest?->total_paid_minor ?? 0;
+                                        $currency = $userRequest?->currency ?? 'SAR';
+                                        $refundAmount = $totalPaid > 0 ? (int) round($totalPaid / 100) : 0;
+                                    @endphp
+                                    <div class="d-flex flex-column">
+                                        @if($packageValue > 0)
+                                            <div>
+                                                <small class="text-muted d-block">قيمة الباقة:</small>
+                                                <span class="fw-semibold text-primary">{{ number_format($packageValue / 100, 2) }} {{ $currency }}</span>
+                                            </div>
+                                        @endif
+                                        @if($totalPaid > 0)
+                                            <div class="mt-1">
+                                                <small class="text-muted d-block">المبلغ المدفوع:</small>
+                                                <span class="fw-semibold text-success">{{ number_format($totalPaid / 100, 2) }} {{ $currency }}</span>
+                                            </div>
+                                            @if($req->status === 'approved')
+                                                <div class="mt-1">
+                                                    <small class="text-muted d-block">المبلغ المسترد:</small>
+                                                    <span class="badge bg-label-success">{{ number_format($refundAmount, 2) }} {{ $currency }}</span>
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    @php
                                         $statusColors = [
                                             'pending' => 'warning',
                                             'approved' => 'success',
@@ -125,7 +157,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-x-circle" style="font-size: 32px;"></i>
