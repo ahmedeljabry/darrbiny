@@ -56,6 +56,9 @@ class UsersController extends BaseController
 
         $totalUsers = User::count();
         $trainersCount = User::role('TRAINER')->count();
+        $normalUsersCount = User::whereDoesntHave('roles', function ($r) {
+            $r->whereIn('name', ['ADMIN', 'TRAINER']);
+        })->count();
         $bannedCount = User::withTrashed()
             ->where(function ($w) {
                 $w->whereNotNull('deleted_at')
@@ -64,7 +67,7 @@ class UsersController extends BaseController
         $activeCount = $totalUsers - $bannedCount;
 
         return view('admin.users.index', compact(
-            'users', 'totalUsers', 'trainersCount', 'bannedCount', 'activeCount', 'role', 'status', 's'
+            'users', 'totalUsers', 'trainersCount', 'normalUsersCount', 'bannedCount', 'activeCount', 'role', 'status', 's'
         ));
     }
 

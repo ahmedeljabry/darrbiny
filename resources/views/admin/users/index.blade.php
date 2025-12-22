@@ -10,21 +10,21 @@
   </ol>
 </nav>
 
-<div class="row g-6 mb-6">
+<div class="row g-4 mb-4">
   <div class="col-sm-6 col-xl-3">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div class="content-left">
-            <span class="text-heading">إجمالي المستخدمين</span>
-            <div class="d-flex align-items-center my-1">
-              <h4 class="mb-0 me-2">{{ $totalUsers }}</h4>
+            <span class="text-heading text-muted small">إجمالي المستخدمين</span>
+            <div class="d-flex align-items-center my-2">
+              <h3 class="mb-0 me-2 fw-bold">{{ number_format($totalUsers) }}</h3>
             </div>
-            <small class="mb-0">كل المستخدمين</small>
+            <small class="text-muted">جميع المستخدمين في النظام</small>
           </div>
           <div class="avatar">
-            <span class="avatar-initial rounded bg-label-primary">
-              <i class="icon-base ti tabler-users icon-26px"></i>
+            <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
+              <i class="icon-base ti tabler-users" style="font-size: 24px;"></i>
             </span>
           </div>
         </div>
@@ -32,19 +32,19 @@
     </div>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div class="content-left">
-            <span class="text-heading">المدربون</span>
-            <div class="d-flex align-items-center my-1">
-              <h4 class="mb-0 me-2">{{ $trainersCount }}</h4>
+            <span class="text-heading text-muted small">المستخدمون العاديون</span>
+            <div class="d-flex align-items-center my-2">
+              <h3 class="mb-0 me-2 fw-bold text-info">{{ number_format($normalUsersCount ?? 0) }}</h3>
             </div>
-            <small class="mb-0">Role: TRAINER</small>
+            <small class="text-muted">الطلاب والمستخدمون العاديون</small>
           </div>
           <div class="avatar">
-            <span class="avatar-initial rounded bg-label-success">
-              <i class="icon-base ti tabler-school icon-26px"></i>
+            <span class="avatar-initial rounded bg-label-info" style="width: 48px; height: 48px;">
+              <i class="icon-base ti tabler-user" style="font-size: 24px;"></i>
             </span>
           </div>
         </div>
@@ -52,19 +52,19 @@
     </div>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div class="content-left">
-            <span class="text-heading">محظورون</span>
-            <div class="d-flex align-items-center my-1">
-              <h4 class="mb-0 me-2">{{ $bannedCount }}</h4>
+            <span class="text-heading text-muted small">المدربون</span>
+            <div class="d-flex align-items-center my-2">
+              <h3 class="mb-0 me-2 fw-bold text-success">{{ number_format($trainersCount) }}</h3>
             </div>
-            <small class="mb-0">مجمد/محظور مؤقتاً</small>
+            <small class="text-muted">المدربون والكباتن</small>
           </div>
           <div class="avatar">
-            <span class="avatar-initial rounded bg-label-danger">
-              <i class="icon-base ti tabler-user-exclamation icon-26px"></i>
+            <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
+              <i class="icon-base ti tabler-school" style="font-size: 24px;"></i>
             </span>
           </div>
         </div>
@@ -72,19 +72,19 @@
     </div>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div class="content-left">
-            <span class="text-heading">نشطون</span>
-            <div class="d-flex align-items-center my-1">
-              <h4 class="mb-0 me-2">{{ $activeCount }}</h4>
+            <span class="text-heading text-muted small">المحظورون</span>
+            <div class="d-flex align-items-center my-2">
+              <h3 class="mb-0 me-2 fw-bold text-danger">{{ number_format($bannedCount) }}</h3>
             </div>
-            <small class="mb-0">غير محظورين</small>
+            <small class="text-muted">مجمد/محظور مؤقتاً</small>
           </div>
           <div class="avatar">
-            <span class="avatar-initial rounded bg-label-info">
-              <i class="icon-base ti tabler-user-check icon-26px"></i>
+            <span class="avatar-initial rounded bg-label-danger" style="width: 48px; height: 48px;">
+              <i class="icon-base ti tabler-user-exclamation" style="font-size: 24px;"></i>
             </span>
           </div>
         </div>
@@ -110,36 +110,19 @@
 @endif
 
 <div class="card border-0 shadow-sm">
-  <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
-    <div class="d-flex align-items-center gap-2">
-      <span class="avatar-initial rounded bg-label-primary">
-        <i class="icon-base ti tabler-users"></i>
+  <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap gap-3 pb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
+        <i class="icon-base ti tabler-users" style="font-size: 24px;"></i>
       </span>
       <div>
-        <h5 class="mb-0">المستخدمون</h5>
-        <small class="text-muted">إدارة جميع المستخدمين والمدربين</small>
+        <h5 class="mb-0 fw-bold">إدارة المستخدمين</h5>
+        <small class="text-muted">عرض وإدارة جميع المستخدمين والمدربين</small>
       </div>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <div class="dropdown">
-        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="trainersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="icon-base ti tabler-school me-1"></i> المدربون
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="trainersDropdown">
-          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'active']) }}">
-            <i class="icon-base ti tabler-user-check me-2"></i> المدربون النشطون
-          </a></li>
-          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'banned']) }}">
-            <i class="icon-base ti tabler-user-exclamation me-2"></i> المدربون المحظورون
-          </a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer']) }}">
-            <i class="icon-base ti tabler-users me-2"></i> جميع المدربين
-          </a></li>
-        </ul>
-      </div>
-      <div class="dropdown">
-        <button class="btn btn-outline-success dropdown-toggle" type="button" id="usersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" id="usersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="icon-base ti tabler-user me-1"></i> المستخدمون
         </button>
         <ul class="dropdown-menu" aria-labelledby="usersDropdown">
@@ -155,88 +138,117 @@
           </a></li>
         </ul>
       </div>
-      <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+      <div class="dropdown">
+        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="trainersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="icon-base ti tabler-school me-1"></i> المدربون
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="trainersDropdown">
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'active']) }}">
+            <i class="icon-base ti tabler-user-check me-2"></i> المدربون النشطون
+          </a></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'banned']) }}">
+            <i class="icon-base ti tabler-user-exclamation me-2"></i> المدربون المحظورون
+          </a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer']) }}">
+            <i class="icon-base ti tabler-users me-2"></i> جميع المدربين
+          </a></li>
+        </ul>
+      </div>
+      <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">
         <i class="icon-base ti tabler-plus me-1"></i> إضافة مستخدم
       </a>
     </div>
   </div>
-  <div class="card-body">
+  <div class="card-body pt-0">
     <form method="get" class="row g-3 mb-4">
       <div class="col-md-3">
-        <label class="form-label fw-semibold">
+        <label class="form-label fw-semibold small">
           <i class="icon-base ti tabler-shield me-1"></i> الدور
         </label>
-        <div class="input-group input-group-merge">
-          <span class="input-group-text"><i class="icon-base ti tabler-shield"></i></span>
-          <select name="role" class="form-select select2">
-            <option value="">الكل</option>
-            <option value="trainer" {{ ($role==='trainer') ? 'selected' : '' }}>مدرب</option>
-            <option value="admin" {{ ($role==='admin') ? 'selected' : '' }}>مشرف</option>
-            <option value="user" {{ ($role==='user') ? 'selected' : '' }}>مستخدم</option>
-          </select>
-        </div>
+        <select name="role" class="form-select form-select-sm">
+          <option value="">الكل</option>
+          <option value="trainer" {{ ($role==='trainer') ? 'selected' : '' }}>مدرب</option>
+          <option value="admin" {{ ($role==='admin') ? 'selected' : '' }}>مشرف</option>
+          <option value="user" {{ ($role==='user') ? 'selected' : '' }}>مستخدم</option>
+        </select>
       </div>
       <div class="col-md-3">
-        <label class="form-label fw-semibold">
+        <label class="form-label fw-semibold small">
           <i class="icon-base ti tabler-info-circle me-1"></i> الحالة
         </label>
-        <div class="input-group input-group-merge">
-          <span class="input-group-text"><i class="icon-base ti tabler-info-circle"></i></span>
-          <select name="status" class="form-select select2">
-            <option value="">الكل</option>
-            <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
-            <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
-          </select>
-        </div>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">الكل</option>
+          <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
+          <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
+        </select>
       </div>
       <div class="col-md-4">
-        <label class="form-label fw-semibold">
+        <label class="form-label fw-semibold small">
           <i class="icon-base ti tabler-search me-1"></i> بحث
         </label>
-        <div class="input-group input-group-merge">
-          <span class="input-group-text"><i class="icon-base ti tabler-search"></i></span>
-          <input type="text" name="search" class="form-control" value="{{ $s ?? '' }}" placeholder="اسم، بريد، هاتف">
-        </div>
+        <input type="text" name="search" class="form-control form-control-sm" value="{{ $s ?? '' }}" placeholder="اسم، بريد، هاتف">
       </div>
-      <div class="col-md-2 d-grid">
-        <label class="form-label d-none d-md-block">&nbsp;</label>
-        <button class="btn btn-primary" type="submit">
-          <i class="icon-base ti tabler-filter me-1"></i> تطبيق
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary btn-sm w-100" type="submit">
+          <i class="icon-base ti tabler-filter me-1"></i> تصفية
         </button>
       </div>
     </form>
   </div>
-  <div class="card-datatable table-responsive p-3">
-    <table class="table table-hover align-middle" id="usersTable">
-      <thead class="table-light border-top">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
         <tr>
-          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
-          <th><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
-          <th><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
-          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
+          <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th style="width: 200px;"><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
+          <th style="width: 120px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th style="width: 150px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
-        @foreach($users as $u)
+        @forelse($users as $u)
           <tr>
-            <td>{{ $u->name ?? '-' }}</td>
-            <td>{{ $u->email ?? '-' }}</td>
-            <td>{{ $u->phone_with_cc }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                @if($u->profile_picture_url)
+                  <img src="{{ $u->profile_picture_url }}" alt="{{ $u->name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                @else
+                  <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 32px; height: 32px; font-size: 14px;">
+                    {{ substr($u->name ?? 'U', 0, 1) }}
+                  </span>
+                @endif
+                <div>
+                  <div class="fw-semibold">{{ $u->name ?? '-' }}</div>
+                  <small class="text-muted">#{{ substr($u->id, 0, 8) }}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              @if($u->email)
+                <span>{{ $u->email }}</span>
+              @else
+                <span class="text-muted">-</span>
+              @endif
+            </td>
+            <td>
+              <span class="text-muted">{{ $u->phone_with_cc }}</span>
+            </td>
             <td>
               @foreach($u->getRoleNames() as $r)
                 @if($r === 'TRAINER')
-                  <span class="badge bg-label-success me-1">
-                    <i class="icon-base ti tabler-school me-1"></i>{{ $r }}
+                  <span class="badge bg-label-success me-1 mb-1">
+                    <i class="icon-base ti tabler-school me-1"></i>مدرب
                   </span>
                 @elseif($r === 'ADMIN')
-                  <span class="badge bg-label-primary me-1">
-                    <i class="icon-base ti tabler-shield-check me-1"></i>{{ $r }}
+                  <span class="badge bg-label-primary me-1 mb-1">
+                    <i class="icon-base ti tabler-shield-check me-1"></i>مشرف
                   </span>
                 @else
-                  <span class="badge bg-label-info me-1">
-                    <i class="icon-base ti tabler-user me-1"></i>{{ $r }}
+                  <span class="badge bg-label-info me-1 mb-1">
+                    <i class="icon-base ti tabler-user me-1"></i>مستخدم
                   </span>
                 @endif
               @endforeach
@@ -253,21 +265,21 @@
               @endif
             </td>
             <td>
-              <div class="d-flex gap-2 flex-wrap justify-content-center">
-                <a href="{{ route('admin.users.show', $u->id) }}" class="btn btn-sm btn-outline-info" title="عرض">
+              <div class="d-flex gap-1 justify-content-center">
+                <a href="{{ route('admin.users.show', $u->id) }}" class="btn btn-sm btn-icon btn-outline-info" title="عرض">
                   <i class="icon-base ti tabler-eye"></i>
                 </a>
-                <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-sm btn-outline-primary" title="تعديل">
+                <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="تعديل">
                   <i class="icon-base ti tabler-edit"></i>
                 </a>
                 @if(!$u->isBanned())
-                  <button class="btn btn-sm btn-outline-warning" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBanUser" data-user-id="{{ $u->id }}" data-user-name="{{ $u->name ?? $u->email }}" title="حظر">
+                  <button class="btn btn-sm btn-icon btn-outline-warning" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBanUser" data-user-id="{{ $u->id }}" data-user-name="{{ $u->name ?? $u->email }}" title="حظر">
                     <i class="icon-base ti tabler-ban"></i>
                   </button>
                 @else
                   <form method="post" action="{{ route('admin.users.unban', $u->id) }}" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="إلغاء الحظر">
+                    <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="إلغاء الحظر">
                       <i class="icon-base ti tabler-user-check"></i>
                     </button>
                   </form>
@@ -275,12 +287,26 @@
               </div>
             </td>
           </tr>
-        @endforeach
+        @empty
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="d-flex flex-column align-items-center">
+                <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
+                  <i class="icon-base ti tabler-users" style="font-size: 32px;"></i>
+                </span>
+                <p class="text-muted mb-0">لا توجد مستخدمين</p>
+              </div>
+            </td>
+          </tr>
+        @endforelse
       </tbody>
     </table>
-
-    <div class="mt-3">{{ $users->links() }}</div>
   </div>
+  @if($users->hasPages())
+    <div class="card-footer border-top">
+      {{ $users->withQueryString()->links() }}
+    </div>
+  @endif
 </div>
 
 <!-- Offcanvas: Ban User -->

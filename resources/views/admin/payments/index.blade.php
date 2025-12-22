@@ -11,73 +11,86 @@
 </nav>
 
 <div class="card border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-2">
-      <span class="avatar-initial rounded bg-label-primary">
-        <i class="icon-base ti tabler-credit-card"></i>
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3 pb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
+        <i class="icon-base ti tabler-credit-card" style="font-size: 24px;"></i>
       </span>
       <div>
-        <h5 class="mb-0">المدفوعات</h5>
-        <small class="text-body-secondary">جميع المعاملات المالية</small>
+        <h5 class="mb-0 fw-bold">المدفوعات</h5>
+        <small class="text-muted">جميع المعاملات المالية</small>
       </div>
     </div>
-    <form class="d-flex flex-wrap gap-2 align-items-end" method="get">
-      <div>
-        <label class="form-label mb-1">النوع</label>
-        <select name="type" class="form-select form-select-sm select2">
+    <a href="{{ route('admin.payments.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">
+      <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+    </a>
+  </div>
+  <div class="card-body pt-0">
+    <form class="row g-3 mb-4" method="get">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">النوع</label>
+        <select name="type" class="form-select form-select-sm">
           <option value="">جميع الأنواع</option>
           <option value="reservation_fee" @selected(request('type')==='reservation_fee')>رسوم الحجز</option>
           <option value="plan_full" @selected(request('type')==='plan_full')>دفعة كاملة</option>
         </select>
       </div>
-      <div>
-        <label class="form-label mb-1">الحالة</label>
-        <select name="status" class="form-select form-select-sm select2">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">الحالة</label>
+        <select name="status" class="form-select form-select-sm">
           <option value="">جميع الحالات</option>
           <option value="pending" @selected(request('status')==='pending')>قيد الانتظار</option>
           <option value="succeeded" @selected(request('status')==='succeeded')>نجحت</option>
           <option value="failed" @selected(request('status')==='failed')>فشلت</option>
         </select>
       </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-primary">
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary btn-sm w-100" type="submit">
           <i class="icon-base ti tabler-filter me-1"></i> تصفية
         </button>
-        <a href="{{ route('admin.payments.index') }}" class="btn btn-sm btn-outline-secondary">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ route('admin.payments.index') }}" class="btn btn-outline-secondary btn-sm w-100">
           <i class="icon-base ti tabler-refresh me-1"></i> إعادة تعيين
-        </a>
-        <a href="{{ route('admin.payments.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-sm btn-success">
-          <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
         </a>
       </div>
     </form>
   </div>
   <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
-          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th><i class="icon-base ti tabler-file-text me-1"></i> الطلب</th>
-          <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
-          <th><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
-          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-          <th><i class="icon-base ti tabler-building me-1"></i> المزود</th>
-          <th><i class="icon-base ti tabler-calendar me-1"></i> التاريخ</th>
+          <th style="width: 120px;"><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th style="width: 120px;"><i class="icon-base ti tabler-file-text me-1"></i> الطلب</th>
+          <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
+          <th style="width: 120px;"><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
+          <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th style="width: 120px;"><i class="icon-base ti tabler-building me-1"></i> المزود</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> التاريخ</th>
         </tr>
       </thead>
       <tbody>
         @forelse($payments as $p)
           <tr>
-            <td><span class="text-muted">#{{ substr($p->id, 0, 8) }}</span></td>
+            <td><code class="text-primary">#{{ substr($p->id, 0, 8) }}</code></td>
             <td>
-              <div class="d-flex flex-column">
-                <span class="fw-semibold">{{ optional($p->user)->name ?? 'غير معروف' }}</span>
-                <small class="text-muted">{{ $p->user_id }}</small>
+              <div class="d-flex align-items-center gap-2">
+                @if($p->user?->profile_picture_url)
+                  <img src="{{ $p->user->profile_picture_url }}" alt="{{ $p->user->name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                @else
+                  <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 32px; height: 32px; font-size: 14px;">
+                    {{ substr($p->user->name ?? 'U', 0, 1) }}
+                  </span>
+                @endif
+                <div>
+                  <div class="fw-semibold">{{ optional($p->user)->name ?? 'غير معروف' }}</div>
+                  <small class="text-muted">{{ substr($p->user_id, 0, 8) }}</small>
+                </div>
               </div>
             </td>
             <td>
-              <a href="{{ route('admin.bookings.show', $p->user_request_id) }}" class="text-primary">
+              <a href="{{ route('admin.bookings.show', $p->user_request_id) }}" class="text-primary fw-semibold">
                 #{{ substr($p->user_request_id, 0, 8) }}
               </a>
             </td>
@@ -133,7 +146,7 @@
     </table>
   </div>
   @if($payments->hasPages())
-    <div class="card-footer">{{ $payments->withQueryString()->links() }}</div>
+    <div class="card-footer border-top">{{ $payments->withQueryString()->links() }}</div>
   @endif
 </div>
 @endsection

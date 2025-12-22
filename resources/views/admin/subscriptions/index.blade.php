@@ -22,68 +22,81 @@
   ];
 @endphp
 <div class="card border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-2">
-      <span class="avatar-initial rounded bg-label-primary">
-        <i class="icon-base ti tabler-calendar-event"></i>
+  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3 pb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="avatar-initial rounded bg-label-info" style="width: 48px; height: 48px;">
+        <i class="icon-base ti tabler-calendar-event" style="font-size: 24px;"></i>
       </span>
       <div>
-        <h5 class="mb-0">اشتراكات المستخدمين</h5>
-        <small class="text-body-secondary">عرض النشطة، المكتملة أو بانتظار العروض</small>
+        <h5 class="mb-0 fw-bold">الاشتراكات</h5>
+        <small class="text-muted">عرض وإدارة جميع الاشتراكات</small>
       </div>
     </div>
-    <form class="d-flex flex-wrap gap-2 align-items-end" method="get">
-      <div>
-        <label class="form-label mb-1">النطاق</label>
-        <select name="scope" class="form-select form-select-sm select2">
+    <a href="{{ route('admin.subscriptions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">
+      <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+    </a>
+  </div>
+  <div class="card-body pt-0">
+    <form class="row g-3 mb-4" method="get">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">النطاق</label>
+        <select name="scope" class="form-select form-select-sm">
           <option value="">جميع الحالات</option>
           <option value="active" @selected(($scope ?? request('scope'))==='active')>نشطة</option>
           <option value="completed" @selected(($scope ?? request('scope'))==='completed')>مكتملة</option>
           <option value="awaiting_offers" @selected(($scope ?? request('scope'))==='awaiting_offers')>بانتظار العروض</option>
         </select>
       </div>
-      <div>
-        <label class="form-label mb-1">الحالة</label>
-        <select name="status" class="form-select form-select-sm select2">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">الحالة</label>
+        <select name="status" class="form-select form-select-sm">
           <option value="">حالة محددة</option>
           @foreach($statusLabels as $key => $label)
             <option value="{{ $key }}" @selected(($status ?? request('status'))===$key)>{{ $label }}</option>
           @endforeach
         </select>
       </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-primary">
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary btn-sm w-100" type="submit">
           <i class="icon-base ti tabler-filter me-1"></i> تصفية
         </button>
-        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-sm btn-outline-secondary">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-outline-secondary btn-sm w-100">
           <i class="icon-base ti tabler-refresh me-1"></i> إعادة تعيين
-        </a>
-        <a href="{{ route('admin.subscriptions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-sm btn-success">
-          <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
         </a>
       </div>
     </form>
   </div>
   <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
-          <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
-          <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-          <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
-          <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+          <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
+          <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
+          <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
       </thead>
       <tbody>
         @forelse($subs as $r)
           <tr>
-            <td><span class="text-muted">#{{ substr($r->id, 0, 8) }}</span></td>
+            <td><code class="text-primary">#{{ substr($r->id, 0, 8) }}</code></td>
             <td>
-              <div class="d-flex flex-column">
-                <span class="fw-semibold">{{ optional($r->user)->name ?? 'غير معروف' }}</span>
-                <small class="text-muted">{{ $r->user_id }}</small>
+              <div class="d-flex align-items-center gap-2">
+                @if($r->user?->profile_picture_url)
+                  <img src="{{ $r->user->profile_picture_url }}" alt="{{ $r->user->name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                @else
+                  <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 32px; height: 32px; font-size: 14px;">
+                    {{ substr($r->user->name ?? 'U', 0, 1) }}
+                  </span>
+                @endif
+                <div>
+                  <div class="fw-semibold">{{ optional($r->user)->name ?? 'غير معروف' }}</div>
+                  <small class="text-muted">{{ substr($r->user_id, 0, 8) }}</small>
+                </div>
               </div>
             </td>
             <td>
@@ -122,7 +135,7 @@
               @endif
             </td>
             <td class="text-center">
-              <a href="{{ route('admin.bookings.show', $r->id) }}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+              <a href="{{ route('admin.bookings.show', $r->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="عرض التفاصيل">
                 <i class="icon-base ti tabler-eye"></i>
               </a>
             </td>
@@ -143,7 +156,7 @@
     </table>
   </div>
   @if($subs->hasPages())
-    <div class="card-footer">{{ $subs->withQueryString()->links() }}</div>
+    <div class="card-footer border-top">{{ $subs->withQueryString()->links() }}</div>
   @endif
 </div>
 @endsection
