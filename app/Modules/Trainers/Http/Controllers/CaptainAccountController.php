@@ -10,7 +10,7 @@ use App\Modules\Trainers\Services\CaptainAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
-class /user/subscriptionsCaptainAccountController extends BaseController
+class CaptainAccountController extends BaseController
 {
     public function __construct(private readonly CaptainAccountService $service) {}
 
