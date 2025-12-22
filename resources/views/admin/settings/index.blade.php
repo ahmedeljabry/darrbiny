@@ -11,18 +11,28 @@
 </nav>
 
 @if (session('status'))
-  <div class="alert alert-success alert-dismissible" role="alert">
-    {{ session('status') }}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <i class="icon-base ti tabler-check-circle" style="font-size: 20px;"></i>
+      <span>{{ session('status') }}</span>
+    </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
   </div>
 @endif
 @if ($errors->any())
-  <div class="alert alert-danger" role="alert">
-    <ul class="mb-0">
-      @foreach ($errors->all() as $error)
-        <li>{{ $error }}</li>
-      @endforeach
-    </ul>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-start gap-2">
+      <i class="icon-base ti tabler-alert-circle mt-1" style="font-size: 20px;"></i>
+      <div class="flex-grow-1">
+        <strong class="d-block mb-2">حدث خطأ في الإدخال:</strong>
+        <ul class="mb-0">
+          @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+          @endforeach
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
   </div>
 @endif
 
@@ -32,9 +42,9 @@
       <span class="avatar-initial rounded bg-label-primary" style="width: 56px; height: 56px;">
         <i class="icon-base ti tabler-settings" style="font-size: 28px;"></i>
       </span>
-    <div>
-      <h4 class="mb-1 text-dark">لوحة إعدادات المنصة</h4>
-      <p class="mb-0 text-muted">تحكم بالعلامة التجارية، الدفع، الرسوم، المحتوى، والفيديوهات.</p>
+      <div>
+        <h4 class="mb-1 fw-bold">لوحة إعدادات المنصة</h4>
+        <p class="mb-0 text-muted">تحكم بالعلامة التجارية، الدفع، الرسوم، المحتوى، والفيديوهات</p>
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -51,7 +61,7 @@
 <div class="row g-4">
   <div class="col-lg-12">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header border-0">
+      <div class="card-header border-0 pb-3">
         <ul class="nav nav-pills settings-tabs" id="settingsTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab">
@@ -80,78 +90,102 @@
           <div class="tab-pane fade show active" id="site" role="tabpanel" aria-labelledby="site-tab">
             <div class="row g-4">
               <div class="col-lg-6">
-                <div class="card h-100 border-0 surface">
-                  <div class="card-header border-0 d-flex align-items-center gap-2">
-                    <span class="avatar-initial rounded bg-label-primary">
-                      <i class="icon-base ti tabler-brand-appgallery"></i>
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
+                    <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
+                      <i class="icon-base ti tabler-brand-appgallery" style="font-size: 24px;"></i>
                     </span>
                     <div>
-                      <h6 class="mb-0">العلامة التجارية</h6>
+                      <h6 class="mb-0 fw-bold">العلامة التجارية</h6>
                       <small class="text-muted">الاسم والشعار والأيقونة</small>
                     </div>
                   </div>
                   <div class="card-body">
                     <form method="post" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">@csrf
                       <div class="mb-3">
-                        <label class="form-label">اسم العلامة</label>
+                        <label class="form-label fw-semibold">اسم العلامة</label>
                         <div class="input-group input-group-merge">
                           <span class="input-group-text"><i class="ti tabler-edit"></i></span>
-                          <input class="form-control" name="brand_name" value="{{ $settings['brand.name'] ?? '' }}">
+                          <input class="form-control" name="brand_name" value="{{ old('brand_name', $settings['brand.name'] ?? '') }}" placeholder="اسم التطبيق">
                         </div>
+                        @error('brand_name')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">الشعار</label>
-                        <input type="file" name="logo" class="form-control">
+                        <label class="form-label fw-semibold">الشعار</label>
+                        <input type="file" name="logo" class="form-control" accept="image/*">
                         @if(!empty($settings['brand.logo_path']))
-                          <div class="mt-2"><img src="{{ \App\Support\StorageUrl::make($settings['brand.logo_path']) }}" alt="logo" height="48"></div>
+                          <div class="mt-2">
+                            <img src="{{ \App\Support\StorageUrl::make($settings['brand.logo_path']) }}" alt="logo" class="rounded" style="max-height: 60px;">
+                          </div>
                         @endif
+                        @error('logo')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">الأيقونة (Favicon)</label>
+                        <label class="form-label fw-semibold">الأيقونة (Favicon)</label>
                         <input type="file" name="favicon" class="form-control" accept="image/x-icon,image/png">
                         @if(!empty($settings['brand.favicon_path']))
-                          <div class="mt-2"><img src="{{ \App\Support\StorageUrl::make($settings['brand.favicon_path']) }}" alt="favicon" height="32"></div>
+                          <div class="mt-2">
+                            <img src="{{ \App\Support\StorageUrl::make($settings['brand.favicon_path']) }}" alt="favicon" class="rounded" style="max-height: 32px;">
+                          </div>
                         @endif
+                        @error('favicon')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
-                      <button class="btn btn-primary w-100">حفظ</button>
+                      <button class="btn btn-primary w-100">
+                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
+                      </button>
                     </form>
                   </div>
                 </div>
               </div>
 
               <div class="col-lg-6">
-                <div class="card h-100 border-0 surface">
-                  <div class="card-header border-0 d-flex align-items-center gap-2">
-                    <span class="avatar-initial rounded bg-label-success">
-                      <i class="icon-base ti tabler-credit-card"></i>
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
+                    <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
+                      <i class="icon-base ti tabler-credit-card" style="font-size: 24px;"></i>
                     </span>
                     <div>
-                      <h6 class="mb-0">بوابة الدفع: TAP</h6>
+                      <h6 class="mb-0 fw-bold">بوابة الدفع: TAP</h6>
                       <small class="text-muted">المفاتيح والويب هوك</small>
                     </div>
                   </div>
                   <div class="card-body">
                     <form method="post" action="{{ route('admin.settings.update') }}">@csrf
                       <div class="mb-3">
-                        <label class="form-label">المفتاح العام</label>
+                        <label class="form-label fw-semibold">المفتاح العام</label>
                         <div class="input-group input-group-merge">
                           <span class="input-group-text"><i class="ti tabler-key"></i></span>
-                          <input class="form-control" name="tap_public_key" value="{{ $settings['payment.tap.public_key'] ?? '' }}">
+                          <input type="text" class="form-control" name="tap_public_key" value="{{ old('tap_public_key', $settings['payment.tap.public_key'] ?? '') }}" placeholder="pk_test_...">
                         </div>
+                        @error('tap_public_key')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">المفتاح السري</label>
+                        <label class="form-label fw-semibold">المفتاح السري</label>
                         <div class="input-group input-group-merge">
                           <span class="input-group-text"><i class="ti tabler-lock"></i></span>
-                          <input class="form-control" name="tap_secret_key" value="{{ $settings['payment.tap.secret_key'] ?? '' }}">
+                          <input type="password" class="form-control" name="tap_secret_key" value="{{ old('tap_secret_key', $settings['payment.tap.secret_key'] ?? '') }}" placeholder="sk_test_...">
                         </div>
+                        @error('tap_secret_key')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">سر الويب هوك</label>
+                        <label class="form-label fw-semibold">سر الويب هوك</label>
                         <div class="input-group input-group-merge">
                           <span class="input-group-text"><i class="ti tabler-webhook"></i></span>
-                          <input class="form-control" name="tap_webhook_secret" value="{{ $settings['payment.tap.webhook_secret'] ?? '' }}">
+                          <input type="text" class="form-control" name="tap_webhook_secret" value="{{ old('tap_webhook_secret', $settings['payment.tap.webhook_secret'] ?? '') }}" placeholder="whsec_...">
                         </div>
+                        @error('tap_webhook_secret')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                       </div>
                       <button class="btn btn-primary w-100">
                         <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
@@ -162,13 +196,13 @@
               </div>
 
               <div class="col-lg-12">
-                <div class="card h-100 border-0 surface">
-                  <div class="card-header border-0 d-flex align-items-center gap-2">
-                    <span class="avatar-initial rounded bg-label-warning">
-                      <i class="icon-base ti tabler-currency-dollar"></i>
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
+                    <span class="avatar-initial rounded bg-label-warning" style="width: 48px; height: 48px;">
+                      <i class="icon-base ti tabler-currency-dollar" style="font-size: 24px;"></i>
                     </span>
                     <div>
-                      <h6 class="mb-0">الرسوم والعمولات</h6>
+                      <h6 class="mb-0 fw-bold">الرسوم والعمولات</h6>
                       <small class="text-muted">إدارة رسوم التطبيق ورسوم الحجز</small>
                     </div>
                   </div>
@@ -550,34 +584,51 @@
 
 @push('styles')
 <style>
-  .surface { 
-    background: #f9fafb; 
-    border: 1px solid #eef2f6; 
-    transition: all 0.3s ease;
-  }
-  .surface:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
   .settings-tabs .nav-link { 
-    border-radius: 10px; 
+    border-radius: 8px; 
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
+    padding: 0.75rem 1.25rem;
+    margin: 0 0.25rem;
   }
   .settings-tabs .nav-link:hover {
     background: rgba(79, 70, 229, 0.1);
+    transform: translateY(-2px);
   }
   .settings-tabs .nav-link.active { 
     background: #4f46e5; 
     color: #fff; 
-    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
   }
-  .card-header .avatar-initial {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .card {
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+  }
+  .btn-primary {
+    background: #4f46e5;
+    border-color: #4f46e5;
+  }
+  .btn-primary:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+  }
+  .table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  .is-invalid {
+    border-color: #dc3545;
+  }
+  .is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
   }
 </style>
 @endpush

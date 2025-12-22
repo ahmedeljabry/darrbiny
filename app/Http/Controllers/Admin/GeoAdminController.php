@@ -43,13 +43,21 @@ class GeoAdminController extends BaseController
             'name' => ['required','string','max:120'],
             'iso2' => ['required','string','size:2'],
             'currency' => ['required','string','size:3'],
-            'cities' => ['nullable','array'],
-            'cities.*' => ['nullable','string','max:120'],
+            'new_cities' => ['nullable','array'],
+            'new_cities.*' => ['nullable','string','max:120'],
+        ], [
+            'name.required' => 'اسم الدولة مطلوب',
+            'name.max' => 'اسم الدولة يجب ألا يتجاوز 120 حرفاً',
+            'iso2.required' => 'رمز ISO2 مطلوب',
+            'iso2.size' => 'رمز ISO2 يجب أن يكون حرفين بالضبط',
+            'currency.required' => 'العملة مطلوبة',
+            'currency.size' => 'رمز العملة يجب أن يكون 3 أحرف بالضبط',
+            'new_cities.*.max' => 'اسم المدينة يجب ألا يتجاوز 120 حرفاً',
         ]);
         $data['iso2'] = strtoupper($data['iso2']);
         $data['currency'] = strtoupper($data['currency']);
-        $cities = $data['cities'] ?? null;
-        unset($data['cities']);
+        $cities = $data['new_cities'] ?? null;
+        unset($data['new_cities']);
         $country = Country::create($data);
         if (is_array($cities)) {
             $toCreate = collect($cities)
@@ -65,7 +73,7 @@ class GeoAdminController extends BaseController
                 ->all();
             if (!empty($toCreate)) City::insert($toCreate);
         }
-        return redirect()->route('admin.geo.index')->with('status', 'تم إضافة الدولة');
+        return redirect()->route('admin.geo.index')->with('status', 'تم إضافة الدولة بنجاح');
     }
 
     public function updateCountry(Request $request, string $id)
@@ -80,6 +88,15 @@ class GeoAdminController extends BaseController
             'new_cities.*' => ['nullable','string','max:120'],
             'delete_cities' => ['nullable','array'],
             'delete_cities.*' => ['nullable','uuid'],
+        ], [
+            'name.required' => 'اسم الدولة مطلوب',
+            'name.max' => 'اسم الدولة يجب ألا يتجاوز 120 حرفاً',
+            'iso2.required' => 'رمز ISO2 مطلوب',
+            'iso2.size' => 'رمز ISO2 يجب أن يكون حرفين بالضبط',
+            'currency.required' => 'العملة مطلوبة',
+            'currency.size' => 'رمز العملة يجب أن يكون 3 أحرف بالضبط',
+            'cities.*.max' => 'اسم المدينة يجب ألا يتجاوز 120 حرفاً',
+            'new_cities.*.max' => 'اسم المدينة يجب ألا يتجاوز 120 حرفاً',
         ]);
         $data['iso2'] = strtoupper($data['iso2']);
         $data['currency'] = strtoupper($data['currency']);
@@ -114,7 +131,7 @@ class GeoAdminController extends BaseController
             if (!empty($toCreate)) City::insert($toCreate);
         }
 
-        return redirect()->route('admin.geo.countries.edit', $country->id)->with('status', 'تم حفظ الدولة والمدن');
+        return redirect()->route('admin.geo.countries.edit', $country->id)->with('status', 'تم حفظ الدولة والمدن بنجاح');
     }
 
     public function destroyCountry(string $id)
