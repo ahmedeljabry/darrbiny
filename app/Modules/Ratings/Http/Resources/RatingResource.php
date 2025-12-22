@@ -96,3 +96,4 @@ class RatingResource extends JsonResource
     }
 }
 
+
