@@ -1,7 +1,7 @@
 <div class="card mt-4">
   <div class="card-header d-flex align-items-center justify-content-between">
     <div>
-      <h5 class="mb-0">مميزات الباقة</h5>
+      <h5 class="mb-0">حقوق المتدربة</h5>
       <small class="text-body-secondary">أضف نقاط القوة التي تميّز هذه الخطة</small>
     </div>
     <button type="button" class="btn btn-sm btn-primary js-add-feature">

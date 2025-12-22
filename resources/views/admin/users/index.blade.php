@@ -121,6 +121,37 @@
       </div>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div id="bulkActionsContainer" class="d-none d-flex align-items-center gap-2">
+        <span class="badge bg-label-primary" id="selectedCount">0</span>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="bulkActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="icon-base ti tabler-settings me-1"></i> إجراءات جماعية
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="bulkActionsDropdown">
+            <li>
+              <button class="dropdown-item" type="button" onclick="bulkAction('ban')">
+                <i class="icon-base ti tabler-ban me-2"></i> حظر المحددين
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item" type="button" onclick="bulkAction('unban')">
+                <i class="icon-base ti tabler-user-check me-2"></i> إلغاء حظر المحددين
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item" type="button" onclick="bulkAction('delete')">
+                <i class="icon-base ti tabler-trash me-2"></i> حذف المحددين
+              </button>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" onclick="clearSelection()">
+                <i class="icon-base ti tabler-x me-2"></i> إلغاء التحديد
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="dropdown">
         <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" id="usersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="icon-base ti tabler-user me-1"></i> المستخدمون
@@ -197,21 +228,33 @@
     </form>
   </div>
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th style="width: 200px;"><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
-          <th style="width: 150px;"><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
-          <th style="width: 150px;"><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
-          <th style="width: 120px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-          <th style="width: 150px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse($users as $u)
+    <form id="bulkActionForm" method="post" action="{{ route('admin.users.bulk-action') }}">
+      @csrf
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
           <tr>
-            <td>
+            <th style="width: 50px;" class="text-center">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectAll" title="تحديد الكل">
+              </div>
+            </th>
+            <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+            <th style="width: 200px;"><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
+            <th style="width: 150px;"><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
+            <th style="width: 150px;"><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
+            <th style="width: 120px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
+            <th style="width: 150px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($users as $u)
+            <tr>
+              <td class="text-center">
+                <div class="form-check">
+                  <input class="form-check-input user-checkbox" type="checkbox" name="user_ids[]" value="{{ $u->id }}" data-user-id="{{ $u->id }}">
+                </div>
+              </td>
+              <td>
               <div class="d-flex align-items-center gap-2">
                 @if($u->profile_picture_url)
                   <img src="{{ $u->profile_picture_url }}" alt="{{ $u->name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
@@ -289,7 +332,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="6" class="text-center py-5">
+            <td colspan="7" class="text-center py-5">
               <div class="d-flex flex-column align-items-center">
                 <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                   <i class="icon-base ti tabler-users" style="font-size: 32px;"></i>
@@ -301,6 +344,8 @@
         @endforelse
       </tbody>
     </table>
+    <input type="hidden" name="action" id="bulkActionInput">
+    </form>
   </div>
   @if($users->hasPages())
     <div class="card-footer border-top">
@@ -344,15 +389,84 @@ document.addEventListener('DOMContentLoaded', function () {
     form.action = '{{ url('admin/users') }}/' + userId + '/ban';
   });
 
-  if (window.jQuery && jQuery.fn.DataTable) {
-    jQuery('#usersTable').DataTable({
-      order: [],
-      pageLength: 10,
-      language: {
-        url: '',
-      }
-    });
+  // Bulk selection
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.user-checkbox');
+  const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+  const selectedCount = document.getElementById('selectedCount');
+
+  function updateBulkActions() {
+    const checked = document.querySelectorAll('.user-checkbox:checked');
+    const count = checked.length;
+    
+    if (count > 0) {
+      bulkActionsContainer.classList.remove('d-none');
+      selectedCount.textContent = count + ' محدد';
+    } else {
+      bulkActionsContainer.classList.add('d-none');
+    }
+    
+    // Update select all checkbox state
+    if (checkboxes.length > 0) {
+      selectAll.indeterminate = count > 0 && count < checkboxes.length;
+      selectAll.checked = count === checkboxes.length;
+    }
   }
+
+  selectAll.addEventListener('change', function() {
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = this.checked;
+    });
+    updateBulkActions();
+  });
+
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateBulkActions);
+  });
+
+  // Initialize
+  updateBulkActions();
 });
+
+function clearSelection() {
+  document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+  document.getElementById('selectAll').checked = false;
+  document.getElementById('bulkActionsContainer').classList.add('d-none');
+}
+
+function bulkAction(action) {
+  const form = document.getElementById('bulkActionForm');
+  const checked = document.querySelectorAll('.user-checkbox:checked');
+  
+  if (checked.length === 0) {
+    alert('يرجى تحديد مستخدم واحد على الأقل');
+    return;
+  }
+
+  let confirmMessage = '';
+  let actionText = '';
+  
+  switch(action) {
+    case 'ban':
+      confirmMessage = `هل أنت متأكد من حظر ${checked.length} مستخدم؟`;
+      actionText = 'حظر';
+      break;
+    case 'unban':
+      confirmMessage = `هل أنت متأكد من إلغاء حظر ${checked.length} مستخدم؟`;
+      actionText = 'إلغاء حظر';
+      break;
+    case 'delete':
+      confirmMessage = `هل أنت متأكد من حذف ${checked.length} مستخدم؟ هذا الإجراء لا يمكن التراجع عنه!`;
+      actionText = 'حذف';
+      break;
+  }
+
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  document.getElementById('bulkActionInput').value = action;
+  form.submit();
+}
 </script>
 @endsection

@@ -27,8 +27,13 @@ class CaptainAccountDetailsRequest extends FormRequest
         return [
             'bio' => ['nullable', 'string', 'max:2000'],
             'car_type' => ['nullable', 'string', 'max:120'],
+            'car_model' => ['nullable', 'string', 'max:120'],
             'car_model_year' => ['nullable', 'string', 'max:20'],
+            'car_year' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'car_plate_number' => ['nullable', 'string', 'max:20'],
             'has_driving_license' => ['required', 'boolean'],
+            'license_number' => ['nullable', 'string', 'max:50'],
+            'license_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
             'country_id' => ['nullable', 'uuid', 'exists:countries,id'],
             'city_id' => ['nullable', 'uuid', 'exists:cities,id'],
             'car_available' => ['nullable', 'boolean'],

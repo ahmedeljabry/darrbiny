@@ -256,4 +256,61 @@ class UsersController extends BaseController
         }
         return back()->with('status', 'User unbanned');
     }
+
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['required', 'uuid', 'exists:users,id'],
+            'action' => ['required', 'string', 'in:ban,unban,delete'],
+        ]);
+
+        $userIds = $validated['user_ids'];
+        $action = $validated['action'];
+        $currentUserId = Auth::id();
+        
+        // Remove current user from selection to prevent self-action
+        $userIds = array_filter($userIds, fn($id) => $id !== $currentUserId);
+        
+        if (empty($userIds)) {
+            return back()->withErrors(['error' => 'لا يمكنك تنفيذ هذا الإجراء على نفسك']);
+        }
+
+        $users = User::whereIn('id', $userIds)->get();
+        $count = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($users, $action, &$count) {
+            foreach ($users as $user) {
+                if ($action === 'ban') {
+                    $user->update([
+                        'banned_until' => now()->addYears(10),
+                        'banned_reason' => 'حظر جماعي من قبل المدير',
+                    ]);
+                    $count++;
+                } elseif ($action === 'unban') {
+                    $user->update([
+                        'banned_until' => null,
+                        'banned_reason' => null,
+                    ]);
+                    if ($user->trashed()) {
+                        $user->restore();
+                    }
+                    $count++;
+                } elseif ($action === 'delete') {
+                    if ($user->id !== Auth::id()) {
+                        $user->update(['deleted_at' => now()]);
+                        $count++;
+                    }
+                }
+            }
+        });
+
+        $messages = [
+            'ban' => "تم حظر {$count} مستخدم بنجاح",
+            'unban' => "تم إلغاء حظر {$count} مستخدم بنجاح",
+            'delete' => "تم حذف {$count} مستخدم بنجاح",
+        ];
+
+        return back()->with('status', $messages[$action] ?? 'تم تنفيذ الإجراء بنجاح');
+    }
 }
