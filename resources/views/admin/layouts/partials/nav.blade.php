@@ -49,18 +49,29 @@
                             $notifications = auth()->user()->notifications()->latest()->limit(10)->get();
                         @endphp
                         @forelse($notifications as $notification)
-                            <a href="{{ route('admin.notifications.show', $notification->id) }}" class="dropdown-item dropdown-notifications-item {{ $notification->read_at ? '' : 'marked-as-read' }}">
+                            @php
+                                $notificationUrl = route('admin.notifications.show', $notification->id);
+                                if (isset($notification->data['type']) && $notification->data['type'] === 'trainer_profile_update' && isset($notification->data['trainer_id'])) {
+                                    $notificationUrl = route('admin.users.show', $notification->data['trainer_id']);
+                                }
+                            @endphp
+                            <a href="{{ $notificationUrl }}" class="dropdown-item dropdown-notifications-item {{ $notification->read_at ? '' : 'marked-as-read' }}">
                                 <div class="d-flex">
                                     <div class="flex-shrink-0 me-3">
                                         <div class="avatar">
                                             <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
-                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell')))) }}"></i>
+                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'trainer_profile_update' ? 'user-check' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell'))))) }}"></i>
                                             </span>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1">{{ $notification->data['title'] ?? $notification->data['message'] ?? 'إشعار جديد' }}</h6>
                                         <p class="mb-0">{{ Str::limit($notification->data['message'] ?? $notification->data['title'] ?? '', 50) }}</p>
+                                        @if(isset($notification->data['trainer_name']))
+                                            <small class="text-primary d-block">
+                                                <i class="icon-base ti tabler-user me-1"></i>{{ $notification->data['trainer_name'] }}
+                                            </small>
+                                        @endif
                                         <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                                     </div>
                                     <div class="flex-shrink-0 dropdown-notifications-actions">

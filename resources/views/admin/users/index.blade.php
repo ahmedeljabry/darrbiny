@@ -139,6 +139,11 @@
               </button>
             </li>
             <li>
+              <button class="dropdown-item text-success" type="button" onclick="bulkAction('approve_trainers')">
+                <i class="icon-base ti tabler-check me-2"></i> قبول المدربين المحددين
+              </button>
+            </li>
+            <li>
               <button class="dropdown-item" type="button" onclick="bulkAction('delete')">
                 <i class="icon-base ti tabler-trash me-2"></i> حذف المحددين
               </button>
@@ -212,6 +217,7 @@
           <option value="">الكل</option>
           <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
           <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
+          <option value="pending_trainer" {{ ($status==='pending_trainer') ? 'selected' : '' }}>'طلب تنشيط</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -454,6 +460,10 @@ function bulkAction(action) {
     case 'unban':
       confirmMessage = `هل أنت متأكد من إلغاء حظر ${checked.length} مستخدم؟`;
       actionText = 'إلغاء حظر';
+      break;
+    case 'approve_trainers':
+      confirmMessage = `هل أنت متأكد من قبول ${checked.length} مدرب؟ سيتم تفعيل حساباتهم وتطبيق التعديلات.`;
+      actionText = 'قبول المدربين';
       break;
     case 'delete':
       confirmMessage = `هل أنت متأكد من حذف ${checked.length} مستخدم؟ هذا الإجراء لا يمكن التراجع عنه!`;

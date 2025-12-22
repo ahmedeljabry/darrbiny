@@ -50,6 +50,14 @@ class NotificationsAdminController extends BaseController
             $notification->markAsRead();
         }
         
+        // Redirect to trainer profile page if it's a trainer profile update notification
+        if (isset($notification->data['type']) && $notification->data['type'] === 'trainer_profile_update') {
+            $trainerId = $notification->data['trainer_id'] ?? null;
+            if ($trainerId) {
+                return redirect()->route('admin.users.show', $trainerId)->with('notification', $notification);
+            }
+        }
+        
         return redirect()->back()->with('notification', $notification);
     }
 

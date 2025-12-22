@@ -33,6 +33,7 @@
                                 <option value="PrizeRequest" @selected(request('type') == 'PrizeRequest')>طلبات الجوائز</option>
                                 <option value="WalletTopupRequest" @selected(request('type') == 'WalletTopupRequest')>طلبات المحفظة</option>
                                 <option value="CancellationRequest" @selected(request('type') == 'CancellationRequest')>طلبات الإلغاء</option>
+                                <option value="TrainerProfileUpdate" @selected(request('type') == 'TrainerProfileUpdate')>تعديلات ملفات المدربين</option>
                                 <option value="UserAccountDeleted" @selected(request('type') == 'UserAccountDeleted')>حذف الحسابات</option>
                             </select>
                         </div>
@@ -86,6 +87,12 @@
                                         <div>
                                             <h6 class="mb-1">{{ $notification->data['title'] ?? $notification->data['message'] ?? 'إشعار جديد' }}</h6>
                                             <p class="mb-0 text-muted">{{ Str::limit($notification->data['message'] ?? $notification->data['title'] ?? '', 100) }}</p>
+                                            @if(isset($notification->data['trainer_id']) && isset($notification->data['trainer_name']))
+                                                <small class="text-primary">
+                                                    <i class="icon-base ti tabler-user me-1"></i>
+                                                    المدرب: {{ $notification->data['trainer_name'] }}
+                                                </small>
+                                            @endif
                                         </div>
                                     </td>
                                     <td>
@@ -96,6 +103,7 @@
                                                 'wallet_topup_request' => 'طلب محفظة',
                                                 'cancellation_request' => 'طلب إلغاء',
                                                 'user_account_deleted' => 'حذف حساب',
+                                                'trainer_profile_update' => 'تعديل ملف مدرب',
                                             ];
                                             $typeName = $typeMap[$notification->data['type'] ?? ''] ?? 'عام';
                                         @endphp
@@ -114,14 +122,21 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if(!$notification->read_at)
-                                            <form action="{{ route('admin.notifications.mark-read', $notification->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                    <i class="icon-base ti tabler-check"></i> تحديد كمقروء
-                                                </button>
-                                            </form>
-                                        @endif
+                                        <div class="d-flex gap-1">
+                                            @if(isset($notification->data['trainer_id']))
+                                                <a href="{{ route('admin.users.show', $notification->data['trainer_id']) }}" class="btn btn-sm btn-outline-primary" title="عرض تفاصيل المدرب">
+                                                    <i class="icon-base ti tabler-eye"></i>
+                                                </a>
+                                            @endif
+                                            @if(!$notification->read_at)
+                                                <form action="{{ route('admin.notifications.mark-read', $notification->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="تحديد كمقروء">
+                                                        <i class="icon-base ti tabler-check"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

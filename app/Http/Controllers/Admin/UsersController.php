@@ -38,6 +38,11 @@ class UsersController extends BaseController
                 $w->whereNotNull('deleted_at')
                   ->orWhere('banned_until', '>', now());
             });
+        } elseif ($status === 'pending_trainer') {
+            $q->role('TRAINER')
+              ->whereHas('trainerProfile', function ($profileQuery) {
+                  $profileQuery->where('pending_approval', true);
+              });
         } elseif ($status === 'active') {
             $q->whereNull('deleted_at')
               ->where(function ($w) {
@@ -64,10 +69,14 @@ class UsersController extends BaseController
                 $w->whereNotNull('deleted_at')
                   ->orWhere('banned_until', '>', now());
             })->count();
+        $pendingTrainersCount = User::role('TRAINER')
+            ->whereHas('trainerProfile', function ($profileQuery) {
+                $profileQuery->where('pending_approval', true);
+            })->count();
         $activeCount = $totalUsers - $bannedCount;
 
         return view('admin.users.index', compact(
-            'users', 'totalUsers', 'trainersCount', 'normalUsersCount', 'bannedCount', 'activeCount', 'role', 'status', 's'
+            'users', 'totalUsers', 'trainersCount', 'normalUsersCount', 'bannedCount', 'pendingTrainersCount', 'activeCount', 'role', 'status', 's'
         ));
     }
 
@@ -262,7 +271,7 @@ class UsersController extends BaseController
         $validated = $request->validate([
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['required', 'uuid', 'exists:users,id'],
-            'action' => ['required', 'string', 'in:ban,unban,delete'],
+            'action' => ['required', 'string', 'in:ban,unban,delete,approve_trainers'],
         ]);
 
         $userIds = $validated['user_ids'];
@@ -301,6 +310,24 @@ class UsersController extends BaseController
                         $user->update(['deleted_at' => now()]);
                         $count++;
                     }
+                } elseif ($action === 'approve_trainers') {
+                    if ($user->hasRole('TRAINER') && $user->trainerProfile && $user->trainerProfile->pending_approval) {
+                        $profile = $user->trainerProfile;
+                        
+                        // Apply pending changes
+                        if ($profile->pending_changes) {
+                            $profile->fill($profile->pending_changes);
+                        }
+                        
+                        $profile->pending_approval = false;
+                        $profile->pending_changes = null;
+                        $profile->pending_approval_at = null;
+                        $profile->save();
+
+                        // Unban user
+                        $user->update(['banned_until' => null, 'banned_reason' => null]);
+                        $count++;
+                    }
                 }
             }
         });
@@ -309,6 +336,7 @@ class UsersController extends BaseController
             'ban' => "تم حظر {$count} مستخدم بنجاح",
             'unban' => "تم إلغاء حظر {$count} مستخدم بنجاح",
             'delete' => "تم حذف {$count} مستخدم بنجاح",
+            'approve_trainers' => "تم قبول {$count} مدرب بنجاح",
         ];
 
         return back()->with('status', $messages[$action] ?? 'تم تنفيذ الإجراء بنجاح');
