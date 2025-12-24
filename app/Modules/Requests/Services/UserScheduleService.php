@@ -67,23 +67,25 @@ class UserScheduleService
                 ]
             );
 
+            if ($progress->status === null) {
+                $progress->status = UserScheduleProgress::STATUS_PENDING;
+            }
+
             $progress->is_checked = true;
             $progress->checked_at = now();
             
-            // If trainer is checking, mark as sent so user can accept
-            // Only update status if it's still pending (not already sent/accepted/rejected)
             if ($user && $user->id === $userRequest->trainer_id) {
                 if ($progress->status === UserScheduleProgress::STATUS_PENDING) {
                     $progress->status = UserScheduleProgress::STATUS_SENT;
                     $progress->sent_at = now();
-                    
+
                     // Send notification to user
                     if ($userRequest->user) {
                         $userRequest->user->notify(new ScheduleItemSentNotification($progress));
                     }
                 }
             }
-            
+
             $progress->save();
 
             return $progress;

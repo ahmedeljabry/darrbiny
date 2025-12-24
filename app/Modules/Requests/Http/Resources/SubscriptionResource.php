@@ -142,6 +142,13 @@ class SubscriptionResource extends JsonResource
                         'title' => $item->title,
                         'is_checked' => $userProgress ? $userProgress->is_checked : false,
                         'checked_at' => $userProgress?->checked_at?->toIso8601String(),
+                        'progress_id' => $userProgress?->id,
+                        'status' => $userProgress?->status ?? \App\Models\UserScheduleProgress::STATUS_PENDING,
+                        'sent_at' => $userProgress?->sent_at?->toIso8601String(),
+                        'rejection_reason' => $userProgress?->rejection_reason,
+                        'rating' => $userProgress?->rating,
+                        'rating_titles' => $userProgress?->rating_titles,
+                        'rating_comment' => $userProgress?->rating_comment,
                     ];
                 })->values();
             }),

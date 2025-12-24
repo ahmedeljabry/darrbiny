@@ -76,6 +76,7 @@ class PlanScheduleService
                     'plan_schedule_item_id' => $item->id,
                     'day_number' => $item->day_number,
                     'is_checked' => false,
+                    'status' => \App\Models\UserScheduleProgress::STATUS_PENDING,
                 ]);
             }
         });
