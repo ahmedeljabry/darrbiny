@@ -134,6 +134,9 @@ final class SettingsService
         if (array_key_exists('user_roles', $data)) {
             $this->save('roles.user', json_encode($this->normalizeList($data['user_roles'] ?? []), JSON_UNESCAPED_UNICODE));
         }
+        if (array_key_exists('user_restrictions', $data)) {
+            $this->save('restrictions.user', json_encode($this->normalizeList($data['user_restrictions'] ?? []), JSON_UNESCAPED_UNICODE));
+        }
     }
 
     private function save(string $key, mixed $value): void

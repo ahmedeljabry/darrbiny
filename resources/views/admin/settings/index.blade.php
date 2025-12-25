@@ -608,6 +608,30 @@
                               <i class="ti tabler-plus"></i> إضافة دور
                             </button>
                           </div>
+                          <hr class="my-4">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-danger">
+                              <i class="icon-base ti tabler-ban"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">محظورات المتدرب</h6>
+                              <small class="text-muted">الأفعال غير المسموح بها أثناء التدريب</small>
+                            </div>
+                          </div>
+                          <div id="user-restrictions-list" class="d-flex flex-column gap-2 settings-list" data-name="user_restrictions[]" data-placeholder="مثال: التأخر عن الموعد" data-icon="tabler-ban">
+                            @foreach($userRestrictions as $item)
+                              <div class="input-group settings-list-row">
+                                <span class="input-group-text"><i class="ti tabler-ban"></i></span>
+                                <input type="text" class="form-control" name="user_restrictions[]" value="{{ $item }}" placeholder="مثال: التأخر عن الموعد">
+                                <button type="button" class="btn btn-outline-danger js-remove-settings-item">حذف</button>
+                              </div>
+                            @endforeach
+                          </div>
+                          <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger js-add-settings-item" data-target="#user-restrictions-list">
+                              <i class="ti tabler-plus"></i> إضافة محظور
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -40,6 +40,8 @@ class SettingsUpdateRequest extends FormRequest
             'trainer_restrictions.*' => ['nullable','string','max:255'],
             'user_roles' => ['nullable','array'],
             'user_roles.*' => ['nullable','string','max:255'],
+            'user_restrictions' => ['nullable','array'],
+            'user_restrictions.*' => ['nullable','string','max:255'],
         ];
     }
 }

@@ -18,7 +18,8 @@ class SettingsController extends BaseController
         $trainerRoles = $this->decodeListSetting($settings['roles.trainer'] ?? null);
         $trainerRestrictions = $this->decodeListSetting($settings['restrictions.trainer'] ?? null);
         $userRoles = $this->decodeListSetting($settings['roles.user'] ?? null);
-        return view('admin.settings.index', compact('settings', 'countries', 'trainerRoles', 'trainerRestrictions', 'userRoles'));
+        $userRestrictions = $this->decodeListSetting($settings['restrictions.user'] ?? null);
+        return view('admin.settings.index', compact('settings', 'countries', 'trainerRoles', 'trainerRestrictions', 'userRoles', 'userRestrictions'));
     }
 
     public function update(SettingsUpdateRequest $request, SettingsService $service)
