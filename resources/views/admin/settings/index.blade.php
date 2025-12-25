@@ -527,17 +527,6 @@
               </div>
               <div class="card-body">
                 <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-                  @php
-                    $trainerRoles = json_decode($settings['roles.trainer'] ?? '[]', true);
-                    $trainerRoles = is_array($trainerRoles) ? $trainerRoles : [];
-                    if (empty($trainerRoles)) { $trainerRoles = ['']; }
-                    $trainerRestrictions = json_decode($settings['restrictions.trainer'] ?? '[]', true);
-                    $trainerRestrictions = is_array($trainerRestrictions) ? $trainerRestrictions : [];
-                    if (empty($trainerRestrictions)) { $trainerRestrictions = ['']; }
-                    $userRoles = json_decode($settings['roles.user'] ?? '[]', true);
-                    $userRoles = is_array($userRoles) ? $userRoles : [];
-                    if (empty($userRoles)) { $userRoles = ['']; }
-                  @endphp
                   <div class="row g-4">
                     <div class="col-lg-6">
                       <div class="card border border-primary h-100">

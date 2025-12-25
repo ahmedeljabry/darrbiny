@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\SettingsUpdateRequest;
+use App\Models\Country;
 use App\Services\Admin\SettingsService;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -13,8 +14,11 @@ class SettingsController extends BaseController
     public function index(SettingsService $service)
     {
         $settings = $service->allKeyed();
-        $countries = \App\Models\Country::orderBy('name')->get();
-        return view('admin.settings.index', compact('settings', 'countries'));
+        $countries = Country::orderBy('name')->get();
+        $trainerRoles = $this->decodeListSetting($settings['roles.trainer'] ?? null);
+        $trainerRestrictions = $this->decodeListSetting($settings['restrictions.trainer'] ?? null);
+        $userRoles = $this->decodeListSetting($settings['roles.user'] ?? null);
+        return view('admin.settings.index', compact('settings', 'countries', 'trainerRoles', 'trainerRestrictions', 'userRoles'));
     }
 
     public function update(SettingsUpdateRequest $request, SettingsService $service)
@@ -27,5 +31,12 @@ class SettingsController extends BaseController
             $request->file('video_captain_file'),
         );
         return back()->with('status','تم حفظ الإعدادات');
+    }
+
+    private function decodeListSetting(?string $value): array
+    {
+        $items = json_decode($value ?? '[]', true);
+        $items = is_array($items) ? $items : [];
+        return empty($items) ? [''] : $items;
     }
 }
