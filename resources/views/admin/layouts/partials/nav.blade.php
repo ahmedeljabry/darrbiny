@@ -38,9 +38,12 @@
                         <div class="dropdown-header d-flex align-items-center py-3">
                             <h5 class="text-body mb-0 me-auto">الإشعارات</h5>
                             @if($unreadCount > 0)
-                                <a href="{{ route('admin.notifications.mark-all-read') }}" class="dropdown-notifications-all text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="تحديد الكل كمقروء">
-                                    <small class="text-muted">تحديد الكل كمقروء</small>
-                                </a>
+                                <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="dropdown-notifications-all text-body border-0 bg-transparent p-0" data-bs-toggle="tooltip" data-bs-placement="top" title="تحديد الكل كمقروء">
+                                        <small class="text-muted">تحديد الكل كمقروء</small>
+                                    </button>
+                                </form>
                             @endif
                         </div>
                     </li>
@@ -51,9 +54,6 @@
                         @forelse($notifications as $notification)
                             @php
                                 $notificationUrl = route('admin.notifications.show', $notification->id);
-                                if (isset($notification->data['type']) && $notification->data['type'] === 'trainer_profile_update' && isset($notification->data['trainer_id'])) {
-                                    $notificationUrl = route('admin.users.show', $notification->data['trainer_id']);
-                                }
                             @endphp
                             <a href="{{ $notificationUrl }}" class="dropdown-item dropdown-notifications-item {{ $notification->read_at ? '' : 'marked-as-read' }}">
                                 <div class="d-flex">
