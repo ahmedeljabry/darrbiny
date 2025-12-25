@@ -58,6 +58,8 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
         // Settings
         Route::get('/settings/fees', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'fees']);
+        Route::get('/settings/roles', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'roles']);
+        Route::get('/settings/pages', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'pages']);
 
         // User Routes
         Route::prefix('user')->middleware('auth:sanctum')->group(function () {

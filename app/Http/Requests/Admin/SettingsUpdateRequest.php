@@ -23,6 +23,9 @@ class SettingsUpdateRequest extends FormRequest
             'video_captain_file' => ['nullable','file','mimetypes:video/mp4,video/webm,video/quicktime','max:256000'],
             'page_usage_policy' => ['nullable','string'],
             'page_privacy_policy' => ['nullable','string'],
+            'page_terms' => ['nullable','string'],
+            'page_about' => ['nullable','string'],
+            'page_sales' => ['nullable','string'],
             'faqs' => ['nullable','array'],
             'faqs.*.question' => ['nullable','string','max:500'],
             'faqs.*.answer' => ['nullable','string'],
@@ -31,6 +34,12 @@ class SettingsUpdateRequest extends FormRequest
             'reservation_fee_minor' => ['nullable','integer','min:0'],
             'country_fees' => ['nullable','array'],
             'country_fees.*' => ['nullable','integer','min:0'],
+            'trainer_roles' => ['nullable','array'],
+            'trainer_roles.*' => ['nullable','string','max:255'],
+            'trainer_restrictions' => ['nullable','array'],
+            'trainer_restrictions.*' => ['nullable','string','max:255'],
+            'user_roles' => ['nullable','array'],
+            'user_roles.*' => ['nullable','string','max:255'],
         ];
     }
 }

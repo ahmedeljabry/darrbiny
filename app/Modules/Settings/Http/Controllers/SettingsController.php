@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Settings\Http\Controllers;
 
+use App\Models\Setting;
 use App\Support\Fees;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,73 @@ class SettingsController extends BaseController
                 'countries' => $countries,
             ],
         ]);
+    }
+
+    public function roles(): JsonResponse
+    {
+        return response()->json([
+            'roles' => [
+                'trainer' => [
+                    'roles' => $this->getListSetting('roles.trainer'),
+                    'restrictions' => $this->getListSetting('restrictions.trainer'),
+                ],
+                'user' => [
+                    'roles' => $this->getListSetting('roles.user'),
+                ],
+            ],
+        ]);
+    }
+
+    public function pages(Request $request): JsonResponse
+    {
+        $countryId = $request->query('country_id');
+        $reservationFeeMinor = Fees::reservationFeeMinor($countryId);
+        $appFeePercent = Fees::appFeePercent();
+
+        return response()->json([
+            'pages' => [
+                'terms' => $this->getStringSetting('pages.terms'),
+                'privacy' => $this->getStringSetting('pages.privacy'),
+                'usage' => $this->getStringSetting('pages.usage'),
+                'about' => $this->getStringSetting('pages.about'),
+                'sales' => $this->getStringSetting('pages.sales'),
+            ],
+            'sales_fees' => [
+                'reservation_fee' => [
+                    'minor' => $reservationFeeMinor,
+                    'amount' => $reservationFeeMinor / 100,
+                ],
+                'app_fee' => [
+                    'percent' => $appFeePercent,
+                ],
+            ],
+        ]);
+    }
+
+    private function getListSetting(string $key): array
+    {
+        $raw = Setting::where('key', $key)->value('value');
+
+        if (!is_string($raw) || trim($raw) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return collect($decoded)
+            ->map(static fn ($value) => trim((string) $value))
+            ->filter(static fn ($value) => $value !== '')
+            ->values()
+            ->all();
+    }
+
+    private function getStringSetting(string $key): string
+    {
+        $value = Setting::where('key', $key)->value('value');
+        return is_string($value) ? $value : '';
     }
 }
 

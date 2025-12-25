@@ -24,9 +24,16 @@ final class ReportsService
         $query = Payment::where('status', 'succeeded')
             ->when($from && $to, fn($q) => $q->whereBetween('created_at', [$from, $to]));
 
+        $totalMinor = (int) $query->clone()
+            ->selectRaw(
+                'SUM(CASE WHEN type = ? THEN amount_minor + COALESCE(app_fee_minor, 0) ELSE amount_minor END) as total',
+                [Payment::TYPE_PLAN_FULL]
+            )
+            ->value('total');
+
         return [
             'payments' => $query->latest()->paginate(25),
-            'totalMinor' => (int) $query->clone()->sum('amount_minor'),
+            'totalMinor' => $totalMinor,
         ];
     }
 

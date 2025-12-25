@@ -44,7 +44,7 @@
       </span>
       <div>
         <h4 class="mb-1 fw-bold">لوحة إعدادات المنصة</h4>
-        <p class="mb-0 text-muted">تحكم بالعلامة التجارية، الدفع، الرسوم، المحتوى، والفيديوهات</p>
+        <p class="mb-0 text-muted">تحكم بالعلامة التجارية، الدفع، الرسوم، المحتوى، الفيديوهات، والأدوار</p>
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -76,6 +76,11 @@
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="pages-tab" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab">
               <i class="icon-base ti tabler-file-text me-2"></i> الصفحات
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles" type="button" role="tab">
+              <i class="icon-base ti tabler-shield me-2"></i> الأدوار والمحظورات
             </button>
           </li>
           <li class="nav-item" role="presentation">
@@ -217,8 +222,8 @@
                                   <i class="icon-base ti tabler-currency-dollar"></i>
                                 </span>
                                 <div>
-                                  <h6 class="mb-0">رسوم الحجز (الجاهزة) لكل دولة</h6>
-                                  <small class="text-muted">Reservation Fee Per Country</small>
+                                  <h6 class="mb-0">رسوم الحجز (الثابتة) لكل دولة</h6>
+                                  <small class="text-muted">رسوم الحجز لكل دولة</small>
                                 </div>
                               </div>
                               <p class="text-body-secondary small mb-3">
@@ -246,9 +251,9 @@
                                         <td>
                                           <div class="input-group input-group-merge" style="max-width: 300px;">
                                             <span class="input-group-text"><i class="icon-base ti tabler-currency-dollar"></i></span>
-                                            <input type="number" step="50" min="0" class="form-control" 
-                                                   name="country_fees[{{ $country->id }}]" 
-                                                   value="{{ $country->reservation_fee_minor ?? $settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000) }}" 
+                                            <input type="number" step="50" min="0" class="form-control"
+                                                   name="country_fees[{{ $country->id }}]"
+                                                   value="{{ $country->reservation_fee_minor ?? $settings['fees.reservation_fee_minor'] ?? config('app.reservation_fee_minor', 1000) }}"
                                                    placeholder="مثال: 1000 = 10.00">
                                           </div>
                                         </td>
@@ -280,7 +285,7 @@
                             </div>
                           </div>
                         </div>
-                        
+
                         <div class="col-md-6">
                           <div class="card border border-secondary h-100">
                             <div class="card-body">
@@ -290,7 +295,7 @@
                                 </span>
                                 <div>
                                   <h6 class="mb-0">القيمة الافتراضية</h6>
-                                  <small class="text-muted">Default Fee</small>
+                                  <small class="text-muted">القيمة الافتراضية المستخدمة للدول التي لم يتم تحديد رسوم خاصة بها.</small>
                                 </div>
                               </div>
                               <p class="text-body-secondary small mb-3">
@@ -441,6 +446,21 @@
                     <input id="privacy_editor" type="hidden" name="page_privacy_policy" value="{{ $settings['pages.privacy'] ?? '' }}">
                     <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
                   </div>
+                  <div class="mb-3">
+                    <label class="form-label">الشروط والأحكام</label>
+                    <input id="terms_editor" type="hidden" name="page_terms" value="{{ $settings['pages.terms'] ?? '' }}">
+                    <trix-editor input="terms_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">عن التطبيق</label>
+                    <input id="about_editor" type="hidden" name="page_about" value="{{ $settings['pages.about'] ?? '' }}">
+                    <trix-editor input="about_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">صفحة المبيعات</label>
+                    <input id="sales_editor" type="hidden" name="page_sales" value="{{ $settings['pages.sales'] ?? '' }}">
+                    <trix-editor input="sales_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
 
                   @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])
                   <div class="mb-3">
@@ -485,6 +505,125 @@
                     </div>
                   </div>
                   <div class="mt-3">
+                    <button class="btn btn-primary">
+                      <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="roles" role="tabpanel" aria-labelledby="roles-tab">
+            <div class="card border-0 surface">
+              <div class="card-header border-0 d-flex align-items-center gap-2">
+                <span class="avatar-initial rounded bg-label-primary">
+                  <i class="icon-base ti tabler-shield"></i>
+                </span>
+                <div>
+                  <h6 class="mb-0">الأدوار والمحظورات</h6>
+                  <small class="text-body-secondary">إدارة مهام الكابتن والمتدرب داخل التطبيق</small>
+                </div>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                  @php
+                    $trainerRoles = json_decode($settings['roles.trainer'] ?? '[]', true);
+                    $trainerRoles = is_array($trainerRoles) ? $trainerRoles : [];
+                    if (empty($trainerRoles)) { $trainerRoles = ['']; }
+                    $trainerRestrictions = json_decode($settings['restrictions.trainer'] ?? '[]', true);
+                    $trainerRestrictions = is_array($trainerRestrictions) ? $trainerRestrictions : [];
+                    if (empty($trainerRestrictions)) { $trainerRestrictions = ['']; }
+                    $userRoles = json_decode($settings['roles.user'] ?? '[]', true);
+                    $userRoles = is_array($userRoles) ? $userRoles : [];
+                    if (empty($userRoles)) { $userRoles = ['']; }
+                  @endphp
+                  <div class="row g-4">
+                    <div class="col-lg-6">
+                      <div class="card border border-primary h-100">
+                        <div class="card-body">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-primary">
+                              <i class="icon-base ti tabler-user-star"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">أدوار الكابتن</h6>
+                              <small class="text-muted">المسؤوليات الأساسية للكابتن</small>
+                            </div>
+                          </div>
+                          <div id="trainer-roles-list" class="d-flex flex-column gap-2 settings-list" data-name="trainer_roles[]" data-placeholder="مثال: الالتزام بالمواعيد" data-icon="tabler-user-star">
+                            @foreach($trainerRoles as $role)
+                              <div class="input-group settings-list-row">
+                                <span class="input-group-text"><i class="ti tabler-user-star"></i></span>
+                                <input type="text" class="form-control" name="trainer_roles[]" value="{{ $role }}" placeholder="مثال: الالتزام بالمواعيد">
+                                <button type="button" class="btn btn-outline-danger js-remove-settings-item">حذف</button>
+                              </div>
+                            @endforeach
+                          </div>
+                          <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary js-add-settings-item" data-target="#trainer-roles-list">
+                              <i class="ti tabler-plus"></i> إضافة دور
+                            </button>
+                          </div>
+                          <hr class="my-4">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-warning">
+                              <i class="icon-base ti tabler-ban"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">محظورات الكابتن</h6>
+                              <small class="text-muted">الأفعال غير المسموح بها أثناء التدريب</small>
+                            </div>
+                          </div>
+                          <div id="trainer-restrictions-list" class="d-flex flex-column gap-2 settings-list" data-name="trainer_restrictions[]" data-placeholder="مثال: استخدام الهاتف أثناء التدريب" data-icon="tabler-ban">
+                            @foreach($trainerRestrictions as $item)
+                              <div class="input-group settings-list-row">
+                                <span class="input-group-text"><i class="ti tabler-ban"></i></span>
+                                <input type="text" class="form-control" name="trainer_restrictions[]" value="{{ $item }}" placeholder="مثال: استخدام الهاتف أثناء التدريب">
+                                <button type="button" class="btn btn-outline-danger js-remove-settings-item">حذف</button>
+                              </div>
+                            @endforeach
+                          </div>
+                          <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning js-add-settings-item" data-target="#trainer-restrictions-list">
+                              <i class="ti tabler-plus"></i> إضافة محظور
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                      <div class="card border border-info h-100">
+                        <div class="card-body">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-info">
+                              <i class="icon-base ti tabler-user"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">أدوار المتدرب</h6>
+                              <small class="text-muted">المهام المتوقعة من المتدرب</small>
+                            </div>
+                          </div>
+                          <div id="user-roles-list" class="d-flex flex-column gap-2 settings-list" data-name="user_roles[]" data-placeholder="مثال: الالتزام بالحضور" data-icon="tabler-user">
+                            @foreach($userRoles as $role)
+                              <div class="input-group settings-list-row">
+                                <span class="input-group-text"><i class="ti tabler-user"></i></span>
+                                <input type="text" class="form-control" name="user_roles[]" value="{{ $role }}" placeholder="مثال: الالتزام بالحضور">
+                                <button type="button" class="btn btn-outline-danger js-remove-settings-item">حذف</button>
+                              </div>
+                            @endforeach
+                          </div>
+                          <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-info js-add-settings-item" data-target="#user-roles-list">
+                              <i class="ti tabler-plus"></i> إضافة دور
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3 d-flex justify-content-end">
                     <button class="btn btn-primary">
                       <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
                     </button>
@@ -584,8 +723,8 @@
 
 @push('styles')
 <style>
-  .settings-tabs .nav-link { 
-    border-radius: 8px; 
+  .settings-tabs .nav-link {
+    border-radius: 8px;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -596,9 +735,9 @@
     background: rgba(79, 70, 229, 0.1);
     transform: translateY(-2px);
   }
-  .settings-tabs .nav-link.active { 
-    background: #4f46e5; 
-    color: #fff; 
+  .settings-tabs .nav-link.active {
+    background: #4f46e5;
+    color: #fff;
     box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
   }
   .card {
@@ -622,6 +761,9 @@
   .table th {
     font-weight: 600;
     font-size: 0.875rem;
+  }
+  .settings-list-row .btn {
+    min-width: 84px;
   }
   .is-invalid {
     border-color: #dc3545;
@@ -675,6 +817,45 @@
         const rows = document.querySelectorAll('#faq-list .faq-row');
         const row = e.target.closest('.faq-row');
         if (rows.length > 1) row.remove(); else row.querySelectorAll('input,textarea').forEach(f=>f.value='');
+      }
+    });
+  });
+  </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    function addSettingsRow(list, value){
+      if (!list) return;
+      const icon = list.dataset.icon || 'tabler-list';
+      const name = list.dataset.name || 'items[]';
+      const placeholder = list.dataset.placeholder || '';
+      const row = document.createElement('div');
+      row.className = 'input-group settings-list-row';
+      row.innerHTML = `
+        <span class="input-group-text"><i class="ti ${icon}"></i></span>
+        <input type="text" class="form-control" name="${name}" placeholder="${placeholder}">
+        <button type="button" class="btn btn-outline-danger js-remove-settings-item">حذف</button>
+      `;
+      if (value) row.querySelector('input').value = value;
+      list.appendChild(row);
+    }
+
+    document.addEventListener('click', function(e){
+      const addBtn = e.target.closest('.js-add-settings-item');
+      if (addBtn) {
+        const list = document.querySelector(addBtn.dataset.target);
+        addSettingsRow(list, '');
+      }
+      const removeBtn = e.target.closest('.js-remove-settings-item');
+      if (removeBtn) {
+        const row = removeBtn.closest('.settings-list-row');
+        const list = removeBtn.closest('.settings-list');
+        if (!row || !list) return;
+        const rows = list.querySelectorAll('.settings-list-row');
+        if (rows.length > 1) {
+          row.remove();
+        } else {
+          row.querySelector('input').value = '';
+        }
       }
     });
   });

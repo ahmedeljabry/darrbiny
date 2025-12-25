@@ -90,6 +90,9 @@ final class SettingsService
 
         $this->save('pages.usage', $data['page_usage_policy'] ?? null);
         $this->save('pages.privacy', $data['page_privacy_policy'] ?? null);
+        $this->save('pages.terms', $data['page_terms'] ?? null);
+        $this->save('pages.about', $data['page_about'] ?? null);
+        $this->save('pages.sales', $data['page_sales'] ?? null);
         if (!empty($data['faqs']) && is_array($data['faqs'])) {
             $faqs = collect($data['faqs'])
                 ->map(function ($row) {
@@ -121,11 +124,30 @@ final class SettingsService
                 ->all();
             $this->save('home.how_it_works', json_encode($sections, JSON_UNESCAPED_UNICODE));
         }
+
+        if (array_key_exists('trainer_roles', $data)) {
+            $this->save('roles.trainer', json_encode($this->normalizeList($data['trainer_roles'] ?? []), JSON_UNESCAPED_UNICODE));
+        }
+        if (array_key_exists('trainer_restrictions', $data)) {
+            $this->save('restrictions.trainer', json_encode($this->normalizeList($data['trainer_restrictions'] ?? []), JSON_UNESCAPED_UNICODE));
+        }
+        if (array_key_exists('user_roles', $data)) {
+            $this->save('roles.user', json_encode($this->normalizeList($data['user_roles'] ?? []), JSON_UNESCAPED_UNICODE));
+        }
     }
 
     private function save(string $key, mixed $value): void
     {
         if ($value === null) return;
         Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+
+    private function normalizeList(?array $items): array
+    {
+        return collect($items ?? [])
+            ->map(static fn ($item) => trim((string) $item))
+            ->filter(static fn ($item) => $item !== '')
+            ->values()
+            ->all();
     }
 }
