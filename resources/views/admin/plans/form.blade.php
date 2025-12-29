@@ -33,8 +33,8 @@
     </div>
     @if(!empty($plan->image))
         <div class="mt-2">
-            <img src="{{ \App\Support\StorageUrl::make($plan->image) }}" 
-                 alt="صورة الخطة" 
+            <img src="{{ \App\Support\StorageUrl::make($plan->image) }}"
+                 alt="صورة الخطة"
                  style="max-width: 300px; max-height: 200px; border-radius: 8px; border: 1px solid #e0e0e0;">
             <div class="mt-2">
                 <small class="text-muted">الصورة الحالية</small>
@@ -160,8 +160,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (window.jQuery && $.fn.select2) {
-                const dir = @json(app()->getLocale() === 'en' ? 'ltr' : 'rtl');
-                $('.select2').select2({ dir: dir, width: '100%' });
 
                 function loadCities(countryId, selectedCityId = null) {
                     const $city = $('.js-city');
@@ -199,12 +197,12 @@
             }
 
             // features JS moved to features_card partial
-            
+
             // Schedule inputs based on duration_days
             const $durationDays = $('#duration_days');
             const $scheduleSection = $('#schedule-section');
             const $scheduleInputs = $('#schedule-inputs');
-            
+
             @php
                 $scheduleItems = isset($plan) && $plan->scheduleItems ? $plan->scheduleItems->keyBy('day_number') : collect();
                 $existingSchedule = [];
@@ -213,27 +211,27 @@
                 }
             @endphp
             const existingSchedule = @json($existingSchedule);
-            
+
             function updateScheduleInputs() {
                 const days = parseInt($durationDays.val()) || 0;
-                
+
                 if (days <= 0) {
                     $scheduleSection.hide();
                     $scheduleInputs.empty();
                     return;
                 }
-                
+
                 $scheduleSection.show();
                 $scheduleInputs.empty();
-                
+
                 for (let day = 1; day <= days; day++) {
                     const existingTitle = existingSchedule[day] || '';
                     const inputHtml = `
                         <div class="mb-3">
                             <label class="form-label">اليوم ${day}</label>
-                            <input type="text" 
-                                   name="schedule[${day}][title]" 
-                                   class="form-control" 
+                            <input type="text"
+                                   name="schedule[${day}][title]"
+                                   class="form-control"
                                    value="${existingTitle}"
                                    placeholder="أدخل عنوان اليوم ${day}">
                             <input type="hidden" name="schedule[${day}][day_number]" value="${day}">
@@ -242,10 +240,10 @@
                     $scheduleInputs.append(inputHtml);
                 }
             }
-            
+
             // Initialize on page load
             updateScheduleInputs();
-            
+
             // Update when duration_days changes
             $durationDays.on('input change', function() {
                 updateScheduleInputs();

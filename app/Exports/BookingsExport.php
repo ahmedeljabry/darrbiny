@@ -70,3 +70,4 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
 }
 
 
+
