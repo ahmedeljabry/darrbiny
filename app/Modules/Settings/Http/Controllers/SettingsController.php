@@ -54,14 +54,24 @@ class SettingsController extends BaseController
 
     public function roles(): JsonResponse
     {
+        $trainerRoles = $this->getListSetting('roles.trainer');
+        $trainerRestrictions = $this->getListSetting('restrictions.trainer');
+        $userRoles = $this->getListSetting('roles.user');
+        $userRestrictions = $this->getListSetting('restrictions.user');
+
         return response()->json([
             'roles' => [
                 'trainer' => [
-                    'roles' => $this->getListSetting('roles.trainer'),
-                    'restrictions' => $this->getListSetting('restrictions.trainer'),
+                    'roles' => $trainerRoles,
+                    'restrictions' => $trainerRestrictions,
                 ],
                 'user' => [
-                    'roles' => $this->getListSetting('roles.user'),
+                    'roles' => $userRoles,
+                    'restrictions' => $userRestrictions,
+                ],
+                'student' => [
+                    'roles' => $userRoles,
+                    'restrictions' => $userRestrictions,
                 ],
             ],
         ]);

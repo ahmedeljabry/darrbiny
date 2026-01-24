@@ -146,6 +146,7 @@ class UserRequestController extends BaseController
     public function subscriptions(Request $request)
     {
         $statusCategory = $request->query('status');
+        $userId = $request->user()->id;
 
         $q = UserRequest::with([
             'user',
@@ -159,7 +160,10 @@ class UserRequestController extends BaseController
             'cancellationRequest',
             'scheduleProgress',
         ])
-        ->where('user_id', $request->user()->id)->orWhere('trainer_id', $request->user()->id);
+        ->where(function ($query) use ($userId) {
+            $query->where('user_id', $userId)
+                ->orWhere('trainer_id', $userId);
+        });
 
         if ($statusCategory === 'active') {
             $q->where('status', UserRequest::STATUS_IN_TRAINING);
@@ -198,4 +202,3 @@ class UserRequestController extends BaseController
         return response()->json(['data' => $req]);
     }
 }
-

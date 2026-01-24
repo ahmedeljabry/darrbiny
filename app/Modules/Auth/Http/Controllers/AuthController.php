@@ -254,7 +254,8 @@ class AuthController extends BaseController
         }
 
         // Handle profile picture upload
-        if ($request->hasFile('profile_picture')) {
+        $profileFile = $request->file('profile_picture') ?: $request->file('image');
+        if ($profileFile) {
             // Delete old profile picture if exists
             if ($user->profile_picture_id) {
                 $oldUpload = Upload::find($user->profile_picture_id);
@@ -266,13 +267,13 @@ class AuthController extends BaseController
 
             // Store new profile picture
             $disk = config('filesystems.default', 'public');
-            $path = $request->file('profile_picture')->store('profiles', $disk);
+            $path = $profileFile->store('profiles', $disk);
             
             $upload = Upload::create([
                 'disk' => $disk,
                 'path' => $path,
-                'mime' => $request->file('profile_picture')->getMimeType(),
-                'size' => $request->file('profile_picture')->getSize(),
+                'mime' => $profileFile->getMimeType(),
+                'size' => $profileFile->getSize(),
             ]);
 
             $user->profile_picture_id = $upload->id;
@@ -340,4 +341,3 @@ class AuthController extends BaseController
         return 'USD';
     }
 }
-

@@ -25,6 +25,7 @@ class UpdateProfileRequest extends FormRequest
             'password' => ['nullable', 'string', 'confirmed', Password::min(8)],
             'password_confirmation' => ['required_with:password', 'string'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'], // 5MB max
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'], // alias for profile picture
         ];
     }
 
@@ -41,6 +42,9 @@ class UpdateProfileRequest extends FormRequest
             'profile_picture.image' => 'يجب أن يكون الملف صورة',
             'profile_picture.mimes' => 'نوع الصورة يجب أن يكون: jpeg, png, jpg, أو webp',
             'profile_picture.max' => 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت',
+            'image.image' => 'يجب أن يكون الملف صورة',
+            'image.mimes' => 'نوع الصورة يجب أن يكون: jpeg, png, jpg, أو webp',
+            'image.max' => 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت',
         ];
     }
 }

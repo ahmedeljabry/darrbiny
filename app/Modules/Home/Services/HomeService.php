@@ -168,6 +168,13 @@ class HomeService
 
     protected function getHowItWorks(): array
     {
-        return HowItWorksSection::with('steps')->get()->map(fn($s) => ['title' => $s->title, 'steps' => $s->steps->pluck('title')->values()->all(),])->all();
+        return HowItWorksSection::with('steps')
+            ->orderBy('position')
+            ->get()
+            ->map(fn ($s) => [
+                'title' => $s->title,
+                'steps' => $s->steps->pluck('title')->values()->all(),
+            ])
+            ->all();
     }
 }
