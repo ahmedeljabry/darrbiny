@@ -711,7 +711,7 @@
                               <button type="button" class="btn btn-sm btn-outline-primary js-hiw-add-step">إضافة خطوة</button>
                             </div>
                           </div>
-                          <div class="d-flex justify_content-end mt-1">
+                          <div class="d-flex justify-content-end mt-1">
                             <button type="button" class="btn btn-sm btn-outline-danger js-hiw-remove-section">حذف القسم</button>
                           </div>
                         </div>
@@ -890,6 +890,20 @@
 @push('scripts')
   <script>
   document.addEventListener('DOMContentLoaded', function(){
+    function reindexHiw() {
+      const sections = document.querySelectorAll('#hiw-list .hiw-row');
+      sections.forEach((sec, i) => {
+        const titleInput = sec.querySelector('input[name*="[title]"]');
+        if (titleInput) titleInput.name = `sections[${i}][title]`;
+
+        const steps = sec.querySelectorAll('.steps .input-group');
+        steps.forEach((row, j) => {
+          const input = row.querySelector('input');
+          if (input) input.name = `sections[${i}][steps][${j}]`;
+        });
+      });
+    }
+
     function addHiwSection(title = '', steps = ['']){
       const idx = document.querySelectorAll('#hiw-list .hiw-row').length;
       const el = document.createElement('div');
@@ -922,6 +936,7 @@
         stepsEl.appendChild(row);
       });
       document.getElementById('hiw-list').appendChild(el);
+      reindexHiw();
     }
 
     document.addEventListener('click', function(e){
@@ -930,6 +945,7 @@
         const row = e.target.closest('.hiw-row');
         const all = document.querySelectorAll('#hiw-list .hiw-row');
         if (all.length > 1) row.remove();
+        reindexHiw();
       }
       if (e.target.closest('.js-hiw-add-step')) {
         const sec = e.target.closest('.hiw-row');
@@ -943,13 +959,25 @@
           <input type="text" class="form-control" name="sections[${idx}][steps][${j}]" placeholder="اكتب الخطوة" />
           <button type="button" class="btn btn-outline-danger js-hiw-remove-step">حذف</button>`;
         steps.appendChild(row);
+        reindexHiw();
       }
       if (e.target.closest('.js-hiw-remove-step')) {
         const row = e.target.closest('.input-group');
         const steps = e.target.closest('.steps');
         if (steps.querySelectorAll('.input-group').length > 1) row.remove();
+        reindexHiw();
       }
     });
+
+    reindexHiw();
+
+    const hiwList = document.getElementById('hiw-list');
+    const hiwForm = hiwList ? hiwList.closest('form') : null;
+    if (hiwForm) {
+      hiwForm.addEventListener('submit', function () {
+        reindexHiw();
+      });
+    }
   });
   </script>
 @endpush

@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\StorageUrl;
+
 class Plan extends BaseModel
 {
+    protected $appends = [
+        'image_url',
+    ];
+
     protected $fillable = [
         'title',
         'description',
@@ -55,6 +61,11 @@ class Plan extends BaseModel
     public function scheduleItems()
     {
         return $this->hasMany(PlanScheduleItem::class)->ordered();
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return StorageUrl::make($this->image);
     }
 
     public function scopeActive($q){ return $q->where('is_active', true); }

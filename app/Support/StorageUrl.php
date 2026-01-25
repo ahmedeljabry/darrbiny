@@ -36,6 +36,15 @@ class StorageUrl
             }
         }
 
-        return $storage->url($path);
+        $url = $storage->url($path);
+
+        if ($url && !str_starts_with($url, 'http://') && !str_starts_with($url, 'https://') && !str_starts_with($url, '//')) {
+            $baseUrl = rtrim((string) config('app.url'), '/');
+            if ($baseUrl !== '') {
+                $url = $baseUrl . '/' . ltrim($url, '/');
+            }
+        }
+
+        return $url;
     }
 }

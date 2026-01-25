@@ -40,7 +40,8 @@ class UserRequestController extends BaseController
                 })
                 ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
                     $trainingQuery->where('trainer_id', $trainerId);
-                });
+                })
+                ->orWhere('trainer_id', $trainerId);
             });
         }
 
@@ -119,7 +120,8 @@ class UserRequestController extends BaseController
             })
             ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
                 $trainingQuery->where('trainer_id', $trainerId);
-            });
+            })
+            ->orWhere('trainer_id', $trainerId);
         });
 
         // Filter by status
