@@ -24,10 +24,7 @@ class RequestService
             $req->app_fee_reserved_minor = \App\Support\Fees::reservationFeeMinor();
             $req->save();
 
-            // Initialize schedule progress when user subscribes
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
-
-            // Dispatch notifications to eligible trainers
             NotifyEligibleTrainers::dispatch($req);
             return $req;
         });

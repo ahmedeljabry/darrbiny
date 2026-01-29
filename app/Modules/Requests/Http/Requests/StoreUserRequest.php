@@ -16,6 +16,7 @@ class StoreUserRequest extends FormRequest
             'plan_id' => ['required','uuid'],
             'trainer_id' => ['nullable','uuid','exists:users,id'],
             'start_date' => ['required','date','after_or_equal:today'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'has_user_car' => ['required','boolean'],
             'wants_trainer_car' => ['required','boolean'],
             'needs_pickup' => ['required','boolean'],
@@ -24,4 +25,3 @@ class StoreUserRequest extends FormRequest
         ];
     }
 }
-

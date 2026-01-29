@@ -19,7 +19,9 @@ class CaptainAccountService
             $profile = $user->trainerProfile()->create();
         }
 
-        return $profile->fresh(['country:id,name', 'city:id,name']);
+        $profile = $profile->fresh(['country:id,name', 'city:id,name']);
+
+        return $this->applyPendingChangesForDisplay($profile);
     }
 
     public function upsert(User $user, array $payload): TrainerProfile
@@ -107,14 +109,32 @@ class CaptainAccountService
             }
         } else {
             // No changes, just return the profile without modification
-            return $profile->fresh(['country:id,name', 'city:id,name']);
+            return $this->applyPendingChangesForDisplay(
+                $profile->fresh(['country:id,name', 'city:id,name'])
+            );
         }
 
-        return $profile->fresh(['country:id,name', 'city:id,name']);
+        return $this->applyPendingChangesForDisplay(
+            $profile->fresh(['country:id,name', 'city:id,name'])
+        );
     }
 
     private function assertTrainer(User $user): void
     {
         abort_unless($user->hasRole('TRAINER'), 403, 'Only captains can access this resource.');
+    }
+
+    private function applyPendingChangesForDisplay(TrainerProfile $profile): TrainerProfile
+    {
+        $pendingChanges = $profile->pending_changes;
+
+        if (!$profile->pending_approval || empty($pendingChanges) || !is_array($pendingChanges)) {
+            return $profile;
+        }
+
+        $profile->fill($pendingChanges);
+        $profile->load(['country:id,name', 'city:id,name']);
+
+        return $profile;
     }
 }
