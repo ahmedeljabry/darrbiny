@@ -73,7 +73,7 @@ class UserScheduleService
 
             $progress->is_checked = true;
             $progress->checked_at = now();
-            
+
             if ($user && $user->id === $userRequest->trainer_id) {
                 if ($progress->status === UserScheduleProgress::STATUS_PENDING) {
                     $progress->status = UserScheduleProgress::STATUS_SENT;

@@ -7,6 +7,7 @@ namespace App\Modules\Offers\Http\Controllers;
 use App\Models\TrainerOffer;
 use App\Models\UserRequest;
 use App\Modules\Offers\Http\Requests\StoreOfferRequest;
+use App\Modules\Offers\Http\Resources\UserRequestOfferResource;
 use App\Modules\Offers\Services\OfferService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -14,6 +15,36 @@ use Illuminate\Routing\Controller as BaseController;
 class OfferController extends BaseController
 {
     public function __construct(private readonly OfferService $service) {}
+
+    public function listForUserRequests(Request $request)
+    {
+        $user = $request->user();
+        $requestId = $request->query('user_request_id') ?? $request->query('request_id');
+        $status = $request->query('status');
+        $perPage = (int) $request->query('per_page', 20);
+
+        $q = TrainerOffer::query()
+            ->select(['id', 'user_request_id', 'trainer_id', 'price_minor', 'message', 'status', 'created_at'])
+            ->with([
+                'trainer:id,name',
+                'trainer.trainerProfile:id,user_id,car_available,car_type,car_model_year,rating_avg,rating_count',
+                'userRequest:id,user_id,plan_id,start_date,needs_pickup,description,currency',
+                'userRequest.plan:id,title,duration_days,hours_count,country_id,city_id',
+                'userRequest.plan.country:id,name',
+                'userRequest.plan.city:id,name',
+            ])
+            ->when(!$user->hasRole('ADMIN'), function ($qq) use ($user) {
+                $qq->whereHas('userRequest', function ($reqQuery) use ($user) {
+                    $reqQuery->where('user_id', $user->id);
+                });
+            })
+            ->when($requestId, fn ($qq) => $qq->where('user_request_id', $requestId))
+            ->when($status, fn ($qq) => $qq->where('status', $status));
+
+        $offers = $q->latest()->paginate($perPage)->withQueryString();
+
+        return UserRequestOfferResource::collection($offers)->response();
+    }
 
     public function listForRequest(string $id)
     {
@@ -46,4 +77,3 @@ class OfferController extends BaseController
         return response()->json(['data' => $req->fresh()]);
     }
 }
-
