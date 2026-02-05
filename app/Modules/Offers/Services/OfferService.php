@@ -44,5 +44,19 @@ class OfferService
         abort_unless($req->id === $offer->user_request_id, 422, 'Offer does not belong to request');
         $this->requests->selectOffer($req, $offer);
     }
-}
 
+    public function update(TrainerOffer $offer, array $data): TrainerOffer
+    {
+        abort_unless($offer->status === TrainerOffer::STATUS_SENT, 422, 'Offer cannot be updated');
+
+        if (array_key_exists('price_minor', $data)) {
+            $offer->price_minor = (int) $data['price_minor'];
+        }
+        if (array_key_exists('message', $data)) {
+            $offer->message = $data['message'];
+        }
+
+        $offer->save();
+        return $offer->fresh();
+    }
+}

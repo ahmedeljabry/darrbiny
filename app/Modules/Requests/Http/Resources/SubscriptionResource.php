@@ -72,6 +72,7 @@ class SubscriptionResource extends JsonResource
             'trainer' => $trainer ? [
                 'id' => $trainer->id,
                 'name' => 'كوتش / ' . $trainer->name,
+                'bio' => $trainerProfile?->bio,
                 'rating' => [
                     'average' => (float) ($trainerProfile->rating_avg ?? 0),
                     'count' => (int) ($trainerProfile->rating_count ?? 0),
@@ -88,6 +89,7 @@ class SubscriptionResource extends JsonResource
                 'course_id' => '#' . $courseId,
                 'start_date' => $this->start_date?->format('d M Y'),
                 'start_date_ar' => $this->formatArabicDate($this->start_date),
+                'start_time' => $this->start_time,
                 'end_date' => $endDate?->format('d M Y'),
                 'end_date_ar' => $this->formatArabicDate($endDate),
                 'location' => $location,

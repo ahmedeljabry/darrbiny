@@ -56,13 +56,11 @@ class RequestService
         $req->status = UserRequest::STATUS_IN_TRAINING;
         $req->save();
 
-        // Ensure schedule progress is initialized if not already
         $progressCount = \App\Models\UserScheduleProgress::where('user_request_id', $req->id)->count();
         if ($progressCount === 0) {
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
         }
 
-        // Ensure conversation exists between المتدرب والمدرب
         if ($req->trainer_id && $req->user_id) {
             $trainer = \App\Models\User::find($req->trainer_id);
             $user = \App\Models\User::find($req->user_id);

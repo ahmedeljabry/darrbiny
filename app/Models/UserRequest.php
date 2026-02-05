@@ -15,7 +15,7 @@ class UserRequest extends BaseModel
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'user_id','trainer_id','plan_id','start_date','description','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','version'
+        'user_id','trainer_id','plan_id','start_date','start_time','description','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','version'
     ];
 
     protected $casts = [

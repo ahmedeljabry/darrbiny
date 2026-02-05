@@ -38,6 +38,7 @@ class UserRequestOfferResource extends JsonResource
             'request' => $userRequest ? [
                 'id' => $userRequest->id,
                 'start_date' => $userRequest->start_date?->format('Y-m-d'),
+                'start_time' => $userRequest->start_time,
                 'end_date' => $endDate?->format('Y-m-d'),
                 'duration' => [
                     'days' => $durationDays,
@@ -64,6 +65,7 @@ class UserRequestOfferResource extends JsonResource
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'profile_picture' => $trainer->profile_picture_url ?? null,
+                'bio' => $trainerProfile?->bio,
                 'rating' => [
                     'average' => (float) ($trainerProfile->rating_avg ?? 0),
                     'count' => (int) ($trainerProfile->rating_count ?? 0),

@@ -16,6 +16,7 @@ class StoreUserRequest extends FormRequest
             'plan_id' => ['required','uuid'],
             'trainer_id' => ['nullable','uuid','exists:users,id'],
             'start_date' => ['required','date','after_or_equal:today'],
+            'start_time' => ['required','string','regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'description' => ['nullable', 'string', 'max:1000'],
             'has_user_car' => ['required','boolean'],
             'wants_trainer_car' => ['required','boolean'],

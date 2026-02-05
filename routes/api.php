@@ -93,6 +93,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             // Offers
             Route::get('/user-requests/{id}/offers', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'listForRequest']);
             Route::post('/trainer/offers', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'store']);
+            Route::put('/trainer/offers/{id}', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'update']);
             Route::post('/offers/{id}/accept', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'accept']);
 
             // Payments

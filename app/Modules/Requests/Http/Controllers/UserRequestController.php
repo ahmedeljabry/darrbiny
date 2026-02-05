@@ -219,10 +219,6 @@ class UserRequestController extends BaseController
     {
         $req = UserRequest::findOrFail($id);
         $this->authorize('complete', $req);
-        $approvedHours = (int) TrainingDay::where('user_request_id', $req->id)
-            ->where('status', TrainingDay::STATUS_APPROVED)
-            ->sum('hours_done');
-        abort_if($approvedHours < $req->plan->hours_count, 422, 'Not enough hours');
         $this->service->complete($req);
         Payout::create([
             'trainer_id' => $request->user()->id,

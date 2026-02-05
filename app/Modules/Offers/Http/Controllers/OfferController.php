@@ -7,6 +7,7 @@ namespace App\Modules\Offers\Http\Controllers;
 use App\Models\TrainerOffer;
 use App\Models\UserRequest;
 use App\Modules\Offers\Http\Requests\StoreOfferRequest;
+use App\Modules\Offers\Http\Requests\UpdateOfferRequest;
 use App\Modules\Offers\Http\Resources\UserRequestOfferResource;
 use App\Modules\Offers\Services\OfferService;
 use Illuminate\Http\Request;
@@ -28,8 +29,8 @@ class OfferController extends BaseController
             ->with([
                 'trainer:id,name,profile_picture_id',
                 'trainer.profilePicture',
-                'trainer.trainerProfile:id,user_id,car_available,car_type,car_model_year,rating_avg,rating_count',
-                'userRequest:id,user_id,plan_id,start_date,needs_pickup,description,currency',
+                'trainer.trainerProfile:id,user_id,bio,car_available,car_type,car_model_year,rating_avg,rating_count',
+                'userRequest:id,user_id,plan_id,start_date,start_time,needs_pickup,description,currency',
                 'userRequest.plan:id,title,duration_days,hours_count,country_id,city_id',
                 'userRequest.plan.country:id,name',
                 'userRequest.plan.city:id,name',
@@ -62,6 +63,19 @@ class OfferController extends BaseController
     {
         $offer = $this->service->create($request->user()->id, $request->validated());
         return response()->json(['data' => $offer], 201);
+    }
+
+    public function update(UpdateOfferRequest $request, string $id)
+    {
+        $offer = TrainerOffer::find($id);
+        if (!$offer) {
+            abort(404, 'Offer not found');
+        }
+        $user = $request->user();
+        abort_unless($offer->trainer_id === $user->id, 403, 'You do not own this offer');
+
+        $offer = $this->service->update($offer, $request->validated());
+        return response()->json(['data' => $offer]);
     }
 
     public function accept(Request $request, string $id)
