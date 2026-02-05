@@ -63,6 +63,7 @@ class UserRequestOfferResource extends JsonResource
             'trainer' => $trainer ? [
                 'id' => $trainer->id,
                 'name' => $trainer->name,
+                'profile_picture' => $trainer->profile_picture_url ?? null,
                 'rating' => [
                     'average' => (float) ($trainerProfile->rating_avg ?? 0),
                     'count' => (int) ($trainerProfile->rating_count ?? 0),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Requests\Http\Controllers;
 
 use App\Models\Payout;
+use App\Models\TrainerProfile;
 use App\Models\TrainingDay;
 use App\Models\UserRequest;
 use App\Modules\Requests\Http\Requests\StoreUserRequest;
@@ -23,14 +24,18 @@ class UserRequestController extends BaseController
 
     public function index(Request $request)
     {
+        $user = $request->user();
         $mine = $request->boolean('mine');
+        if (!$user->hasRole('ADMIN')) {
+            $mine = true;
+        }
         $trainerId = $request->query('trainer_id');
         $trainerName = $request->query('trainer_name');
 
         $q = UserRequest::with(['user', 'plan', 'plan.country', 'plan.city', 'offers.trainer']);
 
         if ($mine) {
-            $q->where('user_id', $request->user()->id);
+            $q->where('user_id', $user->id);
         }
 
         if ($trainerId) {
@@ -100,6 +105,11 @@ class UserRequestController extends BaseController
         $status = $request->query('status');
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
+        $viewer = $request->user();
+        $canSeeOpenRequests = $viewer->hasRole('ADMIN') || $viewer->id === $trainerId;
+        $profile = $canSeeOpenRequests
+            ? TrainerProfile::where('user_id', $trainerId)->first()
+            : null;
 
         $q = UserRequest::with([
             'user',
@@ -114,7 +124,7 @@ class UserRequestController extends BaseController
                 $query->where('trainer_id', $trainerId);
             }
         ])
-        ->where(function ($query) use ($trainerId) {
+        ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $profile) {
             $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                 $offerQuery->where('trainer_id', $trainerId);
             })
@@ -122,6 +132,26 @@ class UserRequestController extends BaseController
                 $trainingQuery->where('trainer_id', $trainerId);
             })
             ->orWhere('trainer_id', $trainerId);
+            if ($canSeeOpenRequests && $profile) {
+                $query->orWhere(function ($openQuery) use ($profile) {
+                    $openQuery->whereNull('trainer_id')
+                        ->where('status', UserRequest::STATUS_AWAITING_OFFERS)
+                        ->whereHas('plan', function ($planQuery) use ($profile) {
+                            if ($profile->city_id) {
+                                $planQuery->where(function ($cityQuery) use ($profile) {
+                                    $cityQuery->whereNull('city_id')
+                                        ->orWhere('city_id', $profile->city_id);
+                                });
+                            }
+                            if ($profile->country_id) {
+                                $planQuery->where(function ($countryQuery) use ($profile) {
+                                    $countryQuery->whereNull('country_id')
+                                        ->orWhere('country_id', $profile->country_id);
+                                });
+                            }
+                        });
+                });
+            }
         });
 
         // Filter by status

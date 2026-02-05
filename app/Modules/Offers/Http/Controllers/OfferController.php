@@ -26,7 +26,8 @@ class OfferController extends BaseController
         $q = TrainerOffer::query()
             ->select(['id', 'user_request_id', 'trainer_id', 'price_minor', 'message', 'status', 'created_at'])
             ->with([
-                'trainer:id,name',
+                'trainer:id,name,profile_picture_id',
+                'trainer.profilePicture',
                 'trainer.trainerProfile:id,user_id,car_available,car_type,car_model_year,rating_avg,rating_count',
                 'userRequest:id,user_id,plan_id,start_date,needs_pickup,description,currency',
                 'userRequest.plan:id,title,duration_days,hours_count,country_id,city_id',

@@ -13,6 +13,7 @@ class SubscriptionResource extends JsonResource
         $acceptedOffer = $this->offers->where('status', \App\Models\TrainerOffer::STATUS_ACCEPTED)->first();
         $trainer = $acceptedOffer?->trainer;
         $trainerProfile = $trainer?->trainerProfile;
+        $offerMessage = $acceptedOffer?->message;
 
         $durationDays = (int) ($this->plan->duration_days ?? 0);
         $endDate = $this->start_date && $durationDays > 0
@@ -58,6 +59,7 @@ class SubscriptionResource extends JsonResource
             'status_category' => $statusCategory,
             'trainer_rate' => $trainerProfile ? (float) ($trainerProfile->rating_avg ?? 0) : null,
             'trainer_name' => $trainer ? $trainer->name : null,
+            'trainer_offer_message' => $offerMessage,
             'description' => $this->description,
 
             'title' => 'كورس تدريب',
