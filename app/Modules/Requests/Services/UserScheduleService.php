@@ -48,7 +48,7 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay($userRequest, int $planId, int $dayNumber, $user = null): UserScheduleProgress
+    public function checkDay($userRequest, string $planId, int $dayNumber, $user = null): UserScheduleProgress
     {
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
@@ -95,7 +95,7 @@ class UserScheduleService
     /**
      * Uncheck a schedule day
      */
-    public function uncheckDay($userRequest, int $planId, int $dayNumber): UserScheduleProgress
+    public function uncheckDay($userRequest, string $planId, int $dayNumber): UserScheduleProgress
     {
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
@@ -115,7 +115,7 @@ class UserScheduleService
     /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem($userRequest, int $planId, int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem($userRequest, string $planId, int $dayNumber): UserScheduleProgress
     {
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
@@ -142,7 +142,7 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem($userRequest, int $planId, int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem($userRequest, string $planId, int $dayNumber, string $reason): UserScheduleProgress
     {
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
@@ -172,7 +172,7 @@ class UserScheduleService
         $userRequest,
         int $dayNumber,
         int $rating,
-        int $planId,
+        string $planId,
         ?array $ratingTitles = null,
         ?string $ratingComment = null
     ): UserScheduleProgress {

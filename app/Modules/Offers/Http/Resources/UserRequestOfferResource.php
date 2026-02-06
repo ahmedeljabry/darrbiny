@@ -14,6 +14,7 @@ class UserRequestOfferResource extends JsonResource
         $plan = $userRequest?->plan;
         $trainer = $this->trainer;
         $trainerProfile = $trainer?->trainerProfile;
+        $trainerBio = $this->resolveTrainerBio($trainerProfile);
 
         $durationDays = (int) ($plan?->duration_days ?? 0);
         $endDate = $userRequest?->start_date && $durationDays > 0
@@ -65,7 +66,7 @@ class UserRequestOfferResource extends JsonResource
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'profile_picture' => $trainer->profile_picture_url ?? null,
-                'bio' => $trainerProfile?->bio,
+                'bio' => $trainerBio,
                 'rating' => [
                     'average' => (float) ($trainerProfile->rating_avg ?? 0),
                     'count' => (int) ($trainerProfile->rating_count ?? 0),
@@ -93,5 +94,23 @@ class UserRequestOfferResource extends JsonResource
         $model = trim(implode(' ', $parts));
 
         return $model !== '' ? $model : 'Trainer car';
+    }
+
+    private function resolveTrainerBio($trainerProfile): ?string
+    {
+        if (!$trainerProfile) {
+            return null;
+        }
+
+        $bio = $trainerProfile->bio;
+        if (
+            $trainerProfile->pending_approval
+            && is_array($trainerProfile->pending_changes)
+            && array_key_exists('bio', $trainerProfile->pending_changes)
+        ) {
+            $bio = $trainerProfile->pending_changes['bio'];
+        }
+
+        return $bio;
     }
 }

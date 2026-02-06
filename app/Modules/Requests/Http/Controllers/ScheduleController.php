@@ -58,7 +58,7 @@ class ScheduleController extends BaseController
         $user = $request->user();
 
         abort_unless(in_array($user->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->checkDay($userRequest, (int) $userRequest->plan_id, $dayNumber, $user);
+        $progress = $this->service->checkDay($userRequest, $userRequest->plan_id, $dayNumber, $user);
 
         return response()->json([
             'data' => [
@@ -80,7 +80,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
 
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->uncheckDay($userRequest, (int) $userRequest->plan_id, $dayNumber);
+        $progress = $this->service->uncheckDay($userRequest, $userRequest->plan_id, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -100,7 +100,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
 
-        $progress = $this->service->acceptScheduleItem($userRequest, (int) $userRequest->plan_id, $dayNumber);
+        $progress = $this->service->acceptScheduleItem($userRequest, $userRequest->plan_id, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -125,7 +125,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
 
-        $progress = $this->service->rejectScheduleItem($userRequest, (int) $userRequest->plan_id, $dayNumber, $request->input('reason'));
+        $progress = $this->service->rejectScheduleItem($userRequest, $userRequest->plan_id, $dayNumber, $request->input('reason'));
 
         return response()->json([
             'data' => [
@@ -156,7 +156,7 @@ class ScheduleController extends BaseController
             $userRequest,
             $dayNumber,
             $request->input('rating'),
-            (int) $userRequest->plan_id,
+            $userRequest->plan_id,
             $request->input('rating_titles'),
             $request->input('rating_comment')
         );

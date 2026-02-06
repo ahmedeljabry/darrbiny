@@ -29,7 +29,7 @@ class OfferController extends BaseController
             ->with([
                 'trainer:id,name,profile_picture_id',
                 'trainer.profilePicture',
-                'trainer.trainerProfile:id,user_id,bio,car_available,car_type,car_model_year,rating_avg,rating_count',
+                'trainer.trainerProfile:id,user_id,bio,pending_approval,pending_changes,car_available,car_type,car_model_year,rating_avg,rating_count',
                 'userRequest:id,user_id,plan_id,start_date,start_time,needs_pickup,description,currency',
                 'userRequest.plan:id,title,duration_days,hours_count,country_id,city_id',
                 'userRequest.plan.country:id,name',

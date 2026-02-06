@@ -13,6 +13,7 @@ class SubscriptionResource extends JsonResource
         $acceptedOffer = $this->offers->where('status', \App\Models\TrainerOffer::STATUS_ACCEPTED)->first();
         $trainer = $acceptedOffer?->trainer;
         $trainerProfile = $trainer?->trainerProfile;
+        $trainerBio = $this->resolveTrainerBio($trainerProfile);
         $offerMessage = $acceptedOffer?->message;
 
         $durationDays = (int) ($this->plan->duration_days ?? 0);
@@ -72,7 +73,7 @@ class SubscriptionResource extends JsonResource
             'trainer' => $trainer ? [
                 'id' => $trainer->id,
                 'name' => 'كوتش / ' . $trainer->name,
-                'bio' => $trainerProfile?->bio,
+                'bio' => $trainerBio,
                 'rating' => [
                     'average' => (float) ($trainerProfile->rating_avg ?? 0),
                     'count' => (int) ($trainerProfile->rating_count ?? 0),
@@ -196,5 +197,23 @@ class SubscriptionResource extends JsonResource
         ];
 
         return $date->format('d') . ' ' . ($months[(int) $date->format('m')] ?? '');
+    }
+
+    private function resolveTrainerBio($trainerProfile): ?string
+    {
+        if (!$trainerProfile) {
+            return null;
+        }
+
+        $bio = $trainerProfile->bio;
+        if (
+            $trainerProfile->pending_approval
+            && is_array($trainerProfile->pending_changes)
+            && array_key_exists('bio', $trainerProfile->pending_changes)
+        ) {
+            $bio = $trainerProfile->pending_changes['bio'];
+        }
+
+        return $bio;
     }
 }
