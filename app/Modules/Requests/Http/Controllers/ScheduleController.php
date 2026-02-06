@@ -37,7 +37,7 @@ class ScheduleController extends BaseController
             return response()->json(['message' => 'Subscription not found'], 404);
         }
 
-        $schedule = $this->service->getSchedule($userRequest, $userRequest->plan_id);
+        $schedule = $this->service->getSchedule($userRequest);
 
         return response()->json([
             'data' => [
@@ -58,7 +58,7 @@ class ScheduleController extends BaseController
         $user = $request->user();
 
         abort_unless(in_array($user->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->checkDay($userRequest, $userRequest->plan_id, $dayNumber, $user);
+        $progress = $this->service->checkDay($userRequest, $dayNumber, $user);
 
         return response()->json([
             'data' => [
@@ -80,7 +80,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
 
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->uncheckDay($userRequest, $userRequest->plan_id, $dayNumber);
+        $progress = $this->service->uncheckDay($userRequest, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -100,7 +100,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
 
-        $progress = $this->service->acceptScheduleItem($userRequest, $userRequest->plan_id, $dayNumber);
+        $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber);
 
         return response()->json([
             'data' => [
@@ -125,7 +125,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
 
-        $progress = $this->service->rejectScheduleItem($userRequest, $userRequest->plan_id, $dayNumber, $request->input('reason'));
+        $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber, $request->input('reason'));
 
         return response()->json([
             'data' => [
@@ -156,7 +156,6 @@ class ScheduleController extends BaseController
             $userRequest,
             $dayNumber,
             $request->input('rating'),
-            $userRequest->plan_id,
             $request->input('rating_titles'),
             $request->input('rating_comment')
         );

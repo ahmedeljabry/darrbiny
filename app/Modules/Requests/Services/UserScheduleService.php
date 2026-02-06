@@ -13,8 +13,11 @@ class UserScheduleService
     /**
      * Get schedule with user's progress
      */
-    public function getSchedule($userRequest,$planId): array
+    public function getSchedule($userRequest): array
     {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->ordered()
             ->get();
@@ -48,24 +51,26 @@ class UserScheduleService
     /**
      * Check a schedule day as completed
      */
-    public function checkDay($userRequest, string $planId, int $dayNumber, $user = null): UserScheduleProgress
+    public function checkDay($userRequest, int $dayNumber, $user = null): UserScheduleProgress
     {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
 
         return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber, $user) {
-            $progress = UserScheduleProgress::firstOrCreate(
-                [
-                    'user_request_id' => $userRequest->id,
-                    'plan_schedule_item_id' => $scheduleItem->id,
-                ],
-                [
-                    'day_number' => $dayNumber,
-                    'is_checked' => false,
-                    'status' => UserScheduleProgress::STATUS_PENDING,
-                ]
-            );
+            $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
+                ->where('plan_schedule_item_id', $scheduleItem->id)
+                ->lockForUpdate()
+                ->first();
+            if (!$progress) {
+                app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($userRequest);
+                $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
+                    ->where('plan_schedule_item_id', $scheduleItem->id)
+                    ->firstOrFail();
+            }
 
             if ($progress->status === null) {
                 $progress->status = UserScheduleProgress::STATUS_PENDING;
@@ -78,8 +83,6 @@ class UserScheduleService
                 if ($progress->status === UserScheduleProgress::STATUS_PENDING) {
                     $progress->status = UserScheduleProgress::STATUS_SENT;
                     $progress->sent_at = now();
-
-                    // Send notification to user
                     if ($userRequest->user) {
                         $userRequest->user->notify(new ScheduleItemSentNotification($progress));
                     }
@@ -95,8 +98,11 @@ class UserScheduleService
     /**
      * Uncheck a schedule day
      */
-    public function uncheckDay($userRequest, string $planId, int $dayNumber): UserScheduleProgress
+    public function uncheckDay($userRequest, int $dayNumber): UserScheduleProgress
     {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
@@ -115,8 +121,11 @@ class UserScheduleService
     /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem($userRequest, string $planId, int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem($userRequest, int $dayNumber): UserScheduleProgress
     {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
@@ -142,8 +151,11 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem($userRequest, string $planId, int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem($userRequest, int $dayNumber, string $reason): UserScheduleProgress
     {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
             ->firstOrFail();
@@ -172,10 +184,12 @@ class UserScheduleService
         $userRequest,
         int $dayNumber,
         int $rating,
-        string $planId,
         ?array $ratingTitles = null,
         ?string $ratingComment = null
     ): UserScheduleProgress {
+        $planId = $userRequest->plan_id;
+        abort_unless($planId, 422, 'Plan not set');
+
         if ($rating < 1 || $rating > 5) {
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
                 response()->json(['message' => 'Rating must be between 1 and 5'], 422)

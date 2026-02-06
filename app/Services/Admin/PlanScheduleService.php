@@ -71,13 +71,17 @@ class PlanScheduleService
 
         DB::transaction(function () use ($userRequest, $scheduleItems) {
             foreach ($scheduleItems as $item) {
-                \App\Models\UserScheduleProgress::create([
-                    'user_request_id' => $userRequest->id,
-                    'plan_schedule_item_id' => $item->id,
-                    'day_number' => $item->day_number,
-                    'is_checked' => false,
-                    'status' => \App\Models\UserScheduleProgress::STATUS_PENDING,
-                ]);
+                \App\Models\UserScheduleProgress::firstOrCreate(
+                    [
+                        'user_request_id' => $userRequest->id,
+                        'plan_schedule_item_id' => $item->id,
+                    ],
+                    [
+                        'day_number' => $item->day_number,
+                        'is_checked' => false,
+                        'status' => \App\Models\UserScheduleProgress::STATUS_PENDING,
+                    ]
+                );
             }
         });
     }
