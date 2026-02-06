@@ -56,7 +56,6 @@ class ScheduleController extends BaseController
     {
         $userRequest = UserRequest::findOrFail($id);
         $user = $request->user();
-
         abort_unless(in_array($user->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
         $progress = $this->service->checkDay($userRequest, $dayNumber, $user);
 

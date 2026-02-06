@@ -21,6 +21,7 @@ class UserScheduleService
         $scheduleItems = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->ordered()
             ->get();
+        $scheduleItems = $scheduleItems->unique('day_number')->values();
 
         $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
             ->get()
@@ -58,6 +59,7 @@ class UserScheduleService
 
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
+            ->ordered()
             ->firstOrFail();
 
         return DB::transaction(function () use ($userRequest, $scheduleItem, $dayNumber, $user) {
@@ -105,6 +107,7 @@ class UserScheduleService
 
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
+            ->ordered()
             ->firstOrFail();
 
         $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
@@ -128,6 +131,7 @@ class UserScheduleService
 
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
+            ->ordered()
             ->firstOrFail();
 
         $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
@@ -158,6 +162,7 @@ class UserScheduleService
 
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
+            ->ordered()
             ->firstOrFail();
 
         $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
@@ -198,6 +203,7 @@ class UserScheduleService
 
         $scheduleItem = \App\Models\PlanScheduleItem::where('plan_id', $planId)
             ->where('day_number', $dayNumber)
+            ->ordered()
             ->firstOrFail();
 
         $progress = UserScheduleProgress::where('user_request_id', $userRequest->id)
