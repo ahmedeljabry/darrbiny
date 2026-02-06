@@ -106,10 +106,12 @@ class UserRequestController extends BaseController
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
         $viewer = $request->user();
-        $canSeeOpenRequests = $viewer->hasRole('ADMIN') || $viewer->id === $trainerId;
+        $canSeeOpenRequests = $viewer->hasRole('ADMIN') || strcasecmp((string) $viewer->id, $trainerId) === 0;
         $profile = $canSeeOpenRequests
             ? TrainerProfile::where('user_id', $trainerId)->first()
             : null;
+        $effectiveCityId = $this->resolveTrainerLocation($profile, 'city_id');
+        $effectiveCountryId = $this->resolveTrainerLocation($profile, 'country_id');
 
         $q = UserRequest::with([
             'user',
@@ -124,7 +126,7 @@ class UserRequestController extends BaseController
                 $query->where('trainer_id', $trainerId);
             }
         ])
-        ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $profile) {
+        ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $effectiveCityId, $effectiveCountryId) {
             $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                 $offerQuery->where('trainer_id', $trainerId);
             })
@@ -132,21 +134,24 @@ class UserRequestController extends BaseController
                 $trainingQuery->where('trainer_id', $trainerId);
             })
             ->orWhere('trainer_id', $trainerId);
-            if ($canSeeOpenRequests && $profile) {
-                $query->orWhere(function ($openQuery) use ($profile) {
+            if ($canSeeOpenRequests) {
+                $query->orWhere(function ($openQuery) use ($effectiveCityId, $effectiveCountryId) {
                     $openQuery->whereNull('trainer_id')
-                        ->where('status', UserRequest::STATUS_AWAITING_OFFERS)
-                        ->whereHas('plan', function ($planQuery) use ($profile) {
-                            if ($profile->city_id) {
-                                $planQuery->where(function ($cityQuery) use ($profile) {
+                        ->whereIn('status', [
+                            UserRequest::STATUS_PENDING_PAYMENT,
+                            UserRequest::STATUS_AWAITING_OFFERS,
+                        ])
+                        ->whereHas('plan', function ($planQuery) use ($effectiveCityId, $effectiveCountryId) {
+                            if ($effectiveCityId) {
+                                $planQuery->where(function ($cityQuery) use ($effectiveCityId) {
                                     $cityQuery->whereNull('city_id')
-                                        ->orWhere('city_id', $profile->city_id);
+                                        ->orWhere('city_id', $effectiveCityId);
                                 });
                             }
-                            if ($profile->country_id) {
-                                $planQuery->where(function ($countryQuery) use ($profile) {
+                            if ($effectiveCountryId) {
+                                $planQuery->where(function ($countryQuery) use ($effectiveCountryId) {
                                     $countryQuery->whereNull('country_id')
-                                        ->orWhere('country_id', $profile->country_id);
+                                        ->orWhere('country_id', $effectiveCountryId);
                                 });
                             }
                         });
@@ -228,5 +233,23 @@ class UserRequestController extends BaseController
             'status' => Payout::STATUS_PENDING_REVIEW,
         ]);
         return response()->json(['data' => $req]);
+    }
+
+    private function resolveTrainerLocation(?TrainerProfile $profile, string $field): ?string
+    {
+        if (!$profile) {
+            return null;
+        }
+
+        $value = $profile->getAttribute($field);
+        if (
+            $profile->pending_approval
+            && is_array($profile->pending_changes)
+            && array_key_exists($field, $profile->pending_changes)
+        ) {
+            $value = $profile->pending_changes[$field];
+        }
+
+        return $value;
     }
 }
