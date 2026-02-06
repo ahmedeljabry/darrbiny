@@ -19,16 +19,15 @@ class ScheduleController extends BaseController
      */
     public function index(Request $request)
     {
-        $request->validate(['user_request_id' => ['required', 'exists:user_requests,id'],]);
+        $request->validate(['user_request_id' => ['required','string','exists:user_requests,id'],]);
         $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])->findOrFail($request->input('user_request_id'));
         if (!$userRequest) { return response()->json(['message' => 'Subscription not found'], 404); }
-        $schedule = $this->service->getSchedule($userRequest);
         return response()->json([
             'data' => [
                 'user_request_id' => $userRequest->id,
                 'plan_id' => $userRequest->plan_id,
                 'duration_days' => (int) ($userRequest->plan->duration_days ?? 0),
-                'schedule' => $schedule,
+                'schedule' => $this->service->getSchedule($userRequest),
             ],
         ]);
     }
