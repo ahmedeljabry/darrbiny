@@ -43,10 +43,10 @@ class UserRequestController extends BaseController
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                     $offerQuery->where('trainer_id', $trainerId);
                 })
-                ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
-                    $trainingQuery->where('trainer_id', $trainerId);
-                })
-                ->orWhere('trainer_id', $trainerId);
+                    ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
+                        $trainingQuery->where('trainer_id', $trainerId);
+                    })
+                    ->orWhere('trainer_id', $trainerId);
             });
         }
 
@@ -55,9 +55,9 @@ class UserRequestController extends BaseController
                 $query->whereHas('offers.trainer', function ($trainerQuery) use ($trainerName) {
                     $trainerQuery->where('name', 'like', "%{$trainerName}%");
                 })
-                ->orWhereHas('trainingDays.trainer', function ($trainerQuery) use ($trainerName) {
-                    $trainerQuery->where('name', 'like', "%{$trainerName}%");
-                });
+                    ->orWhereHas('trainingDays.trainer', function ($trainerQuery) use ($trainerName) {
+                        $trainerQuery->where('name', 'like', "%{$trainerName}%");
+                    });
             });
         }
 
@@ -126,38 +126,38 @@ class UserRequestController extends BaseController
                 $query->where('trainer_id', $trainerId);
             }
         ])
-        ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $effectiveCityId, $effectiveCountryId) {
-            $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
-                $offerQuery->where('trainer_id', $trainerId);
-            })
-            ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
-                $trainingQuery->where('trainer_id', $trainerId);
-            })
-            ->orWhere('trainer_id', $trainerId);
-            if ($canSeeOpenRequests) {
-                $query->orWhere(function ($openQuery) use ($effectiveCityId, $effectiveCountryId) {
-                    $openQuery->whereNull('trainer_id')
-                        ->whereIn('status', [
-                            UserRequest::STATUS_PENDING_PAYMENT,
-                            UserRequest::STATUS_AWAITING_OFFERS,
-                        ])
-                        ->whereHas('plan', function ($planQuery) use ($effectiveCityId, $effectiveCountryId) {
-                            if ($effectiveCityId) {
-                                $planQuery->where(function ($cityQuery) use ($effectiveCityId) {
-                                    $cityQuery->whereNull('city_id')
-                                        ->orWhere('city_id', $effectiveCityId);
-                                });
-                            }
-                            if ($effectiveCountryId) {
-                                $planQuery->where(function ($countryQuery) use ($effectiveCountryId) {
-                                    $countryQuery->whereNull('country_id')
-                                        ->orWhere('country_id', $effectiveCountryId);
-                                });
-                            }
-                        });
-                });
-            }
-        });
+            ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $effectiveCityId, $effectiveCountryId) {
+                $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
+                    $offerQuery->where('trainer_id', $trainerId);
+                })
+                    ->orWhereHas('trainingDays', function ($trainingQuery) use ($trainerId) {
+                        $trainingQuery->where('trainer_id', $trainerId);
+                    })
+                    ->orWhere('trainer_id', $trainerId);
+                if ($canSeeOpenRequests) {
+                    $query->orWhere(function ($openQuery) use ($effectiveCityId, $effectiveCountryId) {
+                        $openQuery->whereNull('trainer_id')
+                            ->whereIn('status', [
+                                UserRequest::STATUS_PENDING_PAYMENT,
+                                UserRequest::STATUS_AWAITING_OFFERS,
+                            ])
+                            ->whereHas('plan', function ($planQuery) use ($effectiveCityId, $effectiveCountryId) {
+                                if ($effectiveCityId) {
+                                    $planQuery->where(function ($cityQuery) use ($effectiveCityId) {
+                                        $cityQuery->whereNull('city_id')
+                                            ->orWhere('city_id', $effectiveCityId);
+                                    });
+                                }
+                                if ($effectiveCountryId) {
+                                    $planQuery->where(function ($countryQuery) use ($effectiveCountryId) {
+                                        $countryQuery->whereNull('country_id')
+                                            ->orWhere('country_id', $effectiveCountryId);
+                                    });
+                                }
+                            });
+                    });
+                }
+            });
 
         // Filter by status
         if ($status) {
@@ -184,7 +184,6 @@ class UserRequestController extends BaseController
     {
         $statusCategory = $request->query('status');
         $userId = $request->user()->id;
-
         $q = UserRequest::with([
             'user',
             'plan',
@@ -201,22 +200,19 @@ class UserRequestController extends BaseController
             $query->where('user_id', $userId)
                 ->orWhere('trainer_id', $userId);
         });
-
-        if ($statusCategory === 'active') {
-            $q->where('status', UserRequest::STATUS_IN_TRAINING);
-        } elseif ($statusCategory === 'completed') {
-            $q->where('status', UserRequest::STATUS_COMPLETED);
-        } elseif ($statusCategory === 'pending') {
-            $q->whereIn('status', [
+        match ($statusCategory) {
+            'active' => $q->where('status', UserRequest::STATUS_IN_TRAINING),
+            'completed' => $q->where('status', UserRequest::STATUS_COMPLETED),
+            'pending' => $q->whereIn('status', [
                 UserRequest::STATUS_PENDING_PAYMENT,
                 UserRequest::STATUS_AWAITING_OFFERS,
                 UserRequest::STATUS_OFFER_SELECTED,
                 UserRequest::STATUS_PAID,
                 UserRequest::STATUS_CANCELLED,
-            ]);
-        }
+            ]),
+            default => null,
+        };
         $subscriptions = $q->latest()->paginate(20);
-
         return SubscriptionResource::collection($subscriptions)->response();
     }
 

@@ -54,6 +54,7 @@ class SubscriptionResource extends JsonResource
         $statusCategory = $this->mapStatusToCategory($this->status);
 
         return [
+
             'id' => $this->id,
             'course_id' => $courseId,
             'status' => $this->status,
@@ -83,6 +84,7 @@ class SubscriptionResource extends JsonResource
                 'can_contact' => true,
             ] : null,
             'user' => [
+                'id' => $this->user_id,
                 'name' => $this->user->name,
                 'profile_picture' => $this->user->profile_picture_url ?? null,
             ],
@@ -90,6 +92,9 @@ class SubscriptionResource extends JsonResource
                 'course_id' => '#' . $courseId,
                 'start_date' => $this->start_date?->format('d M Y'),
                 'start_date_ar' => $this->formatArabicDate($this->start_date),
+                'has_user_car' => $this->has_user_car,
+                'wants_trainer_car' => $this->wants_trainer_car,
+                'needs_pickup' => $this->needs_pickup,
                 'start_time' => $this->start_time,
                 'end_date' => $endDate?->format('d M Y'),
                 'end_date_ar' => $this->formatArabicDate($endDate),
