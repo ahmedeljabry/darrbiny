@@ -23,43 +23,31 @@ class CancellationController extends BaseController
         $validated = $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
         ]);
-
         $userRequest = UserRequest::with(['user', 'plan'])->find($id);
         if (!$userRequest) {
             abort(404, 'Course not found');
         }
-        
-        // Check if user owns this request
-        abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-        
-        // Check if already cancelled or has pending cancellation
+        $actor = $request->user();
+        $isOwner = $userRequest->user_id === $actor->id;
+        $isTrainer = $userRequest->trainer_id && $userRequest->trainer_id === $actor->id;
+        abort_unless($isOwner || $isTrainer, 403, 'Unauthorized');
         abort_if($userRequest->status === UserRequest::STATUS_CANCELLED, 422, 'Course already cancelled');
-        
         $existingCancellation = CancellationRequest::where('user_request_id', $id)
             ->where('status', CancellationRequest::STATUS_PENDING)
             ->first();
         abort_if($existingCancellation, 422, 'Cancellation request already pending');
-
-        // Check if course can be cancelled (not completed)
         abort_if($userRequest->status === UserRequest::STATUS_COMPLETED, 422, 'Cannot cancel completed course');
-
-        $cancellationRequest = DB::transaction(function () use ($userRequest, $validated, $request) {
-            // Create cancellation request
+        $cancellationRequest = DB::transaction(function () use ($userRequest, $validated, $actor) {
             $cancellation = CancellationRequest::create([
                 'user_request_id' => $userRequest->id,
-                'user_id' => $request->user()->id,
+                'user_id' => $actor->id,
                 'reason' => $validated['reason'],
                 'status' => CancellationRequest::STATUS_PENDING,
             ]);
-
-            // Notify admins
             $admins = \App\Models\User::role('ADMIN')->get();
             Notification::send($admins, new CancellationRequestNotification($cancellation));
-
             return $cancellation;
         });
-
-        // Reload user request with all relationships for subscription resource
         $userRequest->load([
             'user',
             'plan',
@@ -70,7 +58,6 @@ class CancellationController extends BaseController
             'offers.trainer.trainerProfile',
             'cancellationRequest',
         ]);
-
         return response()->json([
             'data' => [
                 'cancellation' => [
@@ -85,6 +72,7 @@ class CancellationController extends BaseController
             ],
         ], 201);
     }
+
 
     /**
      * Get cancellation status for a course
@@ -102,16 +90,11 @@ class CancellationController extends BaseController
             'cancellationRequest',
             'cancellationRequest.processedBy',
         ])->find($id);
-        
         if (!$userRequest) {
             abort(404, 'Course not found');
         }
-        
-        // Check if user owns this request
         abort_unless($userRequest->user_id === $request->user()->id, 403, 'Unauthorized');
-
         $cancellation = $userRequest->cancellationRequest;
-
         if (!$cancellation) {
             return response()->json([
                 'data' => [
@@ -120,7 +103,6 @@ class CancellationController extends BaseController
                 ],
             ]);
         }
-
         return response()->json([
             'data' => [
                 'cancellation' => [
@@ -140,4 +122,3 @@ class CancellationController extends BaseController
         ]);
     }
 }
-
