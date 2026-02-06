@@ -19,25 +19,11 @@ class ScheduleController extends BaseController
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $planId = $request->input('plan_id') ?? $request->input('planId');
-        $userRequestId = $request->input('user_id') ?? $request->input('userRequestId');
-
-        $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])
-            ->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('trainer_id', $user->id);
-            })
-            ->when($userRequestId, fn ($q) => $q->where('id', $userRequestId))
-            ->when($planId, fn ($q) => $q->where('plan_id', $planId))
-            ->first();
-
-        if (!$userRequest) {
-            return response()->json(['message' => 'Subscription not found'], 404);
-        }
-
+        $request->validate(['user_request_id' => ['required', 'exists:user_requests,id'],]);
+        $userRequestId = $request->input('user_request_id') ?? $request->input('userRequestId');
+        $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])->findOrFail($userRequestId);
+        if (!$userRequest) { return response()->json(['message' => 'Subscription not found'], 404); }
         $schedule = $this->service->getSchedule($userRequest);
-
         return response()->json([
             'data' => [
                 'user_request_id' => $userRequest->id,
