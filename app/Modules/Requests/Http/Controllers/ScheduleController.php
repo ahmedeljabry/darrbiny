@@ -19,7 +19,7 @@ class ScheduleController extends BaseController
      */
     public function index(Request $request)
     {
-        $request->validate(['user_request_id' => ['required','string','exists:user_requests,id'],]);
+        $request->validate(['user_request_id' => ['required','string','exists:user_requests,id']]);
         $userRequest = UserRequest::with(['plan.scheduleItems', 'scheduleProgress'])->findOrFail($request->input('user_request_id'));
         if (!$userRequest) { return response()->json(['message' => 'Subscription not found'], 404); }
         return response()->json([
@@ -60,10 +60,8 @@ class ScheduleController extends BaseController
     public function uncheck(Request $request, string $id, int $dayNumber)
     {
         $userRequest = UserRequest::findOrFail($id);
-
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
         $progress = $this->service->uncheckDay($userRequest, $dayNumber);
-
         return response()->json([
             'data' => [
                 'id' => $progress->id,
@@ -81,9 +79,7 @@ class ScheduleController extends BaseController
     {
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-
         $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber);
-
         return response()->json([
             'data' => [
                 'id' => $progress->id,
