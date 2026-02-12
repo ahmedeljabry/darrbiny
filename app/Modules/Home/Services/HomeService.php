@@ -20,16 +20,18 @@ class HomeService
 
     public function getHomeData(?string $cityId = null, string $q = ''): array
     {
-        $user         = Auth::user();
-        $authUserId   = (string) Auth::id();
+        $user = Auth::guard('sanctum')->user();
+        $authUserId = $user?->id;
         $this->cityId = $cityId ?: ($user->city_id ?? null);
+        $favoritesStamp = $this->favoritesStamp($authUserId);
 
         $cacheKey = $this->cacheKey(
             $this->defaultIncludes,
             self::LIMIT_TRAINERS,
             (string) $this->cityId,
             $q,
-            $authUserId
+            $authUserId,
+            $favoritesStamp
         );
 
         return Cache::remember($cacheKey, now()->addMinutes(self::CACHE_MINUTES), function () use ($q, $authUserId) {
@@ -51,18 +53,43 @@ class HomeService
         });
     }
 
-    protected function cacheKey(array $includes, int $limitTrainers, ?string $cityId, string $q, ?string $uid): string
+    protected function cacheKey(
+        array $includes,
+        int $limitTrainers,
+        ?string $cityId,
+        string $q,
+        ?string $uid,
+        string $favoritesStamp
+    ): string
     {
         $includesKey = implode(',', Arr::sort($includes));
         return sprintf(
-            '%s:inc=%s:lt=%d:city=%s:q=%s:u=%s',
+            '%s:inc=%s:lt=%d:city=%s:q=%s:favs=%s:u=%s',
             self::CACHE_PREFIX,
             $includesKey,
             $limitTrainers,
             $cityId ?? 'null',
             md5($q),
+            $favoritesStamp,
             $uid ?? 'guest'
         );
+    }
+
+    protected function favoritesStamp(?string $authUserId): string
+    {
+        if (!$authUserId) {
+            return 'guest';
+        }
+
+        $meta = Favorite::query()
+            ->where('user_id', $authUserId)
+            ->selectRaw('count(*) as cnt, max(updated_at) as latest')
+            ->first();
+
+        $count = (int) ($meta->cnt ?? 0);
+        $latest = $meta->latest ?? 'none';
+
+        return $count . ':' . $latest;
     }
 
     protected function getVideo(): array

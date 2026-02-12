@@ -14,10 +14,12 @@ class FavoriteController extends BaseController
     {
         $data = $request->validate([
             'trainer_id' => ['required','uuid','exists:users,id'],
-            'user_id' => ['required','uuid','exists:users,id'],
         ]);
+
+        $userId = (string) $request->user()->id;
+
         Favorite::firstOrCreate([
-            'user_id' => $data['user_id'],
+            'user_id' => $userId,
             'trainer_id' => $data['trainer_id'],
         ]);
         return response()->json(['data' => ['ok' => true]]);
@@ -25,8 +27,9 @@ class FavoriteController extends BaseController
 
     public function destroy(string $trainerId, Request $request)
     {
-        Favorite::where('user_id', $request->user_id)->where('trainer_id', $trainerId)->delete();
+        $userId = (string) $request->user()->id;
+
+        Favorite::where('user_id', $userId)->where('trainer_id', $trainerId)->delete();
         return response()->json(['data' => ['ok' => true]]);
     }
 }
-
