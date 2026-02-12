@@ -10,11 +10,11 @@ return new class extends Migration {
         Schema::create('wallet_transactions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->index();
-            $table->unsignedBigInteger('amount'); // Amount in major units (same as points_balance)
-            $table->string('type')->index(); // 'topup_request', 'refund', 'payment', etc.
-            $table->string('status')->default('pending')->index(); // pending, approved, rejected
+            $table->unsignedBigInteger('amount');
+            $table->string('type')->index();
+            $table->string('status')->default('pending')->index();
             $table->text('rejection_reason')->nullable();
-            $table->uuid('processed_by')->nullable()->index(); // Admin user ID
+            $table->uuid('processed_by')->nullable()->index(); 
             $table->timestamp('processed_at')->nullable();
             $table->text('notes')->nullable();
             $table->unsignedInteger('version')->default(1);
