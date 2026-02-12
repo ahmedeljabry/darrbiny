@@ -20,6 +20,11 @@ return new class extends Migration {
             $table->unsignedBigInteger('app_fee_reserved_minor')->default(0);
             $table->unsignedBigInteger('total_paid_minor')->default(0);
             $table->unsignedInteger('version')->default(1);
+            $table->uuid('trainer_id')->nullable()->index()->after('user_id');
+            $table->decimal('latitude', 10, 8)->nullable()->after('needs_pickup');
+            $table->decimal('longitude', 11, 8)->nullable()->after('latitude');
+
+            $table->foreign('trainer_id')->references('id')->on('users')->onDelete('set null');
             $table->softDeletes();
             $table->timestamps();
         });

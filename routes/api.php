@@ -36,7 +36,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
         Route::prefix('home')->group(function () {
             Route::get('/' , \App\Modules\Home\Http\Controllers\HomeController::class);
-            Route::post('favorites', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'store']);
+            Route::post('favorites', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'store'])->middleware('auth:sanctum');
             Route::delete('favorites/{trainerId}', [\App\Modules\Favorites\Http\Controllers\FavoriteController::class, 'destroy']);
         });
 
