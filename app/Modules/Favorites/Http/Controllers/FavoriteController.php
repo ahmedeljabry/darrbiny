@@ -14,15 +14,12 @@ class FavoriteController extends BaseController
     {
         $data = $request->validate([
             'trainer_id' => ['required','uuid','exists:users,id'],
+            'user_id' => ['required','uuid','exists:users,id'],
         ]);
-
-        $userId = auth()->user()->id;
-
         Favorite::firstOrCreate([
-            'user_id' => $userId,
+            'user_id' => $data['user_id'],
             'trainer_id' => $data['trainer_id'],
         ]);
-
         return response()->json(['data' => ['ok' => true]]);
     }
 
