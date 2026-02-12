@@ -16,7 +16,7 @@ class FavoriteController extends BaseController
             'trainer_id' => ['required','uuid','exists:users,id'],
         ]);
 
-        $userId = auth()->id();
+        $userId = auth()->user()->id;
 
         Favorite::firstOrCreate([
             'user_id' => $userId,
