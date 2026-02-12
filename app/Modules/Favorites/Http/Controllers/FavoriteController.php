@@ -25,8 +25,7 @@ class FavoriteController extends BaseController
 
     public function destroy(string $trainerId, Request $request)
     {
-        $userId = (string) $request->user()->id;
-        Favorite::where('user_id', $userId)->where('trainer_id', $trainerId)->delete();
+        Favorite::where('user_id', $request->user_id)->where('trainer_id', $trainerId)->delete();
         return response()->json(['data' => ['ok' => true]]);
     }
 }
