@@ -50,7 +50,9 @@ class MessageController extends BaseController
         $message = $this->service->sendMessage($conversation, $request->user(), $validated['message']);
 
         return response()->json([
-            'data' => new \App\Modules\Messages\Http\Resources\MessageResource($message->load('sender')),
+            'data' => new \App\Modules\Messages\Http\Resources\MessageResource(
+                $message->load(['sender:id,name,phone_with_cc,profile_picture_id', 'sender.profilePicture'])
+            ),
         ], 201);
     }
 

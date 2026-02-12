@@ -18,7 +18,7 @@ class MessageResource extends JsonResource
                     'id' => $this->sender->id,
                     'name' => $this->sender->name,
                     'phone' => $this->sender->phone_with_cc,
-                    'avatar' => $this->sender->avatar_url ?? null,
+                    'avatar' => $this->sender->profile_picture_url ?? null,
                 ];
             }),
             'message' => $this->message,

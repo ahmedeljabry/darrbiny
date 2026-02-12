@@ -17,7 +17,6 @@ class MessageService
     public function sendMessage(Conversation $conversation, User $sender, string $message): Message
     {
         return DB::transaction(function () use ($conversation, $sender, $message) {
-            // Verify sender is a participant
             if ($conversation->user_one_id !== $sender->id && $conversation->user_two_id !== $sender->id) {
                 throw new \Exception('User is not a participant in this conversation');
             }
@@ -29,7 +28,6 @@ class MessageService
                 'is_read' => false,
             ]);
 
-            // Update conversation's last_message_at
             $conversation->last_message_at = now();
             $conversation->save();
 
@@ -42,7 +40,6 @@ class MessageService
      */
     public function markAsRead(Message $message, User $user): void
     {
-        // Only mark as read if user is not the sender
         if ($message->sender_id !== $user->id && !$message->is_read) {
             $message->is_read = true;
             $message->read_at = now();
@@ -55,7 +52,6 @@ class MessageService
      */
     public function markConversationAsRead(Conversation $conversation, User $user): void
     {
-        // Verify user is a participant
         if ($conversation->user_one_id !== $user->id && $conversation->user_two_id !== $user->id) {
             throw new \Exception('User is not a participant in this conversation');
         }
@@ -74,23 +70,27 @@ class MessageService
      */
     public function searchMessages(User $user, string $query): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        return Message::with(['conversation', 'sender'])
-            ->whereHas('conversation', function ($q) use ($user) {
-                $q->forUser($user)
-                  ->where(function ($subQ) use ($user) {
-                      $subQ->where(function ($w) use ($user) {
-                          $w->where('user_one_id', $user->id)
+        return Message::with([
+            'conversation',
+            'sender:id,name,phone_with_cc,profile_picture_id',
+            'sender.profilePicture',
+        ])
+        ->whereHas('conversation', function ($q) use ($user) {
+            $q->forUser($user)
+                ->where(function ($subQ) use ($user) {
+                    $subQ->where(function ($w) use ($user) {
+                        $w->where('user_one_id', $user->id)
                             ->whereNull('user_one_deleted_at');
-                      })
-                      ->orWhere(function ($w) use ($user) {
-                          $w->where('user_two_id', $user->id)
-                            ->whereNull('user_two_deleted_at');
-                      });
-                  });
-            })
-            ->search($query)
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+                    })
+                        ->orWhere(function ($w) use ($user) {
+                            $w->where('user_two_id', $user->id)
+                                ->whereNull('user_two_deleted_at');
+                        });
+                });
+        })
+        ->search($query)
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
     }
 
     /**
@@ -98,15 +98,13 @@ class MessageService
      */
     public function getMessagesForConversation(Conversation $conversation, User $user, int $page = 1): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        // Verify user is a participant
         if ($conversation->user_one_id !== $user->id && $conversation->user_two_id !== $user->id) {
             throw new \Exception('User is not a participant in this conversation');
         }
 
         return Message::where('conversation_id', $conversation->id)
-            ->with('sender')
+            ->with(['sender:id,name,phone_with_cc,profile_picture_id', 'sender.profilePicture'])
             ->orderBy('created_at', 'desc')
             ->paginate(20, ['*'], 'page', $page);
     }
 }
-

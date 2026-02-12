@@ -30,24 +30,6 @@ class ConversationController extends BaseController
     }
 
     /**
-     * Get conversation details
-     */
-    public function show(Request $request, string $id)
-    {
-        $conversation = Conversation::with(['userOne', 'userTwo'])
-            ->forUser($request->user())
-            ->findOrFail($id);
-
-        if ($conversation->isDeletedBy($request->user())) {
-            abort(404, 'Conversation not found');
-        }
-
-        return response()->json([
-            'data' => new \App\Modules\Messages\Http\Resources\ConversationResource($conversation),
-        ]);
-    }
-
-    /**
      * Create (or revive) a conversation with another user
      */
     public function store(Request $request)
@@ -78,8 +60,10 @@ class ConversationController extends BaseController
         $conversation->save();
 
         $conversation->load([
-            'userOne',
-            'userTwo',
+            'userOne:id,name,phone_with_cc,profile_picture_id',
+            'userOne.profilePicture',
+            'userTwo:id,name,phone_with_cc,profile_picture_id',
+            'userTwo.profilePicture',
             'messages' => fn ($q) => $q->latest()->limit(1),
         ]);
 

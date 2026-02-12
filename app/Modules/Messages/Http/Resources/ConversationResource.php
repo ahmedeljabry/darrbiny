@@ -20,7 +20,7 @@ class ConversationResource extends JsonResource
                 'id' => $otherUser->id,
                 'name' => $otherUser->name,
                 'phone' => $otherUser->phone_with_cc,
-                'avatar' => $otherUser->avatar_url ?? null,
+                'avatar' => $otherUser->profile_picture_url ?? null,
             ] : null,
             'last_message' => $lastMessage ? [
                 'id' => $lastMessage->id,

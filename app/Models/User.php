@@ -134,7 +134,11 @@ class User extends Authenticatable
 
     public function getProfilePictureUrlAttribute(): ?string
     {
-        if (!$this->profile_picture_id || !$this->relationLoaded('profilePicture')) {
+        if (!$this->profile_picture_id) {
+            return null;
+        }
+
+        if (!$this->relationLoaded('profilePicture')) {
             $this->load('profilePicture');
         }
 

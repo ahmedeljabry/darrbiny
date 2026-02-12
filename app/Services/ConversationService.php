@@ -44,9 +44,15 @@ class ConversationService
      */
     public function getConversationsForUser(User $user, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        $query = Conversation::with(['userOne', 'userTwo', 'messages' => function ($q) {
-            $q->latest()->limit(1);
-        }])
+        $query = Conversation::with([
+            'userOne:id,name,phone_with_cc,profile_picture_id',
+            'userOne.profilePicture',
+            'userTwo:id,name,phone_with_cc,profile_picture_id',
+            'userTwo.profilePicture',
+            'messages' => function ($q) {
+                $q->latest()->limit(1);
+            },
+        ])
         ->forUser($user)
         ->where(function ($q) use ($user) {
             $q->where(function ($subQ) use ($user) {
