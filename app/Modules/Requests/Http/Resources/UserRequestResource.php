@@ -47,6 +47,7 @@ class UserRequestResource extends JsonResource
                 'title' => $this->plan->title,
                 'description' => $this->plan->description,
                 'hours_count' => $this->plan->hours_count,
+                'duration_days' => $this->plan->duration_days,
                 'session_count' => $this->plan->session_count,
                 'price_min' => $this->plan->price_min,
                 'price_max' => $this->plan->price_max,
