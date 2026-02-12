@@ -14,6 +14,13 @@ class RatingResource extends JsonResource
     {
         $user = $this->user;
         $trainer = $this->trainer;
+        if ($trainer) {
+            $trainer->loadMissing([
+                'trainerProfile',
+                'trainerProfile.country',
+                'trainerProfile.city',
+            ]);
+        }
         $trainerProfile = $trainer?->trainerProfile;
 
         return [
@@ -147,6 +154,5 @@ class RatingResource extends JsonResource
         return $cache[$id];
     }
 }
-
 
 

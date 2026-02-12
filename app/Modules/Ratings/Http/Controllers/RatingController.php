@@ -20,13 +20,13 @@ class RatingController extends BaseController
             'trainer.trainerProfile.country',
             'trainer.trainerProfile.city',
         ]);
-        
+
         if ($tid = $request->query('trainer_id')) {
             $q->where('trainer_id', $tid);
         }
-        
+
         $ratings = $q->latest()->paginate(20);
-        
+
         return response()->json([
             'data' => RatingResource::collection($ratings->items()),
             'pagination' => [
@@ -48,7 +48,7 @@ class RatingController extends BaseController
         ]);
         $data['user_id'] = $request->user()->id;
         $rating = Rating::create($data);
-        
+
         // Load relationships for response
         $rating->load([
             'user.profilePicture',
@@ -57,7 +57,7 @@ class RatingController extends BaseController
             'trainer.trainerProfile.country',
             'trainer.trainerProfile.city',
         ]);
-        
+
         return response()->json(['data' => new RatingResource($rating)], 201);
     }
 }
