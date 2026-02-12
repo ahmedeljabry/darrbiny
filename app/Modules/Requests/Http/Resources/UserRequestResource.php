@@ -15,7 +15,7 @@ class UserRequestResource extends JsonResource
             'user_id' => $this->user_id,
             'trainer_id' => $this->trainer_id,
             'plan_id' => $this->plan_id,
-            'session_count' => $this->whenLoaded('plan', fn () => $this->plan->session_count),
+            'duration_days' => $this->whenLoaded('plan', fn () => $this->plan->duration_days),
             'start_date' => $this->start_date?->format('Y-m-d'),
             'start_time' => $this->start_time,
             'description' => $this->description,
