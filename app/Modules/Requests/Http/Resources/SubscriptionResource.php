@@ -91,13 +91,13 @@ class SubscriptionResource extends JsonResource
             'course_details' => [
                 'course_id' => '#' . $courseId,
                 'start_date' => $this->start_date?->format('d M Y'),
-                'start_date_ar' => $this->formatArabicDate($this->start_date),
+                'start_date_ar' => $this->start_date,
                 'has_user_car' => $this->has_user_car,
                 'wants_trainer_car' => $this->wants_trainer_car,
                 'needs_pickup' => $this->needs_pickup,
                 'start_time' => $this->start_time,
                 'end_date' => $endDate?->format('d M Y'),
-                'end_date_ar' => $this->formatArabicDate($endDate),
+                'end_date_ar' => $this->$endDate,
                 'location' => $location,
                 'training_car' => $trainingCar,
                 'transport_request' => $transportRequest,
@@ -180,24 +180,6 @@ class SubscriptionResource extends JsonResource
             \App\Models\UserRequest::STATUS_COMPLETED => 'completed',
             default => 'pending', // pending_payment, awaiting_offers, offer_selected, paid, cancelled
         };
-    }
-
-    /**
-     * Format date in Arabic format (e.g., "24 يناير")
-     */
-    private function formatArabicDate($date): ?string
-    {
-        if (!$date) {
-            return null;
-        }
-
-        $months = [
-            1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
-            5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
-            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر'
-        ];
-
-        return $date->format('d') . ' ' . ($months[(int) $date->format('m')] ?? '');
     }
 
     private function resolveTrainerBio($trainerProfile): ?string
