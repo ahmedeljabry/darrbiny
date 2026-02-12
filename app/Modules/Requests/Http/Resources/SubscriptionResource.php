@@ -166,7 +166,7 @@ class SubscriptionResource extends JsonResource
                 'price_max' => $this->plan->price_max,
             ],
 
-            'created_at' => $this->created_at?->toIso8601String(),
+            'created_at' => $this->created_at,
         ];
     }
 
