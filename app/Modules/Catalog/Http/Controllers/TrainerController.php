@@ -30,7 +30,7 @@ class TrainerController extends BaseController
                     });
                 }
             })
-            ->with('user:id,name,deleted_at')
+            ->with('user:id,name,deleted_at,profile_picture_id', 'user.profilePicture')
             ->orderByDesc('rating_avg')
             ->orderByDesc('rating_count');
 
@@ -53,14 +53,15 @@ class TrainerController extends BaseController
         $mapped = $items->map(function (TrainerProfile $tp) use ($cityNames, $countryNames) {
             $u = $tp->user;
             return [
-                'id'           => $u->id,
-                'name'         => $u->name,
-                'rating_avg'   => $tp->rating_avg,
-                'rating_count' => $tp->rating_count,
-                'city_id'      => $tp->city_id,
-                'city_name'    => $cityNames[$tp->city_id] ?? null,
-                'country_id'   => $tp->country_id,
-                'country_name' => $countryNames[$tp->country_id] ?? null,
+                'id'              => $u->id,
+                'name'            => $u->name,
+                'profile_picture' => $u->profile_picture_url,
+                'rating_avg'      => $tp->rating_avg,
+                'rating_count'    => $tp->rating_count,
+                'city_id'         => $tp->city_id,
+                'city_name'       => $cityNames[$tp->city_id] ?? null,
+                'country_id'      => $tp->country_id,
+                'country_name'    => $countryNames[$tp->country_id] ?? null,
             ];
         });
 
@@ -69,4 +70,3 @@ class TrainerController extends BaseController
         return response()->json(['data' => $paginator]);
     }
 }
-
