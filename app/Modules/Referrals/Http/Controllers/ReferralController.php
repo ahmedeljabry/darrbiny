@@ -20,13 +20,11 @@ class ReferralController extends BaseController
             'code' => $user->referral_code,
         ]);
 
-        // Get users who logged in with this referral code
         $referredUsers = User::where('referred_by', $user->id)
             ->select('id', 'name', 'phone_with_cc', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($referredUser) {
-                // Check if user has paid subscriptions (in_training or completed)
                 $hasPaidSubscription = \App\Models\UserRequest::where('user_id', $referredUser->id)
                     ->whereIn('status', [
                         \App\Models\UserRequest::STATUS_IN_TRAINING,

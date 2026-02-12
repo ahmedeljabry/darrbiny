@@ -12,7 +12,7 @@ class SettingsUpdateRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'brand_name' => ['nullable','string','max:120'],
             'logo' => ['nullable','file','image','max:2048'],
             'favicon' => ['nullable','file','mimetypes:image/x-icon,image/png','max:1024'],
@@ -28,6 +28,7 @@ class SettingsUpdateRequest extends FormRequest
             'page_about' => ['nullable','string'],
             'page_sales' => ['nullable','string'],
             'page_sales_trainer' => ['nullable','string'],
+            'page_exchange_policy' => ['nullable','string'],
             'faqs' => ['nullable','array'],
             'faqs.*.question' => ['nullable','string','max:500'],
             'faqs.*.answer' => ['nullable','string'],
@@ -45,5 +46,22 @@ class SettingsUpdateRequest extends FormRequest
             'user_restrictions' => ['nullable','array'],
             'user_restrictions.*' => ['nullable','string','max:255'],
         ];
+
+        foreach ([
+            'page_usage_faqs',
+            'page_privacy_faqs',
+            'page_terms_faqs',
+            'page_terms_trainer_faqs',
+            'page_about_faqs',
+            'page_sales_faqs',
+            'page_sales_trainer_faqs',
+            'page_exchange_faqs',
+        ] as $prefix) {
+            $rules[$prefix] = ['nullable','array'];
+            $rules["{$prefix}.*.question"] = ['nullable','string','max:500'];
+            $rules["{$prefix}.*.answer"] = ['nullable','string'];
+        }
+
+        return $rules;
     }
 }

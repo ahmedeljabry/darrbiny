@@ -434,79 +434,126 @@
               </div>
               <div class="card-body">
                 <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-                  <div class="mb-3">
-                    <label class="form-label">سياسة الاستخدام</label>
-                    <div class="input-group input-group-merge">
-                      <span class="input-group-text"><i class="ti tabler-shield"></i></span>
-                      <textarea name="page_usage_policy" class="form-control" rows="6" placeholder="اكتب سياسة الاستخدام">{{ $settings['pages.usage'] ?? '' }}</textarea>
-                    </div>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">سياسة الخصوصية</label>
-                    <input id="privacy_editor" type="hidden" name="page_privacy_policy" value="{{ $settings['pages.privacy'] ?? '' }}">
-                    <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">الشروط والأحكام (المستخدم)</label>
-                    <input id="terms_editor" type="hidden" name="page_terms" value="{{ $settings['pages.terms'] ?? '' }}">
-                    <trix-editor input="terms_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">الشروط والأحكام (المدربة)</label>
-                    <input id="terms_trainer_editor" type="hidden" name="page_terms_trainer" value="{{ $settings['pages.terms_trainer'] ?? '' }}">
-                    <trix-editor input="terms_trainer_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">عن التطبيق</label>
-                    <input id="about_editor" type="hidden" name="page_about" value="{{ $settings['pages.about'] ?? '' }}">
-                    <trix-editor input="about_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">رسوم التطبيق (المستخدم)</label>
-                    <input id="sales_editor" type="hidden" name="page_sales" value="{{ $settings['pages.sales'] ?? '' }}">
-                    <trix-editor input="sales_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">رسوم التطبيق (المدربة)</label>
-                    <input id="sales_trainer_editor" type="hidden" name="page_sales_trainer" value="{{ $settings['pages.sales_trainer'] ?? '' }}">
-                    <trix-editor input="sales_trainer_editor" class="trix-content border rounded"></trix-editor>
-                  </div>
-
-                  @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])
-                  <div class="mb-3">
-                    <label class="form-label d-block">الأسئلة الشائعة</label>
-                    <div id="faq-list" class="d-flex flex-column gap-2">
-                      @if(empty($decodedFaqs))
-                        @php($decodedFaqs = [[ 'question' => '', 'answer' => '' ]])
-                      @endif
-                      @foreach($decodedFaqs as $i => $faq)
-                        <div class="border rounded p-2 faq-row">
-                          <div class="row g-2 align-items-start">
-                            <div class="col-md-5">
-                              <label class="form-label">السؤال</label>
-                              <div class="input-group input-group-merge">
-                                <span class="input-group-text"><i class="ti tabler-question-mark"></i></span>
-                                <input type="text" name="faqs[{{ $i }}][question]" class="form-control" value="{{ $faq['question'] ?? '' }}" placeholder="اكتب السؤال">
+                  @php
+                    $decodeFaq = static function ($value) {
+                        if (!is_string($value) || trim($value) === '') {
+                            return [];
+                        }
+                        $decoded = json_decode($value, true);
+                        if (!is_array($decoded)) {
+                            return [['question' => '', 'answer' => $value]];
+                        }
+                        return collect($decoded)
+                            ->map(function ($row) {
+                                if (!is_array($row)) {
+                                    $answer = trim((string) $row);
+                                    return $answer === '' ? null : ['question' => '', 'answer' => $answer];
+                                }
+                                $question = trim((string) ($row['question'] ?? ''));
+                                $answer = trim((string) ($row['answer'] ?? ''));
+                                return ($question === '' && $answer === '') ? null : [
+                                    'question' => $question,
+                                    'answer' => $answer,
+                                ];
+                            })
+                            ->filter()
+                            ->values()
+                            ->all();
+                    };
+                    $faqPages = [
+                        [
+                            'key' => 'pages.usage',
+                            'label' => 'سياسة الاستخدام',
+                            'name' => 'page_usage_faqs',
+                            'id' => 'usage-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.privacy',
+                            'label' => 'سياسة الخصوصية',
+                            'name' => 'page_privacy_faqs',
+                            'id' => 'privacy-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.terms',
+                            'label' => 'الشروط والأحكام (المستخدم)',
+                            'name' => 'page_terms_faqs',
+                            'id' => 'terms-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.terms_trainer',
+                            'label' => 'الشروط والأحكام (المدربة)',
+                            'name' => 'page_terms_trainer_faqs',
+                            'id' => 'terms-trainer-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.about',
+                            'label' => 'عن تطبيق دربيني',
+                            'name' => 'page_about_faqs',
+                            'id' => 'about-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.exchange',
+                            'label' => 'سياسة الاستبدال',
+                            'name' => 'page_exchange_faqs',
+                            'id' => 'exchange-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.sales',
+                            'label' => 'رسوم التطبيق (المستخدم)',
+                            'name' => 'page_sales_faqs',
+                            'id' => 'sales-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.sales_trainer',
+                            'label' => 'رسوم التطبيق (المدربة)',
+                            'name' => 'page_sales_trainer_faqs',
+                            'id' => 'sales-trainer-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.faq',
+                            'label' => 'الأسئلة الشائعة',
+                            'name' => 'faqs',
+                            'id' => 'faq-list',
+                        ],
+                    ];
+                  @endphp
+                  @foreach($faqPages as $page)
+                    @php($items = $decodeFaq($settings[$page['key']] ?? ''))
+                    @if (empty($items))
+                      @php($items = [[ 'question' => '', 'answer' => '' ]])
+                    @endif
+                    <div class="mb-3">
+                      <label class="form-label d-block">{{ $page['label'] }}</label>
+                      <div id="{{ $page['id'] }}" class="d-flex flex-column gap-2 js-faq-list" data-name="{{ $page['name'] }}">
+                        @foreach($items as $i => $faq)
+                          <div class="border rounded p-2 faq-row">
+                            <div class="row g-2 align-items-start">
+                              <div class="col-md-5">
+                                <label class="form-label">السؤال</label>
+                                <div class="input-group input-group-merge">
+                                  <span class="input-group-text"><i class="ti tabler-question-mark"></i></span>
+                                  <input type="text" name="{{ $page['name'] }}[{{ $i }}][question]" class="form-control" value="{{ $faq['question'] ?? '' }}" placeholder="اكتب السؤال">
+                                </div>
+                              </div>
+                              <div class="col-md-7">
+                                <label class="form-label">الإجابة</label>
+                                <div class="input-group input-group-merge">
+                                  <span class="input-group-text"><i class="ti tabler-message"></i></span>
+                                  <textarea name="{{ $page['name'] }}[{{ $i }}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة">{{ $faq['answer'] ?? '' }}</textarea>
+                                </div>
                               </div>
                             </div>
-                            <div class="col-md-7">
-                              <label class="form-label">الإجابة</label>
-                              <div class="input-group input-group-merge">
-                                <span class="input-group-text"><i class="ti tabler-message"></i></span>
-                                <textarea name="faqs[{{ $i }}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة">{{ $faq['answer'] ?? '' }}</textarea>
-                              </div>
+                            <div class="d-flex justify-content-end mt-2">
+                              <button type="button" class="btn btn-sm btn-outline-danger js-remove-faq">حذف</button>
                             </div>
                           </div>
-                          <div class="d-flex justify-content-end mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-danger js-remove-faq">حذف</button>
-                          </div>
-                        </div>
-                      @endforeach
+                        @endforeach
+                      </div>
+                      <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary js-add-faq" data-target="#{{ $page['id'] }}"><i class="ti tabler-plus"></i> إضافة سؤال</button>
+                      </div>
                     </div>
-                    <div class="mt-2">
-                      <button type="button" class="btn btn-sm btn-outline-primary js-add-faq"><i class="ti tabler-plus"></i> إضافة سؤال</button>
-                    </div>
-                  </div>
+                  @endforeach
                   <div class="mb-3">
                     <label class="form-label">تواصل معنا</label>
                     <div class="input-group input-group-merge">
@@ -799,12 +846,23 @@
 @endpush
 
 @push('scripts')
-  <script src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/trix@2.0.8/dist/trix.css" />
   <script>
   document.addEventListener('DOMContentLoaded', function(){
-    function addFaqRow(q='', a=''){
-      const idx = document.querySelectorAll('#faq-list .faq-row').length;
+    function reindexFaq(list){
+      if (!list) return;
+      const name = list.dataset.name || 'faqs';
+      list.querySelectorAll('.faq-row').forEach((row, idx) => {
+        const question = row.querySelector('input');
+        const answer = row.querySelector('textarea');
+        if (question) question.name = `${name}[${idx}][question]`;
+        if (answer) answer.name = `${name}[${idx}][answer]`;
+      });
+    }
+
+    function addFaqRow(list, q = '', a = ''){
+      if (!list) return;
+      const name = list.dataset.name || 'faqs';
+      const idx = list.querySelectorAll('.faq-row').length;
       const html = `
         <div class="border rounded p-2 faq-row">
           <div class="row g-2 align-items-start">
@@ -812,14 +870,14 @@
               <label class="form-label">السؤال</label>
               <div class="input-group input-group-merge">
                 <span class="input-group-text"><i class="ti tabler-question-mark"></i></span>
-                <input type="text" name="faqs[${idx}][question]" class="form-control" placeholder="اكتب السؤال"/>
+                <input type="text" name="${name}[${idx}][question]" class="form-control" placeholder="اكتب السؤال"/>
               </div>
             </div>
             <div class="col-md-7">
               <label class="form-label">الإجابة</label>
               <div class="input-group input-group-merge">
                 <span class="input-group-text"><i class="ti tabler-message"></i></span>
-                <textarea name="faqs[${idx}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة"></textarea>
+                <textarea name="${name}[${idx}][answer]" class="form-control" rows="2" placeholder="اكتب الإجابة"></textarea>
               </div>
             </div>
           </div>
@@ -832,14 +890,28 @@
       const row = el.firstChild;
       row.querySelector('input').value = q || '';
       row.querySelector('textarea').value = a || '';
-      document.getElementById('faq-list').appendChild(row);
+      list.appendChild(row);
+      reindexFaq(list);
     }
+
     document.addEventListener('click', function(e){
-      if (e.target.closest('.js-add-faq')) { addFaqRow(); }
-      if (e.target.closest('.js-remove-faq')) {
-        const rows = document.querySelectorAll('#faq-list .faq-row');
-        const row = e.target.closest('.faq-row');
-        if (rows.length > 1) row.remove(); else row.querySelectorAll('input,textarea').forEach(f=>f.value='');
+      const addBtn = e.target.closest('.js-add-faq');
+      if (addBtn) {
+        const list = document.querySelector(addBtn.dataset.target);
+        addFaqRow(list);
+      }
+      const removeBtn = e.target.closest('.js-remove-faq');
+      if (removeBtn) {
+        const row = removeBtn.closest('.faq-row');
+        const list = removeBtn.closest('.js-faq-list');
+        if (!row || !list) return;
+        const rows = list.querySelectorAll('.faq-row');
+        if (rows.length > 1) {
+          row.remove();
+        } else {
+          row.querySelectorAll('input,textarea').forEach((f) => { f.value = ''; });
+        }
+        reindexFaq(list);
       }
     });
   });

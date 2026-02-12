@@ -80,7 +80,7 @@ class WalletService
     /**
      * Deduct amount from wallet (debit)
      * Creates a payment transaction and deducts from balance
-     * 
+     *
      * @param User $user The user to deduct from
      * @param int $amount Amount to deduct (in major units, e.g., 100 = 100.00)
      * @param string|null $notes Optional notes for the transaction
@@ -206,7 +206,7 @@ class WalletService
     /**
      * Calculate balance from transactions (for verification)
      * This sums all approved transactions to verify the stored balance
-     * 
+     *
      * Note: Wallet payments (via PaymentService::payWithWallet) don't create
      * WalletTransaction records - they only deduct from points_balance directly.
      * So this calculation may not match if there were wallet payments.
@@ -241,7 +241,7 @@ class WalletService
             ->where('provider', 'wallet')
             ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->get();
-        
+
         foreach ($walletPayments as $payment) {
             // Payment amount is stored in minor units, convert to major
             $amount = $payment->amount_minor / 100;
@@ -259,7 +259,7 @@ class WalletService
     {
         $storedBalance = $user->points_balance;
         $calculatedBalance = $this->calculateBalanceFromTransactions($user);
-        
+
         return $storedBalance === $calculatedBalance;
     }
 }

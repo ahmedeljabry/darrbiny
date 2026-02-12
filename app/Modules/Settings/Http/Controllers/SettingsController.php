@@ -85,15 +85,17 @@ class SettingsController extends BaseController
 
         return response()->json([
             'pages' => [
-                'terms' => $this->getStringSetting('pages.terms'),
-                'terms_user' => $this->getStringSetting('pages.terms'),
-                'terms_trainer' => $this->getStringSetting('pages.terms_trainer'),
-                'privacy' => $this->getStringSetting('pages.privacy'),
-                'usage' => $this->getStringSetting('pages.usage'),
-                'about' => $this->getStringSetting('pages.about'),
-                'sales' => $this->getStringSetting('pages.sales'),
-                'app_fees_user' => $this->getStringSetting('pages.sales'),
-                'app_fees_trainer' => $this->getStringSetting('pages.sales_trainer'),
+                'terms' => $this->getFaqSetting('pages.terms'),
+                'terms_user' => $this->getFaqSetting('pages.terms'),
+                'terms_trainer' => $this->getFaqSetting('pages.terms_trainer'),
+                'privacy' => $this->getFaqSetting('pages.privacy'),
+                'usage' => $this->getFaqSetting('pages.usage'),
+                'about' => $this->getFaqSetting('pages.about'),
+                'exchange' => $this->getFaqSetting('pages.exchange'),
+                'sales' => $this->getFaqSetting('pages.sales'),
+                'app_fees_user' => $this->getFaqSetting('pages.sales'),
+                'app_fees_trainer' => $this->getFaqSetting('pages.sales_trainer'),
+                'faq' => $this->getFaqSetting('pages.faq'),
             ],
             'sales_fees' => [
                 'reservation_fee' => [
@@ -131,6 +133,36 @@ class SettingsController extends BaseController
     {
         $value = Setting::where('key', $key)->value('value');
         return is_string($value) ? $value : '';
+    }
+
+    private function getFaqSetting(string $key): array
+    {
+        $value = Setting::where('key', $key)->value('value');
+
+        if (!is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        if (!is_array($decoded)) {
+            return [['question' => '', 'answer' => $value]];
+        }
+
+        return collect($decoded)
+            ->map(static function ($row) {
+                if (!is_array($row)) {
+                    return ['question' => '', 'answer' => trim((string) $row)];
+                }
+                $question = trim((string) ($row['question'] ?? ''));
+                $answer = trim((string) ($row['answer'] ?? ''));
+                return ($question === '' && $answer === '') ? null : [
+                    'question' => $question,
+                    'answer' => $answer,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }
 

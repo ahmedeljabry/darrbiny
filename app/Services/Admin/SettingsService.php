@@ -88,25 +88,15 @@ final class SettingsService
             $this->save('video.captain.path', $path);
         }
 
-        $this->save('pages.usage', $data['page_usage_policy'] ?? null);
-        $this->save('pages.privacy', $data['page_privacy_policy'] ?? null);
-        $this->save('pages.terms', $data['page_terms'] ?? null);
-        $this->save('pages.terms_trainer', $data['page_terms_trainer'] ?? null);
-        $this->save('pages.about', $data['page_about'] ?? null);
-        $this->save('pages.sales', $data['page_sales'] ?? null);
-        $this->save('pages.sales_trainer', $data['page_sales_trainer'] ?? null);
-        if (!empty($data['faqs']) && is_array($data['faqs'])) {
-            $faqs = collect($data['faqs'])
-                ->map(function ($row) {
-                    $q = trim((string)($row['question'] ?? ''));
-                    $a = trim((string)($row['answer'] ?? ''));
-                    return ($q === '' && $a === '') ? null : ['question' => $q, 'answer' => $a];
-                })
-                ->filter()
-                ->values()
-                ->all();
-            $this->save('pages.faq', json_encode($faqs, JSON_UNESCAPED_UNICODE));
-        }
+        $this->saveFaqSetting('pages.usage', $data, 'page_usage_faqs', 'page_usage_policy');
+        $this->saveFaqSetting('pages.privacy', $data, 'page_privacy_faqs', 'page_privacy_policy');
+        $this->saveFaqSetting('pages.terms', $data, 'page_terms_faqs', 'page_terms');
+        $this->saveFaqSetting('pages.terms_trainer', $data, 'page_terms_trainer_faqs', 'page_terms_trainer');
+        $this->saveFaqSetting('pages.about', $data, 'page_about_faqs', 'page_about');
+        $this->saveFaqSetting('pages.sales', $data, 'page_sales_faqs', 'page_sales');
+        $this->saveFaqSetting('pages.sales_trainer', $data, 'page_sales_trainer_faqs', 'page_sales_trainer');
+        $this->saveFaqSetting('pages.exchange', $data, 'page_exchange_faqs', 'page_exchange_policy');
+        $this->saveFaqSetting('pages.faq', $data, 'faqs');
         $this->save('pages.contact', $data['page_contact'] ?? null);
 
         if (!empty($data['how_it_works']) && is_array($data['how_it_works'])) {
@@ -145,6 +135,40 @@ final class SettingsService
     {
         if ($value === null) return;
         Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+
+    private function saveFaqSetting(string $key, array $data, string $rowsKey, ?string $fallbackTextKey = null): void
+    {
+        if (array_key_exists($rowsKey, $data)) {
+            $rows = is_array($data[$rowsKey] ?? null) ? $data[$rowsKey] : [];
+            $faqs = $this->normalizeFaqRows($rows);
+            $this->save($key, json_encode($faqs, JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        if ($fallbackTextKey && array_key_exists($fallbackTextKey, $data)) {
+            $text = trim((string) ($data[$fallbackTextKey] ?? ''));
+            if ($text !== '') {
+                $this->save($key, json_encode([['question' => '', 'answer' => $text]], JSON_UNESCAPED_UNICODE));
+            }
+        }
+    }
+
+    private function normalizeFaqRows(array $rows): array
+    {
+        return collect($rows)
+            ->map(function ($row) {
+                if (!is_array($row)) {
+                    $answer = trim((string) $row);
+                    return $answer === '' ? null : ['question' => '', 'answer' => $answer];
+                }
+                $q = trim((string) ($row['question'] ?? ''));
+                $a = trim((string) ($row['answer'] ?? ''));
+                return ($q === '' && $a === '') ? null : ['question' => $q, 'answer' => $a];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function normalizeList(?array $items): array
