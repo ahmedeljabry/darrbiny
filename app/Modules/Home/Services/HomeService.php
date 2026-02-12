@@ -13,7 +13,7 @@ class HomeService
 {
     protected array $defaultIncludes = ['video', 'plans', 'trainers', 'how_it_works', 'search'];
     private const LIMIT_TRAINERS = 5;
-    private const CACHE_PREFIX   = 'home_data:v5';
+    private const CACHE_PREFIX   = 'home_data:v6';
     private const CACHE_MINUTES  = 5;
 
     protected ?string $cityId = null;
@@ -119,7 +119,7 @@ class HomeService
                     });
                 }
             })
-            ->with('user:id,name,deleted_at')
+            ->with('user:id,name,deleted_at,profile_picture_id', 'user.profilePicture')
             ->orderByDesc('rating_avg')
             ->orderByDesc('rating_count')
             ->limit($limit)
@@ -154,15 +154,16 @@ class HomeService
         return $profiles->map(function (TrainerProfile $tp) use ($favoriteIds, $trainingCounts, $cityNames) {
             $u = $tp->user;
             return [
-                'id'             => $u->id,
-                'name'           => $u->name,
-                'rating_avg'     => $tp->rating_avg,
-                'rating_count'   => $tp->rating_count,
-                'city_id'        => $tp->city_id,
-                'city_name'      => $cityNames[$tp->city_id] ?? null,
-                'country_id'     => $tp->country_id,
-                'is_favorite'    => $favoriteIds->contains($u->id),
-                'training_count' => (int) ($trainingCounts[$u->id] ?? 0),
+                'id'              => $u->id,
+                'name'            => $u->name,
+                'profile_picture' => $u->profile_picture_url,
+                'rating_avg'      => $tp->rating_avg,
+                'rating_count'    => $tp->rating_count,
+                'city_id'         => $tp->city_id,
+                'city_name'       => $cityNames[$tp->city_id] ?? null,
+                'country_id'      => $tp->country_id,
+                'is_favorite'     => $favoriteIds->contains($u->id),
+                'training_count'  => (int) ($trainingCounts[$u->id] ?? 0),
             ];
         })->all();
     }
