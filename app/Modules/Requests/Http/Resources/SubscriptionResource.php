@@ -123,13 +123,7 @@ class SubscriptionResource extends JsonResource
             }),
 
             'actions' => [
-                'can_cancel' => in_array($this->status, [
-                    \App\Models\UserRequest::STATUS_PENDING_PAYMENT,
-                    \App\Models\UserRequest::STATUS_AWAITING_OFFERS,
-                    \App\Models\UserRequest::STATUS_OFFER_SELECTED,
-                    \App\Models\UserRequest::STATUS_PAID,
-                    \App\Models\UserRequest::STATUS_IN_TRAINING,
-                ]) && (!$this->relationLoaded('cancellationRequest') || !$this->cancellationRequest || $this->cancellationRequest->status !== \App\Models\CancellationRequest::STATUS_PENDING),
+                'can_cancel' => false,
                 'can_view_schedule' => in_array($this->status, [
                     \App\Models\UserRequest::STATUS_IN_TRAINING,
                     \App\Models\UserRequest::STATUS_COMPLETED,
@@ -168,6 +162,8 @@ class SubscriptionResource extends JsonResource
                 'id' => $this->plan->id,
                 'title' => $this->plan->title,
                 'description' => $this->plan->description,
+                'price_min' => $this->plan->price_min,
+                'price_max' => $this->plan->price_max,
             ],
 
             'created_at' => $this->created_at?->toIso8601String(),

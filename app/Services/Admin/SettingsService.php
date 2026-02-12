@@ -91,8 +91,10 @@ final class SettingsService
         $this->save('pages.usage', $data['page_usage_policy'] ?? null);
         $this->save('pages.privacy', $data['page_privacy_policy'] ?? null);
         $this->save('pages.terms', $data['page_terms'] ?? null);
+        $this->save('pages.terms_trainer', $data['page_terms_trainer'] ?? null);
         $this->save('pages.about', $data['page_about'] ?? null);
         $this->save('pages.sales', $data['page_sales'] ?? null);
+        $this->save('pages.sales_trainer', $data['page_sales_trainer'] ?? null);
         if (!empty($data['faqs']) && is_array($data['faqs'])) {
             $faqs = collect($data['faqs'])
                 ->map(function ($row) {

@@ -447,9 +447,14 @@
                     <trix-editor input="privacy_editor" class="trix-content border rounded"></trix-editor>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">الشروط والأحكام</label>
+                    <label class="form-label">الشروط والأحكام (المستخدم)</label>
                     <input id="terms_editor" type="hidden" name="page_terms" value="{{ $settings['pages.terms'] ?? '' }}">
                     <trix-editor input="terms_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">الشروط والأحكام (المدربة)</label>
+                    <input id="terms_trainer_editor" type="hidden" name="page_terms_trainer" value="{{ $settings['pages.terms_trainer'] ?? '' }}">
+                    <trix-editor input="terms_trainer_editor" class="trix-content border rounded"></trix-editor>
                   </div>
                   <div class="mb-3">
                     <label class="form-label">عن التطبيق</label>
@@ -457,9 +462,14 @@
                     <trix-editor input="about_editor" class="trix-content border rounded"></trix-editor>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">صفحة المبيعات</label>
+                    <label class="form-label">رسوم التطبيق (المستخدم)</label>
                     <input id="sales_editor" type="hidden" name="page_sales" value="{{ $settings['pages.sales'] ?? '' }}">
                     <trix-editor input="sales_editor" class="trix-content border rounded"></trix-editor>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">رسوم التطبيق (المدربة)</label>
+                    <input id="sales_trainer_editor" type="hidden" name="page_sales_trainer" value="{{ $settings['pages.sales_trainer'] ?? '' }}">
+                    <trix-editor input="sales_trainer_editor" class="trix-content border rounded"></trix-editor>
                   </div>
 
                   @php($decodedFaqs = json_decode($settings['pages.faq'] ?? '[]', true) ?? [])

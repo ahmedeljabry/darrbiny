@@ -46,7 +46,7 @@
 </div>
 
 <div class="row g-3">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">السعر الأدنى</label>
         <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-currency-dollar"></i></span>
@@ -54,7 +54,15 @@
                 value="{{ old('price_min', $plan->price_min ?? '') }}" required>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <label class="form-label">السعر الأقصى</label>
+        <div class="input-group input-group-merge">
+            <span class="input-group-text"><i class="icon-base ti tabler-currency-dollar"></i></span>
+            <input type="number" step="0.01" min="0" name="price_max" class="form-control"
+                value="{{ old('price_max', $plan->price_max ?? '') }}">
+        </div>
+    </div>
+    <div class="col-md-3">
         <label class="form-label">الدفعة الابتدائية</label>
         <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-wallet"></i></span>
@@ -62,7 +70,7 @@
                 value="{{ old('deposit_amount', $plan->deposit_amount ?? '') }}">
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">شارة الخصم</label>
         <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="icon-base ti tabler-discount-2"></i></span>

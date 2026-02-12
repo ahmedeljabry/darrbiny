@@ -88,12 +88,13 @@ class HomeService
             ->byLocation($this->cityId)
             ->with('features:id,label')
             ->latest()
-            ->select('id', 'title', 'price_min', 'badge_discount', 'duration_days', 'hours_count', 'session_count')
+            ->select('id', 'title', 'price_min', 'price_max', 'badge_discount', 'duration_days', 'hours_count', 'session_count')
             ->get()
             ->map(fn(Plan $p) => [
                 'id'             => $p->id,
                 'title'          => $p->title,
                 'price_min'      => (float) $p->price_min,
+                'price_max'      => $p->price_max !== null ? (float) $p->price_max : null,
                 'badge_discount' => $p->badge_discount,
                 'duration_days'  => $p->duration_days,
                 'hours_count'    => $p->hours_count,

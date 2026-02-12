@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Admin;
 use App\Exports\BookingsExport;
 use App\Models\UserRequest;
 use App\Models\Plan;
+use App\Models\WalletTransaction;
+use App\Notifications\CourseCancelledNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
@@ -124,6 +126,10 @@ class BookingsController extends BaseController
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        if ($request->status === UserRequest::STATUS_CANCELLED) {
+            return back()->withErrors(['status' => 'يرجى استخدام إجراء إلغاء الدورة لإضافة الرصيد وإرسال الإشعار.']);
+        }
+
         $booking = UserRequest::findOrFail($id);
         $oldStatus = $booking->status;
         $booking->status = $request->status;
@@ -133,6 +139,55 @@ class BookingsController extends BaseController
         }
 
         return back()->with('status', "تم تحديث حالة الحجز من {$oldStatus} إلى {$request->status}");
+    }
+
+    public function cancel(Request $request, string $id)
+    {
+        abort_unless($request->user()->can('cancel_courses'), 403);
+
+        $validated = $request->validate([
+            'refund_amount' => ['required', 'integer', 'min:0'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $booking = UserRequest::with(['user', 'trainer', 'plan'])->findOrFail($id);
+        abort_if($booking->status === UserRequest::STATUS_CANCELLED, 422, 'Course already cancelled');
+        abort_if($booking->status === UserRequest::STATUS_COMPLETED, 422, 'Cannot cancel completed course');
+
+        DB::transaction(function () use ($booking, $validated, $request) {
+            $booking->status = UserRequest::STATUS_CANCELLED;
+            $booking->save();
+
+            $refundAmount = (int) $validated['refund_amount'];
+            if ($refundAmount > 0 && $booking->user) {
+                $booking->user->increment('points_balance', $refundAmount);
+
+                WalletTransaction::create([
+                    'user_id' => $booking->user->id,
+                    'amount' => $refundAmount,
+                    'type' => WalletTransaction::TYPE_REFUND,
+                    'status' => WalletTransaction::STATUS_APPROVED,
+                    'processed_by' => $request->user()->id,
+                    'processed_at' => now(),
+                    'notes' => "إلغاء دورة #{$booking->id} - {$validated['reason']}",
+                ]);
+            }
+
+            $notification = new CourseCancelledNotification(
+                $booking,
+                $validated['reason'],
+                (int) $validated['refund_amount']
+            );
+
+            if ($booking->user) {
+                $booking->user->notify($notification);
+            }
+            if ($booking->trainer) {
+                $booking->trainer->notify($notification);
+            }
+        });
+
+        return back()->with('status', 'تم إلغاء الدورة وإضافة الرصيد وإرسال الإشعارات');
     }
 
     public function store(Request $request)
@@ -185,4 +240,3 @@ class BookingsController extends BaseController
         return redirect()->route('admin.bookings.index')->with('status', 'تم حذف الحجز بنجاح');
     }
 }
-

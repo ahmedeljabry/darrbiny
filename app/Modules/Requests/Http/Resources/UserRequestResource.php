@@ -48,6 +48,7 @@ class UserRequestResource extends JsonResource
                 'hours_count' => $this->plan->hours_count,
                 'session_count' => $this->plan->session_count,
                 'price_min' => $this->plan->price_min,
+                'price_max' => $this->plan->price_max,
                 'country' => $this->whenLoaded('plan.country', fn () => [
                     'id' => $this->plan->country->id,
                     'name' => $this->plan->country->name,

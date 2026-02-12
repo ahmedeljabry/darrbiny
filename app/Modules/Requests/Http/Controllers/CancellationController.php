@@ -20,6 +20,7 @@ class CancellationController extends BaseController
      */
     public function cancel(Request $request, string $id)
     {
+        abort(403, 'Cancellation from app is disabled');
         $validated = $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
         ]);

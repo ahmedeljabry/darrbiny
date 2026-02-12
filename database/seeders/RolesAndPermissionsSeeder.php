@@ -26,6 +26,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage_payouts',
             'manage_rewards',
             'verify_trainers',
+            'cancel_courses',
         ];
         foreach ($permissions as $perm) {
             Permission::firstOrCreate(['name' => $perm]);

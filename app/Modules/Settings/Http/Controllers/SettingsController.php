@@ -86,10 +86,14 @@ class SettingsController extends BaseController
         return response()->json([
             'pages' => [
                 'terms' => $this->getStringSetting('pages.terms'),
+                'terms_user' => $this->getStringSetting('pages.terms'),
+                'terms_trainer' => $this->getStringSetting('pages.terms_trainer'),
                 'privacy' => $this->getStringSetting('pages.privacy'),
                 'usage' => $this->getStringSetting('pages.usage'),
                 'about' => $this->getStringSetting('pages.about'),
                 'sales' => $this->getStringSetting('pages.sales'),
+                'app_fees_user' => $this->getStringSetting('pages.sales'),
+                'app_fees_trainer' => $this->getStringSetting('pages.sales_trainer'),
             ],
             'sales_fees' => [
                 'reservation_fee' => [

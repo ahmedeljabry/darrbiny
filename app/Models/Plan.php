@@ -17,6 +17,7 @@ class Plan extends BaseModel
         'description',
         'image',
         'price_min',
+        'price_max',
         'badge_discount',
         'deposit_amount',
         'duration_days',
@@ -31,6 +32,7 @@ class Plan extends BaseModel
 
     protected $casts = [
         'price_min' => 'decimal:2',
+        'price_max' => 'decimal:2',
         'deposit_amount' => 'decimal:2',
         'hours_count' => 'integer',
         'session_count' => 'integer',

@@ -23,14 +23,12 @@ class RatingResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
 
-            // معلومات الطالب الذي عمل التقييم
             'user' => $user ? [
                 'id' => $user->id,
                 'name' => $user->name,
                 'profile_picture' => $user->profile_picture_url,
             ] : null,
 
-            // معلومات الكابتن (المدرب)
             'trainer' => $trainer ? [
                 'id' => $trainer->id,
                 'name' => $trainer->name,

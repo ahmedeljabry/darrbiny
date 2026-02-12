@@ -41,6 +41,7 @@ Route::middleware(['web'])
             Route::get('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'show'])->name('bookings.show');
             Route::post('/bookings', [\App\Http\Controllers\Admin\BookingsController::class, 'store'])->name('bookings.store');
             Route::put('/bookings/{id}/status', [\App\Http\Controllers\Admin\BookingsController::class, 'updateStatus'])->name('bookings.update-status');
+            Route::post('/bookings/{id}/cancel', [\App\Http\Controllers\Admin\BookingsController::class, 'cancel'])->name('bookings.cancel');
             Route::delete('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'destroy'])->name('bookings.destroy');
 
             Route::get('/users', [AdminUsersController::class, 'index'])->name('users.index');

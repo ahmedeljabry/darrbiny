@@ -17,6 +17,16 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
   </div>
 @endif
+@if ($errors->any())
+  <div class="alert alert-danger alert-dismissible" role="alert">
+    <ul class="mb-0">
+      @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+      @endforeach
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+  </div>
+@endif
 
 <div class="row g-6">
     <!-- Booking Details -->
@@ -24,9 +34,18 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">تفاصيل الحجز</h5>
-                <a href="{{ route('admin.bookings.index') }}" class="btn btn-outline-secondary">
-                    <i class="icon-base ti tabler-arrow-right me-1"></i> العودة
-                </a>
+                <div class="d-flex gap-2">
+                    @can('cancel_courses')
+                        @if(!in_array($booking->status, [\App\Models\UserRequest::STATUS_CANCELLED, \App\Models\UserRequest::STATUS_COMPLETED]))
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelBookingModal">
+                                <i class="icon-base ti tabler-x me-1"></i> إلغاء الدورة
+                            </button>
+                        @endif
+                    @endcan
+                    <a href="{{ route('admin.bookings.index') }}" class="btn btn-outline-secondary">
+                        <i class="icon-base ti tabler-arrow-right me-1"></i> العودة
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row g-4">
@@ -217,6 +236,48 @@
     </div>
     @endif
 </div>
+
+@can('cancel_courses')
+  <div class="modal fade" id="cancelBookingModal" tabindex="-1" aria-labelledby="cancelBookingModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="cancelBookingModalLabel">إلغاء الدورة</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+              </div>
+              <form method="POST" action="{{ route('admin.bookings.cancel', $booking->id) }}">
+                  @csrf
+                  <div class="modal-body">
+                      <div class="mb-3">
+                          <label class="form-label">المبلغ المراد إضافته للمحفظة</label>
+                          <input type="number"
+                                 name="refund_amount"
+                                 class="form-control"
+                                 min="0"
+                                 step="1"
+                                 value="{{ (int) round(($booking->total_paid_minor ?? 0) / 100) }}"
+                                 required>
+                          <small class="text-muted d-block mt-1">
+                              إجمالي المدفوع: {{ number_format(($booking->total_paid_minor ?? 0) / 100, 2) }} {{ $booking->currency }}
+                          </small>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label">سبب الإلغاء</label>
+                          <textarea name="reason" class="form-control" rows="3" required placeholder="اكتب سبب الإلغاء ليظهر في إشعار المستخدم والمدربة"></textarea>
+                      </div>
+                      <div class="alert alert-info mb-0">
+                          سيتم إرسال إشعار للمستخدم والمدربة مع سبب الإلغاء.
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                      <button type="submit" class="btn btn-danger">تأكيد الإلغاء</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+@endcan
 
 @endsection
 

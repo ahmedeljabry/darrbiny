@@ -19,16 +19,16 @@ class ReportsController extends BaseController
 {
     public function index(Request $request, ReportsService $service)
     {
-        $from = $request->date('from');
-        $to = $request->date('to');
+        $from = $this->parseDate($request->input('from'));
+        $to = $this->parseDate($request->input('to'), true);
         $payments = $service->recentPayments($from, $to, 50);
         return view('admin.reports.index', compact('payments','from','to'));
     }
 
     public function sales(Request $request, ReportsService $service)
     {
-        $from = $request->date('from');
-        $to = $request->date('to');
+        $from = $this->parseDate($request->input('from'));
+        $to = $this->parseDate($request->input('to'), true);
         ['payments' => $payments, 'totalMinor' => $total] = $service->sales($from, $to);
         
         if ($request->query('export') === 'excel') {
@@ -71,8 +71,8 @@ class ReportsController extends BaseController
 
     public function planSales(Request $request, ReportsService $service)
     {
-        $from = $request->date('from');
-        $to = $request->date('to');
+        $from = $this->parseDate($request->input('from'));
+        $to = $this->parseDate($request->input('to'), true);
         ['payments' => $payments, 'totalMinor' => $total] = $service->planSales($from, $to);
         
         if ($request->query('export') === 'excel') {
@@ -87,8 +87,8 @@ class ReportsController extends BaseController
 
     public function appFees(Request $request, ReportsService $service)
     {
-        $from = $request->date('from');
-        $to = $request->date('to');
+        $from = $this->parseDate($request->input('from'));
+        $to = $this->parseDate($request->input('to'), true);
         ['payments' => $payments, 'totalMinor' => $total] = $service->appFees($from, $to);
         
         if ($request->query('export') === 'excel') {
@@ -103,8 +103,8 @@ class ReportsController extends BaseController
 
     public function vat(Request $request, ReportsService $service)
     {
-        $from = $request->date('from');
-        $to = $request->date('to');
+        $from = $this->parseDate($request->input('from'));
+        $to = $this->parseDate($request->input('to'), true);
         ['payments' => $payments, 'vatPercent' => $vatPercent, 'vatTotalMinor' => $vatTotalMinor] = $service->vatReport($from, $to);
         
         if ($request->query('export') === 'excel') {
@@ -115,5 +115,16 @@ class ReportsController extends BaseController
         }
         
         return view('admin.reports.vat', compact('payments', 'from', 'to', 'vatPercent', 'vatTotalMinor'));
+    }
+
+    private function parseDate(?string $value, bool $endOfDay = false): ?\Carbon\CarbonImmutable
+    {
+        $value = is_string($value) ? trim($value) : null;
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        $date = \Carbon\CarbonImmutable::parse($value);
+        return $endOfDay ? $date->endOfDay() : $date->startOfDay();
     }
 }

@@ -14,14 +14,16 @@ final class ReportsService
     public function recentPayments(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null, int $limit = 50): Collection
     {
         return Payment::query()
-            ->when($from && $to, fn($q) => $q->whereBetween('created_at', [$from, $to]))
+            ->when($from, fn($q) => $q->where('created_at', '>=', $from))
+            ->when($to, fn($q) => $q->where('created_at', '<=', $to))
             ->latest()->limit($limit)->get();
     }
 
     public function sales(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
     {
         $query = Payment::where('status', 'succeeded')
-            ->when($from && $to, fn($q) => $q->whereBetween('created_at', [$from, $to]));
+            ->when($from, fn($q) => $q->where('created_at', '>=', $from))
+            ->when($to, fn($q) => $q->where('created_at', '<=', $to));
 
         $totalMinor = (int) $query->clone()
             ->selectRaw(
@@ -56,7 +58,8 @@ final class ReportsService
         $q = Payment::with(['user', 'userRequest.trainer', 'userRequest.plan'])
             ->where('type', Payment::TYPE_PLAN_FULL)
             ->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from && $to, fn($query) => $query->whereBetween('created_at', [$from, $to]))
+            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn($query) => $query->where('created_at', '<=', $to))
             ->latest();
 
         $totalQuery = clone $q;
@@ -69,7 +72,8 @@ final class ReportsService
     public function appFees(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
     {
         $q = Payment::with('user')->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from && $to, fn($query) => $query->whereBetween('created_at', [$from, $to]));
+            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn($query) => $query->where('created_at', '<=', $to));
 
         $sumQuery = clone $q;
         return [
@@ -82,7 +86,8 @@ final class ReportsService
     {
         $vatPercent = (float) config('app.vat_percent', 0.0);
         $q = Payment::with('user')->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from && $to, fn($query) => $query->whereBetween('created_at', [$from, $to]));
+            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn($query) => $query->where('created_at', '<=', $to));
 
         $payments = $q->latest()->paginate(25);
         $vatQuery = clone $q;

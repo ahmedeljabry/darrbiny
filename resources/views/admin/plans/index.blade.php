@@ -71,6 +71,7 @@
                             <th><i class="icon-base ti tabler-clock me-1"></i> الساعات</th>
                             <th><i class="icon-base ti tabler-calendar me-1"></i> الجلسات</th>
                             <th><i class="icon-base ti tabler-currency-dollar me-1"></i> السعر الأدنى</th>
+                            <th><i class="icon-base ti tabler-currency-dollar me-1"></i> السعر الأقصى</th>
                             <th><i class="icon-base ti tabler-wallet me-1"></i> الدفعة</th>
                             <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
                             <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
@@ -83,6 +84,7 @@
                                 <td>{{ $plan->hours_count }}</td>
                                 <td>{{ $plan->session_count }}</td>
                                 <td>{{ number_format((float) $plan->price_min, 2) }}</td>
+                                <td>{{ $plan->price_max !== null ? number_format((float) $plan->price_max, 2) : '-' }}</td>
                                 <td>{{ $plan->deposit_amount ? number_format((float) $plan->deposit_amount, 2) : '-' }}</td>
                                 <td>
                                     <span class="badge bg-label-{{ $plan->is_active ? 'success' : 'secondary' }}">{{ $plan->is_active ? 'نشطة' : 'غير نشطة' }}</span>

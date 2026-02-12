@@ -17,6 +17,7 @@ class PlanUpdateRequest extends FormRequest
             'description' => ['nullable','string'],
             'image' => ['nullable','image','mimes:jpeg,png,jpg,webp','max:5120'],
             'price_min' => ['sometimes','numeric','min:0'],
+            'price_max' => ['nullable','numeric','min:0','gte:price_min'],
             'badge_discount' => ['nullable','string','max:50'],
             'deposit_amount' => ['nullable','numeric','min:0'],
             'duration_days' => ['sometimes','string','max:50'],
