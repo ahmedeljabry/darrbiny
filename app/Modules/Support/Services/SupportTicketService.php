@@ -45,5 +45,40 @@ class SupportTicketService
             return $ticket->load('messages');
         });
     }
+
+    /**
+     * Add a message to an existing support ticket.
+     * If a user replies to a closed ticket, it reopens automatically.
+     * Admin can optionally update ticket status with the reply.
+     */
+    public function addMessage(
+        SupportTicket $ticket,
+        User $actor,
+        string $message,
+        ?string $status = null,
+        bool $isAdmin = false
+    ): SupportTicketMessage
+    {
+        return DB::transaction(function () use ($ticket, $actor, $message, $status, $isAdmin) {
+            $ticketMessage = SupportTicketMessage::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $actor->id,
+                'author_type' => $isAdmin ? 'admin' : 'user',
+                'message' => $message,
+            ]);
+
+            if ($isAdmin) {
+                if ($status !== null && in_array($status, ['open', 'pending', 'closed'], true)) {
+                    $ticket->status = $status;
+                    $ticket->save();
+                }
+            } elseif ($ticket->status === 'closed') {
+                $ticket->status = 'open';
+                $ticket->save();
+            }
+
+            return $ticketMessage->load('user');
+        });
+    }
 }
 

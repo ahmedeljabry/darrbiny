@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Support\Http\Controllers;
 
+use App\Models\SupportTicket;
+use App\Models\SupportTicketMessage;
 use App\Modules\Support\Http\Requests\CreateTicketRequest;
+use App\Modules\Support\Http\Requests\SendTicketMessageRequest;
 use App\Modules\Support\Services\SupportTicketService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -38,16 +41,21 @@ class SupportTicketController extends BaseController
      */
     public function index(Request $request)
     {
-        if (!$request->user()) {
+        $user = $request->user();
+        if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $tickets = \App\Models\SupportTicket::where('user_id', $request->user()->id)
-            ->orWhere('email', $request->user()->email)
-            ->orWhere('phone_with_cc', $request->user()->phone_with_cc)
-            ->with('messages')
-            ->latest()
-            ->paginate(20);
+        $ticketsQuery = SupportTicket::query()->withCount('messages')->latest();
+        if (!$user->hasRole('ADMIN')) {
+            $ticketsQuery->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere('email', $user->email)
+                    ->orWhere('phone_with_cc', $user->phone_with_cc);
+            });
+        }
+
+        $tickets = $ticketsQuery->paginate(20);
 
         return response()->json([
             'data' => $tickets->map(function ($ticket) {
@@ -56,7 +64,7 @@ class SupportTicketController extends BaseController
                     'subject' => $ticket->subject,
                     'status' => $ticket->status,
                     'created_at' => $ticket->created_at?->toIso8601String(),
-                    'messages_count' => $ticket->messages->count(),
+                    'messages_count' => (int) $ticket->messages_count,
                 ];
             }),
             'meta' => [
@@ -73,17 +81,13 @@ class SupportTicketController extends BaseController
      */
     public function show(Request $request, string $id)
     {
-        $ticket = \App\Models\SupportTicket::with('messages.user')->findOrFail($id);
+        $ticket = SupportTicket::with('messages.user')->findOrFail($id);
+        $this->authorizeTicketAccess($request, $ticket);
 
-        // If authenticated, verify ownership
-        if ($request->user()) {
-            $user = $request->user();
-            if ($ticket->user_id !== $user->id && 
-                $ticket->email !== $user->email && 
-                $ticket->phone_with_cc !== $user->phone_with_cc) {
-                abort(403, 'Unauthorized');
-            }
-        }
+        $messages = $ticket->messages()
+            ->with('user:id,name')
+            ->orderBy('created_at')
+            ->get();
 
         return response()->json([
             'data' => [
@@ -94,17 +98,102 @@ class SupportTicketController extends BaseController
                 'phone_with_cc' => $ticket->phone_with_cc,
                 'email' => $ticket->email,
                 'created_at' => $ticket->created_at?->toIso8601String(),
-                'messages' => $ticket->messages->map(function ($message) {
-                    return [
-                        'id' => $message->id,
-                        'message' => $message->message,
-                        'author_type' => $message->author_type,
-                        'user_name' => $message->user?->name,
-                        'created_at' => $message->created_at?->toIso8601String(),
-                    ];
-                }),
+                'messages' => $messages->map(fn (SupportTicketMessage $message) => $this->serializeMessage($message, $request)),
             ],
         ]);
+    }
+
+    /**
+     * Get paginated ticket chat messages ordered by oldest-first.
+     */
+    public function messages(Request $request, string $id)
+    {
+        $ticket = SupportTicket::findOrFail($id);
+        $this->authorizeTicketAccess($request, $ticket);
+
+        $limit = max(1, min((int) $request->query('limit', 50), 100));
+        $messages = SupportTicketMessage::where('ticket_id', $ticket->id)
+            ->with('user:id,name')
+            ->orderBy('created_at')
+            ->paginate($limit)
+            ->withQueryString();
+
+        return response()->json([
+            'data' => [
+                'ticket' => [
+                    'id' => $ticket->id,
+                    'subject' => $ticket->subject,
+                    'status' => $ticket->status,
+                ],
+                'messages' => $messages->getCollection()
+                    ->map(fn (SupportTicketMessage $message) => $this->serializeMessage($message, $request))
+                    ->values(),
+            ],
+            'meta' => [
+                'current_page' => $messages->currentPage(),
+                'last_page' => $messages->lastPage(),
+                'per_page' => $messages->perPage(),
+                'total' => $messages->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Send a message inside a ticket thread.
+     */
+    public function sendMessage(SendTicketMessageRequest $request, string $id)
+    {
+        $ticket = SupportTicket::findOrFail($id);
+        $this->authorizeTicketAccess($request, $ticket);
+
+        $user = $request->user();
+        $isAdmin = (bool) $user?->hasRole('ADMIN');
+        $status = $isAdmin ? $request->input('status') : null;
+
+        $message = $this->service->addMessage(
+            $ticket,
+            $user,
+            (string) $request->input('message'),
+            $status,
+            $isAdmin
+        );
+
+        return response()->json([
+            'message' => 'تم إرسال الرسالة بنجاح',
+            'data' => [
+                'ticket_id' => $ticket->id,
+                'ticket_status' => $ticket->fresh()->status,
+                'message' => $this->serializeMessage($message, $request),
+            ],
+        ], 201);
+    }
+
+    private function authorizeTicketAccess(Request $request, SupportTicket $ticket): void
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(401, 'Unauthenticated');
+        }
+        if ($user->hasRole('ADMIN')) {
+            return;
+        }
+        $isOwner = $ticket->user_id === $user->id || $ticket->email === $user->email || $ticket->phone_with_cc === $user->phone_with_cc;
+        abort_unless($isOwner, 403, 'Unauthorized');
+    }
+
+    private function serializeMessage(SupportTicketMessage $message, Request $request): array
+    {
+        $actor = $request->user();
+
+        return [
+            'id' => $message->id,
+            'message' => $message->message,
+            'author_type' => $message->author_type,
+            'user_id' => $message->user_id,
+            'user_name' => $message->user?->name,
+            'is_mine' => $actor ? $message->user_id === $actor->id : false,
+            'created_at' => $message->created_at?->toIso8601String(),
+        ];
     }
 }
 

@@ -47,6 +47,8 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/support-tickets', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'index']);
             Route::get('/support-tickets/{id}', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'show']);
+            Route::get('/support-tickets/{id}/messages', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'messages']);
+            Route::post('/support-tickets/{id}/messages', [\App\Modules\Support\Http\Controllers\SupportTicketController::class, 'sendMessage']);
         });
 
         // Catalog

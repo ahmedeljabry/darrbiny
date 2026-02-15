@@ -2496,6 +2496,91 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "Get Ticket Messages",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/support-tickets/:id/messages?limit=50",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "support-tickets",
+                                ":id",
+                                "messages"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "uuid-here"
+                                }
+                            ]
+                        },
+                        "description": "Get paginated ticket chat messages (oldest first)."
+                    }
+                },
+                {
+                    "name": "Send Ticket Message",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{access_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": \"متابعة بخصوص المشكلة\",\n    \"status\": \"open\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/support-tickets/:id/messages",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "support-tickets",
+                                ":id",
+                                "messages"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "uuid-here"
+                                }
+                            ]
+                        },
+                        "description": "Send a new message in ticket thread. `status` is optional (admin usage)."
+                    }
                 }
             ]
         },

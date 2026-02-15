@@ -46,6 +46,8 @@ class UserRequestOfferResource extends JsonResource
                     'hours' => (int) ($plan?->hours_count ?? 0),
                 ],
                 'needs_pickup' => (bool) $userRequest->needs_pickup,
+                'has_user_car' => (bool) $userRequest->has_user_car,
+                'wants_trainer_car' => (bool) $userRequest->wants_trainer_car,
                 'description' => $userRequest->description,
             ] : null,
             'plan' => $plan ? [
