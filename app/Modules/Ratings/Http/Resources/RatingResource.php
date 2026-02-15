@@ -85,20 +85,20 @@ class RatingResource extends JsonResource
         }
 
         $carType = $this->resolveTrainerProfileValue($trainerProfile, 'car_type');
+        $carModel = $this->resolveTrainerProfileValue($trainerProfile, 'car_model');
         $carModelYear = $this->resolveTrainerProfileValue($trainerProfile, 'car_model_year');
+        $carYear = $this->resolveTrainerProfileValue($trainerProfile, 'car_year');
+        $resolvedModelYear = $carModelYear ?: ($carYear !== null ? (string) $carYear : null);
         $carAvailable = $this->resolveTrainerProfileValue($trainerProfile, 'car_available');
 
-        $carName = null;
-        if ($carType) {
-            $carName = $carType;
-            if ($carModelYear) {
-                $carName .= ' ' . $carModelYear;
-            }
-        }
+        $carNameParts = array_filter([$carType, $carModel, $resolvedModelYear], fn ($value) => filled($value));
+        $carName = !empty($carNameParts) ? implode(' ', $carNameParts) : null;
 
         return [
             'type' => $carType,
-            'model_year' => $carModelYear,
+            'model' => $carModel,
+            'year' => $carYear,
+            'model_year' => $resolvedModelYear,
             'name' => $carName,
             'available' => (bool) ($carAvailable ?? false),
         ];
@@ -154,5 +154,4 @@ class RatingResource extends JsonResource
         return $cache[$id];
     }
 }
-
 

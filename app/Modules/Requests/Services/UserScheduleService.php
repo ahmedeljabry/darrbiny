@@ -82,9 +82,13 @@ class UserScheduleService
             $progress->checked_at = now();
 
             if ($user && $user->id === $userRequest->trainer_id) {
-                if ($progress->status === UserScheduleProgress::STATUS_PENDING) {
+                if (in_array($progress->status, [
+                    UserScheduleProgress::STATUS_PENDING,
+                    UserScheduleProgress::STATUS_REJECTED,
+                ], true)) {
                     $progress->status = UserScheduleProgress::STATUS_SENT;
                     $progress->sent_at = now();
+                    $progress->rejection_reason = null;
                     if ($userRequest->user) {
                         $userRequest->user->notify(new ScheduleItemSentNotification($progress));
                     }

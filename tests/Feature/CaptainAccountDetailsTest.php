@@ -76,6 +76,49 @@ class CaptainAccountDetailsTest extends TestCase
         ]);
     }
 
+    public function test_trainer_city_update_is_applied_without_admin_approval(): void
+    {
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+201555500004',
+        ]);
+        $trainer->assignRole('TRAINER');
+        $token = $trainer->createToken('test')->plainTextToken;
+
+        $country = Country::query()->firstOrFail();
+        $cities = City::query()
+            ->where('country_id', $country->id)
+            ->orderBy('name')
+            ->take(2)
+            ->get();
+        $oldCity = $cities->get(0);
+        $newCity = $cities->get(1);
+        $this->assertNotNull($oldCity);
+        $this->assertNotNull($newCity);
+
+        $trainer->trainerProfile()->create([
+            'country_id' => $country->id,
+            'city_id' => $oldCity->id,
+            'has_driving_license' => false,
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/captain/account-details', [
+                'country_id' => $country->id,
+                'city_id' => $newCity->id,
+                'has_driving_license' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.city.id', $newCity->id);
+
+        $this->assertDatabaseHas('trainer_profiles', [
+            'user_id' => $trainer->id,
+            'city_id' => $newCity->id,
+            'pending_approval' => false,
+        ]);
+
+        $this->assertNull($trainer->fresh()->banned_until);
+    }
+
     public function test_non_trainer_cannot_access_account_details(): void
     {
         $user = User::factory()->create([

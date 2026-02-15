@@ -10,6 +10,9 @@ use Illuminate\Support\Arr;
 
 class CaptainAccountService
 {
+    /** @var array<int, string> */
+    private const DIRECT_UPDATE_FIELDS = ['city_id'];
+
     public function getDetails(User $user): TrainerProfile
     {
         $this->assertTrainer($user);
@@ -55,63 +58,71 @@ class CaptainAccountService
             }
         }
 
-        // Check if there are actual changes
-        $hasChanges = false;
-        $changes = [];
-        
+        $directUpdates = [];
+        $approvalChanges = [];
+        $pendingUpdates = [];
+
         foreach ($data as $key => $newValue) {
             $currentValue = $profile->getAttribute($key);
-            
-            // Normalize values for comparison
-            if (is_bool($currentValue)) {
-                $currentValue = (int) $currentValue;
-            }
-            if (is_bool($newValue)) {
-                $newValue = (int) $newValue;
-            }
-            
-            // Compare values (handle null cases)
-            $currentNormalized = $currentValue ?? '';
-            $newNormalized = $newValue ?? '';
-            
-            if ($currentNormalized != $newNormalized) {
-                $hasChanges = true;
-                $changes[$key] = [
+
+            if ($this->hasValueChanged($currentValue, $newValue)) {
+                if (in_array($key, self::DIRECT_UPDATE_FIELDS, true)) {
+                    $directUpdates[$key] = $newValue;
+                    continue;
+                }
+
+                $approvalChanges[$key] = [
                     'old' => $currentValue,
                     'new' => $newValue,
                 ];
+                $pendingUpdates[$key] = $newValue;
             }
         }
 
-        // Only set pending approval if there are actual changes
-        if ($hasChanges) {
-            // Store pending changes (only new values)
-            $pendingChanges = [];
-            foreach ($data as $key => $value) {
-                $pendingChanges[$key] = $value;
-            }
-            
-            $profile->pending_changes = $pendingChanges;
+        if (empty($directUpdates) && empty($approvalChanges)) {
+            return $this->applyPendingChangesForDisplay(
+                $profile->fresh(['country:id,name', 'city:id,name'])
+            );
+        }
+
+        if (!empty($directUpdates)) {
+            // City updates are applied immediately without admin approval.
+            $profile->fill($directUpdates);
+        }
+
+        $existingPending = is_array($profile->pending_changes) ? $profile->pending_changes : [];
+        foreach (self::DIRECT_UPDATE_FIELDS as $directField) {
+            unset($existingPending[$directField]);
+        }
+
+        if (!empty($approvalChanges)) {
+            $profile->pending_changes = array_merge($existingPending, $pendingUpdates);
             $profile->pending_approval = true;
             $profile->pending_approval_at = now();
-            $profile->save();
+        } elseif ($profile->pending_approval && is_array($profile->pending_changes)) {
+            if (empty($existingPending)) {
+                $profile->pending_changes = null;
+                $profile->pending_approval = false;
+                $profile->pending_approval_at = null;
+            } else {
+                $profile->pending_changes = $existingPending;
+            }
+        }
 
+        $profile->save();
+
+        if (!empty($approvalChanges)) {
             // Suspend user account until approval
-            $user->update(['banned_until' => now()->addYears(10)]); // Temporary ban until approval
+            $user->update(['banned_until' => now()->addYears(10)]);
 
             // Notify admins about pending approval
             $admins = \App\Models\User::role('ADMIN')->get();
             if ($admins->isNotEmpty()) {
                 \Illuminate\Support\Facades\Notification::send(
                     $admins,
-                    new \App\Notifications\TrainerProfileUpdateNotification($user, $profile, $changes)
+                    new \App\Notifications\TrainerProfileUpdateNotification($user, $profile, $approvalChanges)
                 );
             }
-        } else {
-            // No changes, just return the profile without modification
-            return $this->applyPendingChangesForDisplay(
-                $profile->fresh(['country:id,name', 'city:id,name'])
-            );
         }
 
         return $this->applyPendingChangesForDisplay(
@@ -122,6 +133,21 @@ class CaptainAccountService
     private function assertTrainer(User $user): void
     {
         abort_unless($user->hasRole('TRAINER'), 403, 'Only captains can access this resource.');
+    }
+
+    private function hasValueChanged(mixed $currentValue, mixed $newValue): bool
+    {
+        if (is_bool($currentValue)) {
+            $currentValue = (int) $currentValue;
+        }
+        if (is_bool($newValue)) {
+            $newValue = (int) $newValue;
+        }
+
+        $currentNormalized = $currentValue ?? '';
+        $newNormalized = $newValue ?? '';
+
+        return $currentNormalized != $newNormalized;
     }
 
     private function applyPendingChangesForDisplay(TrainerProfile $profile): TrainerProfile

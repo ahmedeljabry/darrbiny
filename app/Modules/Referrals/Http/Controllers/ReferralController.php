@@ -64,11 +64,13 @@ class ReferralController extends BaseController
 
         return response()->json(['data' => [
             'code' => $r->code,
-            'points_balance' => $user->points_balance,
+            // Keep points_balance for backward compatibility, but make it referral-only.
+            'points_balance' => $r->total_points_earned,
+            'referral_points_balance' => $r->total_points_earned,
+            'wallet_points_balance' => $user->points_balance,
             'total_points_earned' => $r->total_points_earned,
             'total_redemptions' => $r->total_redemptions,
             'referred_users' => $referredUsers,
         ]]);
     }
 }
-

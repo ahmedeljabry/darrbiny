@@ -75,7 +75,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::post('/subscriptions/{id}/schedule/{dayNumber}/rate', [\App\Modules\Requests\Http\Controllers\ScheduleController::class, 'rate']);
         });
 
-        // Trainer (Captain) profile/account endpoints
+        // Trainer
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/captain/account-details', [\App\Modules\Trainers\Http\Controllers\CaptainAccountController::class, 'show']);
             Route::post('/captain/account-details', [\App\Modules\Trainers\Http\Controllers\CaptainAccountController::class, 'store']);
