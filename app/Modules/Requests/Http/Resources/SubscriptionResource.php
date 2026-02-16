@@ -11,7 +11,7 @@ class SubscriptionResource extends JsonResource
     public function toArray($request): array
     {
         $acceptedOffer = $this->offers->where('status', \App\Models\TrainerOffer::STATUS_ACCEPTED)->first();
-        $trainer = $acceptedOffer?->trainer;
+        $trainer = $acceptedOffer?->trainer ?? $this->trainer;
         $trainerProfile = $trainer?->trainerProfile;
         $trainerBio = $this->resolveTrainerBio($trainerProfile);
         $offerMessage = $acceptedOffer?->message;
@@ -59,6 +59,8 @@ class SubscriptionResource extends JsonResource
             'course_id' => $courseId,
             'status' => $this->status,
             'status_category' => $statusCategory,
+            'retry_source_request_id' => $this->retry_source_request_id,
+            'is_free_retry' => $this->retry_source_request_id !== null,
             'trainer_rate' => $trainerProfile ? (float) ($trainerProfile->rating_avg ?? 0) : null,
             'trainer_name' => $trainer ? $trainer->name : null,
             'trainer_offer_message' => $offerMessage,

@@ -14,6 +14,31 @@ class PaymentDetailsResource extends JsonResource
         // Get user wallet balance (points_balance)
         $user = $this->user;
         $walletBalance = $user ? $user->points_balance : 0;
+
+        if ($this->retry_source_request_id) {
+            return [
+                'user_request_id' => $this->id,
+                'payment_type' => 'free_retry',
+                'total' => [
+                    'minor' => 0,
+                    'amount' => 0,
+                    'currency' => $this->currency,
+                ],
+                'wallet' => [
+                    'balance' => $walletBalance,
+                    'balance_minor' => $walletBalance * 100,
+                    'can_pay' => true,
+                    'remaining_after_payment' => $walletBalance,
+                ],
+                'payment_methods' => [
+                    'wallet' => false,
+                    'apple_pay' => false,
+                    'card' => false,
+                    'supported_cards' => [],
+                ],
+                'security_notice' => 'هذا الطلب معاد مجاناً لنفس المدربة بعد إلغاء سابق.',
+            ];
+        }
         
         // Check if this is for reservation fee or plan payment
         $isReservationFee = $this->status === \App\Models\UserRequest::STATUS_PENDING_PAYMENT;

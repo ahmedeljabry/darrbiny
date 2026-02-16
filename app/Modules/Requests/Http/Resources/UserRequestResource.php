@@ -28,6 +28,8 @@ class UserRequestResource extends JsonResource
             'currency' => $this->currency,
             'app_fee_reserved_minor' => $this->app_fee_reserved_minor,
             'total_paid_minor' => $this->total_paid_minor,
+            'retry_source_request_id' => $this->retry_source_request_id,
+            'is_free_retry' => $this->retry_source_request_id !== null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
 

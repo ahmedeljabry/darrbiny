@@ -6,99 +6,103 @@ namespace App\Services\Admin;
 
 use App\Models\Payment;
 use App\Models\UserRequest;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 final class ReportsService
 {
-    public function recentPayments(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null, int $limit = 50): Collection
+    public function recentPayments(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, int $limit = 50): Collection
     {
-        return Payment::query()
-            ->when($from, fn($q) => $q->where('created_at', '>=', $from))
-            ->when($to, fn($q) => $q->where('created_at', '<=', $to))
-            ->latest()->limit($limit)->get();
+        return $this->paymentsWithinRange($from, $to)
+            ->with('user')
+            ->latest()
+            ->limit($limit)
+            ->get();
     }
 
-    public function sales(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
+    public function sales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
-        $query = Payment::where('status', 'succeeded')
-            ->when($from, fn($q) => $q->where('created_at', '>=', $from))
-            ->when($to, fn($q) => $q->where('created_at', '<=', $to));
+        $query = $this->succeededPaymentsWithinRange($from, $to)->with('user');
 
-        $totalMinor = (int) $query->clone()
-            ->selectRaw(
-                'SUM(CASE WHEN type = ? THEN amount_minor + COALESCE(app_fee_minor, 0) ELSE amount_minor END) as total',
-                [Payment::TYPE_PLAN_FULL]
-            )
-            ->value('total');
+        $totalMinor = (int) (clone $query)->sum('amount_minor');
 
         return [
-            'payments' => $query->latest()->paginate(25),
+            'payments' => (clone $query)->latest()->paginate(25),
             'totalMinor' => $totalMinor,
         ];
     }
 
     public function paymentsList(?string $type = null, ?string $status = null): LengthAwarePaginator
     {
-        $q = Payment::query()->latest();
-        if ($type) $q->where('type', $type);
-        if ($status) $q->where('status', $status);
-        return $q->paginate(25);
+        return Payment::query()
+            ->with('user')
+            ->when($type, fn (Builder $query, string $paymentType) => $query->where('type', $paymentType))
+            ->when($status, fn (Builder $query, string $paymentStatus) => $query->where('status', $paymentStatus))
+            ->latest()
+            ->paginate(25);
     }
 
     public function subscriptionsList(?string $status = null): LengthAwarePaginator
     {
-        $q = UserRequest::with('plan','user')->latest();
-        if ($status) $q->where('status', $status);
-        return $q->paginate(25);
+        return UserRequest::query()
+            ->with(['plan', 'user'])
+            ->when($status, fn (Builder $query, string $requestStatus) => $query->where('status', $requestStatus))
+            ->latest()
+            ->paginate(25);
     }
 
-    public function planSales(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
+    public function planSales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
-        $q = Payment::with(['user', 'userRequest.trainer', 'userRequest.plan'])
+        $query = $this->succeededPaymentsWithinRange($from, $to)
             ->where('type', Payment::TYPE_PLAN_FULL)
-            ->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
-            ->when($to, fn($query) => $query->where('created_at', '<=', $to))
-            ->latest();
+            ->with(['user', 'userRequest.trainer', 'userRequest.plan']);
 
-        $totalQuery = clone $q;
         return [
-            'payments' => $q->paginate(25),
-            'totalMinor' => (int) $totalQuery->sum('amount_minor'),
+            'payments' => (clone $query)->latest()->paginate(25),
+            'totalMinor' => (int) (clone $query)->sum('amount_minor'),
         ];
     }
 
-    public function appFees(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
+    public function appFees(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
-        $q = Payment::with('user')->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
-            ->when($to, fn($query) => $query->where('created_at', '<=', $to));
+        $query = $this->succeededPaymentsWithinRange($from, $to)->with('user');
 
-        $sumQuery = clone $q;
         return [
-            'payments' => $q->latest()->paginate(25),
-            'totalMinor' => (int) $sumQuery->sum('app_fee_minor'),
+            'payments' => (clone $query)->latest()->paginate(25),
+            'totalMinor' => (int) (clone $query)->sum('app_fee_minor'),
         ];
     }
 
-    public function vatReport(?Carbon\CarbonImmutable $from = null, ?Carbon\CarbonImmutable $to = null): array
+    public function vatReport(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
         $vatPercent = (float) config('app.vat_percent', 0.0);
-        $q = Payment::with('user')->where('status', Payment::STATUS_SUCCEEDED)
-            ->when($from, fn($query) => $query->where('created_at', '>=', $from))
-            ->when($to, fn($query) => $query->where('created_at', '<=', $to));
+        $query = $this->succeededPaymentsWithinRange($from, $to)->with('user');
 
-        $payments = $q->latest()->paginate(25);
-        $vatQuery = clone $q;
-        $vatTotalMinor = (int) $vatQuery->get()->sum(function ($p) use ($vatPercent) {
-            return (int) round($p->amount_minor * ($vatPercent / 100));
-        });
+        $vatRate = $vatPercent / 100;
+        $vatTotalMinor = $vatRate > 0
+            ? (int) (clone $query)
+                ->selectRaw('COALESCE(SUM(ROUND(amount_minor * ?, 0)), 0) as total', [$vatRate])
+                ->value('total')
+            : 0;
 
         return [
-            'payments' => $payments,
+            'payments' => (clone $query)->latest()->paginate(25),
             'vatPercent' => $vatPercent,
             'vatTotalMinor' => $vatTotalMinor,
         ];
+    }
+
+    private function paymentsWithinRange(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder
+    {
+        return Payment::query()
+            ->when($from, fn (Builder $query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn (Builder $query) => $query->where('created_at', '<=', $to));
+    }
+
+    private function succeededPaymentsWithinRange(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder
+    {
+        return $this->paymentsWithinRange($from, $to)->where('status', Payment::STATUS_SUCCEEDED);
     }
 }

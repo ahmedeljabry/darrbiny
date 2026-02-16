@@ -186,6 +186,8 @@ class UserRequestController extends BaseController
         $userId = $request->user()->id;
         $q = UserRequest::with([
             'user',
+            'trainer',
+            'trainer.trainerProfile',
             'plan',
             'plan.country',
             'plan.city',

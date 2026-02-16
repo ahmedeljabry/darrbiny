@@ -16,16 +16,31 @@ class RequestService
     public function create(array $data, string $userId): UserRequest
     {
         $plan = Plan::findOrFail($data['plan_id']);
+
         return DB::transaction(function () use ($data, $userId, $plan) {
+            $freeRetrySource = $this->findEligibleFreeRetrySource(
+                $userId,
+                (string) $plan->id,
+                $data['trainer_id'] ?? null
+            );
+
             $req = new UserRequest($data);
             $req->user_id = $userId;
-            $req->status = UserRequest::STATUS_PENDING_PAYMENT;
             $req->currency = auth()->user()?->currency ?? 'USD';
-            $req->app_fee_reserved_minor = \App\Support\Fees::reservationFeeMinor();
+            $req->status = $freeRetrySource ? UserRequest::STATUS_IN_TRAINING : UserRequest::STATUS_PENDING_PAYMENT;
+            $req->app_fee_reserved_minor = $freeRetrySource ? 0 : \App\Support\Fees::reservationFeeMinor();
+            $req->total_paid_minor = $freeRetrySource ? 0 : (int) $req->total_paid_minor;
+            $req->retry_source_request_id = $freeRetrySource?->id;
             $req->save();
 
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
-            NotifyEligibleTrainers::dispatch($req);
+
+            if ($freeRetrySource) {
+                $this->ensureConversationExists($req);
+            } else {
+                NotifyEligibleTrainers::dispatch($req);
+            }
+
             return $req;
         });
     }
@@ -61,18 +76,41 @@ class RequestService
             app(\App\Services\Admin\PlanScheduleService::class)->initializeUserSchedule($req);
         }
 
-        if ($req->trainer_id && $req->user_id) {
-            $trainer = \App\Models\User::find($req->trainer_id);
-            $user = \App\Models\User::find($req->user_id);
-            if ($trainer && $user) {
-                app(ConversationService::class)->findOrCreateConversation($trainer, $user);
-            }
-        }
+        $this->ensureConversationExists($req);
     }
 
     public function complete(UserRequest $req): void
     {
         $req->status = UserRequest::STATUS_COMPLETED;
         $req->save();
+    }
+
+    private function findEligibleFreeRetrySource(string $userId, string $planId, ?string $trainerId): ?UserRequest
+    {
+        if (!$trainerId) {
+            return null;
+        }
+
+        return UserRequest::query()
+            ->where('user_id', $userId)
+            ->where('plan_id', $planId)
+            ->where('trainer_id', $trainerId)
+            ->where('status', UserRequest::STATUS_CANCELLED)
+            ->whereDoesntHave('retryChild')
+            ->latest('updated_at')
+            ->first();
+    }
+
+    private function ensureConversationExists(UserRequest $req): void
+    {
+        if (!$req->trainer_id || !$req->user_id) {
+            return;
+        }
+
+        $trainer = \App\Models\User::find($req->trainer_id);
+        $user = \App\Models\User::find($req->user_id);
+        if ($trainer && $user) {
+            app(ConversationService::class)->findOrCreateConversation($trainer, $user);
+        }
     }
 }

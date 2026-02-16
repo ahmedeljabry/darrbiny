@@ -15,7 +15,7 @@ class UserRequest extends BaseModel
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'user_id','trainer_id','plan_id','start_date','start_time','description','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','version'
+        'user_id','trainer_id','plan_id','start_date','start_time','description','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','retry_source_request_id','version'
     ];
 
     protected $casts = [
@@ -27,6 +27,7 @@ class UserRequest extends BaseModel
         'longitude' => 'decimal:8',
         'app_fee_reserved_minor' => 'integer',
         'total_paid_minor' => 'integer',
+        'retry_source_request_id' => 'string',
         'version' => 'integer',
     ];
 
@@ -70,5 +71,15 @@ class UserRequest extends BaseModel
     public function scheduleProgress()
     {
         return $this->hasMany(UserScheduleProgress::class);
+    }
+
+    public function retrySource()
+    {
+        return $this->belongsTo(self::class, 'retry_source_request_id');
+    }
+
+    public function retryChild()
+    {
+        return $this->hasOne(self::class, 'retry_source_request_id');
     }
 }
