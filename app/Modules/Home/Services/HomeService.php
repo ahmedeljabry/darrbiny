@@ -11,9 +11,9 @@ use App\Support\StorageUrl;
 
 class HomeService
 {
-    protected array $defaultIncludes = ['video', 'plans', 'trainers', 'how_it_works', 'search'];
+    protected array $defaultIncludes = ['video', 'banner', 'plans', 'trainers', 'how_it_works', 'search'];
     private const LIMIT_TRAINERS = 5;
-    private const CACHE_PREFIX   = 'home_data:v6';
+    private const CACHE_PREFIX   = 'home_data:v7';
     private const CACHE_MINUTES  = 5;
 
     protected ?string $cityId = null;
@@ -37,6 +37,7 @@ class HomeService
         return Cache::remember($cacheKey, now()->addMinutes(self::CACHE_MINUTES), function () use ($q, $authUserId) {
             $sections = [
                 'video'        => fn() => $this->getVideo(),
+                'banner'       => fn() => $this->getBanner(),
                 'plans'        => fn() => $this->getPlans(),
                 'trainers'     => fn() => ['top_rated_trainers' => $this->getTrainers($authUserId)],
                 'how_it_works' => fn() => $this->getHowItWorks(),
@@ -104,6 +105,14 @@ class HomeService
             'url' => $userUrl,
             'user_url' => $userUrl,
             'captain_url' => $captainUrl,
+        ];
+    }
+
+    protected function getBanner(): array
+    {
+        return [
+            'student_text' => (string) (Setting::where('key', 'home.banner.student_text')->value('value') ?? ''),
+            'trainer_text' => (string) (Setting::where('key', 'home.banner.trainer_text')->value('value') ?? ''),
         ];
     }
 

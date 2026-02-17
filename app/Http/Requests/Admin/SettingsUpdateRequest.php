@@ -21,6 +21,8 @@ class SettingsUpdateRequest extends FormRequest
             'tap_webhook_secret' => ['nullable','string','max:200'],
             'video_app_file' => ['nullable','file','mimetypes:video/mp4,video/webm,video/quicktime','max:256000'],
             'video_captain_file' => ['nullable','file','mimetypes:video/mp4,video/webm,video/quicktime','max:256000'],
+            'banner_text_student' => ['nullable','string','max:2000'],
+            'banner_text_trainer' => ['nullable','string','max:2000'],
             'page_usage_policy' => ['nullable','string'],
             'page_privacy_policy' => ['nullable','string'],
             'page_terms' => ['nullable','string'],

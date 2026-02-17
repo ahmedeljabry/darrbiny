@@ -88,6 +88,9 @@ final class SettingsService
             $this->save('video.captain.path', $path);
         }
 
+        $this->save('home.banner.student_text', $data['banner_text_student'] ?? null);
+        $this->save('home.banner.trainer_text', $data['banner_text_trainer'] ?? null);
+
         $this->saveFaqSetting('pages.usage', $data, 'page_usage_faqs', 'page_usage_policy');
         $this->saveFaqSetting('pages.privacy', $data, 'page_privacy_faqs', 'page_privacy_policy');
         $this->saveFaqSetting('pages.terms', $data, 'page_terms_faqs', 'page_terms');

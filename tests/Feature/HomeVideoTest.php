@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Setting;
+use App\Support\StorageUrl;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -26,8 +27,8 @@ class HomeVideoTest extends TestCase
 
         $response->assertOk();
 
-        $userUrl = Storage::disk('public')->url('videos/user.mp4');
-        $captainUrl = Storage::disk('public')->url('videos/captain.mp4');
+        $userUrl = StorageUrl::make('videos/user.mp4');
+        $captainUrl = StorageUrl::make('videos/captain.mp4');
 
         $response->assertJsonPath('data.video.user_url', $userUrl);
         $response->assertJsonPath('data.video.captain_url', $captainUrl);

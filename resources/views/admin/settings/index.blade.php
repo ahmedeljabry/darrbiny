@@ -403,6 +403,22 @@
                       <input type="file" name="video_captain_file" accept="video/*" class="form-control">
                       <small class="text-body-secondary d-block mt-1">يظهر داخل تطبيق الكابتن.</small>
                     </div>
+                    <div class="col-md-6">
+                      <label class="form-label">نص بانر المتدرب</label>
+                      <textarea name="banner_text_student" class="form-control" rows="3" placeholder="اكتب النص الذي يظهر للمتدرب في البانر">{{ old('banner_text_student', $settings['home.banner.student_text'] ?? '') }}</textarea>
+                      <small class="text-body-secondary d-block mt-1">يظهر في بانر الصفحة الرئيسية للمتدرب.</small>
+                      @error('banner_text_student')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                      @enderror
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">نص بانر المدرب</label>
+                      <textarea name="banner_text_trainer" class="form-control" rows="3" placeholder="اكتب النص الذي يظهر للمدرب في البانر">{{ old('banner_text_trainer', $settings['home.banner.trainer_text'] ?? '') }}</textarea>
+                      <small class="text-body-secondary d-block mt-1">يظهر في بانر الصفحة الرئيسية للمدرب.</small>
+                      @error('banner_text_trainer')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                      @enderror
+                    </div>
                   </div>
                   @if(!empty($settings['video.app.path']) || !empty($settings['video.captain.path']))
                     <div class="row g-4 mt-1">
