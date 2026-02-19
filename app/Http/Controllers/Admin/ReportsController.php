@@ -33,7 +33,7 @@ class ReportsController extends BaseController
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new SalesReportExport($payments->getCollection()),
+                new SalesReportExport($service->salesCollection($from, $to)),
                 'sales-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -43,11 +43,13 @@ class ReportsController extends BaseController
 
     public function payments(Request $request, ReportsService $service)
     {
-        $payments = $service->paymentsList($request->query('type'), $request->query('status'));
+        $type = $request->query('type');
+        $status = $request->query('status');
+        $payments = $service->paymentsList($type, $status);
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new PaymentsReportExport($payments->getCollection()),
+                new PaymentsReportExport($service->paymentsCollection($type, $status)),
                 'payments-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -57,11 +59,12 @@ class ReportsController extends BaseController
 
     public function subscriptions(Request $request, ReportsService $service)
     {
-        $subs = $service->subscriptionsList($request->query('status'));
+        $status = $request->query('status');
+        $subs = $service->subscriptionsList($status);
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new SubscriptionsReportExport($subs->getCollection()),
+                new SubscriptionsReportExport($service->subscriptionsCollection($status)),
                 'subscriptions-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -77,7 +80,7 @@ class ReportsController extends BaseController
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new PlanSalesReportExport($payments->getCollection()),
+                new PlanSalesReportExport($service->planSalesCollection($from, $to)),
                 'plan-sales-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -93,7 +96,7 @@ class ReportsController extends BaseController
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new AppFeesReportExport($payments->getCollection()),
+                new AppFeesReportExport($service->appFeesCollection($from, $to)),
                 'app-fees-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -109,7 +112,7 @@ class ReportsController extends BaseController
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new VatReportExport($payments->getCollection(), $vatPercent),
+                new VatReportExport($service->vatCollection($from, $to), $vatPercent),
                 'vat-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
@@ -124,7 +127,12 @@ class ReportsController extends BaseController
             return null;
         }
 
-        $date = \Carbon\CarbonImmutable::parse($value);
+        try {
+            $date = \Carbon\CarbonImmutable::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
+
         return $endOfDay ? $date->endOfDay() : $date->startOfDay();
     }
 }

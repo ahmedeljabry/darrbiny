@@ -140,8 +140,17 @@
         <div>التقارير</div>
       </a>
       <ul class="menu-sub">
+        <li class="menu-item {{ request()->routeIs('admin.reports.index') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.index') }}" class="menu-link">كل التقارير</a>
+        </li>
         <li class="menu-item {{ request()->routeIs('admin.reports.sales') ? 'active' : '' }}">
           <a href="{{ route('admin.reports.sales') }}" class="menu-link">مبيعات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.payments') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.payments') }}" class="menu-link">المدفوعات</a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('admin.reports.subscriptions') ? 'active' : '' }}">
+          <a href="{{ route('admin.reports.subscriptions') }}" class="menu-link">الاشتراكات</a>
         </li>
         <li class="menu-item {{ request()->routeIs('admin.reports.plan-sales') ? 'active' : '' }}">
           <a href="{{ route('admin.reports.plan-sales') }}" class="menu-link">مبيعات الباقات</a>

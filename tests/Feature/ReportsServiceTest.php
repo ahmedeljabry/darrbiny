@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Payment;
+use App\Models\UserRequest;
 use App\Services\Admin\ReportsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,6 +99,72 @@ class ReportsServiceTest extends TestCase
         $this->assertSame(1_800, $vatTotalMinor);
     }
 
+    public function test_sales_collection_returns_all_filtered_rows_for_export(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            $this->createPayment([
+                'status' => Payment::STATUS_SUCCEEDED,
+                'amount_minor' => 1_000 + $i,
+            ]);
+        }
+        $this->createPayment([
+            'status' => Payment::STATUS_FAILED,
+            'amount_minor' => 9_999,
+        ]);
+
+        $service = app(ReportsService::class);
+
+        ['payments' => $paginated] = $service->sales();
+        $collection = $service->salesCollection();
+
+        $this->assertSame(30, $paginated->total());
+        $this->assertSame(25, $paginated->count());
+        $this->assertCount(30, $collection);
+    }
+
+    public function test_payments_and_subscriptions_collections_return_full_filtered_rows(): void
+    {
+        for ($i = 0; $i < 28; $i++) {
+            $this->createPayment([
+                'type' => Payment::TYPE_PLAN_FULL,
+                'status' => Payment::STATUS_SUCCEEDED,
+            ]);
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $this->createPayment([
+                'type' => 'reservation_fee',
+                'status' => Payment::STATUS_FAILED,
+            ]);
+        }
+
+        for ($i = 0; $i < 27; $i++) {
+            $this->createUserRequest([
+                'status' => UserRequest::STATUS_IN_TRAINING,
+            ]);
+        }
+        for ($i = 0; $i < 4; $i++) {
+            $this->createUserRequest([
+                'status' => UserRequest::STATUS_CANCELLED,
+            ]);
+        }
+
+        $service = app(ReportsService::class);
+
+        $paymentsPage = $service->paymentsList(Payment::TYPE_PLAN_FULL, Payment::STATUS_SUCCEEDED);
+        $paymentsCollection = $service->paymentsCollection(Payment::TYPE_PLAN_FULL, Payment::STATUS_SUCCEEDED);
+
+        $subscriptionsPage = $service->subscriptionsList(UserRequest::STATUS_IN_TRAINING);
+        $subscriptionsCollection = $service->subscriptionsCollection(UserRequest::STATUS_IN_TRAINING);
+
+        $this->assertSame(28, $paymentsPage->total());
+        $this->assertSame(25, $paymentsPage->count());
+        $this->assertCount(28, $paymentsCollection);
+
+        $this->assertSame(27, $subscriptionsPage->total());
+        $this->assertSame(25, $subscriptionsPage->count());
+        $this->assertCount(27, $subscriptionsCollection);
+    }
+
     private function createPayment(array $attributes = []): void
     {
         $defaultTimestamp = CarbonImmutable::parse('2026-01-10 10:00:00');
@@ -114,6 +181,32 @@ class ReportsServiceTest extends TestCase
             'status' => Payment::STATUS_SUCCEEDED,
             'app_fee_minor' => 100,
             'trainer_net_minor' => 900,
+            'version' => 1,
+            'deleted_at' => null,
+            'created_at' => $defaultTimestamp,
+            'updated_at' => $defaultTimestamp,
+        ], $attributes));
+    }
+
+    private function createUserRequest(array $attributes = []): void
+    {
+        $defaultTimestamp = CarbonImmutable::parse('2026-01-10 10:00:00');
+
+        DB::table('user_requests')->insert(array_merge([
+            'id' => (string) Str::uuid(),
+            'user_id' => (string) Str::uuid(),
+            'trainer_id' => null,
+            'plan_id' => (string) Str::uuid(),
+            'start_date' => '2026-01-15',
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+            'latitude' => null,
+            'longitude' => null,
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
             'version' => 1,
             'deleted_at' => null,
             'created_at' => $defaultTimestamp,

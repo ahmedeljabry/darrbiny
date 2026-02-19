@@ -10,6 +10,8 @@ class CaptainAccountResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $pendingChanges = is_array($this->pending_changes) ? $this->pending_changes : null;
+
         return [
             'id' => $this->id,
             'bio' => $this->bio,
@@ -33,6 +35,10 @@ class CaptainAccountResource extends JsonResource
                 'id' => $this->city?->id,
                 'name' => $this->city?->name,
             ]),
+            'pending_approval' => (bool) $this->pending_approval,
+            'pending_approval_at' => $this->pending_approval_at?->toIso8601String(),
+            'approval_status' => $this->pending_approval ? 'pending' : 'approved',
+            'pending_changes' => $pendingChanges,
             'is_complete' => $this->isComplete(),
             'bio_hint' => 'اكتبي هنا نبذة تعريفية عن نفسك توضّح للمتدربات من أنتي، بالإضافة إلى وصف مختصر لطريقتك في التدريب. يمكن تعديل النص لاحقاً.',
             'guidelines' => [

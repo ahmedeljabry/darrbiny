@@ -38,18 +38,32 @@ class AdvancedReportsController extends BaseController
         }, $filename . '.csv', ['Content-Type' => 'text/csv']);
     }
 
-    private function view(string $title, array $headers, array $rows, Request $request, string $filename)
+    private function view(
+        string $title,
+        array $headers,
+        array $rows,
+        Request $request,
+        string $filename,
+        bool $supportsExcel = false,
+        ?string $dateFilter = null
+    )
     {
         if ($export = $this->maybeExportCsv($request, $filename, $headers, $rows)) {
             return $export;
         }
 
-        return view('admin.reports.custom', compact('title', 'headers', 'rows'));
+        return view('admin.reports.custom', compact(
+            'title',
+            'headers',
+            'rows',
+            'supportsExcel',
+            'dateFilter'
+        ));
     }
 
     public function completedPayouts(Request $request)
     {
-        $date = $request->date('date', Carbon::today());
+        $date = $request->date('date') ?? Carbon::today();
 
         $payments = Payment::with(['userRequest.trainer'])
             ->where('type', Payment::TYPE_PLAN_FULL)
@@ -84,7 +98,9 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'المدرب', 'الجوال', 'البنك', 'IBAN', 'حساب', 'صافي المدرب', 'تاريخ الدفعة'],
             $rows,
             $request,
-            'completed-payouts'
+            'completed-payouts',
+            true,
+            $date->toDateString()
         );
     }
 
@@ -117,7 +133,8 @@ class AdvancedReportsController extends BaseController
             ['الطلب', 'المدرب', 'المستخدم', 'قيمة الكورس', 'تاريخ البدء'],
             $rows,
             $request,
-            'active-courses'
+            'active-courses',
+            true
         );
     }
 
@@ -145,7 +162,7 @@ class AdvancedReportsController extends BaseController
 
     public function rejectedProgress(Request $request)
     {
-        $date = $request->date('date', Carbon::today());
+        $date = $request->date('date') ?? Carbon::today();
         $items = UserScheduleProgress::with(['userRequest.user', 'userRequest.trainer'])
             ->where('status', UserScheduleProgress::STATUS_REJECTED)
             ->whereDate('created_at', $date)
@@ -168,7 +185,9 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'الطلب', 'المستخدم', 'المدرب', 'اليوم', 'سبب الرفض', 'التاريخ'],
             $rows,
             $request,
-            'rejected-progress'
+            'rejected-progress',
+            false,
+            $date->toDateString()
         );
     }
 
@@ -195,13 +214,14 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'الاسم', 'الجوال', 'الرصيد'],
             $rows,
             $request,
-            'wallet-balances'
+            'wallet-balances',
+            true
         );
     }
 
     public function pointsBalances(Request $request)
     {
-        $users = User::all();
+        $users = User::with('roles')->get();
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
@@ -223,7 +243,8 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'الاسم', 'الجوال', 'النوع', 'النقاط'],
             $rows,
             $request,
-            'points-balances'
+            'points-balances',
+            true
         );
     }
 
@@ -281,7 +302,8 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'المستخدم', 'المدرب', 'النوع', 'المبلغ', 'التاريخ'],
             $rows,
             $request,
-            'wallet-payments'
+            'wallet-payments',
+            true
         );
     }
 }

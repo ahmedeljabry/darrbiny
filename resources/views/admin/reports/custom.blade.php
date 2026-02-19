@@ -1,6 +1,10 @@
 @extends('admin.layouts.app')
 @section('title', $title)
 @section('content')
+@php
+  $supportsExcel = $supportsExcel ?? false;
+  $dateFilter = $dateFilter ?? null;
+@endphp
 
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-4">
@@ -15,12 +19,25 @@
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h5 class="mb-0">{{ $title }}</h5>
     <div class="d-flex gap-2 align-items-center flex-wrap">
-      <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'excel']) }}">
-        <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
-      </a>
+      @if($supportsExcel)
+        <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'excel']) }}">
+          <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+        </a>
+      @endif
       <a class="btn btn-sm btn-outline-primary" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">تصدير CSV</a>
     </div>
   </div>
+  @if($dateFilter !== null)
+    <div class="card-body border-top pb-0">
+      <form class="d-flex gap-2 align-items-end flex-wrap" method="get">
+        <div>
+          <label class="form-label mb-1">التاريخ</label>
+          <input type="date" name="date" value="{{ request('date', $dateFilter) }}" class="form-control">
+        </div>
+        <button class="btn btn-primary">تصفية</button>
+      </form>
+    </div>
+  @endif
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table mb-0">

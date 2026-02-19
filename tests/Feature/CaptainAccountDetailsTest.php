@@ -36,6 +36,8 @@ class CaptainAccountDetailsTest extends TestCase
             ->getJson('/api/v1/captain/account-details')
             ->assertOk()
             ->assertJsonPath('data.has_driving_license', false)
+            ->assertJsonPath('data.pending_approval', false)
+            ->assertJsonPath('data.approval_status', 'approved')
             ->assertJsonPath('data.guidelines.title', 'تنبيه هام');
     }
 
@@ -66,14 +68,16 @@ class CaptainAccountDetailsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.car_type', 'تويوتا كامري')
             ->assertJsonPath('data.city.id', $city->id)
+            ->assertJsonPath('data.pending_approval', true)
+            ->assertJsonPath('data.approval_status', 'pending')
             ->assertJsonPath('data.is_complete', true);
 
-        $this->assertDatabaseHas('trainer_profiles', [
-            'user_id' => $trainer->id,
-            'car_type' => 'تويوتا كامري',
-            'car_model_year' => '2022',
-            'has_driving_license' => true,
-        ]);
+        $profile = $trainer->fresh()->trainerProfile;
+        $this->assertNotNull($profile);
+        $this->assertTrue((bool) $profile->pending_approval);
+        $this->assertSame('تويوتا كامري', data_get($profile->pending_changes, 'car_type'));
+        $this->assertSame('2022', data_get($profile->pending_changes, 'car_model_year'));
+        $this->assertTrue((bool) data_get($profile->pending_changes, 'has_driving_license'));
     }
 
     public function test_trainer_city_update_is_applied_without_admin_approval(): void
@@ -130,5 +134,43 @@ class CaptainAccountDetailsTest extends TestCase
         $this->withToken($token)
             ->getJson('/api/v1/captain/account-details')
             ->assertStatus(403);
+    }
+
+    public function test_pending_account_details_are_returned_from_show_endpoint(): void
+    {
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+201555500005',
+        ]);
+        $trainer->assignRole('TRAINER');
+        $token = $trainer->createToken('test')->plainTextToken;
+
+        $country = Country::query()->firstOrFail();
+        $city = City::query()->where('country_id', $country->id)->firstOrFail();
+
+        $trainer->trainerProfile()->create([
+            'bio' => 'bio-old',
+            'car_type' => 'car-old',
+            'country_id' => $country->id,
+            'city_id' => $city->id,
+            'has_driving_license' => false,
+            'pending_approval' => true,
+            'pending_changes' => [
+                'bio' => 'bio-pending',
+                'car_type' => 'car-pending',
+                'has_driving_license' => true,
+            ],
+            'pending_approval_at' => now(),
+        ]);
+
+        $this->withToken($token)
+            ->getJson('/api/v1/captain/account-details')
+            ->assertOk()
+            ->assertJsonPath('data.pending_approval', true)
+            ->assertJsonPath('data.approval_status', 'pending')
+            ->assertJsonPath('data.bio', 'bio-pending')
+            ->assertJsonPath('data.car_type', 'car-pending')
+            ->assertJsonPath('data.has_driving_license', true)
+            ->assertJsonPath('data.pending_changes.bio', 'bio-pending')
+            ->assertJsonPath('data.pending_changes.car_type', 'car-pending');
     }
 }
