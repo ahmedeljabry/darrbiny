@@ -99,7 +99,6 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::post('/offers/{id}/accept', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'accept']);
 
             // Payments
-            Route::get('/user-requests/{id}/payment-details', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentDetails']);
             Route::post('/payments/plan', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'plan']);
 
             // Training

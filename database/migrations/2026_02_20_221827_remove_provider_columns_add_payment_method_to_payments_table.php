@@ -16,9 +16,6 @@ return new class extends Migration
             $table->dropIndex(['provider_ref']);
             $table->dropColumn(['provider', 'provider_ref']);
         });
-
-        // Migrate existing data: copy provider values to payment_method
-        // (already done via column default if needed)
     }
 
     /**
