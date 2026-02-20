@@ -12,7 +12,16 @@ class Payment extends BaseModel
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
-        'user_id','user_request_id','amount_minor','currency','type','provider','provider_ref','status','app_fee_minor','trainer_net_minor','version'
+        'user_id',
+        'user_request_id',
+        'amount_minor',
+        'currency',
+        'type',
+        'payment_method',
+        'status',
+        'app_fee_minor',
+        'trainer_net_minor',
+        'version'
     ];
 
     protected $casts = [
@@ -32,4 +41,3 @@ class Payment extends BaseModel
         return $this->belongsTo(UserRequest::class);
     }
 }
-

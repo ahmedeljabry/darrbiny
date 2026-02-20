@@ -44,7 +44,7 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
             number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
             $payment->type,
             $payment->status,
-            $payment->provider,
+            $payment->payment_method,
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
     }
@@ -56,4 +56,3 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
         ];
     }
 }
-

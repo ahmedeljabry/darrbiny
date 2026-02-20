@@ -25,12 +25,12 @@ class TapProvider implements PaymentProvider
         // Here you would call Tap API to create a charge/session and get a redirect URL
         // For now, return a placeholder with required info to proceed on frontend
         return [
-            'provider' => 'tap',
+            'payment_method' => 'tap',
             'amount' => $payment->amount_minor / 100,
             'currency' => $payment->currency,
             'reference' => $payment->id,
             'public_key' => $public,
-            'checkout_url' => url('/payments/redirect/tap/'.$payment->id),
+            'checkout_url' => url('/payments/redirect/tap/' . $payment->id),
         ];
     }
 
@@ -46,4 +46,3 @@ class TapProvider implements PaymentProvider
         return hash_equals($computed, $sigHeader);
     }
 }
-

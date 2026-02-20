@@ -38,9 +38,7 @@ class PaymentController extends BaseController
     {
         $validated = $request->validate([
             'user_request_id' => ['required', 'uuid'],
-            'payment_method' => ['required', 'string', 'in:wallet,apple_pay,stripe,paypal,moyasar,tap'],
-            'provider' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'in:apple_pay,stripe,paypal,moyasar,tap'],
-            'provider_ref' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'max:255'],
+            'payment_method' => ['required', 'string', 'in:wallet,tap'],
             'status' => ['required', 'string', 'in:pending,succeeded,failed'],
             'transaction_data' => ['nullable', 'array'],
         ]);
@@ -58,8 +56,7 @@ class PaymentController extends BaseController
             $payment = $this->service->storeReservationPayment(
                 $req,
                 $request->user()->id,
-                $validated['provider'],
-                $validated['provider_ref'],
+                $validated['payment_method'],
                 $validated['status'],
                 $validated['transaction_data'] ?? []
             );
@@ -76,9 +73,7 @@ class PaymentController extends BaseController
     {
         $validated = $request->validate([
             'user_request_id' => ['required', 'uuid'],
-            'payment_method' => ['required', 'string', 'in:wallet,apple_pay,stripe,paypal,moyasar,tap'],
-            'provider' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'in:apple_pay,stripe,paypal,moyasar,tap'],
-            'provider_ref' => ['required_if:payment_method,apple_pay,stripe,paypal,moyasar,tap', 'string', 'max:255'],
+            'payment_method' => ['required', 'string', 'in:wallet,tap'],
             'status' => ['required', 'string', 'in:pending,succeeded,failed'],
             'transaction_data' => ['nullable', 'array'],
         ]);
@@ -96,8 +91,7 @@ class PaymentController extends BaseController
             $payment = $this->service->storePlanPayment(
                 $req,
                 $request->user()->id,
-                $validated['provider'],
-                $validated['provider_ref'],
+                $validated['payment_method'],
                 $validated['status'],
                 $validated['transaction_data'] ?? []
             );
@@ -105,5 +99,4 @@ class PaymentController extends BaseController
 
         return response()->json(['data' => new PaymentResource($payment)], 201);
     }
-
 }

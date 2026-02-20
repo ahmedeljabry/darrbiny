@@ -27,28 +27,26 @@ class PaymentService
     public function storeReservationPayment(
         UserRequest $req,
         string $userId,
-        string $provider,
-        string $providerRef,
+        string $paymentMethod,
         string $status,
         array $transactionData = []
     ): Payment {
         abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
-        
-        return DB::transaction(function () use ($req, $userId, $provider, $providerRef, $status, $transactionData) {
+
+        return DB::transaction(function () use ($req, $userId, $paymentMethod, $status, $transactionData) {
             if (!$req->relationLoaded('plan')) {
                 $req->load('plan');
             }
             $countryId = $req->plan?->country_id;
             $serviceFeeMinor = Fees::reservationFeeMinor($countryId);
-            
+
             $payment = Payment::create([
                 'user_id' => $userId,
                 'user_request_id' => $req->id,
                 'amount_minor' => $serviceFeeMinor,
                 'currency' => $req->currency,
                 'type' => Payment::TYPE_RESERVATION_FEE,
-                'provider' => $provider,
-                'provider_ref' => $providerRef,
+                'payment_method' => $paymentMethod,
                 'status' => $status,
                 'app_fee_minor' => $serviceFeeMinor,
                 'trainer_net_minor' => 0,
@@ -73,8 +71,7 @@ class PaymentService
     public function storePlanPayment(
         UserRequest $req,
         string $userId,
-        string $provider,
-        string $providerRef,
+        string $paymentMethod,
         string $status,
         array $transactionData = []
     ): Payment {
@@ -83,19 +80,18 @@ class PaymentService
             ->where('status', TrainerOffer::STATUS_ACCEPTED)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($req, $offer, $userId, $provider, $providerRef, $status, $transactionData) {
+        return DB::transaction(function () use ($req, $offer, $userId, $paymentMethod, $status, $transactionData) {
             $feePercent = Fees::appFeePercent();
             $appFee = (int) round($offer->price_minor * ($feePercent / 100));
             $trainerNet = $offer->price_minor - $appFee;
-            
+
             $payment = Payment::create([
                 'user_id' => $userId,
                 'user_request_id' => $req->id,
                 'amount_minor' => $offer->price_minor,
                 'currency' => $req->currency,
                 'type' => Payment::TYPE_PLAN_FULL,
-                'provider' => $provider,
-                'provider_ref' => $providerRef,
+                'payment_method' => $paymentMethod,
                 'status' => $status,
                 'app_fee_minor' => $appFee,
                 'trainer_net_minor' => $trainerNet,
@@ -116,18 +112,18 @@ class PaymentService
     /**
      * Handle webhook from payment provider to update payment status
      */
-    public function handleWebhook(string $provider, array $data): void
+    public function handleWebhook(string $paymentMethod, array $data): void
     {
-        // Extract provider reference from webhook data
-        $providerRef = $data['id'] ?? $data['transaction_id'] ?? $data['reference'] ?? null;
-        abort_unless($providerRef, 400, 'Missing provider reference');
+        // Extract payment reference from webhook data
+        $paymentId = $data['reference'] ?? $data['id'] ?? $data['transaction_id'] ?? null;
+        abort_unless($paymentId, 400, 'Missing payment reference');
 
-        $payment = Payment::where('provider', $provider)
-            ->where('provider_ref', $providerRef)
+        $payment = Payment::where('payment_method', $paymentMethod)
+            ->where('id', $paymentId)
             ->firstOrFail();
 
         // Update payment status based on webhook
-        $newStatus = $this->mapWebhookStatus($provider, $data);
+        $newStatus = $this->mapWebhookStatus($paymentMethod, $data);
         if ($newStatus && $newStatus !== $payment->status) {
             $payment->status = $newStatus;
             $payment->save();
@@ -146,26 +142,26 @@ class PaymentService
     }
 
     /**
-     * Map webhook status from provider to our status
+     * Map webhook status from payment method to our status
      */
-    private function mapWebhookStatus(string $provider, array $data): ?string
+    private function mapWebhookStatus(string $paymentMethod, array $data): ?string
     {
         $status = $data['status'] ?? $data['state'] ?? null;
-        
+
         if (!$status) {
             return null;
         }
 
         $statusLower = strtolower($status);
-        
+
         if (in_array($statusLower, ['succeeded', 'completed', 'paid', 'captured', 'success'])) {
             return Payment::STATUS_SUCCEEDED;
         }
-        
+
         if (in_array($statusLower, ['failed', 'declined', 'cancelled', 'error'])) {
             return Payment::STATUS_FAILED;
         }
-        
+
         if (in_array($statusLower, ['pending', 'processing', 'authorized'])) {
             return Payment::STATUS_PENDING;
         }
@@ -197,7 +193,7 @@ class PaymentService
         }
 
         $amount = $amountMinor / 100;
-        
+
         return DB::transaction(function () use ($req, $user, $paymentType, $amountMinor, $amount) {
             // Deduct from wallet (creates WalletTransaction record)
             $walletTransaction = $this->wallet->deduct(
@@ -206,15 +202,15 @@ class PaymentService
                 "Payment for {$paymentType} - Request #{$req->id}",
                 "payment_{$req->id}"
             );
-            
+
             // Calculate fees
             $feePercent = Fees::appFeePercent();
-            $appFeeMinor = $paymentType === Payment::TYPE_RESERVATION_FEE 
-                ? $amountMinor 
+            $appFeeMinor = $paymentType === Payment::TYPE_RESERVATION_FEE
+                ? $amountMinor
                 : (int) round($amountMinor * ($feePercent / 100));
-            
-            $trainerNetMinor = $paymentType === Payment::TYPE_RESERVATION_FEE 
-                ? 0 
+
+            $trainerNetMinor = $paymentType === Payment::TYPE_RESERVATION_FEE
+                ? 0
                 : ($amountMinor - $appFeeMinor);
 
             // Create payment record
@@ -224,8 +220,7 @@ class PaymentService
                 'amount_minor' => $amountMinor,
                 'currency' => $req->currency,
                 'type' => $paymentType,
-                'provider' => 'wallet',
-                'provider_ref' => 'wallet_' . \Str::uuid(),
+                'payment_method' => 'wallet',
                 'status' => Payment::STATUS_SUCCEEDED,
                 'app_fee_minor' => $appFeeMinor,
                 'trainer_net_minor' => $trainerNetMinor,
@@ -259,7 +254,7 @@ class PaymentService
         $offer = TrainerOffer::where('user_request_id', $req->id)
             ->where('status', TrainerOffer::STATUS_ACCEPTED)
             ->firstOrFail();
-        
+
         return $this->storePlanPayment($req, $userId, 'mobile_app', (string) \Str::uuid(), Payment::STATUS_SUCCEEDED);
     }
 }

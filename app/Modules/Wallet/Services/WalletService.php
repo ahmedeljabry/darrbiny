@@ -236,9 +236,9 @@ class WalletService
             }
         }
 
-        // Also subtract wallet payments from Payment model (provider = 'wallet')
+        // Also subtract wallet payments from Payment model (payment_method = 'wallet')
         $walletPayments = \App\Models\Payment::where('user_id', $user->id)
-            ->where('provider', 'wallet')
+            ->where('payment_method', 'wallet')
             ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->get();
 
@@ -263,4 +263,3 @@ class WalletService
         return $storedBalance === $calculatedBalance;
     }
 }
-

@@ -46,8 +46,7 @@ class AdvancedReportsController extends BaseController
         string $filename,
         bool $supportsExcel = false,
         ?string $dateFilter = null
-    )
-    {
+    ) {
         if ($export = $this->maybeExportCsv($request, $filename, $headers, $rows)) {
             return $export;
         }
@@ -274,7 +273,7 @@ class AdvancedReportsController extends BaseController
     public function walletPayments(Request $request)
     {
         $items = Payment::with(['userRequest.trainer', 'user'])
-            ->where('provider', 'wallet')
+            ->where('payment_method', 'wallet')
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->latest()
             ->get();

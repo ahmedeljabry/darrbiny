@@ -18,8 +18,7 @@ class PaymentResource extends JsonResource
             'amount' => $this->amount_minor / 100,
             'currency' => $this->currency,
             'type' => $this->type,
-            'provider' => $this->provider,
-            'provider_ref' => $this->provider_ref,
+            'payment_method' => $this->payment_method,
             'status' => $this->status,
             'app_fee_minor' => $this->app_fee_minor,
             'app_fee' => $this->app_fee_minor / 100,
@@ -30,4 +29,3 @@ class PaymentResource extends JsonResource
         ];
     }
 }
-
