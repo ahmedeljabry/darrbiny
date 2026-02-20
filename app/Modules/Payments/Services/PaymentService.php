@@ -18,36 +18,33 @@ class PaymentService
      * Pay with wallet balance
      * Deducts amount from user's wallet (points_balance) and creates payment record
      */
-    public function payWithWallet(UserRequest $req, User $user, string $paymentType , Request $request): Payment
+    public function payWithWallet(UserRequest $req, User $user , Request $request): Payment
     {
-        $offer = null;
-        if ($paymentType === Payment::TYPE_PLAN_FULL) {
+        if ($request->type === Payment::TYPE_PLAN_FULL) {
             abort_unless(in_array($request->status, [Payment::STATUS_PENDING,Payment::STATUS_SUCCEEDED,Payment::STATUS_FAILED]), 422, 'Invalid status');
             if (!$req->relationLoaded('plan')) $req->load('plan');
-            $countryId = $req->plan?->country_id;
-            $amountMinor = Fees::reservationFeeMinor($countryId);
+            $amountMinor = $request->price;
         } else {
-            abort_unless($request->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
-            $offer = TrainerOffer::where('user_request_id', $req->id)->where('status', TrainerOffer::STATUS_ACCEPTED)->firstOrFail();
-            $amountMinor = $offer->price_minor;
+            abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
+            $amountMinor = $request->price;
         }
 
-        return DB::transaction(function () use ($req, $user, $paymentType, $amountMinor , $request) {
+        return DB::transaction(function () use ($req, $user, $amountMinor , $request) {
             $feePercent = Fees::appFeePercent();
-            $appFeeMinor = $paymentType === Payment::TYPE_PLAN_FULL ? $amountMinor : (int) round($amountMinor * ($feePercent / 100));
-            $trainerNetMinor = $paymentType === Payment::TYPE_PLAN_FULL ? 0 : ($amountMinor - $appFeeMinor);
+            $appFeeMinor = round($amountMinor * ($feePercent / 100));
+            $trainerNetMinor = ($amountMinor - $appFeeMinor);
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'user_request_id' => $req->id,
                 'amount_minor' => $amountMinor,
                 'currency' => $req->currency,
-                'type' => $paymentType,
-                'payment_method' => $request->input('payment_method'),
-                'status' => Payment::STATUS_SUCCEEDED,
+                'type' => $request->type,
+                'payment_method' => $request->payment_method,
+                'status' => $request->status,
                 'app_fee_minor' => $appFeeMinor,
                 'trainer_net_minor' => $trainerNetMinor,
             ]);
-            if ($paymentType === Payment::TYPE_PLAN_FULL) {
+            if ($request->type === Payment::TYPE_PLAN_FULL) {
                 $req->status = UserRequest::STATUS_AWAITING_OFFERS;
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
                 $req->save();

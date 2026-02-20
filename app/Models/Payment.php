@@ -7,6 +7,7 @@ namespace App\Models;
 class Payment extends BaseModel
 {
     public const TYPE_PLAN_FULL = 'plan_full';
+    public const TYPE_PLAN_PARTIAL = 'plan_partial';
     public const STATUS_PENDING = 'pending';
     public const STATUS_SUCCEEDED = 'succeeded';
     public const STATUS_FAILED = 'failed';

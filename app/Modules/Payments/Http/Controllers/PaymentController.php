@@ -32,7 +32,6 @@ class PaymentController extends BaseController
         $payment = $this->service->payWithWallet(
             $req,
             $request->user(),
-            Payment::TYPE_PLAN_FULL,
             $request
         );
         return response()->json(['data' => new PaymentResource($payment)], 201);
