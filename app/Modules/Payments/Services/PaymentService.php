@@ -29,11 +29,10 @@ class PaymentService
         string $userId,
         string $paymentMethod,
         string $status,
-        array $transactionData = []
     ): Payment {
         abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
 
-        return DB::transaction(function () use ($req, $userId, $paymentMethod, $status, $transactionData) {
+        return DB::transaction(function () use ($req, $userId, $paymentMethod, $status) {
             if (!$req->relationLoaded('plan')) {
                 $req->load('plan');
             }
@@ -45,7 +44,7 @@ class PaymentService
                 'user_request_id' => $req->id,
                 'amount_minor' => $serviceFeeMinor,
                 'currency' => $req->currency,
-                'type' => Payment::TYPE_RESERVATION_FEE,
+                'type' => Payment::TYPE_PLAN_FULL,
                 'payment_method' => $paymentMethod,
                 'status' => $status,
                 'app_fee_minor' => $serviceFeeMinor,
@@ -73,14 +72,13 @@ class PaymentService
         string $userId,
         string $paymentMethod,
         string $status,
-        array $transactionData = []
     ): Payment {
         abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
         $offer = TrainerOffer::where('user_request_id', $req->id)
             ->where('status', TrainerOffer::STATUS_ACCEPTED)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($req, $offer, $userId, $paymentMethod, $status, $transactionData) {
+        return DB::transaction(function () use ($req, $offer, $userId, $paymentMethod, $status) {
             $feePercent = Fees::appFeePercent();
             $appFee = (int) round($offer->price_minor * ($feePercent / 100));
             $trainerNet = $offer->price_minor - $appFee;
@@ -131,7 +129,7 @@ class PaymentService
             // Update booking status if payment succeeded
             if ($newStatus === Payment::STATUS_SUCCEEDED) {
                 $req = $payment->userRequest;
-                if ($req && $req->status === UserRequest::STATUS_PENDING_PAYMENT && $payment->type === Payment::TYPE_RESERVATION_FEE) {
+                if ($req && $req->status === UserRequest::STATUS_PENDING_PAYMENT && $payment->type === Payment::TYPE_PLAN_FULL) {
                     $req->status = UserRequest::STATUS_AWAITING_OFFERS;
                     $req->app_fee_reserved_minor = $payment->app_fee_minor;
                     $req->save();
@@ -177,7 +175,7 @@ class PaymentService
     {
         // Calculate amount based on payment type
         $offer = null;
-        if ($paymentType === Payment::TYPE_RESERVATION_FEE) {
+        if ($paymentType === Payment::TYPE_PLAN_FULL) {
             abort_unless($req->status === UserRequest::STATUS_PENDING_PAYMENT, 422, 'Invalid status');
             if (!$req->relationLoaded('plan')) {
                 $req->load('plan');
@@ -205,11 +203,11 @@ class PaymentService
 
             // Calculate fees
             $feePercent = Fees::appFeePercent();
-            $appFeeMinor = $paymentType === Payment::TYPE_RESERVATION_FEE
+            $appFeeMinor = $paymentType === Payment::TYPE_PLAN_FULL
                 ? $amountMinor
                 : (int) round($amountMinor * ($feePercent / 100));
 
-            $trainerNetMinor = $paymentType === Payment::TYPE_RESERVATION_FEE
+            $trainerNetMinor = $paymentType === Payment::TYPE_PLAN_FULL
                 ? 0
                 : ($amountMinor - $appFeeMinor);
 
@@ -227,7 +225,7 @@ class PaymentService
             ]);
 
             // Update booking status
-            if ($paymentType === Payment::TYPE_RESERVATION_FEE) {
+            if ($paymentType === Payment::TYPE_PLAN_FULL) {
                 $req->status = UserRequest::STATUS_AWAITING_OFFERS;
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
                 $req->save();
