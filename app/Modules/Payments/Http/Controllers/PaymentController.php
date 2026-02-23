@@ -18,23 +18,24 @@ class PaymentController extends BaseController
     public function __construct(private readonly PaymentService $service) {}
 
     /**
-     * Store plan payment transaction (full payment after offer selection)
+     * Store plan payment transaction (full or partial)
      */
     public function plan(Request $request)
     {
         $validated = $request->validate([
             'user_request_id' => ['required', 'uuid'],
             'payment_method' => ['required', 'string', 'in:wallet,tap'],
+            'type' => ['sometimes', 'string', 'in:plan_full,plan_partial'],
             'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
         ]);
 
+        $paymentType = $validated['type'] ?? Payment::TYPE_PLAN_FULL;
         $normalizedStatus = $validated['payment_method'] === 'wallet'
             ? Payment::STATUS_SUCCEEDED
             : ($validated['status'] ?? Payment::STATUS_PENDING);
 
-        // This endpoint is exclusively for full plan subscription payments.
         $request->merge([
-            'type' => Payment::TYPE_PLAN_FULL,
+            'type' => $paymentType,
             'status' => $normalizedStatus,
         ]);
 

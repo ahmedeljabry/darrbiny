@@ -23,7 +23,14 @@ class PaymentService
      */
     public function payWithWallet(UserRequest $req, User $user , Request $request): Payment
     {
-        if ($request->type === Payment::TYPE_PLAN_FULL) {
+        $paymentType = (string) $request->input('type', Payment::TYPE_PLAN_FULL);
+        abort_unless(
+            in_array($paymentType, [Payment::TYPE_PLAN_FULL, Payment::TYPE_PLAN_PARTIAL], true),
+            422,
+            'Invalid type'
+        );
+
+        if ($paymentType === Payment::TYPE_PLAN_FULL) {
             abort_unless(in_array($request->status, [Payment::STATUS_PENDING,Payment::STATUS_SUCCEEDED,Payment::STATUS_FAILED]), 422, 'Invalid status');
             if (!$req->relationLoaded('plan')) $req->load('plan');
             $amountMinor = $request->price;
@@ -32,11 +39,11 @@ class PaymentService
             $amountMinor = $request->price;
         }
 
-        return DB::transaction(function () use ($req, $user, $amountMinor , $request) {
+        return DB::transaction(function () use ($req, $user, $amountMinor, $request, $paymentType) {
             $isFirstSuccessfulPlanPayment = false;
 
             if (
-                $request->type === Payment::TYPE_PLAN_FULL &&
+                $paymentType === Payment::TYPE_PLAN_FULL &&
                 $request->status === Payment::STATUS_SUCCEEDED &&
                 !empty($user->referred_by)
             ) {
@@ -55,17 +62,17 @@ class PaymentService
                 'user_request_id' => $req->id,
                 'amount_minor' => $amountMinor,
                 'currency' => $req->currency,
-                'type' => $request->type,
+                'type' => $paymentType,
                 'payment_method' => $request->payment_method,
                 'status' => $request->status,
                 'app_fee_minor' => $appFeeMinor,
                 'trainer_net_minor' => $trainerNetMinor,
             ]);
-            if ($request->type === Payment::TYPE_PLAN_FULL) {
+            if ($paymentType === Payment::TYPE_PLAN_FULL) {
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
                 $req->save();
                 $this->requests->markInTraining($req);
-            } elseif ($request->type === Payment::TYPE_PLAN_PARTIAL) {
+            } elseif ($paymentType === Payment::TYPE_PLAN_PARTIAL) {
                 $req->total_paid_minor = $amountMinor;
                 $req->save();
                 $this->requests->markAwaitingOffers($req);
