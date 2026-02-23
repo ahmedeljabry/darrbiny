@@ -35,7 +35,6 @@ class PaymentService
             if (!$req->relationLoaded('plan')) $req->load('plan');
             $amountMinor = $request->price;
         } else {
-            abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'offer selected');
             $amountMinor = $request->price;
         }
 
