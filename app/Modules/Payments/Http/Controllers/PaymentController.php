@@ -25,8 +25,19 @@ class PaymentController extends BaseController
         $validated = $request->validate([
             'user_request_id' => ['required', 'uuid'],
             'payment_method' => ['required', 'string', 'in:wallet,tap'],
-            'status' => ['required', 'string', 'in:pending,succeeded,failed'],
+            'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
         ]);
+
+        $normalizedStatus = $validated['payment_method'] === 'wallet'
+            ? Payment::STATUS_SUCCEEDED
+            : ($validated['status'] ?? Payment::STATUS_PENDING);
+
+        // This endpoint is exclusively for full plan subscription payments.
+        $request->merge([
+            'type' => Payment::TYPE_PLAN_FULL,
+            'status' => $normalizedStatus,
+        ]);
+
         $req = UserRequest::findOrFail($validated['user_request_id']);
         $this->authorize('update', $req);
         $payment = $this->service->payWithWallet(

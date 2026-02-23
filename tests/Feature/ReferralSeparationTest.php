@@ -8,11 +8,13 @@ use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\Country;
+use App\Models\City;
+use App\Models\Plan;
 use App\Modules\Payments\Services\PaymentService;
 use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -65,6 +67,53 @@ class ReferralSeparationTest extends TestCase
             ->assertJsonPath('data.wallet_points_balance', 99);
     }
 
+    public function test_referral_endpoint_backfills_points_from_successful_subscription_payments(): void
+    {
+        $owner = User::factory()->create([
+            'phone_with_cc' => '+10000000004',
+        ]);
+        $referredUser = User::factory()->create([
+            'phone_with_cc' => '+10000000005',
+            'referred_by' => $owner->id,
+        ]);
+
+        Payment::create([
+            'user_id' => $referredUser->id,
+            'user_request_id' => (string) \Illuminate\Support\Str::uuid(),
+            'amount_minor' => 1000,
+            'currency' => 'USD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'tap',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1000,
+            'trainer_net_minor' => 1000,
+        ]);
+
+        Payment::create([
+            'user_id' => $referredUser->id,
+            'user_request_id' => (string) \Illuminate\Support\Str::uuid(),
+            'amount_minor' => 1200,
+            'currency' => 'USD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'tap',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1200,
+            'trainer_net_minor' => 1200,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/me/referral')
+            ->assertOk()
+            ->assertJsonPath('data.points_balance', 1)
+            ->assertJsonPath('data.total_points_earned', 1);
+
+        $this->assertDatabaseHas('referrals', [
+            'owner_user_id' => $owner->id,
+            'total_points_earned' => 1,
+        ]);
+    }
+
     public function test_referrer_gets_one_point_after_first_successful_paid_subscription(): void
     {
         $owner = User::factory()->create([
@@ -75,10 +124,11 @@ class ReferralSeparationTest extends TestCase
             'phone_with_cc' => '+10000000012',
             'referred_by' => $owner->id,
         ]);
+        $plan = $this->createPlan();
 
         $service = app(PaymentService::class);
 
-        $firstRequest = $this->createUserRequest($referredUser->id);
+        $firstRequest = $this->createUserRequest($referredUser->id, $plan->id);
         $service->payWithWallet($firstRequest, $referredUser, new Request([
             'type' => Payment::TYPE_PLAN_FULL,
             'status' => Payment::STATUS_SUCCEEDED,
@@ -86,7 +136,7 @@ class ReferralSeparationTest extends TestCase
             'payment_method' => 'wallet',
         ]));
 
-        $secondRequest = $this->createUserRequest($referredUser->id);
+        $secondRequest = $this->createUserRequest($referredUser->id, $plan->id);
         $service->payWithWallet($secondRequest, $referredUser->fresh(), new Request([
             'type' => Payment::TYPE_PLAN_FULL,
             'status' => Payment::STATUS_SUCCEEDED,
@@ -101,16 +151,40 @@ class ReferralSeparationTest extends TestCase
         ]);
     }
 
-    private function createUserRequest(string $userId): UserRequest
+    private function createUserRequest(string $userId, string $planId): UserRequest
     {
         return UserRequest::create([
             'user_id' => $userId,
-            'plan_id' => (string) Str::uuid(),
+            'plan_id' => $planId,
             'start_date' => now()->toDateString(),
             'status' => UserRequest::STATUS_PENDING_PAYMENT,
             'currency' => 'USD',
             'app_fee_reserved_minor' => 0,
             'total_paid_minor' => 0,
+        ]);
+    }
+
+    private function createPlan(): Plan
+    {
+        $country = Country::create([
+            'name' => 'United States',
+            'iso2' => 'US',
+            'currency' => 'USD',
+        ]);
+
+        $city = City::create([
+            'name' => 'New York',
+            'country_id' => $country->id,
+        ]);
+
+        return Plan::create([
+            'title' => 'Referral Plan',
+            'description' => 'Plan used for referral payment test',
+            'price_min' => 100,
+            'duration_days' => '10',
+            'country_id' => $country->id,
+            'city_id' => $city->id,
+            'is_active' => true,
         ]);
     }
 }

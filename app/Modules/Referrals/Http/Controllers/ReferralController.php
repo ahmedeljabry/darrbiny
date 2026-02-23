@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace App\Modules\Referrals\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\{Referral,User};
+use App\Models\User;
+use App\Models\Payment;
+use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Routing\Controller as BaseController;
 
 class ReferralController extends BaseController
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
     public function me(Request $request)
     {
         $user = $request->user();
-        $r = Referral::firstOrCreate([
-            'owner_user_id' => $user->id,
-        ], [
-            'code' => $user->referral_code,
-        ]);
+        $r = $this->referrals->syncOwnerPaidSubscriptionPoints($user);
 
         $referredUsers = User::where('referred_by', $user->id)
             ->select('id', 'name', 'phone_with_cc', 'created_at')
@@ -32,8 +34,9 @@ class ReferralController extends BaseController
                     ->exists();
 
                 // Check if user has any successful payments
-                $hasSuccessfulPayment = \App\Models\Payment::where('user_id', $referredUser->id)
-                    ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+                $hasSuccessfulPayment = Payment::where('user_id', $referredUser->id)
+                    ->where('type', Payment::TYPE_PLAN_FULL)
+                    ->where('status', Payment::STATUS_SUCCEEDED)
                     ->exists();
 
                 // Get subscription count
@@ -45,8 +48,9 @@ class ReferralController extends BaseController
                     ->count();
 
                 // Get total amount paid
-                $totalPaid = \App\Models\Payment::where('user_id', $referredUser->id)
-                    ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+                $totalPaid = Payment::where('user_id', $referredUser->id)
+                    ->where('type', Payment::TYPE_PLAN_FULL)
+                    ->where('status', Payment::STATUS_SUCCEEDED)
                     ->sum('amount_minor') / 100;
 
                 return [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Referrals\Services;
 
+use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -45,5 +46,32 @@ class ReferralService
         );
 
         $referral->increment('total_points_earned', $points);
+    }
+
+    public function syncOwnerPaidSubscriptionPoints(User $owner): Referral
+    {
+        $referral = Referral::query()->firstOrCreate(
+            ['owner_user_id' => $owner->id],
+            ['code' => $owner->referral_code]
+        );
+
+        $earnedPointsFromPayments = User::query()
+            ->where('referred_by', $owner->id)
+            ->whereExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('payments')
+                    ->whereColumn('payments.user_id', 'users.id')
+                    ->where('payments.type', Payment::TYPE_PLAN_FULL)
+                    ->where('payments.status', Payment::STATUS_SUCCEEDED);
+            })
+            ->count();
+
+        $currentPoints = (int) $referral->total_points_earned;
+        if ($earnedPointsFromPayments > $currentPoints) {
+            $referral->increment('total_points_earned', $earnedPointsFromPayments - $currentPoints);
+            $referral->refresh();
+        }
+
+        return $referral;
     }
 }
