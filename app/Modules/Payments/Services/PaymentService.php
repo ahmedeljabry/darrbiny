@@ -6,7 +6,7 @@ namespace App\Modules\Payments\Services;
 
 use App\Support\{Fees};
 use App\Modules\Requests\Services\RequestService;
-use App\Models\{UserRequest,Payment,User};
+use App\Models\{TrainerOffer,UserRequest,Payment,User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +25,7 @@ class PaymentService
             if (!$req->relationLoaded('plan')) $req->load('plan');
             $amountMinor = $request->price;
         } else {
+            abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'offer selected');
             $amountMinor = $request->price;
         }
 
@@ -44,15 +45,15 @@ class PaymentService
                 'trainer_net_minor' => $trainerNetMinor,
             ]);
             if ($request->type === Payment::TYPE_PLAN_FULL) {
-                $req->status = UserRequest::STATUS_AWAITING_OFFERS;
+                $req->status = UserRequest::STATUS_IN_TRAINING;
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
                 $req->save();
-                $this->requests->markAwaitingOffers($req);
-            } else {
-                $req->status = UserRequest::STATUS_IN_TRAINING;
-                $req->total_paid_minor = $amountMinor + $req->app_fee_reserved_minor;
-                $req->save();
                 $this->requests->markInTraining($req);
+            } else {
+                $req->status = UserRequest::STATUS_AWAITING_OFFERS;
+                $req->total_paid_minor = $amountMinor;
+                $req->save();
+                $this->requests->markAwaitingOffers($req);
             }
 
             return $payment;
