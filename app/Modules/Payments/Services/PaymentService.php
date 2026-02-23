@@ -62,12 +62,10 @@ class PaymentService
                 'trainer_net_minor' => $trainerNetMinor,
             ]);
             if ($request->type === Payment::TYPE_PLAN_FULL) {
-                $req->status = UserRequest::STATUS_IN_TRAINING;
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
                 $req->save();
                 $this->requests->markInTraining($req);
-            } else {
-                $req->status = UserRequest::STATUS_AWAITING_OFFERS;
+            } elseif ($request->type === Payment::TYPE_PLAN_PARTIAL) {
                 $req->total_paid_minor = $amountMinor;
                 $req->save();
                 $this->requests->markAwaitingOffers($req);
