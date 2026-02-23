@@ -40,9 +40,7 @@ class PaymentService
                 $request->status === Payment::STATUS_SUCCEEDED &&
                 !empty($user->referred_by)
             ) {
-                // Lock the user row to serialize reward checks for this referred user.
                 User::query()->whereKey($user->id)->lockForUpdate()->first();
-
                 $isFirstSuccessfulPlanPayment = !Payment::query()
                     ->where('user_id', $user->id)
                     ->where('type', Payment::TYPE_PLAN_FULL)
