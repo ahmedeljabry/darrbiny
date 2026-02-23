@@ -6,13 +6,17 @@ namespace App\Modules\Payments\Services;
 
 use App\Support\{Fees};
 use App\Modules\Requests\Services\RequestService;
+use App\Modules\Referrals\Services\ReferralService;
 use App\Models\{TrainerOffer,UserRequest,Payment,User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
 {
-    public function __construct(private readonly RequestService $requests,) {}
+    public function __construct(
+        private readonly RequestService $requests,
+        private readonly ReferralService $referrals,
+    ) {}
 
     /**
      * Pay with wallet balance
@@ -25,11 +29,27 @@ class PaymentService
             if (!$req->relationLoaded('plan')) $req->load('plan');
             $amountMinor = $request->price;
         } else {
-            abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'offer selected');
             $amountMinor = $request->price;
         }
 
         return DB::transaction(function () use ($req, $user, $amountMinor , $request) {
+            $isFirstSuccessfulPlanPayment = false;
+
+            if (
+                $request->type === Payment::TYPE_PLAN_FULL &&
+                $request->status === Payment::STATUS_SUCCEEDED &&
+                !empty($user->referred_by)
+            ) {
+                // Lock the user row to serialize reward checks for this referred user.
+                User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+                $isFirstSuccessfulPlanPayment = !Payment::query()
+                    ->where('user_id', $user->id)
+                    ->where('type', Payment::TYPE_PLAN_FULL)
+                    ->where('status', Payment::STATUS_SUCCEEDED)
+                    ->exists();
+            }
+
             $appFeeMinor = $amountMinor;
             $trainerNetMinor = $amountMinor;
             $payment = Payment::create([
@@ -53,6 +73,10 @@ class PaymentService
                 $req->total_paid_minor = $amountMinor;
                 $req->save();
                 $this->requests->markAwaitingOffers($req);
+            }
+
+            if ($isFirstSuccessfulPlanPayment) {
+                $this->referrals->awardPaidSubscriptionPoint($user);
             }
 
             return $payment;

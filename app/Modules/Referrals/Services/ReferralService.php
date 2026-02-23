@@ -27,4 +27,23 @@ class ReferralService
             $newUser->save();
         });
     }
+
+    public function awardPaidSubscriptionPoint(User $referredUser, int $points = 1): void
+    {
+        if ($points < 1 || empty($referredUser->referred_by)) {
+            return;
+        }
+
+        $owner = User::query()->find($referredUser->referred_by);
+        if (!$owner || $owner->id === $referredUser->id) {
+            return;
+        }
+
+        $referral = Referral::query()->firstOrCreate(
+            ['owner_user_id' => $owner->id],
+            ['code' => $owner->referral_code]
+        );
+
+        $referral->increment('total_points_earned', $points);
+    }
 }
