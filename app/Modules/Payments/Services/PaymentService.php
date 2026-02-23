@@ -6,7 +6,7 @@ namespace App\Modules\Payments\Services;
 
 use App\Support\{Fees};
 use App\Modules\Requests\Services\RequestService;
-use App\Models\{TrainerOffer,UserRequest,Payment,User};
+use App\Models\{UserRequest,Payment,User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +25,6 @@ class PaymentService
             if (!$req->relationLoaded('plan')) $req->load('plan');
             $amountMinor = $request->price;
         } else {
-            abort_unless($req->status === UserRequest::STATUS_OFFER_SELECTED, 422, 'No offer selected');
             $amountMinor = $request->price;
         }
 

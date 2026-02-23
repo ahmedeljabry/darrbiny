@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Referrals\Http\Controllers;
 
-use App\Models\Referral;
-use App\Models\User;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
+use App\Models\{Referral,User};
+use Illuminate\Routing\Controller as BaseController;
 
 class ReferralController extends BaseController
 {
@@ -48,7 +47,7 @@ class ReferralController extends BaseController
                 // Get total amount paid
                 $totalPaid = \App\Models\Payment::where('user_id', $referredUser->id)
                     ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
-                    ->sum('amount_minor') / 100; // Convert from minor to major units
+                    ->sum('amount_minor') / 100;
 
                 return [
                     'id' => $referredUser->id,
@@ -64,7 +63,6 @@ class ReferralController extends BaseController
 
         return response()->json(['data' => [
             'code' => $r->code,
-            // Keep points_balance for backward compatibility, but make it referral-only.
             'points_balance' => $r->total_points_earned,
             'referral_points_balance' => $r->total_points_earned,
             'wallet_points_balance' => $user->points_balance,

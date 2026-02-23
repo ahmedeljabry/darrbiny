@@ -50,16 +50,12 @@ class AuthController extends BaseController
             'currency' => $this->deriveCurrencyFromPhone($phone),
         ]);
 
-        // Assign role based on type
         $role = $type === 'captain' ? 'TRAINER' : 'USER';
         $user->assignRole($role);
-
-        // Create trainer profile for captains
         if ($type === 'captain') {
             $user->trainerProfile()->create();
         }
 
-        // Process referral code if provided
         if ($code = $request->input('referral_code')) {
             $this->referrals->processSignupReferral($user, $code);
         }
@@ -139,9 +135,9 @@ class AuthController extends BaseController
     {
         $user = $request->user();
         $userResource = new UserResource($user);
-        $data = $userResource->resolve();        
+        $data = $userResource->resolve();
         $data['user_type'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN ? 'trainer' : 'user';
-        
+
         return response()->json(['data' => $data]);
     }
 
@@ -268,7 +264,7 @@ class AuthController extends BaseController
             // Store new profile picture
             $disk = config('filesystems.default', 'public');
             $path = $profileFile->store('profiles', $disk);
-            
+
             $upload = Upload::create([
                 'disk' => $disk,
                 'path' => $path,
@@ -329,7 +325,7 @@ class AuthController extends BaseController
         if (!$phone) {
             return 'USD';
         }
-        
+
         // crude derivation based on CC; real impl should parse using libphonenumber
         $map = [
             '+20' => 'EGP', '+966' => 'SAR', '+971' => 'AED', '+1' => 'USD', '+44' => 'GBP', '+49' => 'EUR'
@@ -337,7 +333,7 @@ class AuthController extends BaseController
         foreach ($map as $cc => $cur) {
             if (str_starts_with($phone, $cc)) return $cur;
         }
-        
+
         return 'USD';
     }
 }
