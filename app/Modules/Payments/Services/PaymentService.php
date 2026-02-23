@@ -30,9 +30,8 @@ class PaymentService
         }
 
         return DB::transaction(function () use ($req, $user, $amountMinor , $request) {
-            $feePercent = Fees::appFeePercent();
-            $appFeeMinor = round($amountMinor * ($feePercent / 100));
-            $trainerNetMinor = ($amountMinor - $appFeeMinor);
+            $appFeeMinor = $amountMinor;
+            $trainerNetMinor = $amountMinor;
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'user_request_id' => $req->id,
