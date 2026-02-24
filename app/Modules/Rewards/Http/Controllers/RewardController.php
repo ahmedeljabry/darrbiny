@@ -6,10 +6,11 @@ namespace App\Modules\Rewards\Http\Controllers;
 
 use App\Models\Reward;
 use App\Models\RewardRedemption;
+use App\Models\Referral;
 use App\Models\User;
+use App\Modules\Referrals\Services\ReferralService;
 use App\Modules\Rewards\Http\Requests\PrizeRequestRequest;
 use App\Notifications\PrizeRequestNotification;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -17,6 +18,10 @@ use App\Support\StorageUrl;
 
 class RewardController extends BaseController
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
     public function index()
     {
         $prizes = Reward::where('active', true)
@@ -40,19 +45,27 @@ class RewardController extends BaseController
     {
         $user = $request->user();
         $reward = Reward::findOrFail($request->input('reward_id'));
-        $pointsSpent = $request->input('points_spent');
-
-        // Validate reward is available
+        $pointsSpent = (int) $reward->required_points;
         abort_unless($reward->active, 422, 'الجائزة غير متاحة');
-        
-        // Validate user has enough points
-        abort_unless($user->points_balance >= $pointsSpent, 422, 'ليس لديك نقاط كافية');
-
-        // Validate points is at least the minimum required
-        abort_unless($pointsSpent >= $reward->required_points, 422, 'عدد النقاط يجب أن يكون على الأقل ' . $reward->required_points);
 
         return DB::transaction(function () use ($user, $reward, $pointsSpent) {
-            // Create redemption request (don't deduct points yet - wait for admin approval)
+            $referral = $this->referrals->syncOwnerPaidSubscriptionPoints($user);
+            $referral = Referral::query()
+                ->whereKey($referral->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $pendingPoints = (int) RewardRedemption::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->sum('points_spent');
+
+            $availableReferralPoints = max(
+                0,
+                (int) $referral->total_points_earned - (int) $referral->total_redemptions - $pendingPoints
+            );
+
+            abort_unless($availableReferralPoints >= $pointsSpent, 422, 'ليس لديك نقاط كافية');
             $redemption = RewardRedemption::create([
                 'user_id' => $user->id,
                 'reward_id' => $reward->id,
@@ -60,7 +73,6 @@ class RewardController extends BaseController
                 'status' => 'pending',
             ]);
 
-            // Notify all admins
             $admins = User::role('admin')->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new PrizeRequestNotification($redemption->load('user', 'reward')));

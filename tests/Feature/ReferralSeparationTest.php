@@ -11,11 +11,14 @@ use App\Models\UserRequest;
 use App\Models\Country;
 use App\Models\City;
 use App\Models\Plan;
+use App\Models\Reward;
+use App\Models\RewardRedemption;
 use App\Modules\Payments\Services\PaymentService;
 use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ReferralSeparationTest extends TestCase
@@ -149,6 +152,116 @@ class ReferralSeparationTest extends TestCase
             'code' => $owner->referral_code,
             'total_points_earned' => 1,
         ]);
+    }
+
+    public function test_prize_request_uses_referral_points_balance_not_wallet_balance(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000000021',
+            'points_balance' => 0,
+        ]);
+
+        Referral::create([
+            'owner_user_id' => $user->id,
+            'code' => (string) $user->referral_code,
+            'total_points_earned' => 10,
+            'total_redemptions' => 0,
+        ]);
+
+        $reward = Reward::create([
+            'title' => 'Phone Holder',
+            'required_points' => 5,
+            'active' => true,
+            'order' => 1,
+        ]);
+
+        Role::findOrCreate('admin', 'web');
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/prizes/request', [
+            'reward_id' => $reward->id,
+            'points_spent' => 5,
+        ])->assertCreated()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('reward_redemptions', [
+            'user_id' => $user->id,
+            'reward_id' => $reward->id,
+            'points_spent' => 5,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_prize_request_fails_when_pending_redemptions_consume_referral_points(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000000022',
+            'points_balance' => 999,
+        ]);
+
+        Referral::create([
+            'owner_user_id' => $user->id,
+            'code' => (string) $user->referral_code,
+            'total_points_earned' => 10,
+            'total_redemptions' => 0,
+        ]);
+
+        $reward = Reward::create([
+            'title' => 'Gift Card',
+            'required_points' => 1,
+            'active' => true,
+            'order' => 2,
+        ]);
+
+        RewardRedemption::create([
+            'user_id' => $user->id,
+            'reward_id' => $reward->id,
+            'points_spent' => 10,
+            'status' => 'pending',
+        ]);
+
+        Role::findOrCreate('admin', 'web');
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/prizes/request', [
+            'reward_id' => $reward->id,
+            'points_spent' => 2,
+        ])->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('errors.0.message', 'ليس لديك نقاط كافية');
+    }
+
+    public function test_prize_request_ignores_client_points_and_uses_reward_required_points(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000000023',
+            'points_balance' => 0,
+        ]);
+
+        Referral::create([
+            'owner_user_id' => $user->id,
+            'code' => (string) $user->referral_code,
+            'total_points_earned' => 5,
+            'total_redemptions' => 0,
+        ]);
+
+        $reward = Reward::create([
+            'title' => 'Mirror Hanger',
+            'required_points' => 5,
+            'active' => true,
+            'order' => 3,
+        ]);
+
+        Role::findOrCreate('admin', 'web');
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/prizes/request', [
+            'reward_id' => $reward->id,
+            // Intentional mismatch to verify server-side source of truth.
+            'points_spent' => 500,
+        ])->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.points_spent', 5);
     }
 
     private function createUserRequest(string $userId, string $planId): UserRequest

@@ -7,6 +7,7 @@ namespace App\Modules\Referrals\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Payment;
+use App\Models\RewardRedemption;
 use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -20,6 +21,14 @@ class ReferralController extends BaseController
     {
         $user = $request->user();
         $r = $this->referrals->syncOwnerPaidSubscriptionPoints($user);
+        $pendingRedemptionPoints = (int) RewardRedemption::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->sum('points_spent');
+        $availableReferralPoints = max(
+            0,
+            (int) $r->total_points_earned - (int) $r->total_redemptions - $pendingRedemptionPoints
+        );
 
         $referredUsers = User::where('referred_by', $user->id)
             ->select('id', 'name', 'phone_with_cc', 'created_at')
@@ -67,8 +76,9 @@ class ReferralController extends BaseController
 
         return response()->json(['data' => [
             'code' => $r->code,
-            'points_balance' => $r->total_points_earned,
-            'referral_points_balance' => $r->total_points_earned,
+            'points_balance' => $availableReferralPoints,
+            'referral_points_balance' => $availableReferralPoints,
+            'pending_redemption_points' => $pendingRedemptionPoints,
             'wallet_points_balance' => $user->points_balance,
             'total_points_earned' => $r->total_points_earned,
             'total_redemptions' => $r->total_redemptions,
