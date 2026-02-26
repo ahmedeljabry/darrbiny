@@ -62,46 +62,25 @@
   <div class="col-lg-12">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header border-0 pb-3 settings-toolbar">
-        <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
-          <ul class="nav nav-pills settings-tabs" id="settingsTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="site-tab" data-label="الموقع" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab">
-                <i class="icon-base ti tabler-world me-2"></i> الموقع
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="pages-tab" data-label="الصفحات" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab">
-                <i class="icon-base ti tabler-file-text me-2"></i> الصفحات
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="videos-tab" data-label="الفيديو" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">
-                <i class="icon-base ti tabler-video me-2"></i> الفيديو
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="howitworks-tab" data-label="كيف تعمل الخدمة" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab">
-                <i class="icon-base ti tabler-help me-2"></i> كيف تعمل الخدمة
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="roles-tab" data-label="الأدوار والمحظورات" data-bs-toggle="tab" data-bs-target="#roles" type="button" role="tab">
-                <i class="icon-base ti tabler-shield me-2"></i> الأدوار والمحظورات
-              </button>
-            </li>
-          </ul>
-          <div class="settings-search ms-xl-auto">
-            <div class="input-group input-group-merge">
-              <span class="input-group-text"><i class="ti tabler-search"></i></span>
-              <input id="settingsQuickSearch" type="text" class="form-control" placeholder="ابحث داخل الإعدادات..." autocomplete="off">
-              <button type="button" id="settingsQuickSearchClear" class="btn btn-outline-secondary">مسح</button>
+        <div class="settings-banner d-flex flex-column gap-3">
+          <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+            <div>
+              <h5 class="mb-1 fw-bold">إدارة إعدادات المنصة</h5>
+              <p class="mb-0 text-muted">واجهة إعدادات موحّدة بدون تبويبات مع تنظيم حديث وسريع</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="#site" class="btn btn-sm btn-outline-primary"><i class="icon-base ti tabler-world me-1"></i>الموقع</a>
+              <a href="#videos" class="btn btn-sm btn-outline-info"><i class="icon-base ti tabler-video me-1"></i>الفيديو</a>
+              <a href="#pages" class="btn btn-sm btn-outline-secondary"><i class="icon-base ti tabler-file-text me-1"></i>الصفحات</a>
+              <a href="#roles" class="btn btn-sm btn-outline-warning"><i class="icon-base ti tabler-shield me-1"></i>الأدوار</a>
+              <a href="#howitworks" class="btn btn-sm btn-outline-success"><i class="icon-base ti tabler-help me-1"></i>كيف تعمل الخدمة</a>
             </div>
           </div>
         </div>
       </div>
       <div class="card-body">
-        <div class="tab-content" id="settingsTabsContent">
-          <div class="tab-pane fade show active settings-pane" id="site" data-section-label="الموقع" role="tabpanel" aria-labelledby="site-tab">
+        <div class="settings-sections d-flex flex-column gap-4">
+          <div class="settings-pane settings-block" id="site" data-section-label="الموقع">
             <div class="row g-4">
               <div class="col-lg-6">
                 <div class="card h-100 border-0 shadow-sm">
@@ -379,7 +358,7 @@
             </div>
           </div>
 
-          <div class="tab-pane fade settings-pane" id="videos" data-section-label="الفيديو" role="tabpanel" aria-labelledby="videos-tab">
+          <div class="settings-pane settings-block" id="videos" data-section-label="الفيديو">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-info">
@@ -446,7 +425,7 @@
             </div>
           </div>
 
-          <div class="tab-pane fade settings-pane" id="pages" data-section-label="الصفحات" role="tabpanel" aria-labelledby="pages-tab">
+          <div class="settings-pane settings-block" id="pages" data-section-label="الصفحات">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-secondary">
@@ -596,7 +575,7 @@
             </div>
           </div>
 
-          <div class="tab-pane fade settings-pane" id="roles" data-section-label="الأدوار والمحظورات" role="tabpanel" aria-labelledby="roles-tab">
+          <div class="settings-pane settings-block" id="roles" data-section-label="الأدوار والمحظورات">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-primary">
@@ -728,7 +707,7 @@
             </div>
           </div>
 
-          <div class="tab-pane fade settings-pane" id="howitworks" data-section-label="كيف تعمل الخدمة" role="tabpanel" aria-labelledby="howitworks-tab">
+          <div class="settings-pane settings-block" id="howitworks" data-section-label="كيف تعمل الخدمة">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -819,50 +798,21 @@
 @push('styles')
 <style>
   .settings-toolbar {
-    position: sticky;
-    top: 0.75rem;
-    z-index: 10;
-    background: inherit;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(25, 135, 84, 0.08));
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   }
-  .settings-tabs {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    padding-bottom: 0.25rem;
-    margin: 0;
+  .settings-banner h5 {
+    letter-spacing: 0.2px;
   }
-  .settings-tabs .nav-item {
-    flex: 0 0 auto;
+  .settings-sections {
+    scroll-behavior: smooth;
   }
-  .settings-tabs .nav-link {
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1.25rem;
-    margin: 0;
-    white-space: nowrap;
-  }
-  .settings-tabs .nav-link:hover {
-    background: rgba(79, 70, 229, 0.1);
-    transform: translateY(-1px);
-  }
-  .settings-tabs .nav-link.active {
-    background: #4f46e5;
-    color: #fff;
-    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
-  }
-  .settings-search {
-    width: 100%;
-    max-width: 420px;
-  }
-  .settings-search .form-control {
-    min-width: 220px;
-  }
-  .settings-pane {
-    animation: paneFadeIn 0.18s ease;
+  .settings-block {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 1rem;
+    background: #fff;
+    animation: paneFadeIn 0.2s ease;
   }
   .card {
     transition: all 0.3s ease;
@@ -901,11 +851,11 @@
     to { opacity: 1; transform: translateY(0); }
   }
   @media (max-width: 1199.98px) {
-    .settings-toolbar {
-      position: static;
+    .settings-banner .btn {
+      flex: 1 1 calc(50% - 0.5rem);
     }
-    .settings-search {
-      max-width: 100%;
+    .settings-block {
+      padding: 0.75rem;
     }
   }
 </style>
@@ -1020,106 +970,6 @@
       }
     });
   });
-  </script>
-@endpush
-
-@push('scripts')
-  <script>
-    document.addEventListener('DOMContentLoaded', function(){
-      const tabs = Array.from(document.querySelectorAll('#settingsTabs .nav-link'));
-      const searchInput = document.getElementById('settingsQuickSearch');
-      const clearButton = document.getElementById('settingsQuickSearchClear');
-      const storageKey = 'admin_settings_active_tab';
-
-      const normalize = function (value) {
-        return (value || '')
-          .toString()
-          .toLowerCase()
-          .replace(/\s+/g, ' ')
-          .trim();
-      };
-
-      const showTabByTarget = function (target) {
-        const triggerEl = document.querySelector(`[data-bs-target="${target}"]`);
-        if (triggerEl) {
-          new bootstrap.Tab(triggerEl).show();
-        }
-      };
-
-      const hash = window.location.hash;
-      const savedTarget = localStorage.getItem(storageKey);
-      if (hash && document.querySelector(`[data-bs-target="${hash}"]`)) {
-        showTabByTarget(hash);
-      } else if (savedTarget && document.querySelector(`[data-bs-target="${savedTarget}"]`)) {
-        showTabByTarget(savedTarget);
-      }
-
-      tabs.forEach(function (tabButton) {
-        const target = tabButton.getAttribute('data-bs-target');
-        const pane = target ? document.querySelector(target) : null;
-        const searchableText = [
-          tabButton.dataset.label || tabButton.textContent,
-          pane ? pane.textContent : '',
-        ].join(' ');
-        tabButton.dataset.search = normalize(searchableText);
-
-        tabButton.addEventListener('shown.bs.tab', function (event) {
-          const activeTarget = event.target.getAttribute('data-bs-target');
-          if (!activeTarget) return;
-
-          window.history.replaceState(null, '', activeTarget);
-          localStorage.setItem(storageKey, activeTarget);
-        });
-      });
-
-      const applyTabsFilter = function () {
-        if (!searchInput) return;
-
-        const query = normalize(searchInput.value);
-        let firstVisible = null;
-        let visibleCount = 0;
-
-        tabs.forEach(function (tabButton) {
-          const isMatch = query === '' || (tabButton.dataset.search || '').includes(query);
-          const tabItem = tabButton.closest('.nav-item');
-          if (!tabItem) return;
-
-          tabItem.classList.toggle('d-none', !isMatch);
-          if (isMatch) {
-            visibleCount += 1;
-            if (!firstVisible) firstVisible = tabButton;
-          }
-        });
-
-        if (visibleCount === 0) {
-          tabs.forEach(function (tabButton) {
-            const tabItem = tabButton.closest('.nav-item');
-            if (tabItem) tabItem.classList.remove('d-none');
-          });
-          return;
-        }
-
-        const activeVisibleTab = document.querySelector('#settingsTabs .nav-link.active:not(.d-none)');
-        const activeVisibleItem = activeVisibleTab ? activeVisibleTab.closest('.nav-item') : null;
-        if (!activeVisibleItem || activeVisibleItem.classList.contains('d-none')) {
-          if (firstVisible) {
-            new bootstrap.Tab(firstVisible).show();
-          }
-        }
-      };
-
-      if (searchInput) {
-        searchInput.addEventListener('input', applyTabsFilter);
-      }
-      if (clearButton) {
-        clearButton.addEventListener('click', function () {
-          if (!searchInput) return;
-          searchInput.value = '';
-          applyTabsFilter();
-          searchInput.focus();
-        });
-      }
-    });
   </script>
 @endpush
 

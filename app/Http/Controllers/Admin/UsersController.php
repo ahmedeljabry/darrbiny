@@ -8,17 +8,40 @@ use App\Http\Requests\Admin\AdminStoreUserRequest;
 use App\Http\Requests\Admin\AdminUpdateUserRequest;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Notifications\TrainerProfileApprovalNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 class UsersController extends BaseController
 {
+    private const TRAINER_PROFILE_FIELD_LABELS = [
+        'bio' => 'النبذة التعريفية',
+        'country_id' => 'الدولة',
+        'city_id' => 'المدينة',
+        'car_type' => 'نوع السيارة',
+        'car_model' => 'موديل السيارة',
+        'car_model_year' => 'سنة الموديل',
+        'car_year' => 'سنة الصنع',
+        'car_plate_number' => 'رقم اللوحة',
+        'has_driving_license' => 'رخصة القيادة',
+        'license_number' => 'رقم الرخصة',
+        'license_expiry_date' => 'تاريخ انتهاء الرخصة',
+        'car_available' => 'توفر سيارة للتدريب',
+        'pickup_available' => 'خدمة التوصيل',
+    ];
+
     public function index(Request $request)
     {
-        $q = User::query();
+        $q = User::query()->with([
+            'roles',
+            'trainerProfile:id,user_id,pending_approval',
+            'profilePicture:id,path,disk',
+        ]);
 
         $role = $request->query('role');
         if ($role === 'trainer') {
@@ -38,7 +61,7 @@ class UsersController extends BaseController
                 $w->whereNotNull('deleted_at')
                   ->orWhere('banned_until', '>', now());
             });
-        } elseif ($status === 'pending_trainer') {
+        } elseif (in_array($status, ['pending_trainer', 'activation_required'], true)) {
             $q->role('TRAINER')
               ->whereHas('trainerProfile', function ($profileQuery) {
                   $profileQuery->where('pending_approval', true);
@@ -57,7 +80,7 @@ class UsersController extends BaseController
                 ->orWhere('email', 'like', "%$s%"));
         }
 
-        $users = $q->with('roles')->latest()->paginate(20)->withQueryString();
+        $users = $q->latest()->paginate(20)->withQueryString();
 
         $totalUsers = User::count();
         $trainersCount = User::role('TRAINER')->count();
@@ -122,50 +145,39 @@ class UsersController extends BaseController
         $user = User::withTrashed()
             ->with([
                 'roles',
+                'profilePicture',
                 'trainerProfile.country',
                 'trainerProfile.city',
             ])
             ->findOrFail($id);
 
         // Get user requests for students
-        $userRequests = \App\Models\UserRequest::with(['plan', 'trainer'])
+        $userRequests = \App\Models\UserRequest::with(['plan.city', 'plan.country', 'trainer'])
             ->where('user_id', $id)
             ->latest()
             ->get();
 
-        return view('admin.users.show', compact('user', 'userRequests'));
+        $trainerProfileView = $this->buildTrainerProfileView($user->trainerProfile);
+
+        return view('admin.users.show', compact('user', 'userRequests', 'trainerProfileView'));
     }
 
     public function approveTrainerProfile(string $id)
     {
-        $user = User::withTrashed()->findOrFail($id);
-        
-        abort_unless($user->hasRole('TRAINER'), 422, 'User is not a trainer');
-        abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'No pending approval');
+        $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
+        $hadPendingDetails = is_array($user->trainerProfile?->pending_changes) && !empty($user->trainerProfile->pending_changes);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
-            $profile = $user->trainerProfile;
-            
-            // Apply pending changes
-            if ($profile->pending_changes) {
-                $profile->fill($profile->pending_changes);
-            }
-            
-            $profile->pending_approval = false;
-            $profile->pending_changes = null;
-            $profile->pending_approval_at = null;
-            $profile->save();
+        abort_unless($this->approveTrainer($user), 422, 'No pending approval');
 
-            // Unban user
-            $user->update(['banned_until' => null, 'banned_reason' => null]);
-        });
-
-        return back()->with('status', 'تم الموافقة على تعديلات ملف المدرب');
+        return back()->with('status', $hadPendingDetails
+            ? 'تم الموافقة على تعديلات ملف المدرب'
+            : 'تم تنشيط حساب المدرب بنجاح'
+        );
     }
 
     public function rejectTrainerProfile(Request $request, string $id)
     {
-        $user = User::withTrashed()->findOrFail($id);
+        $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
         
         abort_unless($user->hasRole('TRAINER'), 422, 'User is not a trainer');
         abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'No pending approval');
@@ -174,7 +186,7 @@ class UsersController extends BaseController
             'rejection_reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $validated) {
+        DB::transaction(function () use ($user, $validated) {
             $profile = $user->trainerProfile;
             
             // Clear pending changes
@@ -188,6 +200,12 @@ class UsersController extends BaseController
                 'banned_reason' => $validated['rejection_reason'],
             ]);
         });
+
+        $user->notify(new TrainerProfileApprovalNotification(
+            Auth::user(),
+            false,
+            $validated['rejection_reason'],
+        ));
 
         return back()->with('status', 'تم رفض تعديلات ملف المدرب');
     }
@@ -234,7 +252,7 @@ class UsersController extends BaseController
         if (Auth::id() === $user->id) {
             return back()->withErrors(['self_delete' => 'لا يمكنك حذف حسابك من لوحة التحكم.']);
         }
-        $user->update(['deleted_at' => now()]);
+        $user->delete();
         return back()->with('status', 'User frozen');
     }
 
@@ -285,52 +303,34 @@ class UsersController extends BaseController
             return back()->withErrors(['error' => 'لا يمكنك تنفيذ هذا الإجراء على نفسك']);
         }
 
-        $users = User::whereIn('id', $userIds)->get();
+        $users = User::with('trainerProfile')->whereIn('id', $userIds)->get();
         $count = 0;
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($users, $action, &$count) {
-            foreach ($users as $user) {
-                if ($action === 'ban') {
-                    $user->update([
-                        'banned_until' => now()->addYears(10),
-                        'banned_reason' => 'حظر جماعي من قبل المدير',
-                    ]);
-                    $count++;
-                } elseif ($action === 'unban') {
-                    $user->update([
-                        'banned_until' => null,
-                        'banned_reason' => null,
-                    ]);
-                    if ($user->trashed()) {
-                        $user->restore();
-                    }
-                    $count++;
-                } elseif ($action === 'delete') {
-                    if ($user->id !== Auth::id()) {
-                        $user->update(['deleted_at' => now()]);
-                        $count++;
-                    }
-                } elseif ($action === 'approve_trainers') {
-                    if ($user->hasRole('TRAINER') && $user->trainerProfile && $user->trainerProfile->pending_approval) {
-                        $profile = $user->trainerProfile;
-                        
-                        // Apply pending changes
-                        if ($profile->pending_changes) {
-                            $profile->fill($profile->pending_changes);
-                        }
-                        
-                        $profile->pending_approval = false;
-                        $profile->pending_changes = null;
-                        $profile->pending_approval_at = null;
-                        $profile->save();
-
-                        // Unban user
-                        $user->update(['banned_until' => null, 'banned_reason' => null]);
-                        $count++;
-                    }
+        foreach ($users as $user) {
+            if ($action === 'ban') {
+                $user->update([
+                    'banned_until' => now()->addYears(10),
+                    'banned_reason' => 'حظر جماعي من قبل المدير',
+                ]);
+                $count++;
+            } elseif ($action === 'unban') {
+                $user->update([
+                    'banned_until' => null,
+                    'banned_reason' => null,
+                ]);
+                if ($user->trashed()) {
+                    $user->restore();
                 }
+                $count++;
+            } elseif ($action === 'delete') {
+                if ($user->id !== Auth::id()) {
+                    $user->delete();
+                    $count++;
+                }
+            } elseif ($action === 'approve_trainers' && $this->approveTrainer($user)) {
+                $count++;
             }
-        });
+        }
 
         $messages = [
             'ban' => "تم حظر {$count} مستخدم بنجاح",
@@ -340,5 +340,131 @@ class UsersController extends BaseController
         ];
 
         return back()->with('status', $messages[$action] ?? 'تم تنفيذ الإجراء بنجاح');
+    }
+
+    private function approveTrainer(User $user): bool
+    {
+        if (!$user->hasRole('TRAINER') || !$user->trainerProfile || !$user->trainerProfile->pending_approval) {
+            return false;
+        }
+
+        DB::transaction(function () use ($user) {
+            $profile = $user->trainerProfile;
+
+            if (is_array($profile->pending_changes) && !empty($profile->pending_changes)) {
+                $profile->fill($profile->pending_changes);
+            }
+
+            $profile->pending_approval = false;
+            $profile->pending_changes = null;
+            $profile->pending_approval_at = null;
+            $profile->verified_at = $profile->verified_at ?? now();
+            $profile->save();
+
+            $user->update([
+                'banned_until' => null,
+                'banned_reason' => null,
+            ]);
+
+            if ($user->trashed()) {
+                $user->restore();
+            }
+        });
+
+        $user->notify(new TrainerProfileApprovalNotification(Auth::user(), true));
+
+        return true;
+    }
+
+    private function buildTrainerProfileView(?TrainerProfile $profile): ?array
+    {
+        if (!$profile) {
+            return null;
+        }
+
+        $pendingChanges = is_array($profile->pending_changes) ? $profile->pending_changes : [];
+        $hasPendingChanges = (bool) $profile->pending_approval;
+        $pendingCountryName = null;
+        $pendingCityName = null;
+
+        if (array_key_exists('country_id', $pendingChanges) && filled($pendingChanges['country_id'])) {
+            $pendingCountryName = Country::query()->where('id', $pendingChanges['country_id'])->value('name');
+        }
+        if (array_key_exists('city_id', $pendingChanges) && filled($pendingChanges['city_id'])) {
+            $pendingCityName = City::query()->where('id', $pendingChanges['city_id'])->value('name');
+        }
+
+        $resolveValue = function (string $field) use ($profile, $pendingChanges) {
+            if (array_key_exists($field, $pendingChanges)) {
+                return $pendingChanges[$field];
+            }
+
+            return $profile->getAttribute($field);
+        };
+
+        $display = [
+            'car_type' => $resolveValue('car_type'),
+            'car_model' => $resolveValue('car_model'),
+            'car_model_year' => $resolveValue('car_model_year'),
+            'car_year' => $resolveValue('car_year'),
+            'car_plate_number' => $resolveValue('car_plate_number'),
+            'has_driving_license' => (bool) $resolveValue('has_driving_license'),
+            'license_number' => $resolveValue('license_number'),
+            'license_expiry_date' => $this->formatTrainerFieldValue('license_expiry_date', $resolveValue('license_expiry_date')),
+            'car_available' => (bool) $resolveValue('car_available'),
+            'pickup_available' => (bool) $resolveValue('pickup_available'),
+            'country_name' => array_key_exists('country_id', $pendingChanges)
+                ? ($pendingCountryName ?: '-')
+                : ($profile->country?->name ?? '-'),
+            'city_name' => array_key_exists('city_id', $pendingChanges)
+                ? ($pendingCityName ?: '-')
+                : ($profile->city?->name ?? '-'),
+            'bio' => $resolveValue('bio'),
+        ];
+
+        $changes = [];
+        foreach ($pendingChanges as $field => $newValue) {
+            $changes[] = [
+                'field' => $field,
+                'label' => self::TRAINER_PROFILE_FIELD_LABELS[$field] ?? $field,
+                'old' => $this->formatTrainerFieldValue($field, $profile->getAttribute($field), $profile->country?->name, $profile->city?->name),
+                'new' => $this->formatTrainerFieldValue($field, $newValue, $pendingCountryName, $pendingCityName),
+            ];
+        }
+
+        return [
+            'has_pending_changes' => $hasPendingChanges,
+            'display' => $display,
+            'changes' => $changes,
+        ];
+    }
+
+    private function formatTrainerFieldValue(
+        string $field,
+        mixed $value,
+        ?string $countryName = null,
+        ?string $cityName = null
+    ): string {
+        if (in_array($field, ['has_driving_license', 'car_available', 'pickup_available'], true)) {
+            return $value ? 'نعم' : 'لا';
+        }
+
+        if ($field === 'country_id') {
+            return $countryName ?: '-';
+        }
+
+        if ($field === 'city_id') {
+            return $cityName ?: '-';
+        }
+
+        if ($field === 'license_expiry_date') {
+            if ($value instanceof \DateTimeInterface) {
+                return $value->format('Y-m-d');
+            }
+
+            return filled($value) ? (string) $value : '-';
+        }
+
+        return filled($value) ? (string) $value : '-';
     }
 }

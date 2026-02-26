@@ -98,6 +98,7 @@ Route::middleware(['web'])
             Route::put('/geo/countries/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCountry'])->name('geo.countries.update');
             Route::delete('/geo/countries/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCountry'])->name('geo.countries.destroy');
             Route::post('/geo/countries/{country}/cities', [\App\Http\Controllers\Admin\GeoAdminController::class, 'storeCities'])->name('geo.cities.store');
+            Route::post('/geo/cities/generate', [\App\Http\Controllers\Admin\GeoAdminController::class, 'generateCities'])->name('geo.cities.generate');
             Route::put('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'updateCity'])->name('geo.cities.update');
             Route::delete('/geo/cities/{id}', [\App\Http\Controllers\Admin\GeoAdminController::class, 'destroyCity'])->name('geo.cities.destroy');
             Route::get('/ratings', [\App\Http\Controllers\Admin\RatingsAdminController::class, 'index'])->name('ratings.index');

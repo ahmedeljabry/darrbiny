@@ -182,6 +182,9 @@
           <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'active']) }}">
             <i class="icon-base ti tabler-user-check me-2"></i> المدربون النشطون
           </a></li>
+          <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'pending_trainer']) }}">
+            <i class="icon-base ti tabler-alert-circle me-2"></i> مطلوب تنشيط
+          </a></li>
           <li><a class="dropdown-item" href="{{ route('admin.users.index', ['role' => 'trainer', 'status' => 'banned']) }}">
             <i class="icon-base ti tabler-user-exclamation me-2"></i> المدربون المحظورون
           </a></li>
@@ -217,7 +220,7 @@
           <option value="">الكل</option>
           <option value="active" {{ ($status==='active') ? 'selected' : '' }}>نشط</option>
           <option value="banned" {{ ($status==='banned') ? 'selected' : '' }}>محظور</option>
-          <option value="pending_trainer" {{ ($status==='pending_trainer') ? 'selected' : '' }}>'طلب تنشيط</option>
+          <option value="pending_trainer" {{ ($status==='pending_trainer' || $status === 'activation_required') ? 'selected' : '' }}>مطلوب تنشيط</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -303,7 +306,15 @@
               @endforeach
             </td>
             <td>
-              @if($u->isBanned())
+              @php
+                $requiresActivation = $u->hasRole('TRAINER') && $u->trainerProfile?->pending_approval;
+              @endphp
+
+              @if($requiresActivation)
+                <span class="badge bg-label-warning">
+                  <i class="icon-base ti tabler-alert-circle me-1"></i>مطلوب تنشيط
+                </span>
+              @elseif($u->isBanned())
                 <span class="badge bg-label-danger">
                   <i class="icon-base ti tabler-user-exclamation me-1"></i>محظور
                 </span>
@@ -321,7 +332,14 @@
                 <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="تعديل">
                   <i class="icon-base ti tabler-edit"></i>
                 </a>
-                @if(!$u->isBanned())
+                @if($requiresActivation)
+                  <form method="post" action="{{ route('admin.users.trainer-profile.approve', $u->id) }}" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="تنشيط المدرب">
+                      <i class="icon-base ti tabler-user-check"></i>
+                    </button>
+                  </form>
+                @elseif(!$u->isBanned())
                   <button class="btn btn-sm btn-icon btn-outline-warning" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBanUser" data-user-id="{{ $u->id }}" data-user-name="{{ $u->name ?? $u->email }}" title="حظر">
                     <i class="icon-base ti tabler-ban"></i>
                   </button>

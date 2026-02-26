@@ -145,9 +145,15 @@ class HomeService
         $search = trim($search);
 
         $profiles = TrainerProfile::query()
+            ->where('pending_approval', false)
             ->when($this->cityId, fn($q) => $q->where('city_id', $this->cityId))
             ->whereHas('user', function ($uq) use ($search) {
-                $uq->whereNull('deleted_at')->role('TRAINER');
+                $uq->whereNull('deleted_at')
+                    ->where(function ($w) {
+                        $w->whereNull('banned_until')
+                            ->orWhere('banned_until', '<=', now());
+                    })
+                    ->role('TRAINER');
                 if ($search !== '') {
                     $uq->where(function ($w) use ($search) {
                         $w->where('name', 'like', "%{$search}%")

@@ -28,7 +28,7 @@
   </div>
 @endif
 
-<form method="post" action="{{ $action }}">
+<form method="post" action="{{ $action }}" class="geo-country-form">
   @csrf
   @if($isEdit) @method('PUT') @endif
 
@@ -96,11 +96,29 @@
                 <small class="text-muted">إدارة مدن الدولة</small>
               </div>
             </div>
-            <button type="button" class="btn btn-sm btn-primary js-add-city">
-              <i class="ti tabler-plus me-1"></i> إضافة مدينة
-            </button>
+            <div class="d-flex gap-2 flex-wrap justify-content-end">
+              <button type="button" class="btn btn-sm btn-outline-primary js-gpt-generate-cities">
+                <i class="ti tabler-sparkles me-1"></i> توليد المدن بـ GPT
+              </button>
+              <button type="button" class="btn btn-sm btn-primary js-add-city">
+                <i class="ti tabler-plus me-1"></i> إضافة مدينة
+              </button>
+            </div>
           </div>
           <div class="card-body">
+            <div class="alert alert-primary d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-3">
+              <div>
+                <strong class="d-block">توليد مدن تلقائي</strong>
+                <small class="text-muted">اضغط زر GPT لتوليد قائمة مدن الدولة تلقائياً ثم راجعها قبل الحفظ.</small>
+              </div>
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input" type="checkbox" id="replaceGeneratedCities">
+                <label class="form-check-label" for="replaceGeneratedCities">استبدال المدن الجديدة الحالية</label>
+              </div>
+            </div>
+
+            <div id="gpt-cities-status" class="small text-muted mb-3"></div>
+
             <div id="cities-list" class="d-flex flex-column gap-2 mb-4">
               @php($oldNew = old('new_cities', []))
               @if(is_array($oldNew) && count($oldNew))
@@ -189,17 +207,70 @@
   </div>
 </form>
 
+@push('styles')
+<style>
+  .geo-country-form .card {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+  }
+  .geo-country-form .card-header {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.04), rgba(13, 202, 240, 0.04));
+  }
+  .geo-country-form .city-row .form-control {
+    min-height: 42px;
+  }
+  .geo-country-form .js-gpt-generate-cities {
+    border-style: dashed;
+  }
+  .geo-country-form #gpt-cities-status {
+    min-height: 20px;
+  }
+  @media (max-width: 768px) {
+    .geo-country-form .card-header {
+      gap: 0.75rem;
+    }
+  }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  function addCityRow(val=''){
+  const generateButton = document.querySelector('.js-gpt-generate-cities');
+  const statusBox = document.getElementById('gpt-cities-status');
+  const replaceCheckbox = document.getElementById('replaceGeneratedCities');
+  const generateEndpoint = @json(route('admin.geo.cities.generate'));
+  const csrfToken = @json(csrf_token());
+
+  function normalizeCityName(value) {
+    return (value || '')
+      .toString()
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  function setStatus(message, tone = 'muted') {
+    if (!statusBox) return;
+    const tones = {
+      muted: 'text-muted',
+      success: 'text-success',
+      danger: 'text-danger',
+      warning: 'text-warning',
+      info: 'text-info',
+    };
+    statusBox.className = `small mb-3 ${tones[tone] ?? tones.muted}`;
+    statusBox.textContent = message;
+  }
+
+  function addCityRow(val = ''){
     const row = document.createElement('div');
     row.className = 'row g-2 align-items-center city-row';
     row.innerHTML = `
       <div class="col">
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti tabler-map-pin"></i></span>
-          <input type="text" name="new_cities[]" class="form-control" placeholder="اسم مدينة جديدة" value="${val}"/>
+          <input type="text" name="new_cities[]" class="form-control" placeholder="اسم مدينة جديدة"/>
         </div>
       </div>
       <div class="col-auto">
@@ -208,7 +279,109 @@ document.addEventListener('DOMContentLoaded', function(){
         </button>
       </div>
     `;
+    row.querySelector('input').value = val;
     document.getElementById('cities-list').appendChild(row);
+    return row;
+  }
+
+  function clearNewCityRows() {
+    document.querySelectorAll('#cities-list .city-row').forEach((row) => row.remove());
+  }
+
+  function collectExistingCityNames(includeNewDraft = true) {
+    const names = new Set();
+    document.querySelectorAll('input[name^="cities["]').forEach((input) => {
+      const normalized = normalizeCityName(input.value);
+      if (normalized !== '') names.add(normalized);
+    });
+    if (includeNewDraft) {
+      document.querySelectorAll('input[name="new_cities[]"]').forEach((input) => {
+        const normalized = normalizeCityName(input.value);
+        if (normalized !== '') names.add(normalized);
+      });
+    }
+    return names;
+  }
+
+  async function generateCitiesWithGpt() {
+    if (!generateButton) return;
+
+    const nameInput = document.querySelector('input[name="name"]');
+    const iso2Input = document.querySelector('input[name="iso2"]');
+    const currencyInput = document.querySelector('input[name="currency"]');
+
+    const countryName = (nameInput?.value || '').trim();
+    const iso2 = (iso2Input?.value || '').trim().toUpperCase();
+    const currency = (currencyInput?.value || '').trim().toUpperCase();
+
+    if (countryName === '') {
+      setStatus('يرجى إدخال اسم الدولة أولاً قبل التوليد.', 'warning');
+      nameInput?.focus();
+      return;
+    }
+
+    const shouldReplace = !!replaceCheckbox?.checked;
+    const existingNames = collectExistingCityNames(!shouldReplace);
+
+    setStatus('جاري توليد المدن من GPT...', 'info');
+    generateButton.disabled = true;
+    generateButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> جاري التوليد...';
+
+    try {
+      const response = await fetch(generateEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({
+          name: countryName,
+          iso2: iso2,
+          currency: currency,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        const message = payload?.message || payload?.errors?.name?.[0] || 'فشل توليد المدن.';
+        throw new Error(message);
+      }
+
+      const rawCities = Array.isArray(payload?.data?.cities) ? payload.data.cities : [];
+      const normalizedUnique = [];
+      const seen = new Set();
+      for (const city of rawCities) {
+        const value = (city || '').toString().trim().replace(/\s+/g, ' ');
+        const key = normalizeCityName(value);
+        if (value !== '' && !seen.has(key)) {
+          seen.add(key);
+          normalizedUnique.push(value);
+        }
+      }
+
+      const filtered = normalizedUnique.filter((city) => !existingNames.has(normalizeCityName(city)));
+
+      if (shouldReplace) {
+        clearNewCityRows();
+      }
+
+      if (filtered.length === 0) {
+        if (document.querySelectorAll('#cities-list .city-row').length === 0) {
+          addCityRow('');
+        }
+        setStatus('تم التوليد لكن كل المدن موجودة مسبقاً في القائمة.', 'warning');
+        return;
+      }
+
+      filtered.forEach((city) => addCityRow(city));
+      setStatus(`تمت إضافة ${filtered.length} مدينة بنجاح من GPT.`, 'success');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'حدث خطأ أثناء توليد المدن.', 'danger');
+    } finally {
+      generateButton.disabled = false;
+      generateButton.innerHTML = '<i class="ti tabler-sparkles me-1"></i> توليد المدن بـ GPT';
+    }
   }
   
   document.addEventListener('click', function(e){
@@ -224,8 +397,10 @@ document.addEventListener('DOMContentLoaded', function(){
         row.querySelector('input').value = '';
       }
     }
+    if (e.target.closest('.js-gpt-generate-cities')) {
+      generateCitiesWithGpt();
+    }
   });
 });
 </script>
 @endpush
-

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
-use App\Models\Payment;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -27,6 +26,8 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
         return [
             'المعرف',
             'المستخدم',
+            'الدولة',
+            'المدينة',
             'المبلغ',
             'رسوم التطبيق',
             'النوع',
@@ -40,6 +41,8 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
         return [
             $payment->id,
             $payment->user?->name ?? $payment->user_id,
+            $payment->userRequest?->plan?->country?->name ?? '-',
+            $payment->userRequest?->plan?->city?->name ?? '-',
             number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
             number_format($payment->app_fee_minor / 100, 2) . ' ' . $payment->currency,
             $payment->type,

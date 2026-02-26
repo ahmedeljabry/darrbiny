@@ -7,6 +7,7 @@ namespace App\Modules\Payments\Services;
 use App\Modules\Requests\Services\RequestService;
 use App\Modules\Referrals\Services\ReferralService;
 use App\Models\{UserRequest,Payment,User};
+use App\Support\Fees;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -54,8 +55,16 @@ class PaymentService
                     ->exists();
             }
 
-            $appFeeMinor = $amountMinor;
+            $appFeeMinor = 0;
             $trainerNetMinor = $amountMinor;
+
+            if ($paymentType === Payment::TYPE_PLAN_FULL) {
+                $appFeePercent = max(0, Fees::appFeePercent());
+                $appFeeMinor = (int) round($amountMinor * ($appFeePercent / 100));
+                $appFeeMinor = min($appFeeMinor, $amountMinor);
+                $trainerNetMinor = $amountMinor - $appFeeMinor;
+            }
+
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'user_request_id' => $req->id,

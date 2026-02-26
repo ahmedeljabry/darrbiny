@@ -16,7 +16,7 @@ class CaptainAccountController extends BaseController
 
     public function show(Request $request)
     {
-        $profile = $this->service->getDetails($request->id ?: $request->user());
+        $profile = $this->service->getDetails($request->user());
         return response()->json(['data' => new CaptainAccountResource($profile)]);
     }
 

@@ -127,7 +127,12 @@ final class ReportsService
 
     private function salesQuery(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder
     {
-        return $this->succeededPaymentsWithinRange($from, $to)->with('user');
+        return $this->succeededPaymentsWithinRange($from, $to)
+            ->with([
+                'user',
+                'userRequest.plan.country',
+                'userRequest.plan.city',
+            ]);
     }
 
     private function paymentsQuery(?string $type = null, ?string $status = null): Builder
@@ -149,12 +154,20 @@ final class ReportsService
     {
         return $this->succeededPaymentsWithinRange($from, $to)
             ->where('type', Payment::TYPE_PLAN_FULL)
-            ->with(['user', 'userRequest.trainer', 'userRequest.plan']);
+            ->with([
+                'user',
+                'userRequest.trainer',
+                'userRequest.plan.country',
+                'userRequest.plan.city',
+            ]);
     }
 
     private function appFeesQuery(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder
     {
-        return $this->succeededPaymentsWithinRange($from, $to)->with('user');
+        return $this->succeededPaymentsWithinRange($from, $to)
+            ->where('type', Payment::TYPE_PLAN_FULL)
+            ->where('app_fee_minor', '>', 0)
+            ->with('user');
     }
 
     private function vatQuery(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder

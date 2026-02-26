@@ -19,10 +19,16 @@ class TrainerController extends BaseController
         $search = trim((string) $request->query('name', $request->query('q', '')));
 
         $q = TrainerProfile::query()
+            ->where('pending_approval', false)
             ->when($countryId !== '', fn($qq) => $qq->where('country_id', $countryId))
             ->when($cityId !== '', fn($qq) => $qq->where('city_id', $cityId))
             ->whereHas('user', function ($uq) use ($search) {
-                $uq->whereNull('deleted_at')->role('TRAINER');
+                $uq->whereNull('deleted_at')
+                    ->where(function ($w) {
+                        $w->whereNull('banned_until')
+                            ->orWhere('banned_until', '<=', now());
+                    })
+                    ->role('TRAINER');
                 if ($search !== '') {
                     $uq->where(function ($w) use ($search) {
                         $w->where('name', 'like', "%{$search}%")

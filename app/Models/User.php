@@ -44,6 +44,8 @@ class User extends Authenticatable
         'iban',
         'bank_name',
         'bank_country_id',
+        'banned_until',
+        'banned_reason',
         'version',
     ];
 

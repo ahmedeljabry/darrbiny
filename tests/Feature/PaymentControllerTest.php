@@ -8,6 +8,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,12 +77,89 @@ class PaymentControllerTest extends TestCase
             'payment_method' => 'wallet',
             'status' => Payment::STATUS_SUCCEEDED,
             'amount_minor' => 12345,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 12345,
         ]);
 
         $this->assertDatabaseHas('user_requests', [
             'id' => $userRequest->id,
             'status' => UserRequest::STATUS_AWAITING_OFFERS,
             'total_paid_minor' => 12345,
+        ]);
+    }
+
+    public function test_plan_full_payment_applies_app_fee_percent_from_settings(): void
+    {
+        Queue::fake();
+
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '15',
+        ]);
+
+        $country = Country::create([
+            'name' => 'Test Country 2',
+            'iso2' => 'T2',
+            'currency' => 'USD',
+        ]);
+        $city = City::create([
+            'name' => 'Test City 2',
+            'country_id' => $country->id,
+        ]);
+        $plan = Plan::create([
+            'title' => 'Plan B',
+            'description' => 'Test plan B',
+            'price_min' => 200,
+            'duration_days' => '5',
+            'hours_count' => 20,
+            'country_id' => $country->id,
+            'city_id' => $city->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+10000003002']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'currency' => 'USD',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => 'wallet',
+                'type' => Payment::TYPE_PLAN_FULL,
+                'price' => 10000,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.type', Payment::TYPE_PLAN_FULL)
+            ->assertJsonPath('data.app_fee', 1500)
+            ->assertJsonPath('data.trainer_net', 8500);
+
+        $this->assertDatabaseHas('payments', [
+            'user_request_id' => $userRequest->id,
+            'user_id' => $user->id,
+            'type' => Payment::TYPE_PLAN_FULL,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 10000,
+            'app_fee_minor' => 1500,
+            'trainer_net_minor' => 8500,
+        ]);
+
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'app_fee_reserved_minor' => 1500,
         ]);
     }
 }

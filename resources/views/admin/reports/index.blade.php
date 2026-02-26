@@ -16,7 +16,7 @@
     ['title' => 'المدفوعات', 'desc' => 'جميع المدفوعات مع التصفية بالحالة والنوع', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
     ['title' => 'الاشتراكات', 'desc' => 'اشتراكات المستخدمين وحالات الطلبات', 'route' => 'admin.reports.subscriptions', 'icon' => 'calendar-event', 'color' => 'info'],
     ['title' => 'مبيعات الباقات', 'desc' => 'مبيعات خطط التدريب ورسومها', 'route' => 'admin.reports.plan-sales', 'icon' => 'package', 'color' => 'info'],
-    ['title' => 'رسوم التطبيق', 'desc' => 'مجموع رسوم التطبيق على المدفوعات المكتملة', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
+    ['title' => 'رسوم التطبيق', 'desc' => 'رسوم التطبيق على المدفوعات المكتملة من نوع plan_full', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
     ['title' => 'ضريبة القيمة المضافة', 'desc' => 'ضريبة القيمة المضافة على المدفوعات المكتملة', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
     ['title' => 'مستحقات المدربين', 'desc' => 'المبالغ المستحقة للكورسات المكتملة', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
     ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التنفيذ', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],

@@ -15,6 +15,7 @@ use App\Modules\Auth\Http\Requests\RequestOtpRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
+use App\Notifications\TrainerRegistrationPendingApprovalNotification;
 use App\Notifications\UserAccountDeletedNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Models\Upload;
@@ -53,11 +54,34 @@ class AuthController extends BaseController
         $role = $type === 'captain' ? 'TRAINER' : 'USER';
         $user->assignRole($role);
         if ($type === 'captain') {
-            $user->trainerProfile()->create();
+            $user->trainerProfile()->create([
+                'pending_approval' => true,
+                'pending_approval_at' => now(),
+            ]);
+            $user->update([
+                'banned_until' => now()->addYears(10),
+                'banned_reason' => 'مطلوب تنشيط من الإدارة',
+            ]);
         }
 
         if ($code = $request->input('referral_code')) {
             $this->referrals->processSignupReferral($user, $code);
+        }
+
+        if ($type === 'captain') {
+            $admins = User::role('ADMIN')->get();
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new TrainerRegistrationPendingApprovalNotification($user));
+            }
+
+            return response()->json([
+                'message' => 'تم إنشاء الحساب وبانتظار موافقة الإدارة على التنشيط',
+                'data' => [
+                    'user' => (new UserResource($user))->resolve(),
+                    'requires_admin_approval' => true,
+                    'approval_status' => 'pending',
+                ],
+            ], 201);
         }
 
         $tokens = $this->auth->issueTokens($user);
@@ -80,6 +104,17 @@ class AuthController extends BaseController
                     'phone_with_cc' => ['The provided credentials are incorrect.'],
                 ],
             ], 401);
+        }
+
+        $user->loadMissing('trainerProfile');
+
+        if ($user->hasRole('TRAINER') && $user->trainerProfile?->pending_approval) {
+            return response()->json([
+                'message' => 'Account pending approval',
+                'errors' => [
+                    'phone_with_cc' => ['الحساب بانتظار موافقة الإدارة على التنشيط.'],
+                ],
+            ], 403);
         }
 
         // Check if user is banned

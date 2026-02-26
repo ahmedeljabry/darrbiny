@@ -56,6 +56,8 @@
             <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
             <th><i class="icon-base ti tabler-user-star me-1"></i> المدرب</th>
             <th><i class="icon-base ti tabler-package me-1"></i> الباقة</th>
+            <th><i class="icon-base ti tabler-flag me-1"></i> الدولة</th>
+            <th><i class="icon-base ti tabler-map-pin me-1"></i> المدينة</th>
             <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
             <th><i class="icon-base ti tabler-percentage me-1"></i> العمولة</th>
             <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ/وقت</th>
@@ -77,6 +79,8 @@
               <td>
                 <span class="badge bg-label-primary">{{ $p->userRequest?->plan?->title ?? '—' }}</span>
               </td>
+              <td>{{ $p->userRequest?->plan?->country?->name ?? '—' }}</td>
+              <td>{{ $p->userRequest?->plan?->city?->name ?? '—' }}</td>
               <td>
                 <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100, 2) }} {{ $p->currency }}</span>
               </td>
@@ -87,7 +91,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="text-center py-5">
+              <td colspan="9" class="text-center py-5">
                 <div class="d-flex flex-column align-items-center">
                   <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                     <i class="icon-base ti tabler-package" style="font-size: 32px;"></i>

@@ -60,19 +60,20 @@
       </div>
     </div>
   </div>
-  @if($user->trainerProfile)
+  @if($trainerProfileView)
     @php
       $profile = $user->trainerProfile;
-      $profileComplete = filled($profile->bio) && filled($profile->car_type) && filled($profile->car_model_year) && $profile->has_driving_license && filled($profile->country_id) && filled($profile->city_id);
+      $profileData = $trainerProfileView['display'];
+      $profileComplete = filled($profileData['bio']) && filled($profileData['car_type']) && filled($profileData['car_model_year']) && $profileData['has_driving_license'] && ($profileData['country_name'] ?? '-') !== '-' && ($profileData['city_name'] ?? '-') !== '-';
     @endphp
     <div class="card mt-4">
       <div class="card-header d-flex justify-content-between align-items-center">
         <div>
           <h5 class="mb-0">بيانات الكابتن</h5>
-          @if($profile->pending_approval)
+          @if($trainerProfileView['has_pending_changes'])
             <small class="text-warning d-block mt-1">
               <i class="icon-base ti tabler-alert-circle me-1"></i>
-              في انتظار الموافقة على التعديلات
+              في انتظار موافقة الإدارة على آخر تحديث
             </small>
           @endif
         </div>
@@ -80,15 +81,16 @@
           <span class="badge {{ $profileComplete ? 'bg-success' : 'bg-label-warning' }}">
             {{ $profileComplete ? 'مكتمل' : 'غير مكتمل' }}
           </span>
-          @if($profile->pending_approval)
+          @if($trainerProfileView['has_pending_changes'])
+            @php $hasChangeDetails = count($trainerProfileView['changes']) > 0; @endphp
             <form method="post" action="{{ route('admin.users.trainer-profile.approve', $user->id) }}" class="d-inline">
               @csrf
               <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('هل أنت متأكد من الموافقة على تعديلات المدرب؟')">
-                <i class="icon-base ti tabler-check me-1"></i> الموافقة على التعديلات
+                <i class="icon-base ti tabler-check me-1"></i> {{ $hasChangeDetails ? 'الموافقة على التعديلات' : 'تفعيل المدرب' }}
               </button>
             </form>
             <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTrainerModal">
-              <i class="icon-base ti tabler-x me-1"></i> رفض التعديلات
+              <i class="icon-base ti tabler-x me-1"></i> {{ $hasChangeDetails ? 'رفض التعديلات' : 'رفض التنشيط' }}
             </button>
           @endif
         </div>
@@ -97,53 +99,78 @@
         <div class="row g-4">
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">نوع السيارة</div>
-            <div class="text-heading">{{ $profile->car_type ?: '-' }}</div>
+            <div class="text-heading">{{ $profileData['car_type'] ?: '-' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">موديل السيارة</div>
-            <div class="text-heading">{{ $profile->car_model_year ?: '-' }}</div>
+            <div class="text-heading">{{ $profileData['car_model'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">سنة الموديل</div>
+            <div class="text-heading">{{ $profileData['car_model_year'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">سنة الصنع</div>
+            <div class="text-heading">{{ $profileData['car_year'] ?: '-' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">رخصة القيادة</div>
-            <div class="text-heading">{{ $profile->has_driving_license ? 'نعم' : 'لا' }}</div>
+            <div class="text-heading">{{ $profileData['has_driving_license'] ? 'نعم' : 'لا' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">رقم الرخصة</div>
+            <div class="text-heading">{{ $profileData['license_number'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">انتهاء الرخصة</div>
+            <div class="text-heading">{{ $profileData['license_expiry_date'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">رقم اللوحة</div>
+            <div class="text-heading">{{ $profileData['car_plate_number'] ?: '-' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">توفر سيارة للتدريب</div>
-            <div class="text-heading">{{ $profile->car_available ? 'نعم' : 'لا' }}</div>
+            <div class="text-heading">{{ $profileData['car_available'] ? 'نعم' : 'لا' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">خدمة التوصيل</div>
-            <div class="text-heading">{{ $profile->pickup_available ? 'نعم' : 'لا' }}</div>
+            <div class="text-heading">{{ $profileData['pickup_available'] ? 'نعم' : 'لا' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">الدولة</div>
-            <div class="text-heading">{{ $profile->country?->name ?? '-' }}</div>
+            <div class="text-heading">{{ $profileData['country_name'] ?? '-' }}</div>
           </div>
           <div class="col-md-6">
             <div class="fw-medium text-body-secondary">المدينة / المحافظة</div>
-            <div class="text-heading">{{ $profile->city?->name ?? '-' }}</div>
+            <div class="text-heading">{{ $profileData['city_name'] ?? '-' }}</div>
           </div>
         </div>
         <div class="mt-4">
           <div class="fw-medium text-body-secondary mb-2">النبذة التعريفية</div>
           <div class="border rounded p-3 bg-body-tertiary">
-            @if($profile->bio)
-              {!! nl2br(e($profile->bio)) !!}
+            @if($profileData['bio'])
+              {!! nl2br(e($profileData['bio'])) !!}
             @else
               <span class="text-body-secondary">لا توجد نبذة</span>
             @endif
           </div>
         </div>
       </div>
-      @if($profile->pending_approval && $profile->pending_changes)
+      @if($trainerProfileView['has_pending_changes'] && count($trainerProfileView['changes']) > 0)
         <div class="card-footer bg-label-warning">
           <div class="d-flex align-items-start gap-2">
             <i class="icon-base ti tabler-info-circle mt-1"></i>
             <div>
-              <strong class="d-block mb-2">التعديلات المعلقة:</strong>
+              <strong class="d-block mb-2">تفاصيل التعديلات المعلقة:</strong>
               <ul class="mb-0 small">
-                @foreach($profile->pending_changes as $key => $value)
-                  <li><strong>{{ $key }}:</strong> {{ is_bool($value) ? ($value ? 'نعم' : 'لا') : $value }}</li>
+                @foreach($trainerProfileView['changes'] as $change)
+                  <li>
+                    <strong>{{ $change['label'] }}:</strong>
+                    <span class="text-decoration-line-through text-muted">{{ $change['old'] }}</span>
+                    <i class="icon-base ti tabler-arrow-left-right mx-1"></i>
+                    <span class="fw-semibold text-success">{{ $change['new'] }}</span>
+                  </li>
                 @endforeach
               </ul>
             </div>
@@ -154,7 +181,7 @@
   @endif
 
   <!-- Modal: Reject Trainer Profile -->
-  @if($user->trainerProfile && $user->trainerProfile->pending_approval)
+  @if($trainerProfileView && $trainerProfileView['has_pending_changes'])
     <div class="modal fade" id="rejectTrainerModal" tabindex="-1" aria-labelledby="rejectTrainerModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">

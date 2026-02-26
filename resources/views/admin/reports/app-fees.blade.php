@@ -19,7 +19,7 @@
       </span>
       <div>
         <h5 class="mb-0">رسوم التطبيق</h5>
-        <small class="text-body-secondary">جميع المدفوعات المكتملة</small>
+        <small class="text-body-secondary">رسوم التطبيق على المدفوعات المكتملة من نوع {{ \App\Models\Payment::TYPE_PLAN_FULL }}</small>
       </div>
     </div>
     <a href="{{ route('admin.reports.app-fees', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success">

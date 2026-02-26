@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Requests\Admin\GenerateCountryCitiesRequest;
 use App\Models\City;
 use App\Models\Country;
+use App\Services\Admin\CountryCityGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,6 +15,10 @@ use Illuminate\Routing\Controller as BaseController;
 
 class GeoAdminController extends BaseController
 {
+    public function __construct(
+        private readonly CountryCityGenerationService $cityGenerator
+    ) {}
+
     public function index()
     {
         $q = request('q');
@@ -188,5 +194,30 @@ class GeoAdminController extends BaseController
         $country = Country::findOrFail($id);
         $cities = City::where('country_id', $id)->orderBy('name')->paginate(30);
         return view('admin.geo.countries.edit', compact('country','cities'));
+    }
+
+    public function generateCities(GenerateCountryCitiesRequest $request): JsonResponse
+    {
+        try {
+            $cities = $this->cityGenerator->generate(
+                $request->string('name')->toString(),
+                $request->input('iso2'),
+                $request->input('currency'),
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'تعذر توليد المدن حالياً. تحقق من إعدادات OpenAI ثم حاول مرة أخرى.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'cities' => $cities,
+                'count' => count($cities),
+            ],
+        ]);
     }
 }
