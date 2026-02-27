@@ -195,21 +195,21 @@ class AuthController extends BaseController
 
     public function changePassword(ChangePasswordRequest $request)
     {
-        $user = $request->user();
+        $user = User::where('phone_with_cc', $request->string('mobile')->toString())->first();
 
-        // Verify current password
-        if (!Hash::check($request->input('current_password'), $user->password)) {
+        if (!$user) {
             return response()->json([
-                'message' => 'كلمة المرور الحالية غير صحيحة',
+                'message' => 'رقم الجوال غير مسجل',
                 'errors' => [
-                    'current_password' => ['كلمة المرور الحالية غير صحيحة'],
+                    'mobile' => ['رقم الجوال غير مسجل'],
                 ],
             ], 422);
         }
 
-        // Update password
-        $user->password = Hash::make($request->input('password'));
+        // Reset password by mobile number (public endpoint).
+        $user->password = Hash::make($request->input('new_password'));
         $user->save();
+        $user->tokens()->delete();
 
         return response()->json([
             'message' => 'تم تغيير كلمة المرور بنجاح',
