@@ -11,39 +11,6 @@ paths:
       responses:
         '200':
           description: OK
-  /auth/request-otp:
-    post:
-      summary: Request OTP via WhatsApp
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone_with_cc:
-                  type: string
-              required: [phone_with_cc]
-      responses:
-        '200':
-          description: OTP sent
-  /auth/verify-otp:
-    post:
-      summary: Verify OTP and issue tokens
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone_with_cc: { type: string }
-                otp: { type: string }
-                referral_code: { type: string }
-              required: [phone_with_cc, otp]
-      responses:
-        '200':
-          description: Tokens and user data
   /plans:
     get:
       summary: List active plans
@@ -84,4 +51,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-

@@ -13,12 +13,6 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_request_otp(): void
-    {
-        $res = $this->postJson('/api/v1/auth/request-otp', ['phone_with_cc' => '+201111100000']);
-        $res->assertStatus(200)->assertJsonPath('success', true);
-    }
-
     public function test_change_password_without_auth_by_mobile(): void
     {
         $user = User::factory()->create([

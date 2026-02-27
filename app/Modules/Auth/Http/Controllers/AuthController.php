@@ -11,28 +11,23 @@ use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\DeleteAccountRequest;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
-use App\Modules\Auth\Http\Requests\RequestOtpRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
-use App\Modules\Auth\Http\Requests\VerifyOtpRequest;
 use App\Notifications\TrainerRegistrationPendingApprovalNotification;
 use App\Notifications\UserAccountDeletedNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Models\Upload;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
-use App\Modules\Auth\Services\OtpService;
 use App\Modules\Referrals\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class AuthController extends BaseController
 {
     public function __construct(
-        private readonly OtpService $otp,
         private readonly AuthService $auth,
         private readonly ReferralService $referrals,
     ) {}
@@ -125,37 +120,6 @@ class AuthController extends BaseController
                     'phone_with_cc' => ['Your account has been banned.'],
                 ],
             ], 403);
-        }
-
-        $tokens = $this->auth->issueTokens($user);
-        return response()->json([
-            'data' => array_merge([
-                'user' => (new UserResource($user))->resolve(),
-            ], $tokens),
-        ]);
-    }
-
-    public function requestOtp(RequestOtpRequest $request)
-    {
-        $this->otp->request($request->string('phone_with_cc'));
-        return response()->json(['data' => ['sent' => true]]);
-    }
-
-    public function verifyOtp(VerifyOtpRequest $request)
-    {
-        $phone = $request->string('phone_with_cc');
-        $otp = $request->string('otp');
-        abort_unless($this->otp->verify($phone, $otp), 422, 'Invalid OTP');
-
-        $user = User::firstOrCreate(
-            ['phone_with_cc' => $phone],
-            [
-                'currency' => $this->deriveCurrencyFromPhone($phone),
-            ]
-        );
-
-        if ($code = $request->string('referral_code')->toString()) {
-            $this->referrals->processSignupReferral($user, $code);
         }
 
         $tokens = $this->auth->issueTokens($user);

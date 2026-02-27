@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-RateLimiter::for('otp', fn ($request) => [Limit::perMinute(3)->by($request->ip())]);
 RateLimiter::for('auth', fn ($request) => [Limit::perMinute(30)->by($request->user()?->id ?? $request->ip())]);
 RateLimiter::for('default', fn ($request) => [Limit::perMinute(60)->by($request->user()?->id ?? $request->ip())]);
 
@@ -14,11 +13,6 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
         Route::prefix('auth')->middleware('throttle:auth')->group(function () {
             Route::post('/register', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'register']);
             Route::post('/login', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'login']);
-        });
-
-        Route::prefix('auth')->middleware('throttle:otp')->group(function () {
-            Route::post('/request-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'requestOtp']);
-            Route::post('/verify-otp', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'verifyOtp']);
         });
 
         Route::prefix('auth')->middleware('throttle:auth')->group(function () {

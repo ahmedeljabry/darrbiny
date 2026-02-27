@@ -1,10 +1,10 @@
 # Learn Car Driving API (Laravel 12, PHP 8.2)
 
-Production-grade, secure, multi-tenant-ready API implementing OTP auth, plans, requests, offers, payments, training tracking, payouts, ratings, referrals, and rewards.
+Production-grade, secure, multi-tenant-ready API implementing auth, plans, requests, offers, payments, training tracking, payouts, ratings, referrals, and rewards.
 
 ## Architecture
 - Structure: Services + Modules under `app/Modules/*` with thin Controllers, FormRequests, Resources, Services, Observers, and Policies.
-- Auth: Sanctum personal tokens + custom refresh tokens table. OTP via pluggable WhatsApp driver.
+- Auth: Sanctum personal tokens + custom refresh tokens table.
 - Database: UUID primary keys; soft deletes where relevant; optimistic locking `version` column.
 - Security: Route rate-limits, input sanitization, CORS, JSON envelope, correlation IDs, request/response logging.
 - Docs: Static OpenAPI spec at `public/openapi.yaml` (can be served by Swagger UI).
@@ -31,10 +31,10 @@ Production-grade, secure, multi-tenant-ready API implementing OTP auth, plans, r
 ## Example Requests (curl)
 
 Auth
-- Request OTP:
-  - `curl -X POST http://localhost/api/v1/auth/request-otp -H 'Content-Type: application/json' -d '{"phone_with_cc":"+201111111111"}'`
-- Verify OTP (replace 000000 with real code):
-  - `curl -X POST http://localhost/api/v1/auth/verify-otp -H 'Content-Type: application/json' -d '{"phone_with_cc":"+201111111111","otp":"000000"}'`
+- Register:
+  - `curl -X POST http://localhost/api/v1/auth/register -H 'Content-Type: application/json' -d '{"name":"John Doe","phone_with_cc":"+201111111111","password":"password123","password_confirmation":"password123","type":"user"}'`
+- Login:
+  - `curl -X POST http://localhost/api/v1/auth/login -H 'Content-Type: application/json' -d '{"phone_with_cc":"+201111111111","password":"password123"}'`
 
 Catalog
 - `curl http://localhost/api/v1/countries`
@@ -81,5 +81,4 @@ Admin (requires ADMIN role)
 ## Notes
 - JSON envelope shape: `{ success, data, meta: { request_id }, errors }` enforced by middleware.
 - Correlation ID: `X-Request-Id` in request and response.
-- This repo provides a Dummy payment provider and stub WhatsApp driver; swap with real integrations.
-
+- This repo provides a Dummy payment provider; swap with real integrations.
