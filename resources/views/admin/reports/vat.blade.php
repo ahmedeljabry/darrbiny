@@ -74,7 +74,7 @@
               <td>
                 <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100, 2) }} {{ $p->currency }}</span>
               </td>
-              <td><span class="badge bg-label-primary">{{ $p->type }}</span></td>
+              <td><span class="badge bg-label-primary">{{ $p->typeLabel() }}</span></td>
               <td>
                 <span class="fw-semibold text-danger">{{ number_format($vatMinor/100, 2) }}</span>
               </td>

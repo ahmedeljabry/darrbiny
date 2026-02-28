@@ -84,7 +84,7 @@
             <td><code class="text-primary">{{ substr($p->id, 0, 8) }}</code></td>
             <td>{{ $p->user?->name ?? 'غير معروف' }}</td>
             <td>{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</td>
-            <td>{{ $p->type }}</td>
+            <td>{{ $p->typeLabel() }}</td>
             <td>{{ $p->status }}</td>
             <td>{{ $p->created_at?->format('Y-m-d H:i') }}</td>
           </tr>

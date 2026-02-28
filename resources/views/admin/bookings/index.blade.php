@@ -81,7 +81,7 @@
                             <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
                             <th style="width: 120px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-                            <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ المدفوع</th>
+                            <th style="width: 240px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> الدفعات</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الإنشاء</th>
                             <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
@@ -135,8 +135,18 @@
                                     <span class="badge bg-label-{{ $color }}">{{ $statuses[$booking->status] ?? $booking->status }}</span>
                                 </td>
                                 <td>
-                                    @if($booking->total_paid_minor > 0)
-                                        <span class="fw-semibold">{{ number_format($booking->total_paid_minor / 100, 2) }} {{ $booking->currency }}</span>
+                                    @if($booking->payments->isNotEmpty())
+                                        <div class="d-flex flex-column gap-1">
+                                            @foreach($booking->payments as $payment)
+                                                <div class="d-flex flex-column">
+                                                    <span class="fw-semibold">{{ $payment->typeLabel() }}</span>
+                                                    <small class="text-muted">
+                                                        {{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}
+                                                        ({{ $payment->statusLabel() }})
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
@@ -199,4 +209,3 @@
 @endpush
 
 @endsection
-

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Models\Payment;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -42,8 +43,8 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
             $payment->user?->name ?? $payment->user_id,
             $payment->user_request_id,
             number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
-            $payment->type,
-            $payment->status,
+            Payment::typeLabelFor($payment->type),
+            Payment::statusLabelFor($payment->status),
             $payment->payment_method,
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];

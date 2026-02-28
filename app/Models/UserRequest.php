@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Support\Collection;
+
 class UserRequest extends BaseModel
 {
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
@@ -81,5 +83,41 @@ class UserRequest extends BaseModel
     public function retryChild()
     {
         return $this->hasOne(self::class, 'retry_source_request_id');
+    }
+
+    public function paymentsCollection(): Collection
+    {
+        if ($this->relationLoaded('payments')) {
+            return $this->payments;
+        }
+
+        return $this->payments()->get();
+    }
+
+    public function successfulPayments(): Collection
+    {
+        return $this->paymentsCollection()
+            ->filter(fn (Payment $payment) => $payment->status === Payment::STATUS_SUCCEEDED)
+            ->sortByDesc(fn (Payment $payment) => $payment->created_at?->getTimestamp() ?? 0)
+            ->values();
+    }
+
+    public function totalSuccessfulPaymentsMinor(): int
+    {
+        return (int) $this->successfulPayments()->sum('amount_minor');
+    }
+
+    public function latestSuccessfulFullPayment(): ?Payment
+    {
+        return $this->successfulPayments()->first(
+            fn (Payment $payment) => $payment->isFullType()
+        );
+    }
+
+    public function latestSuccessfulPartialPayment(): ?Payment
+    {
+        return $this->successfulPayments()->first(
+            fn (Payment $payment) => $payment->isPartialType()
+        );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Models\Payment;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -30,7 +31,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             'الخطة',
             'الحالة',
             'تاريخ البدء',
-            'المبلغ المدفوع',
+            'الدفعات',
             'العملة',
             'تاريخ الإنشاء',
         ];
@@ -48,6 +49,19 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             \App\Models\UserRequest::STATUS_CANCELLED => 'ملغي',
         ];
 
+        $payments = $booking->payments ?? collect();
+        $paymentsSummary = $payments->isNotEmpty()
+            ? $payments->map(function (Payment $payment): string {
+                return sprintf(
+                    '%s: %s %s (%s)',
+                    $payment->typeLabel(),
+                    number_format($payment->amount_minor / 100, 2),
+                    $payment->currency,
+                    $payment->statusLabel()
+                );
+            })->implode(' | ')
+            : '-';
+
         return [
             $booking->id,
             $booking->user?->name ?? $booking->user_id,
@@ -55,7 +69,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $booking->plan?->title ?? $booking->plan_id,
             $statuses[$booking->status] ?? $booking->status,
             $booking->start_date?->toDateString(),
-            number_format($booking->total_paid_minor / 100, 2),
+            $paymentsSummary,
             $booking->currency ?? 'USD',
             $booking->created_at?->format('Y-m-d H:i:s'),
         ];

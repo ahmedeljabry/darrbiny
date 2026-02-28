@@ -64,7 +64,7 @@
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-file-text me-1"></i> رقم الدورة</th>
                             <th><i class="icon-base ti tabler-info-circle me-1"></i> سبب الإلغاء</th>
-                            <th style="width: 150px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
+                            <th style="width: 240px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> الدفعات</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الطلب</th>
                             <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
@@ -99,33 +99,29 @@
                                 <td>
                                     @php
                                         $userRequest = $req->userRequest;
-                                        $packageValue = $userRequest?->plan?->price_min ?? 0;
-                                        $totalPaid = $userRequest?->total_paid_minor ?? 0;
                                         $currency = $userRequest?->currency ?? 'SAR';
-                                        $refundAmount = $totalPaid > 0 ? (int) round($totalPaid / 100) : 0;
                                     @endphp
-                                    <div class="d-flex flex-column">
-                                        @if($packageValue > 0)
-                                            <div>
-                                                <small class="text-muted d-block">قيمة الباقة:</small>
-                                                <span class="fw-semibold text-primary">{{ number_format($packageValue / 100, 2) }} {{ $currency }}</span>
-                                            </div>
-                                        @endif
-                                        @if($totalPaid > 0)
-                                            <div class="mt-1">
-                                                <small class="text-muted d-block">المبلغ المدفوع:</small>
-                                                <span class="fw-semibold text-success">{{ number_format($totalPaid / 100, 2) }} {{ $currency }}</span>
-                                            </div>
-                                            @if($req->status === 'approved')
-                                                <div class="mt-1">
-                                                    <small class="text-muted d-block">المبلغ المسترد:</small>
-                                                    <span class="badge bg-label-success">{{ number_format($refundAmount, 2) }} {{ $currency }}</span>
+                                    @if($userRequest && $userRequest->payments->isNotEmpty())
+                                        <div class="d-flex flex-column gap-1">
+                                            @foreach($userRequest->payments as $payment)
+                                                <div class="d-flex flex-column">
+                                                    <small class="text-muted d-block">{{ $payment->typeLabel() }}:</small>
+                                                    <span class="fw-semibold {{ $payment->status === \App\Models\Payment::STATUS_SUCCEEDED ? 'text-success' : 'text-body' }}">
+                                                        {{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}
+                                                        ({{ $payment->statusLabel() }})
+                                                    </span>
                                                 </div>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </div>
+                                            @endforeach
+                                            <div class="mt-1">
+                                                <small class="text-muted d-block">إجمالي الدفعات الناجحة:</small>
+                                                <span class="badge bg-label-success">
+                                                    {{ number_format($userRequest->totalSuccessfulPaymentsMinor() / 100, 2) }} {{ $currency }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @php
@@ -180,5 +176,4 @@
 </div>
 
 @endsection
-
 

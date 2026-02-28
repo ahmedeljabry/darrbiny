@@ -77,8 +77,17 @@
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">المعلومات المالية</h6>
                         <p class="mb-1"><strong>العملة:</strong> {{ $booking->currency }}</p>
-                        <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ number_format($booking->app_fee_reserved_minor / 100, 2) }} {{ $booking->currency }}</p>
-                        <p class="mb-1"><strong>المبلغ المدفوع:</strong> {{ number_format($booking->total_paid_minor / 100, 2) }} {{ $booking->currency }}</p>
+                        @if($fullPayment)
+                            <p class="mb-1"><strong>نوع الدفع:</strong> {{ $fullPayment->typeLabel() }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ number_format($fullPayment->amount_minor / 100, 2) }} {{ $booking->currency }}</p>
+                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ number_format($fullPayment->app_fee_minor / 100, 2) }} {{ $booking->currency }}</p>
+                        @elseif($partialPayment)
+                            <p class="mb-1"><strong>نوع الدفع:</strong> {{ $partialPayment->typeLabel() }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ number_format($partialPayment->amount_minor / 100, 2) }} {{ $booking->currency }}</p>
+                        @else
+                            <p class="mb-1"><strong>نوع الدفع:</strong> -</p>
+                        @endif
+                        <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ number_format($refundableAmountMinor / 100, 2) }} {{ $booking->currency }}</p>
                     </div>
                 </div>
 
@@ -180,13 +189,13 @@
                         @foreach($payments as $payment)
                             <tr>
                                 <td>{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</td>
-                                <td>{{ $payment->type }}</td>
+                                <td>{{ $payment->typeLabel() }}</td>
                                 <td>
                                     <span class="badge bg-label-{{ $payment->status === 'succeeded' ? 'success' : ($payment->status === 'pending' ? 'warning' : 'danger') }}">
-                                        {{ $payment->status }}
+                                        {{ $payment->statusLabel() }}
                                     </span>
                                 </td>
-                                <td>{{ $payment->provider }}</td>
+                                <td>{{ $payment->payment_method ?? '-' }}</td>
                                 <td>{{ $payment->created_at->format('Y-m-d H:i') }}</td>
                             </tr>
                         @endforeach
@@ -255,10 +264,10 @@
                                  class="form-control"
                                  min="0"
                                  step="1"
-                                 value="{{ (int) round(($booking->total_paid_minor ?? 0) / 100) }}"
+                                 value="{{ (int) round($refundableAmountMinor / 100) }}"
                                  required>
                           <small class="text-muted d-block mt-1">
-                              إجمالي المدفوع: {{ number_format(($booking->total_paid_minor ?? 0) / 100, 2) }} {{ $booking->currency }}
+                              إجمالي الدفعات الناجحة: {{ number_format($refundableAmountMinor / 100, 2) }} {{ $booking->currency }}
                           </small>
                       </div>
                       <div class="mb-3">

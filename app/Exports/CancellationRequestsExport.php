@@ -47,14 +47,15 @@ class CancellationRequestsExport implements FromCollection, WithHeadings, WithMa
         ];
 
         $userRequest = $request->userRequest;
-        $packageValue = $userRequest?->plan?->price_min ?? 0;
-        $totalPaid = $userRequest?->total_paid_minor ?? 0;
+        $fullPayment = $userRequest?->latestSuccessfulFullPayment();
+        $packageValue = $fullPayment?->amount_minor ?? ($userRequest?->plan?->price_min ?? 0);
+        $totalPaid = $userRequest?->totalSuccessfulPaymentsMinor() ?? 0;
 
         return [
             $request->id,
             $request->user?->name ?? $request->user_id,
             $userRequest?->plan?->title ?? ($userRequest?->plan_id ?? '-'),
-            number_format($packageValue, 2) . ' ' . ($userRequest?->currency ?? 'USD'),
+            number_format($packageValue / 100, 2) . ' ' . ($userRequest?->currency ?? 'USD'),
             number_format($totalPaid / 100, 2) . ' ' . ($userRequest?->currency ?? 'USD'),
             $request->reason ?? '-',
             $statuses[$request->status] ?? $request->status,

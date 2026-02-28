@@ -74,7 +74,7 @@
               <td>
                 <span class="fw-semibold text-warning">{{ number_format($p->app_fee_minor/100, 2) }} {{ $p->currency }}</span>
               </td>
-              <td><span class="badge bg-label-primary">{{ $p->type }}</span></td>
+              <td><span class="badge bg-label-primary">{{ $p->typeLabel() }}</span></td>
               <td><small class="text-muted">{{ $p->created_at?->format('Y-m-d H:i') }}</small></td>
             </tr>
           @empty

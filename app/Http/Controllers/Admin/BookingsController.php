@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\BookingsExport;
+use App\Models\CancellationRequest;
 use App\Models\UserRequest;
 use App\Models\Plan;
 use App\Models\WalletTransaction;
@@ -24,7 +25,13 @@ class BookingsController extends BaseController
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
-        $bookings = UserRequest::with(['user', 'plan', 'plan.country', 'plan.city'])
+        $bookings = UserRequest::with([
+            'user',
+            'plan',
+            'plan.country',
+            'plan.city',
+            'payments' => fn ($query) => $query->latest(),
+        ])
             ->when($q, function ($query) use ($q) {
                 $query->whereHas('user', function ($userQuery) use ($q) {
                     $userQuery->where('name', 'like', "%{$q}%")
@@ -51,7 +58,14 @@ class BookingsController extends BaseController
         ];
 
         if ($request->query('export') === 'excel') {
-            $allBookings = UserRequest::with(['user', 'trainer', 'plan', 'plan.country', 'plan.city'])
+            $allBookings = UserRequest::with([
+                'user',
+                'trainer',
+                'plan',
+                'plan.country',
+                'plan.city',
+                'payments' => fn ($query) => $query->latest(),
+            ])
                 ->when($q, function ($query) use ($q) {
                     $query->whereHas('user', function ($userQuery) use ($q) {
                         $userQuery->where('name', 'like', "%{$q}%")
@@ -81,7 +95,8 @@ class BookingsController extends BaseController
             'plan',
             'plan.country',
             'plan.city',
-            'plan.features'
+            'plan.features',
+            'payments' => fn ($query) => $query->latest(),
         ])->findOrFail($id);
 
         $offers = \App\Models\TrainerOffer::where('user_request_id', $id)
@@ -89,14 +104,16 @@ class BookingsController extends BaseController
             ->latest()
             ->get();
 
-        $payments = \App\Models\Payment::where('user_request_id', $id)
-            ->latest()
-            ->get();
+        $payments = $booking->payments;
 
         $trainingDays = \App\Models\TrainingDay::where('user_request_id', $id)
             ->with('trainer')
             ->latest()
             ->get();
+
+        $fullPayment = $booking->latestSuccessfulFullPayment();
+        $partialPayment = $booking->latestSuccessfulPartialPayment();
+        $refundableAmountMinor = $booking->totalSuccessfulPaymentsMinor();
 
         $statuses = [
             UserRequest::STATUS_PENDING_PAYMENT => 'قيد الدفع',
@@ -108,7 +125,19 @@ class BookingsController extends BaseController
             UserRequest::STATUS_CANCELLED => 'ملغي',
         ];
 
-        return view('admin.bookings.show', compact('booking', 'offers', 'payments', 'trainingDays', 'statuses'));
+        return view(
+            'admin.bookings.show',
+            compact(
+                'booking',
+                'offers',
+                'payments',
+                'trainingDays',
+                'statuses',
+                'fullPayment',
+                'partialPayment',
+                'refundableAmountMinor'
+            )
+        );
     }
 
     public function updateStatus(Request $request, string $id)
@@ -150,13 +179,33 @@ class BookingsController extends BaseController
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $booking = UserRequest::with(['user', 'trainer', 'plan'])->findOrFail($id);
+        $booking = UserRequest::with(['user', 'trainer', 'plan', 'cancellationRequest'])->findOrFail($id);
         abort_if($booking->status === UserRequest::STATUS_CANCELLED, 422, 'Course already cancelled');
         abort_if($booking->status === UserRequest::STATUS_COMPLETED, 422, 'Cannot cancel completed course');
 
         DB::transaction(function () use ($booking, $validated, $request) {
             $booking->status = UserRequest::STATUS_CANCELLED;
             $booking->save();
+
+            $cancellation = $booking->cancellationRequest ?? new CancellationRequest([
+                'user_request_id' => $booking->id,
+                'user_id' => $booking->user_id,
+                'reason' => $validated['reason'],
+            ]);
+
+            if ($cancellation->exists) {
+                if (blank($cancellation->reason)) {
+                    $cancellation->reason = $validated['reason'];
+                }
+                $cancellation->admin_notes = $validated['reason'];
+            } else {
+                $cancellation->admin_notes = $validated['reason'];
+            }
+
+            $cancellation->status = CancellationRequest::STATUS_APPROVED;
+            $cancellation->processed_by = $request->user()->id;
+            $cancellation->processed_at = now();
+            $cancellation->save();
 
             $refundAmount = (int) $validated['refund_amount'];
             if ($refundAmount > 0 && $booking->user) {

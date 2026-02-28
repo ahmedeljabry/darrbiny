@@ -31,8 +31,9 @@
         <label class="form-label fw-semibold small">النوع</label>
         <select name="type" class="form-select form-select-sm">
           <option value="">جميع الأنواع</option>
-          <option value="reservation_fee" @selected(request('type')==='reservation_fee')>رسوم الحجز</option>
-          <option value="plan_full" @selected(request('type')==='plan_full')>دفعة كاملة</option>
+          @foreach(\App\Models\Payment::typeLabels() as $value => $label)
+            <option value="{{ $value }}" @selected(request('type') === $value)>{{ $label }}</option>
+          @endforeach
         </select>
       </div>
       <div class="col-md-4">
@@ -99,7 +100,7 @@
             </td>
             <td>
               <span class="badge bg-label-info">
-                {{ $p->type === 'reservation_fee' ? 'رسوم الحجز' : 'دفعة كاملة' }}
+                {{ $p->typeLabel() }}
               </span>
             </td>
             <td>
@@ -117,8 +118,8 @@
               </span>
             </td>
             <td>
-              @if($p->provider)
-                <span class="badge bg-label-primary">{{ $p->provider }}</span>
+              @if($p->payment_method)
+                <span class="badge bg-label-primary">{{ $p->payment_method }}</span>
               @else
                 <span class="text-muted">-</span>
               @endif
@@ -150,4 +151,3 @@
   @endif
 </div>
 @endsection
-

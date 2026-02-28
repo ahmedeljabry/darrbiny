@@ -32,8 +32,8 @@
         <label class="form-label">النوع</label>
         <select name="type" class="form-select select2">
           <option value="">جميع الأنواع</option>
-          @foreach(['reservation_fee','plan_full'] as $t)
-            <option value="{{ $t }}" @selected(request('type')===$t)>{{ $t }}</option>
+          @foreach(\App\Models\Payment::typeLabels() as $value => $label)
+            <option value="{{ $value }}" @selected(request('type') === $value)>{{ $label }}</option>
           @endforeach
         </select>
       </div>
@@ -81,7 +81,7 @@
               <td>
                 <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</span>
               </td>
-              <td><span class="badge bg-label-primary">{{ $p->type }}</span></td>
+              <td><span class="badge bg-label-primary">{{ $p->typeLabel() }}</span></td>
               <td>
                 @if($p->status === 'succeeded')
                   <span class="badge bg-label-success">نجح</span>
@@ -91,7 +91,7 @@
                   <span class="badge bg-label-danger">فشل</span>
                 @endif
               </td>
-              <td><span class="badge bg-label-info">{{ $p->provider }}</span></td>
+              <td><span class="badge bg-label-info">{{ $p->payment_method ?? '-' }}</span></td>
               <td><small class="text-muted">{{ $p->created_at?->format('Y-m-d H:i') }}</small></td>
             </tr>
           @empty
@@ -115,4 +115,3 @@
   </div>
 </div>
 @endsection
-

@@ -25,6 +25,7 @@ class CancellationRequestsController extends BaseController
             'userRequest',
             'userRequest.user',
             'userRequest.plan',
+            'userRequest.payments' => fn ($query) => $query->latest(),
             'user',
             'processedBy'
         ]);
@@ -32,8 +33,10 @@ class CancellationRequestsController extends BaseController
         if ($status) {
             $q->where('status', $status);
         } else {
-            // Default: show pending first
-            $q->where('status', CancellationRequest::STATUS_PENDING);
+            $q->orderByRaw(
+                'CASE WHEN status = ? THEN 0 ELSE 1 END',
+                [CancellationRequest::STATUS_PENDING]
+            );
         }
 
         $requests = $q->latest()->paginate(20)->withQueryString();
@@ -43,6 +46,7 @@ class CancellationRequestsController extends BaseController
                 'userRequest',
                 'userRequest.user',
                 'userRequest.plan',
+                'userRequest.payments' => fn ($query) => $query->latest(),
                 'user',
                 'processedBy'
             ])
@@ -67,7 +71,7 @@ class CancellationRequestsController extends BaseController
             'userRequest.plan',
             'userRequest.plan.country',
             'userRequest.plan.city',
-            'userRequest.payments',
+            'userRequest.payments' => fn ($query) => $query->latest(),
             'user',
             'processedBy'
         ])->findOrFail($id);
@@ -97,7 +101,7 @@ class CancellationRequestsController extends BaseController
             $userRequest->status = UserRequest::STATUS_CANCELLED;
             $userRequest->save();
 
-            $totalPaid = $userRequest->total_paid_minor;
+            $totalPaid = $userRequest->totalSuccessfulPaymentsMinor();
             $packageValue = $userRequest->plan?->price_min ?? 0;
             
             if ($totalPaid > 0) {
@@ -148,4 +152,3 @@ class CancellationRequestsController extends BaseController
         return back()->with('status', 'تم رفض طلب الإلغاء');
     }
 }
-
