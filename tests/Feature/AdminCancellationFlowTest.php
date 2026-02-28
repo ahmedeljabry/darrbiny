@@ -146,6 +146,36 @@ class AdminCancellationFlowTest extends TestCase
         ]);
     }
 
+    public function test_cancelled_booking_without_cancellation_record_is_backfilled_in_requests_index(): void
+    {
+        $admin = $this->createAdmin();
+        [$plan, $user] = $this->createPlanAndUser();
+
+        $booking = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->addDay()->toDateString(),
+            'status' => UserRequest::STATUS_CANCELLED,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.cancellation-requests.index'))
+            ->assertOk()
+            ->assertSee($user->name);
+
+        $this->assertDatabaseHas('cancellation_requests', [
+            'user_request_id' => $booking->id,
+            'user_id' => $user->id,
+            'status' => CancellationRequest::STATUS_APPROVED,
+        ]);
+    }
+
     private function createAdmin(): User
     {
         $admin = User::factory()->create([

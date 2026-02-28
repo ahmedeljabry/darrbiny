@@ -19,6 +19,8 @@ class CancellationRequestsController extends BaseController
 {
     public function index(Request $request)
     {
+        $this->syncMissingCancellationRequests();
+
         $status = $request->query('status');
         
         $q = CancellationRequest::with([
@@ -65,6 +67,8 @@ class CancellationRequestsController extends BaseController
 
     public function show(string $id)
     {
+        $this->syncMissingCancellationRequests($id);
+
         $cancellation = CancellationRequest::with([
             'userRequest',
             'userRequest.user',
@@ -74,7 +78,12 @@ class CancellationRequestsController extends BaseController
             'userRequest.payments' => fn ($query) => $query->latest(),
             'user',
             'processedBy'
-        ])->findOrFail($id);
+        ])
+            ->where(function ($query) use ($id) {
+                $query->whereKey($id)
+                    ->orWhere('user_request_id', $id);
+            })
+            ->firstOrFail();
 
         return view('admin.cancellation-requests.show', compact('cancellation'));
     }
@@ -150,5 +159,43 @@ class CancellationRequestsController extends BaseController
         $cancellation->save();
 
         return back()->with('status', 'تم رفض طلب الإلغاء');
+    }
+
+    private function syncMissingCancellationRequests(?string $userRequestId = null): void
+    {
+        $cancelledRequests = UserRequest::query()
+            ->where('status', UserRequest::STATUS_CANCELLED)
+            ->when($userRequestId, function ($query, string $id) {
+                $query->where(function ($nested) use ($id) {
+                    $nested->where('id', $id)
+                        ->orWhereHas('cancellationRequest', fn ($cancellationQuery) => $cancellationQuery->where('id', $id));
+                });
+            })
+            ->doesntHave('cancellationRequest')
+            ->get();
+
+        foreach ($cancelledRequests as $userRequest) {
+            $this->createBackfilledCancellationRequest($userRequest);
+        }
+    }
+
+    private function createBackfilledCancellationRequest(UserRequest $userRequest): CancellationRequest
+    {
+        $timestamp = $userRequest->updated_at ?? $userRequest->created_at ?? now();
+
+        $cancellation = new CancellationRequest([
+            'user_request_id' => $userRequest->id,
+            'user_id' => $userRequest->user_id,
+            'reason' => 'تم إلغاء الدورة من النظام',
+            'status' => CancellationRequest::STATUS_APPROVED,
+            'admin_notes' => 'تمت مزامنة سجل إلغاء تلقائيا لأن الحجز بحالة ملغي.',
+        ]);
+
+        $cancellation->processed_at = $timestamp;
+        $cancellation->created_at = $timestamp;
+        $cancellation->updated_at = $timestamp;
+        $cancellation->save();
+
+        return $cancellation;
     }
 }
