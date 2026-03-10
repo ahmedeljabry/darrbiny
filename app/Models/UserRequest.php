@@ -17,7 +17,28 @@ class UserRequest extends BaseModel
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'user_id','trainer_id','plan_id','start_date','start_time','description','has_user_car','wants_trainer_car','needs_pickup','latitude','longitude','status','currency','app_fee_reserved_minor','total_paid_minor','retry_source_request_id','version'
+        'user_id',
+        'trainer_id',
+        'plan_id',
+        'country_id',
+        'area_level_1',
+        'area_level_2',
+        'area_level_3',
+        'locality',
+        'start_date',
+        'start_time',
+        'description',
+        'has_user_car',
+        'wants_trainer_car',
+        'needs_pickup',
+        'latitude',
+        'longitude',
+        'status',
+        'currency',
+        'app_fee_reserved_minor',
+        'total_paid_minor',
+        'retry_source_request_id',
+        'version',
     ];
 
     protected $casts = [
@@ -27,6 +48,7 @@ class UserRequest extends BaseModel
         'needs_pickup' => 'bool',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'country_id' => 'string',
         'app_fee_reserved_minor' => 'integer',
         'total_paid_minor' => 'integer',
         'retry_source_request_id' => 'string',
@@ -48,6 +70,11 @@ class UserRequest extends BaseModel
     public function plan()
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
     }
 
     public function offers()

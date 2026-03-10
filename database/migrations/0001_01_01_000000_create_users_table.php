@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('phone_with_cc')->unique();
             $table->boolean('whatsapp_enabled')->default(false);
             $table->uuid('country_id')->nullable()->index();
-            $table->uuid('city_id')->nullable()->index();
             $table->char('currency', 3)->nullable()->index();
             $table->string('referral_code')->unique();
             $table->uuid('referred_by')->nullable()->index();

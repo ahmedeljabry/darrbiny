@@ -23,7 +23,6 @@ class UserRolesController extends BaseController
         $user = User::findOrFail($id);
         $request->validate(['roles' => ['array']]);
         $user->syncRoles($request->input('roles', []));
-        return redirect()->route('admin.users.index')->with('status','User roles updated');
+        return redirect()->route('admin.users.index')->with('status', 'تم تحديث أدوار المستخدم بنجاح');
     }
 }
-

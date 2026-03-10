@@ -17,7 +17,6 @@ class UserResource extends JsonResource
             'phone_with_cc' => $this->phone_with_cc,
             'currency' => $this->currency,
             'country_id' => $this->country_id,
-            'city_id' => $this->city_id,
             'profile_picture_url' => $this->profile_picture_url,
             'points_balance' => $this->points_balance,
             'referral_code' => $this->referral_code,
@@ -38,4 +37,3 @@ class UserResource extends JsonResource
         ];
     }
 }
-

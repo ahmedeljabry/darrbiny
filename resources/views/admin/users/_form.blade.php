@@ -38,15 +38,6 @@
     </select>
   </div>
   <div class="col-md-6">
-    <label class="form-label">المدينة</label>
-    <select name="city_id" class="form-select select2">
-      <option value="">—</option>
-      @foreach($cities as $ct)
-        <option value="{{ $ct->id }}" @selected(old('city_id', $editing ? $user->city_id : null) == $ct->id)>{{ $ct->name }}</option>
-      @endforeach
-    </select>
-  </div>
-  <div class="col-md-6">
     <div class="form-check form-switch mt-4">
       <input class="form-check-input" type="checkbox" id="whatsapp_enabled" name="whatsapp_enabled" value="1" {{ old('whatsapp_enabled', $editing ? $user->whatsapp_enabled : false) ? 'checked' : '' }}>
       <label class="form-check-label" for="whatsapp_enabled">تفعيل واتساب</label>
@@ -59,7 +50,7 @@
         @php $checked = in_array($roleName, old('roles', $editing ? $user->getRoleNames()->toArray() : [])); @endphp
         <div class="form-check">
           <input class="form-check-input" type="checkbox" name="roles[]" value="{{ $roleName }}" id="role_{{ $roleName }}" {{ $checked ? 'checked' : '' }}>
-          <label class="form-check-label" for="role_{{ $roleName }}">{{ $roleName }}</label>
+          <label class="form-check-label" for="role_{{ $roleName }}">{{ \App\Support\AccessLabels::role($roleName) }}</label>
         </div>
       @endforeach
     </div>
@@ -78,4 +69,3 @@
   <button type="submit" class="btn btn-primary">حفظ</button>
   <a href="{{ route('admin.users.index') }}" class="btn btn-label-secondary">إلغاء</a>
 </div>
-

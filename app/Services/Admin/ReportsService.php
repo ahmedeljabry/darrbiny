@@ -130,8 +130,8 @@ final class ReportsService
         return $this->succeededPaymentsWithinRange($from, $to)
             ->with([
                 'user',
+                'userRequest.country',
                 'userRequest.plan.country',
-                'userRequest.plan.city',
             ]);
     }
 
@@ -146,7 +146,7 @@ final class ReportsService
     private function subscriptionsQuery(?string $status = null): Builder
     {
         return UserRequest::query()
-            ->with(['plan', 'user'])
+            ->with(['plan', 'plan.country', 'country', 'user'])
             ->when($status, fn (Builder $query, string $requestStatus) => $query->where('status', $requestStatus));
     }
 
@@ -157,8 +157,8 @@ final class ReportsService
             ->with([
                 'user',
                 'userRequest.trainer',
+                'userRequest.country',
                 'userRequest.plan.country',
-                'userRequest.plan.city',
             ]);
     }
 

@@ -27,9 +27,9 @@ class BookingsController extends BaseController
 
         $bookings = UserRequest::with([
             'user',
+            'country',
             'plan',
             'plan.country',
-            'plan.city',
             'payments' => fn ($query) => $query->latest(),
         ])
             ->when($q, function ($query) use ($q) {
@@ -61,9 +61,9 @@ class BookingsController extends BaseController
             $allBookings = UserRequest::with([
                 'user',
                 'trainer',
+                'country',
                 'plan',
                 'plan.country',
-                'plan.city',
                 'payments' => fn ($query) => $query->latest(),
             ])
                 ->when($q, function ($query) use ($q) {
@@ -92,9 +92,9 @@ class BookingsController extends BaseController
     {
         $booking = UserRequest::with([
             'user',
+            'country',
             'plan',
             'plan.country',
-            'plan.city',
             'plan.features',
             'payments' => fn ($query) => $query->latest(),
         ])->findOrFail($id);

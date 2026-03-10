@@ -17,9 +17,4 @@ class Country extends Model
     protected $casts = [
         'reservation_fee_minor' => 'integer',
     ];
-
-    public function cities()
-    {
-        return $this->hasMany(City::class);
-    }
 }

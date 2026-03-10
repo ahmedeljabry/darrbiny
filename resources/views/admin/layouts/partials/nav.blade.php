@@ -114,7 +114,8 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                                    <small class="text-body-secondary">{{ auth()->user()->role }}</small>
+                                    @php $primaryRole = auth()->user()->getRoleNames()->first(); @endphp
+                                    <small class="text-body-secondary">{{ \App\Support\AccessLabels::role($primaryRole) }}</small>
                                 </div>
                             </div>
                         </a>

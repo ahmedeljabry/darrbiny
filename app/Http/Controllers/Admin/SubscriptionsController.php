@@ -14,7 +14,7 @@ class SubscriptionsController extends BaseController
 {
     public function index(Request $request)
     {
-        $q = UserRequest::with('plan', 'user')->latest();
+        $q = UserRequest::with('plan', 'plan.country', 'country', 'user')->latest();
 
         $scope = $request->query('scope');
         $status = $request->query('status');
@@ -36,7 +36,7 @@ class SubscriptionsController extends BaseController
         $subs = $q->paginate(20)->withQueryString();
 
         if ($request->query('export') === 'excel') {
-            $allSubs = UserRequest::with('plan', 'user')
+            $allSubs = UserRequest::with('plan', 'plan.country', 'country', 'user')
                 ->when($scope === 'active', function ($query) {
                     $query->whereIn('status', [
                         UserRequest::STATUS_IN_TRAINING,

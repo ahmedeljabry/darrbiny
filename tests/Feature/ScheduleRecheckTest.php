@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\PlanScheduleItem;
@@ -28,10 +27,6 @@ class ScheduleRecheckTest extends TestCase
             'iso2' => 'TC',
             'currency' => 'USD',
         ]);
-        $city = City::create([
-            'name' => 'Test City',
-            'country_id' => $country->id,
-        ]);
         $plan = Plan::create([
             'title' => 'Plan A',
             'description' => 'Test plan',
@@ -39,7 +34,6 @@ class ScheduleRecheckTest extends TestCase
             'duration_days' => '1',
             'hours_count' => 1,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
         $scheduleItem = PlanScheduleItem::create([
@@ -89,4 +83,3 @@ class ScheduleRecheckTest extends TestCase
         Notification::assertSentTo($student, ScheduleItemSentNotification::class);
     }
 }
-

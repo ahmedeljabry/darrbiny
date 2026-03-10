@@ -74,7 +74,6 @@ class CancellationRequestsController extends BaseController
             'userRequest.user',
             'userRequest.plan',
             'userRequest.plan.country',
-            'userRequest.plan.city',
             'userRequest.payments' => fn ($query) => $query->latest(),
             'user',
             'processedBy'

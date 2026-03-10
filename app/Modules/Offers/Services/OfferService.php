@@ -19,12 +19,20 @@ class OfferService
         $req = UserRequest::findOrFail($data['user_request_id']);
         $profile = TrainerProfile::where('user_id', $trainerId)->firstOrFail();
 
-        // Eligibility: match location with request's plan
-        if ($profile->city_id && $req->plan->city_id && $profile->city_id !== $req->plan->city_id) {
-            abort(422, 'Trainer not eligible for this city');
-        }
-        if ($profile->country_id && $req->plan->country_id && $profile->country_id !== $req->plan->country_id) {
+        if ($profile->country_id && $req->country_id && $profile->country_id !== $req->country_id) {
             abort(422, 'Trainer not eligible for this country');
+        }
+        if ($profile->area_level_1 && $req->area_level_1 && $profile->area_level_1 !== $req->area_level_1) {
+            abort(422, 'Trainer not eligible for this location');
+        }
+        if ($profile->area_level_2 && $req->area_level_2 && $profile->area_level_2 !== $req->area_level_2) {
+            abort(422, 'Trainer not eligible for this location');
+        }
+        if ($profile->area_level_3 && $req->area_level_3 && $profile->area_level_3 !== $req->area_level_3) {
+            abort(422, 'Trainer not eligible for this location');
+        }
+        if ($profile->locality && $req->locality && $profile->locality !== $req->locality) {
+            abort(422, 'Trainer not eligible for this location');
         }
 
         return DB::transaction(function () use ($trainerId, $data) {

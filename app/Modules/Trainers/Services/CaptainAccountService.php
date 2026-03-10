@@ -11,7 +11,13 @@ use Illuminate\Support\Arr;
 class CaptainAccountService
 {
     /** @var array<int, string> */
-    private const DIRECT_UPDATE_FIELDS = ['city_id'];
+    private const DIRECT_UPDATE_FIELDS = [
+        'country_id',
+        'area_level_1',
+        'area_level_2',
+        'area_level_3',
+        'locality',
+    ];
 
     public function getDetails(User $user): TrainerProfile
     {
@@ -22,7 +28,7 @@ class CaptainAccountService
             $profile = $user->trainerProfile()->create();
         }
 
-        $profile = $profile->fresh(['country:id,name', 'city:id,name']);
+        $profile = $profile->fresh(['country:id,name']);
 
         return $this->applyPendingChangesForDisplay($profile);
     }
@@ -39,7 +45,10 @@ class CaptainAccountService
         $data = Arr::only($payload, [
             'bio',
             'country_id',
-            'city_id',
+            'area_level_1',
+            'area_level_2',
+            'area_level_3',
+            'locality',
             'car_available',
             'pickup_available',
             'car_type',
@@ -81,12 +90,12 @@ class CaptainAccountService
 
         if (empty($directUpdates) && empty($approvalChanges)) {
             return $this->applyPendingChangesForDisplay(
-                $profile->fresh(['country:id,name', 'city:id,name'])
+                $profile->fresh(['country:id,name'])
             );
         }
 
         if (!empty($directUpdates)) {
-            // City updates are applied immediately without admin approval.
+            // Location updates are applied immediately without admin approval.
             $profile->fill($directUpdates);
         }
 
@@ -126,7 +135,7 @@ class CaptainAccountService
         }
 
         return $this->applyPendingChangesForDisplay(
-            $profile->fresh(['country:id,name', 'city:id,name'])
+            $profile->fresh(['country:id,name'])
         );
     }
 
@@ -159,7 +168,7 @@ class CaptainAccountService
         }
 
         $profile->fill($pendingChanges);
-        $profile->load(['country:id,name', 'city:id,name']);
+        $profile->load(['country:id,name']);
 
         return $profile;
     }

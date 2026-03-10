@@ -437,7 +437,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"Captain Name\",\n    \"phone_with_cc\": \"+966501234567\",\n    \"email\": \"captain@example.com\",\n    \"city_id\": \"uuid-here\",\n    \"license_number\": \"123456\",\n    \"license_expiry_date\": \"2025-12-31\",\n    \"car_model\": \"Toyota Camry\",\n    \"car_year\": 2020,\n    \"car_plate_number\": \"ABC123\"\n}",
+                            "raw": "{\n    \"name\": \"Captain Name\",\n    \"phone_with_cc\": \"+966501234567\",\n    \"email\": \"captain@example.com\",\n    \"country_id\": \"uuid-here\",\n    \"license_number\": \"123456\",\n    \"license_expiry_date\": \"2025-12-31\",\n    \"car_model\": \"Toyota Camry\",\n    \"car_year\": 2020,\n    \"car_plate_number\": \"ABC123\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -478,17 +478,23 @@
                     }
                 },
                 {
-                    "name": "Get Cities",
+                    "name": "Get Plans by Location",
                     "request": {
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/cities",
+                            "raw": "{{base_url}}/plans?country_id={{country_id}}",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "cities"
+                                "plans"
+                            ],
+                            "query": [
+                                {
+                                    "key": "country_id",
+                                    "value": "{{country_id}}"
+                                }
                             ]
                         }
                     }

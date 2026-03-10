@@ -34,7 +34,7 @@
       </span>
       <div>
         <h5 class="mb-0">الدول</h5>
-        <small class="text-body-secondary">إدارة الدول والمدن</small>
+        <small class="text-body-secondary">إدارة الدول</small>
       </div>
     </div>
     <div class="d-flex align-items-end gap-2 flex-wrap">

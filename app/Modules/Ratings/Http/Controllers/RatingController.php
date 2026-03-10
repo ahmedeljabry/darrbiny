@@ -18,7 +18,6 @@ class RatingController extends BaseController
             'trainer.profilePicture',
             'trainer.trainerProfile',
             'trainer.trainerProfile.country',
-            'trainer.trainerProfile.city',
         ]);
 
         if ($tid = $request->query('trainer_id')) {
@@ -55,10 +54,8 @@ class RatingController extends BaseController
             'trainer.profilePicture',
             'trainer.trainerProfile',
             'trainer.trainerProfile.country',
-            'trainer.trainerProfile.city',
         ]);
 
         return response()->json(['data' => new RatingResource($rating)], 201);
     }
 }
-

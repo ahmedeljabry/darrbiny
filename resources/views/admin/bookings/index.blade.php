@@ -108,7 +108,16 @@
                                     <div class="d-flex flex-column">
                                         <span class="fw-semibold">{{ $booking->plan->title ?? '-' }}</span>
                                         @if($booking->plan)
-                                            <small class="text-muted">{{ $booking->plan->city->name ?? '' }}, {{ $booking->plan->country->name ?? '' }}</small>
+                                            @php
+                                                $bookingLocation = implode(' ، ', array_filter([
+                                                    $booking->locality,
+                                                    $booking->area_level_3,
+                                                    $booking->area_level_2,
+                                                    $booking->area_level_1,
+                                                    $booking->country?->name ?? $booking->plan->country->name ?? null,
+                                                ]));
+                                            @endphp
+                                            <small class="text-muted">{{ $bookingLocation !== '' ? $bookingLocation : '-' }}</small>
                                         @endif
                                     </div>
                                 </td>

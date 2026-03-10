@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->uuid('user_id')->unique();
             $table->text('bio')->nullable();
             $table->uuid('country_id')->nullable()->index();
-            $table->uuid('city_id')->nullable()->index();
             $table->boolean('car_available')->default(false);
             $table->boolean('pickup_available')->default(false);
             $table->unsignedInteger('rating_count')->default(0);
@@ -29,4 +28,3 @@ return new class extends Migration {
         Schema::dropIfExists('trainer_profiles');
     }
 };
-

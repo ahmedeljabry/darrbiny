@@ -290,19 +290,18 @@
             </td>
             <td>
               @foreach($u->getRoleNames() as $r)
-                @if($r === 'TRAINER')
-                  <span class="badge bg-label-success me-1 mb-1">
-                    <i class="icon-base ti tabler-school me-1"></i>مدرب
-                  </span>
-                @elseif($r === 'ADMIN')
-                  <span class="badge bg-label-primary me-1 mb-1">
-                    <i class="icon-base ti tabler-shield-check me-1"></i>مشرف
-                  </span>
-                @else
-                  <span class="badge bg-label-info me-1 mb-1">
-                    <i class="icon-base ti tabler-user me-1"></i>مستخدم
-                  </span>
-                @endif
+                @php
+                  $roleKey = strtoupper((string) $r);
+                  $roleStyle = match($roleKey) {
+                    'TRAINER' => ['badge' => 'success', 'icon' => 'school'],
+                    'ADMIN' => ['badge' => 'primary', 'icon' => 'shield-check'],
+                    'USER' => ['badge' => 'info', 'icon' => 'user'],
+                    default => ['badge' => 'secondary', 'icon' => 'shield'],
+                  };
+                @endphp
+                <span class="badge bg-label-{{ $roleStyle['badge'] }} me-1 mb-1">
+                  <i class="icon-base ti tabler-{{ $roleStyle['icon'] }} me-1"></i>{{ \App\Support\AccessLabels::role($r) }}
+                </span>
               @endforeach
             </td>
             <td>

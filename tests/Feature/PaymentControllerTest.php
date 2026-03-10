@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -28,10 +27,6 @@ class PaymentControllerTest extends TestCase
             'iso2' => 'TC',
             'currency' => 'USD',
         ]);
-        $city = City::create([
-            'name' => 'Test City',
-            'country_id' => $country->id,
-        ]);
         $plan = Plan::create([
             'title' => 'Plan A',
             'description' => 'Test plan',
@@ -39,7 +34,6 @@ class PaymentControllerTest extends TestCase
             'duration_days' => '3',
             'hours_count' => 12,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
 
@@ -102,10 +96,6 @@ class PaymentControllerTest extends TestCase
             'iso2' => 'T2',
             'currency' => 'USD',
         ]);
-        $city = City::create([
-            'name' => 'Test City 2',
-            'country_id' => $country->id,
-        ]);
         $plan = Plan::create([
             'title' => 'Plan B',
             'description' => 'Test plan B',
@@ -113,7 +103,6 @@ class PaymentControllerTest extends TestCase
             'duration_days' => '5',
             'hours_count' => 20,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
 

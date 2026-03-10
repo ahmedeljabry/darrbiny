@@ -10,7 +10,10 @@ class TrainerProfile extends BaseModel
         'user_id',
         'bio',
         'country_id',
-        'city_id',
+        'area_level_1',
+        'area_level_2',
+        'area_level_3',
+        'locality',
         'car_available',
         'pickup_available',
         'car_type',
@@ -53,10 +56,5 @@ class TrainerProfile extends BaseModel
     public function country()
     {
         return $this->belongsTo(Country::class);
-    }
-
-    public function city()
-    {
-        return $this->belongsTo(City::class);
     }
 }

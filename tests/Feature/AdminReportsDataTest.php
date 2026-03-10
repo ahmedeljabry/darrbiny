@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -24,10 +23,10 @@ class AdminReportsDataTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_sales_report_shows_country_and_city_columns_and_values(): void
+    public function test_sales_report_shows_country_column_and_value(): void
     {
         $admin = $this->createAdmin();
-        [$country, $city, $plan] = $this->createLocationPlan();
+        [$country, $plan] = $this->createLocationPlan();
 
         $user = User::factory()->create([
             'name' => 'Sales User',
@@ -61,15 +60,13 @@ class AdminReportsDataTest extends TestCase
             ->get(route('admin.reports.sales'))
             ->assertOk()
             ->assertSee('الدولة')
-            ->assertSee('المدينة')
-            ->assertSee($country->name)
-            ->assertSee($city->name);
+            ->assertSee($country->name);
     }
 
     public function test_app_fees_report_includes_only_plan_full_payments_with_fees(): void
     {
         $admin = $this->createAdmin();
-        [, , $plan] = $this->createLocationPlan();
+        [, $plan] = $this->createLocationPlan();
 
         $user = User::factory()->create([
             'name' => 'Fees User',
@@ -130,7 +127,7 @@ class AdminReportsDataTest extends TestCase
     }
 
     /**
-     * @return array{0: Country, 1: City, 2: Plan}
+     * @return array{0: Country, 1: Plan}
      */
     private function createLocationPlan(): array
     {
@@ -138,11 +135,6 @@ class AdminReportsDataTest extends TestCase
             'name' => 'Saudi Arabia',
             'iso2' => 'SA',
             'currency' => 'SAR',
-        ]);
-
-        $city = City::create([
-            'name' => 'Riyadh',
-            'country_id' => $country->id,
         ]);
 
         $plan = Plan::create([
@@ -153,10 +145,9 @@ class AdminReportsDataTest extends TestCase
             'hours_count' => 10,
             'session_count' => 5,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
 
-        return [$country, $city, $plan];
+        return [$country, $plan];
     }
 }

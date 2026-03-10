@@ -23,7 +23,6 @@ return new class extends Migration
             $table->integer('session_count')->nullable();
             $table->string('level')->nullable();
             $table->foreignUuid('country_id')->constrained('countries')->cascadeOnDelete();
-            $table->foreignUuid('city_id')->constrained('cities')->cascadeOnDelete();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

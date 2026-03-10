@@ -25,7 +25,6 @@ class PlanStoreRequest extends FormRequest
             'session_count' => ['nullable','integer','min:0'],
             'level' => ['nullable','string','max:50'],
             'country_id' => ['required','uuid'],
-            'city_id' => ['required','uuid'],
             'is_active' => ['sometimes','boolean'],
             'show_on_home' => ['sometimes','boolean'],
             'features' => ['nullable','array'],

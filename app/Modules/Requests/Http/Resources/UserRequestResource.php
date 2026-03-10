@@ -24,6 +24,19 @@ class UserRequestResource extends JsonResource
             'needs_pickup' => $this->needs_pickup,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'country_id' => $this->country_id,
+            'area_level_1' => $this->area_level_1,
+            'area_level_2' => $this->area_level_2,
+            'area_level_3' => $this->area_level_3,
+            'locality' => $this->locality,
+            'location' => [
+                'country_id' => $this->country_id,
+                'country_name' => $this->relationLoaded('country') ? $this->country?->name : null,
+                'area_level_1' => $this->area_level_1,
+                'area_level_2' => $this->area_level_2,
+                'area_level_3' => $this->area_level_3,
+                'locality' => $this->locality,
+            ],
             'status' => $this->status,
             'currency' => $this->currency,
             'app_fee_reserved_minor' => $this->app_fee_reserved_minor,
@@ -56,10 +69,6 @@ class UserRequestResource extends JsonResource
                 'country' => $this->whenLoaded('plan.country', fn () => [
                     'id' => $this->plan->country->id,
                     'name' => $this->plan->country->name,
-                ]),
-                'city' => $this->whenLoaded('plan.city', fn () => [
-                    'id' => $this->plan->city->id,
-                    'name' => $this->plan->city->name,
                 ]),
             ]),
             'offers' => $this->whenLoaded('offers', fn () => $this->offers->map(fn ($offer) => [

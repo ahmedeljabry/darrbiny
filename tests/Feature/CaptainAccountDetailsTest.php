@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Country;
 use App\Models\User;
 use Database\Seeders\GeoSeeder;
@@ -50,7 +49,6 @@ class CaptainAccountDetailsTest extends TestCase
         $token = $trainer->createToken('test')->plainTextToken;
 
         $country = Country::query()->first();
-        $city = City::query()->where('country_id', $country->id)->first();
 
         $payload = [
             'bio' => 'مدربة معتمدة منذ عام 2017 ولدي خبرة في التدريب العملي والنظري.',
@@ -58,7 +56,10 @@ class CaptainAccountDetailsTest extends TestCase
             'car_model_year' => '2022',
             'has_driving_license' => true,
             'country_id' => $country->id,
-            'city_id' => $city->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => 'North',
+            'locality' => 'Al Olaya',
             'car_available' => true,
             'pickup_available' => false,
         ];
@@ -67,7 +68,6 @@ class CaptainAccountDetailsTest extends TestCase
             ->postJson('/api/v1/captain/account-details', $payload)
             ->assertOk()
             ->assertJsonPath('data.car_type', 'تويوتا كامري')
-            ->assertJsonPath('data.city.id', $city->id)
             ->assertJsonPath('data.pending_approval', true)
             ->assertJsonPath('data.approval_status', 'pending')
             ->assertJsonPath('data.is_complete', true);
@@ -80,7 +80,7 @@ class CaptainAccountDetailsTest extends TestCase
         $this->assertTrue((bool) data_get($profile->pending_changes, 'has_driving_license'));
     }
 
-    public function test_trainer_city_update_is_applied_without_admin_approval(): void
+    public function test_trainer_location_update_is_applied_without_admin_approval(): void
     {
         $trainer = User::factory()->create([
             'phone_with_cc' => '+201555500004',
@@ -88,35 +88,32 @@ class CaptainAccountDetailsTest extends TestCase
         $trainer->assignRole('TRAINER');
         $token = $trainer->createToken('test')->plainTextToken;
 
-        $country = Country::query()->firstOrFail();
-        $cities = City::query()
-            ->where('country_id', $country->id)
-            ->orderBy('name')
-            ->take(2)
-            ->get();
-        $oldCity = $cities->get(0);
-        $newCity = $cities->get(1);
-        $this->assertNotNull($oldCity);
-        $this->assertNotNull($newCity);
+        $oldCountry = Country::query()->firstOrFail();
+        $newCountry = Country::query()->where('id', '!=', $oldCountry->id)->firstOrFail();
 
         $trainer->trainerProfile()->create([
-            'country_id' => $country->id,
-            'city_id' => $oldCity->id,
+            'country_id' => $oldCountry->id,
+            'area_level_1' => 'Old Region',
             'has_driving_license' => false,
         ]);
 
         $this->withToken($token)
             ->postJson('/api/v1/captain/account-details', [
-                'country_id' => $country->id,
-                'city_id' => $newCity->id,
+                'country_id' => $newCountry->id,
+                'area_level_1' => 'New Region',
+                'area_level_2' => 'New City',
                 'has_driving_license' => false,
             ])
             ->assertOk()
-            ->assertJsonPath('data.city.id', $newCity->id);
+            ->assertJsonPath('data.country_id', $newCountry->id)
+            ->assertJsonPath('data.area_level_1', 'New Region')
+            ->assertJsonPath('data.area_level_2', 'New City');
 
         $this->assertDatabaseHas('trainer_profiles', [
             'user_id' => $trainer->id,
-            'city_id' => $newCity->id,
+            'country_id' => $newCountry->id,
+            'area_level_1' => 'New Region',
+            'area_level_2' => 'New City',
             'pending_approval' => false,
         ]);
 
@@ -145,13 +142,12 @@ class CaptainAccountDetailsTest extends TestCase
         $token = $trainer->createToken('test')->plainTextToken;
 
         $country = Country::query()->firstOrFail();
-        $city = City::query()->where('country_id', $country->id)->firstOrFail();
 
         $trainer->trainerProfile()->create([
             'bio' => 'bio-old',
             'car_type' => 'car-old',
             'country_id' => $country->id,
-            'city_id' => $city->id,
+            'area_level_1' => 'Riyadh Province',
             'has_driving_license' => false,
             'pending_approval' => true,
             'pending_changes' => [

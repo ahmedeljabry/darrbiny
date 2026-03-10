@@ -11,5 +11,5 @@
   </ol>
 </nav>
 
-  @include('admin.geo.countries.form', compact('country','cities'))
+  @include('admin.geo.countries.form', compact('country'))
 @endsection

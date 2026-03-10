@@ -32,7 +32,7 @@ class UserRequestController extends BaseController
         $trainerId = $request->query('trainer_id');
         $trainerName = $request->query('trainer_name');
 
-        $q = UserRequest::with(['user', 'plan', 'plan.country', 'plan.city', 'offers.trainer']);
+        $q = UserRequest::with(['user', 'country', 'plan', 'plan.country', 'offers.trainer']);
 
         if ($mine) {
             $q->where('user_id', $user->id);
@@ -69,12 +69,12 @@ class UserRequestController extends BaseController
     {
         $req = UserRequest::with([
             'user',
+            'country',
             'user.rates',
             'trainer',
             'trainer.trainerProfile',
             'plan',
             'plan.country',
-            'plan.city',
             'plan.features',
             'offers',
             'offers.trainer',
@@ -88,7 +88,7 @@ class UserRequestController extends BaseController
     public function store(StoreUserRequest $request)
     {
         $req = $this->service->create($request->validated(), $request->user()->id);
-        $relationships = ['user', 'plan', 'plan.country', 'plan.city'];
+        $relationships = ['user', 'country', 'plan', 'plan.country'];
         if ($req->trainer_id) {
             $relationships[] = 'trainer';
         }
@@ -110,14 +110,17 @@ class UserRequestController extends BaseController
         $profile = $canSeeOpenRequests
             ? TrainerProfile::where('user_id', $trainerId)->first()
             : null;
-        $effectiveCityId = $this->resolveTrainerLocation($profile, 'city_id');
         $effectiveCountryId = $this->resolveTrainerLocation($profile, 'country_id');
+        $effectiveAreaLevelOne = $this->resolveTrainerLocation($profile, 'area_level_1');
+        $effectiveAreaLevelTwo = $this->resolveTrainerLocation($profile, 'area_level_2');
+        $effectiveAreaLevelThree = $this->resolveTrainerLocation($profile, 'area_level_3');
+        $effectiveLocality = $this->resolveTrainerLocation($profile, 'locality');
 
         $q = UserRequest::with([
             'user',
+            'country',
             'plan',
             'plan.country',
-            'plan.city',
             'offers' => function ($query) use ($trainerId) {
                 $query->where('trainer_id', $trainerId);
             },
@@ -126,7 +129,17 @@ class UserRequestController extends BaseController
                 $query->where('trainer_id', $trainerId);
             }
         ])
-            ->where(function ($query) use ($trainerId, $canSeeOpenRequests, $effectiveCityId, $effectiveCountryId) {
+            ->where(function (
+                $query
+            ) use (
+                $trainerId,
+                $canSeeOpenRequests,
+                $effectiveCountryId,
+                $effectiveAreaLevelOne,
+                $effectiveAreaLevelTwo,
+                $effectiveAreaLevelThree,
+                $effectiveLocality
+            ) {
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                     $offerQuery->where('trainer_id', $trainerId);
                 })
@@ -135,26 +148,51 @@ class UserRequestController extends BaseController
                     })
                     ->orWhere('trainer_id', $trainerId);
                 if ($canSeeOpenRequests) {
-                    $query->orWhere(function ($openQuery) use ($effectiveCityId, $effectiveCountryId) {
+                    $query->orWhere(function (
+                        $openQuery
+                    ) use (
+                        $effectiveCountryId,
+                        $effectiveAreaLevelOne,
+                        $effectiveAreaLevelTwo,
+                        $effectiveAreaLevelThree,
+                        $effectiveLocality
+                    ) {
                         $openQuery->whereNull('trainer_id')
                             ->whereIn('status', [
                                 UserRequest::STATUS_PENDING_PAYMENT,
                                 UserRequest::STATUS_AWAITING_OFFERS,
-                            ])
-                            ->whereHas('plan', function ($planQuery) use ($effectiveCityId, $effectiveCountryId) {
-                                if ($effectiveCityId) {
-                                    $planQuery->where(function ($cityQuery) use ($effectiveCityId) {
-                                        $cityQuery->whereNull('city_id')
-                                            ->orWhere('city_id', $effectiveCityId);
-                                    });
-                                }
-                                if ($effectiveCountryId) {
-                                    $planQuery->where(function ($countryQuery) use ($effectiveCountryId) {
-                                        $countryQuery->whereNull('country_id')
-                                            ->orWhere('country_id', $effectiveCountryId);
-                                    });
-                                }
+                            ]);
+
+                        if ($effectiveCountryId) {
+                            $openQuery->where(function ($countryQuery) use ($effectiveCountryId) {
+                                $countryQuery->whereNull('country_id')
+                                    ->orWhere('country_id', $effectiveCountryId);
                             });
+                        }
+                        if ($effectiveAreaLevelOne) {
+                            $openQuery->where(function ($areaOneQuery) use ($effectiveAreaLevelOne) {
+                                $areaOneQuery->whereNull('area_level_1')
+                                    ->orWhere('area_level_1', $effectiveAreaLevelOne);
+                            });
+                        }
+                        if ($effectiveAreaLevelTwo) {
+                            $openQuery->where(function ($areaTwoQuery) use ($effectiveAreaLevelTwo) {
+                                $areaTwoQuery->whereNull('area_level_2')
+                                    ->orWhere('area_level_2', $effectiveAreaLevelTwo);
+                            });
+                        }
+                        if ($effectiveAreaLevelThree) {
+                            $openQuery->where(function ($areaThreeQuery) use ($effectiveAreaLevelThree) {
+                                $areaThreeQuery->whereNull('area_level_3')
+                                    ->orWhere('area_level_3', $effectiveAreaLevelThree);
+                            });
+                        }
+                        if ($effectiveLocality) {
+                            $openQuery->where(function ($localityQuery) use ($effectiveLocality) {
+                                $localityQuery->whereNull('locality')
+                                    ->orWhere('locality', $effectiveLocality);
+                            });
+                        }
                     });
                 }
             });
@@ -186,11 +224,11 @@ class UserRequestController extends BaseController
         $userId = $request->user()->id;
         $q = UserRequest::with([
             'user',
+            'country',
             'trainer',
             'trainer.trainerProfile',
             'plan',
             'plan.country',
-            'plan.city',
             'plan.scheduleItems',
             'offers',
             'offers.trainer',

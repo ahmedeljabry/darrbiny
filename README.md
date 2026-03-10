@@ -38,7 +38,7 @@ Auth
 
 Catalog
 - `curl http://localhost/api/v1/countries`
-- `curl 'http://localhost/api/v1/plans?country_id=...&city_id=...'`
+- `curl 'http://localhost/api/v1/plans?country_id=...'`
 
 User Requests
 - Create request:

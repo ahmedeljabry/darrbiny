@@ -6,7 +6,6 @@ namespace App\Jobs;
 
 use App\Models\TrainerProfile;
 use App\Models\UserRequest;
-use App\Models\User;
 use App\Notifications\NewRequestAvailable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,12 +22,13 @@ class NotifyEligibleTrainers implements ShouldQueue
 
     public function handle(): void
     {
-        $plan = $this->request->plan;
-
         $query = TrainerProfile::query()
             ->whereNotNull('verified_at')
-            ->when($plan?->city_id, fn($q) => $q->where('city_id', $plan->city_id))
-            ->when(!$plan?->city_id && $plan?->country_id, fn($q) => $q->where('country_id', $plan->country_id))
+            ->when($this->request->country_id, fn($q) => $q->where('country_id', $this->request->country_id))
+            ->when($this->request->area_level_1, fn($q) => $q->where('area_level_1', $this->request->area_level_1))
+            ->when($this->request->area_level_2, fn($q) => $q->where('area_level_2', $this->request->area_level_2))
+            ->when($this->request->area_level_3, fn($q) => $q->where('area_level_3', $this->request->area_level_3))
+            ->when($this->request->locality, fn($q) => $q->where('locality', $this->request->locality))
             ->with('user');
 
         $query->chunk(200, function ($profiles) {

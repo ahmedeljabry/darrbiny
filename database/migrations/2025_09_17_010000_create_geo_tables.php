@@ -14,19 +14,10 @@ return new class extends Migration {
             $table->char('currency', 3);
             $table->timestamps();
         });
-
-        Schema::create('cities', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('country_id')->index();
-            $table->string('name');
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cities');
         Schema::dropIfExists('countries');
     }
 };
-

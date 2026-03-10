@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\NotifyEligibleTrainers;
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\User;
@@ -34,6 +33,11 @@ class FreeRetryRequestTest extends TestCase
         $response = $this->postJson('/api/v1/user-requests', [
             'plan_id' => $plan->id,
             'trainer_id' => $trainer->id,
+            'country_id' => $plan->country_id,
+            'area_level_1' => 'Test Region',
+            'area_level_2' => 'Test City',
+            'area_level_3' => 'Test District',
+            'locality' => 'Test Locality',
             'start_date' => now()->addDay()->toDateString(),
             'start_time' => '09:00',
             'has_user_car' => false,
@@ -75,6 +79,11 @@ class FreeRetryRequestTest extends TestCase
         $this->postJson('/api/v1/user-requests', [
             'plan_id' => $plan->id,
             'trainer_id' => $trainer->id,
+            'country_id' => $plan->country_id,
+            'area_level_1' => 'Test Region',
+            'area_level_2' => 'Test City',
+            'area_level_3' => null,
+            'locality' => null,
             'start_date' => now()->addDay()->toDateString(),
             'start_time' => '10:00',
             'has_user_car' => true,
@@ -87,6 +96,11 @@ class FreeRetryRequestTest extends TestCase
         $second = $this->postJson('/api/v1/user-requests', [
             'plan_id' => $plan->id,
             'trainer_id' => $trainer->id,
+            'country_id' => $plan->country_id,
+            'area_level_1' => 'Test Region',
+            'area_level_2' => 'Test City',
+            'area_level_3' => 'Another District',
+            'locality' => 'Another Locality',
             'start_date' => now()->addDays(2)->toDateString(),
             'start_time' => '11:00',
             'has_user_car' => true,
@@ -111,11 +125,6 @@ class FreeRetryRequestTest extends TestCase
             'currency' => 'USD',
         ]);
 
-        $city = City::create([
-            'name' => 'Test City',
-            'country_id' => $country->id,
-        ]);
-
         return Plan::create([
             'title' => 'Retry Plan',
             'description' => 'Plan for retry tests',
@@ -123,7 +132,6 @@ class FreeRetryRequestTest extends TestCase
             'duration_days' => '3',
             'hours_count' => 6,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
     }

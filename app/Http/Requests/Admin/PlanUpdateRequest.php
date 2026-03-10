@@ -25,7 +25,6 @@ class PlanUpdateRequest extends FormRequest
             'session_count' => ['sometimes','integer','min:0'],
             'level' => ['nullable','string','max:50'],
             'country_id' => ['sometimes','uuid'],
-            'city_id' => ['sometimes','uuid'],
             'is_active' => ['sometimes','boolean'],
             'show_on_home' => ['sometimes','boolean'],
             'features' => ['nullable','array'],

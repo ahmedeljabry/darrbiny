@@ -24,13 +24,14 @@ class SubscriptionResource extends JsonResource
         $uuidHex = str_replace('-', '', $this->id);
         $courseId = 500 + (int) hexdec(substr($uuidHex, 0, 4));
 
-        $location = '';
-        if ($this->plan->city) {
-            $location = $this->plan->city->name;
-            if ($this->plan->country) {
-                $location .= ' ، ' . $this->plan->country->name;
-            }
-        }
+        $locationParts = array_filter([
+            $this->locality,
+            $this->area_level_3,
+            $this->area_level_2,
+            $this->area_level_1,
+            $this->country?->name ?? $this->plan->country?->name,
+        ], static fn ($value) => filled($value));
+        $location = implode(' ، ', $locationParts);
 
         $carModel = null;
         if ($trainerProfile && $trainerProfile->car_available) {
@@ -99,8 +100,16 @@ class SubscriptionResource extends JsonResource
                 'needs_pickup' => $this->needs_pickup,
                 'start_time' => $this->start_time,
                 'end_date' => $endDate?->format('d M Y'),
-                'end_date_ar' => $this->$endDate,
+                'end_date_ar' => $endDate,
                 'location' => $location,
+                'location_details' => [
+                    'country_id' => $this->country_id,
+                    'country_name' => $this->country?->name ?? $this->plan->country?->name,
+                    'area_level_1' => $this->area_level_1,
+                    'area_level_2' => $this->area_level_2,
+                    'area_level_3' => $this->area_level_3,
+                    'locality' => $this->locality,
+                ],
                 'training_car' => $trainingCar,
                 'transport_request' => $transportRequest,
                 'price' => [

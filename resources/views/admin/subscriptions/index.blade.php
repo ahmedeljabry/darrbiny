@@ -103,7 +103,16 @@
               <div class="d-flex flex-column">
                 <span class="fw-semibold">{{ optional($r->plan)->title ?? '-' }}</span>
                 @if($r->plan)
-                  <small class="text-muted">{{ optional($r->plan->city)->name ?? '' }}, {{ optional($r->plan->country)->name ?? '' }}</small>
+                  @php
+                    $subLocation = implode(' ، ', array_filter([
+                      $r->locality,
+                      $r->area_level_3,
+                      $r->area_level_2,
+                      $r->area_level_1,
+                      $r->country?->name ?? optional($r->plan->country)->name,
+                    ]));
+                  @endphp
+                  <small class="text-muted">{{ $subLocation !== '' ? $subLocation : '-' }}</small>
                 @endif
               </div>
             </td>

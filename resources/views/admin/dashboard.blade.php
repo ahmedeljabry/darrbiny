@@ -170,7 +170,7 @@
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <div>
           <p class="mb-1 text-muted small">توزيع عام</p>
-          <h5 class="mb-0">الخطط / الدول / المدن / المستخدمون</h5>
+          <h5 class="mb-0">الخطط / الدول / المستخدمون</h5>
         </div>
         <span class="badge bg-label-secondary">توزيع</span>
       </div>
@@ -285,10 +285,10 @@ document.addEventListener('DOMContentLoaded', function(){
 
   new ApexCharts(document.querySelector('#chart-overview'), {
     chart: { type: 'donut', height: 280 },
-    labels: ['الخطط','الدول','المدن','المستخدمون'],
-    series: [{{ $planCount }}, {{ $countriesCount }}, {{ $citiesCount }}, {{ $usersCount }}],
+    labels: ['الخطط','الدول','المستخدمون'],
+    series: [{{ $planCount }}, {{ $countriesCount }}, {{ $usersCount }}],
     legend: { position: 'bottom' },
-    colors: ['#6366f1', '#22d3ee', '#0ea5e9', '#22c55e'],
+    colors: ['#6366f1', '#22d3ee', '#22c55e'],
     stroke: { width: 0 }
   }).render();
 

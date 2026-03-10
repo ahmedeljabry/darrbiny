@@ -58,7 +58,16 @@
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">معلومات الخطة</h6>
                         <p class="mb-1"><strong>الخطة:</strong> {{ $booking->plan->title ?? '-' }}</p>
-                        <p class="mb-1"><strong>الموقع:</strong> {{ $booking->plan->city->name ?? '' }}, {{ $booking->plan->country->name ?? '' }}</p>
+                        @php
+                            $bookingLocation = implode(' ، ', array_filter([
+                                $booking->locality,
+                                $booking->area_level_3,
+                                $booking->area_level_2,
+                                $booking->area_level_1,
+                                $booking->country?->name ?? $booking->plan->country->name ?? null,
+                            ]));
+                        @endphp
+                        <p class="mb-1"><strong>الموقع:</strong> {{ $bookingLocation !== '' ? $bookingLocation : '-' }}</p>
                         <p class="mb-1"><strong>الساعات:</strong> {{ $booking->plan->hours_count ?? '-' }}</p>
                         <p class="mb-1"><strong>الجلسات:</strong> {{ $booking->plan->session_count ?? '-' }}</p>
                     </div>
@@ -289,4 +298,3 @@
 @endcan
 
 @endsection
-

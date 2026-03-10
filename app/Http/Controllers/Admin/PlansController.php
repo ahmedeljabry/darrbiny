@@ -16,7 +16,6 @@ class PlansController extends BaseController
         $q = request('q');
         $status = request('status');
         $countryId = request('country_id');
-        $cityId = request('city_id');
 
         $plans = \App\Models\Plan::query()
             ->when($q, fn($qq) => $qq->where(function($w) use ($q){
@@ -26,21 +25,18 @@ class PlansController extends BaseController
             ->when($status === 'active', fn($qq)=>$qq->where('is_active', true))
             ->when($status === 'inactive', fn($qq)=>$qq->where('is_active', false))
             ->when($countryId, fn($qq)=>$qq->where('country_id',$countryId))
-            ->when($cityId, fn($qq)=>$qq->where('city_id',$cityId))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         $countries = \App\Models\Country::orderBy('name')->get();
-        $cities = $countryId ? \App\Models\City::where('country_id',$countryId)->orderBy('name')->get() : collect();
-        return view('admin.plans.index', compact('plans','countries','cities','q','status','countryId','cityId'));
+        return view('admin.plans.index', compact('plans','countries','q','status','countryId'));
     }
 
     public function create()
     {
         $countries = \App\Models\Country::orderBy('name')->get();
-        $cities = collect();
-        return view('admin.plans.create', compact('countries','cities'));
+        return view('admin.plans.create', compact('countries'));
     }
 
     public function store(PlanStoreRequest $request, PlansService $service)
@@ -59,8 +55,7 @@ class PlansController extends BaseController
     {
         $plan = \App\Models\Plan::with('scheduleItems')->findOrFail($id);
         $countries = \App\Models\Country::orderBy('name')->get();
-        $cities = \App\Models\City::where('country_id', $plan->country_id)->orderBy('name')->get();
-        return view('admin.plans.edit', compact('plan','countries','cities'));
+        return view('admin.plans.edit', compact('plan','countries'));
     }
 
     public function destroy(string $id)
@@ -71,7 +66,7 @@ class PlansController extends BaseController
 
     public function show(string $id)
     {
-        $plan = \App\Models\Plan::with(['scheduleItems', 'country', 'city'])->findOrFail($id);
+        $plan = \App\Models\Plan::with(['scheduleItems', 'country'])->findOrFail($id);
         
         // Get all user requests for this plan
         $userRequests = \App\Models\UserRequest::with(['user', 'trainer', 'scheduleProgress'])

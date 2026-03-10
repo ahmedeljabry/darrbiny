@@ -46,7 +46,7 @@
               <span class="input-group-text"><i class="icon-base ti tabler-shield"></i></span>
               <input class="form-control" name="name" placeholder="مثال: SUPERVISOR" required>
             </div>
-            <small class="text-muted d-block mt-1">استخدم أسماء بالأحرف الكبيرة</small>
+            <small class="text-muted d-block mt-1">يمكنك استخدام اسم تقني إنجليزي وسيظهر بالعربية للأدوار الأساسية.</small>
           </div>
           <button class="btn btn-primary w-100">
             <i class="icon-base ti tabler-plus me-1"></i> إنشاء الدور
@@ -80,11 +80,15 @@
             </thead>
             <tbody>
               @forelse($roles as $role)
+                @php
+                  $isProtectedRole = strtoupper((string) $role->name) === 'ADMIN';
+                  $roleFilterValue = \App\Support\AccessLabels::roleFilterValue($role->name);
+                @endphp
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
-                      <span class="badge bg-label-primary">{{ $role->name }}</span>
-                      @if($role->name === 'ADMIN')
+                      <span class="badge bg-label-primary">{{ \App\Support\AccessLabels::role($role->name) }}</span>
+                      @if($isProtectedRole)
                         <span class="badge bg-label-warning">
                           <i class="icon-base ti tabler-shield-check me-1"></i> محمي
                         </span>
@@ -96,7 +100,7 @@
                       @csrf @method('put')
                       <select multiple name="permissions[]" class="form-select select2" style="min-width: 280px;">
                         @foreach($perms as $p)
-                          <option value="{{ $p->name }}" @selected($role->hasPermissionTo($p->name))>{{ $p->name }}</option>
+                          <option value="{{ $p->name }}" @selected($role->hasPermissionTo($p->name))>{{ \App\Support\AccessLabels::permission($p->name) }}</option>
                         @endforeach
                       </select>
                       <button class="btn btn-sm btn-primary">
@@ -109,12 +113,12 @@
                     </small>
                   </td>
                   <td class="text-center">
-                    <a class="btn btn-sm btn-outline-info" href="{{ route('admin.users.index') }}?role={{ $role->name }}">
+                    <a class="btn btn-sm btn-outline-info" href="{{ $roleFilterValue ? route('admin.users.index', ['role' => $roleFilterValue]) : route('admin.users.index') }}">
                       <i class="icon-base ti tabler-users me-1"></i> عرض
                     </a>
                   </td>
                   <td class="text-center">
-                    @if($role->name !== 'ADMIN')
+                    @if(!$isProtectedRole)
                       <form method="post" action="{{ route('admin.roles.destroy',$role->id) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا الدور؟');">
                         @csrf @method('delete')
                         <button class="btn btn-sm btn-outline-danger" type="submit">

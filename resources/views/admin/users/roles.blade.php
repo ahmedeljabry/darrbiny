@@ -12,20 +12,19 @@
 </nav>
 
 <div class="card">
-  <div class="card-header"><h5 class="mb-0">Assign Roles to {{ $user->name ?? $user->id }}</h5></div>
+  <div class="card-header"><h5 class="mb-0">تعيين الأدوار للمستخدم: {{ $user->name ?? $user->id }}</h5></div>
   <div class="card-body">
     <form method="post" action="{{ route('admin.users.roles.update',$user->id) }}">@csrf @method('put')
       <div class="mb-3">
-        <label class="form-label">Roles</label>
+        <label class="form-label">الأدوار</label>
         <select multiple name="roles[]" class="form-select select2" size="8">
           @foreach($roles as $r)
-            <option value="{{ $r->name }}" @selected($user->hasRole($r->name))>{{ $r->name }}</option>
+            <option value="{{ $r->name }}" @selected($user->hasRole($r->name))>{{ \App\Support\AccessLabels::role($r->name) }}</option>
           @endforeach
         </select>
       </div>
-      <button class="btn btn-primary">Save</button>
+      <button class="btn btn-primary">حفظ</button>
     </form>
   </div>
 </div>
 @endsection
-

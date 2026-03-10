@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->uuid('profile_picture_id')->nullable()->after('city_id')->index();
+            $table->uuid('profile_picture_id')->nullable()->after('country_id')->index();
             $table->foreign('profile_picture_id')->references('id')->on('uploads')->onDelete('set null');
         });
     }

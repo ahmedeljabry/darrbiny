@@ -25,7 +25,6 @@ class Plan extends BaseModel
         'session_count',
         'level',
         'country_id',
-        'city_id',
         'is_active',
         'show_on_home',
     ];
@@ -43,11 +42,6 @@ class Plan extends BaseModel
     public function country()
     {
         return $this->belongsTo(Country::class);
-    }
-
-    public function city()
-    {
-        return $this->belongsTo(City::class);
     }
 
     public function userRequests()
@@ -72,7 +66,8 @@ class Plan extends BaseModel
 
     public function scopeActive($q){ return $q->where('is_active', true); }
     public function scopeHome($q){ return $q->where('show_on_home' , true); }
-    public function scopeByLocation($q, ?string $cityId){
-        return $q->when($cityId, fn($qq) => $qq->where('city_id', $cityId));
+    public function scopeByCountry($q, ?string $countryId)
+    {
+        return $q->when($countryId, fn ($qq) => $qq->where('country_id', $countryId));
     }
 }

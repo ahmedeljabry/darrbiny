@@ -49,6 +49,14 @@ class UserRequestOfferResource extends JsonResource
                 'has_user_car' => (bool) $userRequest->has_user_car,
                 'wants_trainer_car' => (bool) $userRequest->wants_trainer_car,
                 'description' => $userRequest->description,
+                'location' => [
+                    'country_id' => $userRequest->country_id,
+                    'country_name' => $userRequest->country?->name,
+                    'area_level_1' => $userRequest->area_level_1,
+                    'area_level_2' => $userRequest->area_level_2,
+                    'area_level_3' => $userRequest->area_level_3,
+                    'locality' => $userRequest->locality,
+                ],
             ] : null,
             'plan' => $plan ? [
                 'id' => $plan->id,
@@ -58,10 +66,6 @@ class UserRequestOfferResource extends JsonResource
                 'country' => $plan->country ? [
                     'id' => $plan->country->id,
                     'name' => $plan->country->name,
-                ] : null,
-                'city' => $plan->city ? [
-                    'id' => $plan->city->id,
-                    'name' => $plan->city->name,
                 ] : null,
             ] : null,
             'trainer' => $trainer ? [

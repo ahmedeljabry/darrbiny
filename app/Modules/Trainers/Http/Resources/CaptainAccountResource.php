@@ -26,14 +26,13 @@ class CaptainAccountResource extends JsonResource
             'car_available' => (bool) $this->car_available,
             'pickup_available' => (bool) $this->pickup_available,
             'country_id' => $this->country_id,
+            'area_level_1' => $this->area_level_1,
+            'area_level_2' => $this->area_level_2,
+            'area_level_3' => $this->area_level_3,
+            'locality' => $this->locality,
             'country' => $this->whenLoaded('country', fn () => [
                 'id' => $this->country?->id,
                 'name' => $this->country?->name,
-            ]),
-            'city_id' => $this->city_id,
-            'city' => $this->whenLoaded('city', fn () => [
-                'id' => $this->city?->id,
-                'name' => $this->city?->name,
             ]),
             'pending_approval' => (bool) $this->pending_approval,
             'pending_approval_at' => $this->pending_approval_at?->toIso8601String(),
@@ -60,6 +59,6 @@ class CaptainAccountResource extends JsonResource
             && !empty($this->car_model_year)
             && (bool) $this->has_driving_license
             && !empty($this->country_id)
-            && !empty($this->city_id);
+            && !empty($this->area_level_1);
     }
 }

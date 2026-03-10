@@ -10,6 +10,8 @@ final class HomeController
     public function __construct(protected HomeService $homeService) {}
     public function __invoke(Request $request): JsonResponse
     {
-        return response()->json($this->homeService->getHomeData($request->city_id,(string)$request->input('q', '')));
+        return response()->json(
+            $this->homeService->getHomeData($request->input('country_id'), (string) $request->input('q', ''))
+        );
     }
 }

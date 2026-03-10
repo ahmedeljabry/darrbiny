@@ -109,7 +109,7 @@
                                     data-hours="{{ $plan->hours_count }}"
                                     data-sessions="{{ $plan->session_count }}"
                                     data-price="{{ $plan->price_min }}">
-                                    {{ $plan->title }} - {{ $plan->city->name ?? '' }}, {{ $plan->country->name ?? '' }}
+                                    {{ $plan->title }} - {{ $plan->country->name ?? '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -255,4 +255,3 @@
 @endpush
 
 @endsection
-

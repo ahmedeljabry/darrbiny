@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AdminStoreUserRequest;
 use App\Http\Requests\Admin\AdminUpdateUserRequest;
-use App\Models\City;
 use App\Models\Country;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -22,7 +21,10 @@ class UsersController extends BaseController
     private const TRAINER_PROFILE_FIELD_LABELS = [
         'bio' => 'النبذة التعريفية',
         'country_id' => 'الدولة',
-        'city_id' => 'المدينة',
+        'area_level_1' => 'المنطقة الأولى',
+        'area_level_2' => 'المنطقة الثانية',
+        'area_level_3' => 'المنطقة الثالثة',
+        'locality' => 'الحي / المحلية',
         'car_type' => 'نوع السيارة',
         'car_model' => 'موديل السيارة',
         'car_model_year' => 'سنة الموديل',
@@ -107,8 +109,7 @@ class UsersController extends BaseController
     {
         $roles = Role::orderBy('name')->pluck('name');
         $countries = Country::orderBy('name')->get(['id','name']);
-        $cities = City::orderBy('name')->get(['id','name']);
-        return view('admin.users.create', compact('roles','countries','cities'));
+        return view('admin.users.create', compact('roles','countries'));
     }
 
     public function store(AdminStoreUserRequest $request)
@@ -120,7 +121,6 @@ class UsersController extends BaseController
             'email' => $data['email'] ?? null,
             'phone_with_cc' => $data['phone_with_cc'],
             'country_id' => $data['country_id'] ?? null,
-            'city_id' => $data['city_id'] ?? null,
             'whatsapp_enabled' => (bool)($data['whatsapp_enabled'] ?? false),
         ]);
         if (!empty($data['password'])) {
@@ -147,12 +147,11 @@ class UsersController extends BaseController
                 'roles',
                 'profilePicture',
                 'trainerProfile.country',
-                'trainerProfile.city',
             ])
             ->findOrFail($id);
 
         // Get user requests for students
-        $userRequests = \App\Models\UserRequest::with(['plan.city', 'plan.country', 'trainer'])
+        $userRequests = \App\Models\UserRequest::with(['country', 'plan.country', 'trainer'])
             ->where('user_id', $id)
             ->latest()
             ->get();
@@ -215,8 +214,7 @@ class UsersController extends BaseController
         $user = User::withTrashed()->findOrFail($id);
         $roles = Role::orderBy('name')->pluck('name');
         $countries = Country::orderBy('name')->get(['id','name']);
-        $cities = City::orderBy('name')->get(['id','name']);
-        return view('admin.users.edit', compact('user','roles','countries','cities'));
+        return view('admin.users.edit', compact('user','roles','countries'));
     }
 
     public function update(string $id, AdminUpdateUserRequest $request)
@@ -228,7 +226,6 @@ class UsersController extends BaseController
             'email' => $data['email'] ?? null,
             'phone_with_cc' => $data['phone_with_cc'],
             'country_id' => $data['country_id'] ?? null,
-            'city_id' => $data['city_id'] ?? null,
             'whatsapp_enabled' => (bool)($data['whatsapp_enabled'] ?? false),
         ]);
         if (!empty($data['password'])) {
@@ -383,15 +380,16 @@ class UsersController extends BaseController
         }
 
         $pendingChanges = is_array($profile->pending_changes) ? $profile->pending_changes : [];
+        $pendingChanges = array_filter(
+            $pendingChanges,
+            static fn (string $field): bool => array_key_exists($field, self::TRAINER_PROFILE_FIELD_LABELS),
+            ARRAY_FILTER_USE_KEY
+        );
         $hasPendingChanges = (bool) $profile->pending_approval;
         $pendingCountryName = null;
-        $pendingCityName = null;
 
         if (array_key_exists('country_id', $pendingChanges) && filled($pendingChanges['country_id'])) {
             $pendingCountryName = Country::query()->where('id', $pendingChanges['country_id'])->value('name');
-        }
-        if (array_key_exists('city_id', $pendingChanges) && filled($pendingChanges['city_id'])) {
-            $pendingCityName = City::query()->where('id', $pendingChanges['city_id'])->value('name');
         }
 
         $resolveValue = function (string $field) use ($profile, $pendingChanges) {
@@ -416,9 +414,10 @@ class UsersController extends BaseController
             'country_name' => array_key_exists('country_id', $pendingChanges)
                 ? ($pendingCountryName ?: '-')
                 : ($profile->country?->name ?? '-'),
-            'city_name' => array_key_exists('city_id', $pendingChanges)
-                ? ($pendingCityName ?: '-')
-                : ($profile->city?->name ?? '-'),
+            'area_level_1' => $resolveValue('area_level_1'),
+            'area_level_2' => $resolveValue('area_level_2'),
+            'area_level_3' => $resolveValue('area_level_3'),
+            'locality' => $resolveValue('locality'),
             'bio' => $resolveValue('bio'),
         ];
 
@@ -427,8 +426,8 @@ class UsersController extends BaseController
             $changes[] = [
                 'field' => $field,
                 'label' => self::TRAINER_PROFILE_FIELD_LABELS[$field] ?? $field,
-                'old' => $this->formatTrainerFieldValue($field, $profile->getAttribute($field), $profile->country?->name, $profile->city?->name),
-                'new' => $this->formatTrainerFieldValue($field, $newValue, $pendingCountryName, $pendingCityName),
+                'old' => $this->formatTrainerFieldValue($field, $profile->getAttribute($field), $profile->country?->name),
+                'new' => $this->formatTrainerFieldValue($field, $newValue, $pendingCountryName),
             ];
         }
 
@@ -442,8 +441,7 @@ class UsersController extends BaseController
     private function formatTrainerFieldValue(
         string $field,
         mixed $value,
-        ?string $countryName = null,
-        ?string $cityName = null
+        ?string $countryName = null
     ): string {
         if (in_array($field, ['has_driving_license', 'car_available', 'pickup_available'], true)) {
             return $value ? 'نعم' : 'لا';
@@ -451,10 +449,6 @@ class UsersController extends BaseController
 
         if ($field === 'country_id') {
             return $countryName ?: '-';
-        }
-
-        if ($field === 'city_id') {
-            return $cityName ?: '-';
         }
 
         if ($field === 'license_expiry_date') {

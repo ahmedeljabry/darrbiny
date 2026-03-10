@@ -6,7 +6,6 @@ namespace App\Services\Dashboard;
 
 use App\Data\DashboardMetrics;
 use App\Enums\Period;
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\User;
@@ -23,12 +22,10 @@ final class DashboardService
 
             $usersTotal = User::count();
             $plansTotal = Plan::count();
-            $citiesTotal = City::count();
             $countriesTotal = Country::count();
 
             $usersNew = $since ? User::where('created_at', '>=', $since)->count() : 0;
             $plansNew = $since ? Plan::where('created_at', '>=', $since)->count() : 0;
-            $citiesNew = $since ? City::where('created_at', '>=', $since)->count() : 0;
             $countriesNew = $since ? Country::where('created_at', '>=', $since)->count() : 0;
 
             return new DashboardMetrics(
@@ -36,12 +33,11 @@ final class DashboardService
                 usersNew: $usersNew,
                 plansTotal: $plansTotal,
                 plansNew: $plansNew,
-                citiesTotal: $citiesTotal,
-                citiesNew: $citiesNew,
+                citiesTotal: 0,
+                citiesNew: 0,
                 countriesTotal: $countriesTotal,
                 countriesNew: $countriesNew,
             );
         });
     }
 }
-

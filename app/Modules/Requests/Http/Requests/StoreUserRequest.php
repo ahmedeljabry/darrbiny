@@ -15,6 +15,11 @@ class StoreUserRequest extends FormRequest
         return [
             'plan_id' => ['required','uuid'],
             'trainer_id' => ['nullable','uuid','exists:users,id'],
+            'country_id' => ['required', 'uuid', 'exists:countries,id'],
+            'area_level_1' => ['required', 'string', 'max:120'],
+            'area_level_2' => ['nullable', 'string', 'max:120'],
+            'area_level_3' => ['nullable', 'string', 'max:120'],
+            'locality' => ['nullable', 'string', 'max:120'],
             'start_date' => ['required','date','after_or_equal:today'],
             'start_time' => ['required','string','regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'description' => ['nullable', 'string', 'max:1000'],

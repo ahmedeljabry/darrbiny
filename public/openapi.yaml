@@ -19,9 +19,6 @@ paths:
           name: country_id
           schema: { type: string }
         - in: query
-          name: city_id
-          schema: { type: string }
-        - in: query
           name: training_type
           schema: { type: string }
       responses:
@@ -37,14 +34,70 @@ paths:
             schema:
               type: object
               properties:
-                plan_id: { type: string }
+                plan_id: { type: string, format: uuid }
+                trainer_id: { type: string, format: uuid, nullable: true }
+                country_id: { type: string, format: uuid }
+                area_level_1: { type: string }
+                area_level_2: { type: string, nullable: true }
+                area_level_3: { type: string, nullable: true }
+                locality: { type: string, nullable: true }
                 start_date: { type: string, format: date }
+                start_time: { type: string, example: '14:30' }
+                description: { type: string, nullable: true }
                 has_user_car: { type: boolean }
                 wants_trainer_car: { type: boolean }
                 needs_pickup: { type: boolean }
-              required: [plan_id, start_date, has_user_car, wants_trainer_car, needs_pickup]
+                latitude: { type: number, format: float, nullable: true }
+                longitude: { type: number, format: float, nullable: true }
+              required:
+                - plan_id
+                - country_id
+                - area_level_1
+                - start_date
+                - start_time
+                - has_user_car
+                - wants_trainer_car
+                - needs_pickup
       responses:
         '201': { description: Created }
+  /captain/account-details:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Get captain account details
+      responses:
+        '200': { description: OK }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Create or update captain account details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio: { type: string, nullable: true }
+                car_type: { type: string, nullable: true }
+                car_model: { type: string, nullable: true }
+                car_model_year: { type: string, nullable: true }
+                car_year: { type: integer, nullable: true }
+                car_plate_number: { type: string, nullable: true }
+                has_driving_license: { type: boolean }
+                license_number: { type: string, nullable: true }
+                license_expiry_date: { type: string, format: date, nullable: true }
+                country_id: { type: string, format: uuid }
+                area_level_1: { type: string }
+                area_level_2: { type: string, nullable: true }
+                area_level_3: { type: string, nullable: true }
+                locality: { type: string, nullable: true }
+                car_available: { type: boolean, nullable: true }
+                pickup_available: { type: boolean, nullable: true }
+              required:
+                - has_driving_license
+                - country_id
+                - area_level_1
+      responses:
+        '200': { description: OK }
 components:
   securitySchemes:
     bearerAuth:

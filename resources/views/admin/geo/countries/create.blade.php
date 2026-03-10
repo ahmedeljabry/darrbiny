@@ -11,5 +11,5 @@
   </ol>
 </nav>
 
-  @include('admin.geo.countries.form', ['country' => null, 'cities' => collect()])
+  @include('admin.geo.countries.form', ['country' => null])
 @endsection

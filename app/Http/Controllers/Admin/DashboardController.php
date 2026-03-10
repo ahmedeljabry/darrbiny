@@ -21,7 +21,6 @@ class DashboardController extends BaseController
 
         $planCount = \App\Models\Plan::count();
         $countriesCount = \App\Models\Country::count();
-        $citiesCount = \App\Models\City::count();
         $usersCount = \App\Models\User::count();
         $trainersCount = \App\Models\User::role('TRAINER')->count();
         $bookingsCount = \App\Models\UserRequest::count();
@@ -56,7 +55,7 @@ class DashboardController extends BaseController
         }
 
         return view('admin.dashboard', compact(
-            'planCount','countriesCount','citiesCount','usersCount','trainersCount',
+            'planCount','countriesCount','usersCount','trainersCount',
             'bookingsCount','pendingBookings','activeBookings','completedBookings',
             'pendingCancellations','pendingWalletRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
@@ -67,7 +66,7 @@ class DashboardController extends BaseController
 
     public function courseDetails()
     {
-        $plans = \App\Models\Plan::with(['country', 'city'])->active()->orderBy('title')->get();
+        $plans = \App\Models\Plan::with(['country'])->active()->orderBy('title')->get();
         $recentBookings = \App\Models\UserRequest::with(['user', 'plan'])
             ->latest()
             ->limit(10)

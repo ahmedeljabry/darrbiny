@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\TrainerOffer;
@@ -24,10 +23,6 @@ class UserRequestOffersEndpointTest extends TestCase
             'iso2' => 'TC',
             'currency' => 'USD',
         ]);
-        $city = City::create([
-            'name' => 'Test City',
-            'country_id' => $country->id,
-        ]);
 
         $plan = Plan::create([
             'title' => 'Plan A',
@@ -36,7 +31,6 @@ class UserRequestOffersEndpointTest extends TestCase
             'duration_days' => '3',
             'hours_count' => 12,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
 
@@ -75,4 +69,3 @@ class UserRequestOffersEndpointTest extends TestCase
             ->assertJsonPath('data.0.request.wants_trainer_car', false);
     }
 }
-

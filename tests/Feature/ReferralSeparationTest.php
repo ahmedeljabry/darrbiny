@@ -9,7 +9,6 @@ use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\Country;
-use App\Models\City;
 use App\Models\Plan;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
@@ -285,18 +284,12 @@ class ReferralSeparationTest extends TestCase
             'currency' => 'USD',
         ]);
 
-        $city = City::create([
-            'name' => 'New York',
-            'country_id' => $country->id,
-        ]);
-
         return Plan::create([
             'title' => 'Referral Plan',
             'description' => 'Plan used for referral payment test',
             'price_min' => 100,
             'duration_days' => '10',
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
     }

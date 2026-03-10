@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\CancellationRequest;
-use App\Models\City;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -198,11 +197,6 @@ class AdminCancellationFlowTest extends TestCase
             'currency' => 'SAR',
         ]);
 
-        $city = City::create([
-            'name' => 'Riyadh',
-            'country_id' => $country->id,
-        ]);
-
         $plan = Plan::create([
             'title' => 'Cancellation Plan',
             'description' => 'Plan for admin cancellation tests',
@@ -211,7 +205,6 @@ class AdminCancellationFlowTest extends TestCase
             'hours_count' => 10,
             'session_count' => 5,
             'country_id' => $country->id,
-            'city_id' => $city->id,
             'is_active' => true,
         ]);
 

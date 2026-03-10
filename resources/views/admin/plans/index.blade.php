@@ -46,15 +46,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
-                            <label class="form-label">المدينة</label>
-                            <select name="city_id" class="form-select select2" style="min-width:180px">
-                                <option value="">الكل</option>
-                                @foreach($cities as $city)
-                                  <option value="{{ $city->id }}" @selected(request('city_id')===$city->id)>{{ $city->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
                         <div class="d-flex gap-2 align-items-end">
                             <button class="btn btn-outline-secondary">تصفية</button>
                             <a href="{{ route('admin.plans.index') }}" class="btn btn-outline-dark">إعادة تعيين</a>

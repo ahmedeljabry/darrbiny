@@ -22,7 +22,6 @@ class AdminUpdateUserRequest extends FormRequest
             'phone_with_cc' => ['required','string','max:32','unique:users,phone_with_cc,'.$id],
             'password' => ['nullable','string','min:6'],
             'country_id' => ['nullable','uuid'],
-            'city_id' => ['nullable','uuid'],
             'whatsapp_enabled' => ['sometimes','boolean'],
             'roles' => ['sometimes','array'],
             'roles.*' => ['string','max:64'],
@@ -31,4 +30,3 @@ class AdminUpdateUserRequest extends FormRequest
         ];
     }
 }
-

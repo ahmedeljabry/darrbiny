@@ -34,7 +34,6 @@ class User extends Authenticatable
         'user_type',
         'whatsapp_enabled',
         'country_id',
-        'city_id',
         'profile_picture_id',
         'currency',
         'referral_code',

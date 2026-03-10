@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Ratings\Http\Resources;
 
-use App\Models\City;
 use App\Models\Country;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +17,6 @@ class RatingResource extends JsonResource
             $trainer->loadMissing([
                 'trainerProfile',
                 'trainerProfile.country',
-                'trainerProfile.city',
             ]);
         }
         $trainerProfile = $trainer?->trainerProfile;
@@ -53,16 +51,14 @@ class RatingResource extends JsonResource
         }
 
         $countryId = $this->resolveTrainerProfileValue($trainerProfile, 'country_id');
-        $cityId = $this->resolveTrainerProfileValue($trainerProfile, 'city_id');
+        $areaLevelOne = $this->resolveTrainerProfileValue($trainerProfile, 'area_level_1');
+        $areaLevelTwo = $this->resolveTrainerProfileValue($trainerProfile, 'area_level_2');
+        $areaLevelThree = $this->resolveTrainerProfileValue($trainerProfile, 'area_level_3');
+        $locality = $this->resolveTrainerProfileValue($trainerProfile, 'locality');
 
         $country = $trainerProfile->relationLoaded('country') ? $trainerProfile->country : null;
         if ($countryId && (!$country || $country->id !== $countryId)) {
             $country = $this->findCountry($countryId);
-        }
-
-        $city = $trainerProfile->relationLoaded('city') ? $trainerProfile->city : null;
-        if ($cityId && (!$city || $city->id !== $cityId)) {
-            $city = $this->findCity($cityId);
         }
 
         return [
@@ -70,11 +66,18 @@ class RatingResource extends JsonResource
                 'id' => $country->id,
                 'name' => $country->name,
             ] : null,
-            'city' => $city ? [
-                'id' => $city->id,
-                'name' => $city->name,
-            ] : null,
-            'display' => $this->formatLocation($country, $city),
+            'country_id' => $countryId,
+            'area_level_1' => $areaLevelOne,
+            'area_level_2' => $areaLevelTwo,
+            'area_level_3' => $areaLevelThree,
+            'locality' => $locality,
+            'display' => $this->formatLocation(
+                $country?->name,
+                $areaLevelOne,
+                $areaLevelTwo,
+                $areaLevelThree,
+                $locality
+            ),
         ];
     }
 
@@ -104,16 +107,23 @@ class RatingResource extends JsonResource
         ];
     }
 
-    private function formatLocation($country, $city): string
+    private function formatLocation(
+        ?string $countryName,
+        ?string $areaLevelOne,
+        ?string $areaLevelTwo,
+        ?string $areaLevelThree,
+        ?string $locality
+    ): string
     {
-        $parts = [];
-        if ($city) {
-            $parts[] = $city->name;
-        }
-        if ($country) {
-            $parts[] = $country->name;
-        }
-        return implode(', ', $parts) ?: '';
+        $parts = array_filter([
+            $locality,
+            $areaLevelThree,
+            $areaLevelTwo,
+            $areaLevelOne,
+            $countryName,
+        ], fn ($value) => filled($value));
+
+        return implode(', ', $parts);
     }
 
     private function resolveTrainerProfileValue($trainerProfile, string $field)
@@ -143,15 +153,4 @@ class RatingResource extends JsonResource
         $cache[$id] = Country::find($id);
         return $cache[$id];
     }
-
-    private function findCity(string $id): ?City
-    {
-        static $cache = [];
-        if (array_key_exists($id, $cache)) {
-            return $cache[$id];
-        }
-        $cache[$id] = City::find($id);
-        return $cache[$id];
-    }
 }
-

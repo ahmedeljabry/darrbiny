@@ -108,11 +108,10 @@
 </div>
 
 <div class="row g-3 mt-0">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <label class="form-label">الدولة</label>
         <div class="input-group input-group-merge">
-            <select name="country_id" class="form-select select2 js-country" required style="width: 100%"
-                data-cities-url="{{ route('admin.countries.cities', 'COUNTRY_ID') }}">
+            <select name="country_id" class="form-select select2 js-country" required style="width: 100%">
                 <option value="">— اختر الدولة —</option>
                 @foreach(($countries ?? []) as $country)
                     <option value="{{ $country->id }}" @selected(old('country_id', $plan->country_id ?? '') === $country->id)>
@@ -122,19 +121,6 @@
             </select>
         </div>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">المدينة</label>
-        <div class="input-group input-group-merge">
-            <select name="city_id" class="form-select select2 js-city" required style="width: 100%">
-                <option value="">— اختر المدينة —</option>
-                @foreach(($cities ?? []) as $city)
-                    <option value="{{ $city->id }}" @selected(old('city_id', $plan->city_id ?? '') === $city->id)>
-                        {{ $city->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-  </div>
 </div>
 
 <div class="mt-3">
@@ -167,43 +153,6 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.jQuery && $.fn.select2) {
-
-                function loadCities(countryId, selectedCityId = null) {
-                    const $city = $('.js-city');
-                    const $country = $('.js-country');
-                    const urlTpl = $country.data('cities-url');
-                    if (!countryId || !urlTpl) {
-                        $city.empty().append(new Option('— اختر المدينة —', ''));
-                        $city.val(null).trigger('change');
-                        return;
-                    }
-                    const url = String(urlTpl).replace('COUNTRY_ID', countryId);
-                    $.getJSON(url).done(function (resp) {
-                        const items = (resp && resp.data) ? resp.data : [];
-                        $city.empty().append(new Option('— اختر المدينة —', ''));
-                        items.forEach(function (c) {
-                            const opt = new Option(c.name, c.id, false, selectedCityId === c.id);
-                            $city.append(opt);
-                        });
-                        $city.trigger('change');
-                    }).fail(function () {
-                        console.error('Failed to load cities for country', countryId);
-                    });
-                }
-
-                $('.js-country').on('change', function () {
-                    const countryId = $(this).val();
-                    loadCities(countryId);
-                });
-
-                const initialCountry = $('.js-country').val();
-                const existingCity = @json(old('city_id', $plan->city_id ?? null));
-                if (initialCountry && $('.js-city option').length <= 1) {
-                    loadCities(initialCountry, existingCity);
-                }
-            }
-
             // features JS moved to features_card partial
 
             // Schedule inputs based on duration_days

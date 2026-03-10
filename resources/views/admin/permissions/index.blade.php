@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.roles.index') }}">الأدوار والصلاحيات</a></li>
+    <li class="breadcrumb-item">النظام</li>
     <li class="breadcrumb-item active" aria-current="page">الصلاحيات</li>
   </ol>
 </nav>
@@ -42,12 +42,12 @@
       <div class="card-body">
         <form method="post" action="{{ route('admin.permissions.store') }}">@csrf
           <div class="mb-3">
-            <label class="form-label fw-semibold">اسم الصلاحية</label>
+            <label class="form-label fw-semibold">مفتاح الصلاحية</label>
             <div class="input-group input-group-merge">
               <span class="input-group-text"><i class="icon-base ti tabler-key"></i></span>
               <input class="form-control" name="name" placeholder="مثال: manage_content" required>
             </div>
-            <small class="text-muted d-block mt-1">استخدم أسماء بصيغة snake_case</small>
+            <small class="text-muted d-block mt-1">تظهر الصلاحيات الأساسية بالعربية تلقائياً داخل لوحة التحكم.</small>
           </div>
           <button class="btn btn-primary w-100">
             <i class="icon-base ti tabler-plus me-1"></i> إنشاء الصلاحية
@@ -80,25 +80,33 @@
             </thead>
             <tbody>
               @forelse($perms as $p)
+                @php $isCorePermission = \App\Support\AccessLabels::isCorePermission($p->name); @endphp
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge bg-label-primary">
                         <i class="icon-base ti tabler-key me-1"></i>
-                        {{ $p->name }}
+                        {{ \App\Support\AccessLabels::permission($p->name) }}
                       </span>
+                      @if($isCorePermission)
+                        <span class="badge bg-label-warning">أساسية</span>
+                      @endif
                     </div>
                   </td>
                   <td>
                     <small class="text-muted">{{ $p->created_at?->format('Y-m-d') ?? '—' }}</small>
                   </td>
                   <td class="text-center">
-                    <form method="post" action="{{ route('admin.permissions.destroy',$p->id) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذه الصلاحية؟');">
-                      @csrf @method('delete')
-                      <button class="btn btn-sm btn-outline-danger" type="submit">
-                        <i class="icon-base ti tabler-trash me-1"></i> حذف
-                      </button>
-                    </form>
+                    @if(!$isCorePermission)
+                      <form method="post" action="{{ route('admin.permissions.destroy',$p->id) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذه الصلاحية؟');">
+                        @csrf @method('delete')
+                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                          <i class="icon-base ti tabler-trash me-1"></i> حذف
+                        </button>
+                      </form>
+                    @else
+                      <span class="badge bg-label-secondary">محمية</span>
+                    @endif
                   </td>
                 </tr>
               @empty
@@ -121,4 +129,3 @@
   </div>
 </div>
 @endsection
-

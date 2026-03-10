@@ -57,7 +57,10 @@
             <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
             <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
             <th><i class="icon-base ti tabler-flag me-1"></i> الدولة</th>
-            <th><i class="icon-base ti tabler-map-pin me-1"></i> المدينة</th>
+            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الأولى</th>
+            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الثانية</th>
+            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الثالثة</th>
+            <th><i class="icon-base ti tabler-map-pin me-1"></i> الحي / المحلية</th>
             <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
             <th><i class="icon-base ti tabler-percentage me-1"></i> رسوم التطبيق</th>
             <th><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
@@ -74,8 +77,11 @@
                   <small class="text-muted">{{ $p->user_id }}</small>
                 </div>
               </td>
-              <td>{{ $p->userRequest?->plan?->country?->name ?? '—' }}</td>
-              <td>{{ $p->userRequest?->plan?->city?->name ?? '—' }}</td>
+              <td>{{ $p->userRequest?->country?->name ?? $p->userRequest?->plan?->country?->name ?? '—' }}</td>
+              <td>{{ $p->userRequest?->area_level_1 ?? '—' }}</td>
+              <td>{{ $p->userRequest?->area_level_2 ?? '—' }}</td>
+              <td>{{ $p->userRequest?->area_level_3 ?? '—' }}</td>
+              <td>{{ $p->userRequest?->locality ?? '—' }}</td>
               <td>
                 <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</span>
               </td>
@@ -91,7 +97,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="8" class="text-center py-5">
+              <td colspan="11" class="text-center py-5">
                 <div class="d-flex flex-column align-items-center">
                   <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                     <i class="icon-base ti tabler-chart-line" style="font-size: 32px;"></i>

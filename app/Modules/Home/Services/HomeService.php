@@ -6,7 +6,7 @@ namespace App\Modules\Home\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\{Cache, DB, Auth};
-use App\Models\{Setting, TrainerProfile, Plan, Favorite, City, HowItWorksSection};
+use App\Models\{Setting, TrainerProfile, Plan, Favorite, HowItWorksSection};
 use App\Support\StorageUrl;
 
 class HomeService
@@ -16,19 +16,19 @@ class HomeService
     private const CACHE_PREFIX   = 'home_data:v7';
     private const CACHE_MINUTES  = 5;
 
-    protected ?string $cityId = null;
+    protected ?string $countryId = null;
 
-    public function getHomeData(?string $cityId = null, string $q = ''): array
+    public function getHomeData(?string $countryId = null, string $q = ''): array
     {
         $user = Auth::guard('sanctum')->user();
         $authUserId = $user?->id;
-        $this->cityId = $cityId ?: ($user->city_id ?? null);
+        $this->countryId = $countryId ?: ($user->country_id ?? null);
         $favoritesStamp = $this->favoritesStamp($authUserId);
 
         $cacheKey = $this->cacheKey(
             $this->defaultIncludes,
             self::LIMIT_TRAINERS,
-            (string) $this->cityId,
+            (string) $this->countryId,
             $q,
             $authUserId,
             $favoritesStamp
@@ -57,7 +57,7 @@ class HomeService
     protected function cacheKey(
         array $includes,
         int $limitTrainers,
-        ?string $cityId,
+        ?string $countryId,
         string $q,
         ?string $uid,
         string $favoritesStamp
@@ -65,11 +65,11 @@ class HomeService
     {
         $includesKey = implode(',', Arr::sort($includes));
         return sprintf(
-            '%s:inc=%s:lt=%d:city=%s:q=%s:favs=%s:u=%s',
+            '%s:inc=%s:lt=%d:location=%s:q=%s:favs=%s:u=%s',
             self::CACHE_PREFIX,
             $includesKey,
             $limitTrainers,
-            $cityId ?? 'null',
+            $countryId ?? 'null',
             md5($q),
             $favoritesStamp,
             $uid ?? 'guest'
@@ -121,7 +121,7 @@ class HomeService
         return Plan::query()
             ->active()
             ->home()
-            ->byLocation($this->cityId)
+            ->byCountry($this->countryId)
             ->with('features:id,label')
             ->latest()
             ->select('id', 'title', 'price_min', 'price_max', 'badge_discount', 'duration_days', 'hours_count', 'session_count')
@@ -146,7 +146,7 @@ class HomeService
 
         $profiles = TrainerProfile::query()
             ->where('pending_approval', false)
-            ->when($this->cityId, fn($q) => $q->where('city_id', $this->cityId))
+            ->when($this->countryId, fn($q) => $q->where('country_id', $this->countryId))
             ->whereHas('user', function ($uq) use ($search) {
                 $uq->whereNull('deleted_at')
                     ->where(function ($w) {
@@ -188,12 +188,7 @@ class HomeService
             ->groupBy('trainer_id')
             ->pluck('cnt', 'trainer_id');
 
-        $cityIds   = $profiles->pluck('city_id')->filter()->unique()->values();
-        $cityNames = $cityIds->isEmpty()
-            ? collect()
-            : City::whereIn('id', $cityIds)->pluck('name', 'id');
-
-        return $profiles->map(function (TrainerProfile $tp) use ($favoriteIds, $trainingCounts, $cityNames) {
+        return $profiles->map(function (TrainerProfile $tp) use ($favoriteIds, $trainingCounts) {
             $u = $tp->user;
             return [
                 'id'              => $u->id,
@@ -201,9 +196,11 @@ class HomeService
                 'profile_picture' => $u->profile_picture_url,
                 'rating_avg'      => $tp->rating_avg,
                 'rating_count'    => $tp->rating_count,
-                'city_id'         => $tp->city_id,
-                'city_name'       => $cityNames[$tp->city_id] ?? null,
                 'country_id'      => $tp->country_id,
+                'area_level_1'    => $tp->area_level_1,
+                'area_level_2'    => $tp->area_level_2,
+                'area_level_3'    => $tp->area_level_3,
+                'locality'        => $tp->locality,
                 'is_favorite'     => $favoriteIds->contains($u->id),
                 'training_count'  => (int) ($trainingCounts[$u->id] ?? 0),
             ];

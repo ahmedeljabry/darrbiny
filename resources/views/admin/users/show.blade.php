@@ -34,7 +34,9 @@
         </div>
         <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الأدوار</div>
-          <div class="text-heading">{{ $user->getRoleNames()->implode(', ') ?: '-' }}</div>
+          <div class="text-heading">
+            {{ $user->getRoleNames()->map(fn($role) => \App\Support\AccessLabels::role($role))->implode(', ') ?: '-' }}
+          </div>
         </div>
         <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الحالة</div>
@@ -64,7 +66,7 @@
     @php
       $profile = $user->trainerProfile;
       $profileData = $trainerProfileView['display'];
-      $profileComplete = filled($profileData['bio']) && filled($profileData['car_type']) && filled($profileData['car_model_year']) && $profileData['has_driving_license'] && ($profileData['country_name'] ?? '-') !== '-' && ($profileData['city_name'] ?? '-') !== '-';
+      $profileComplete = filled($profileData['bio']) && filled($profileData['car_type']) && filled($profileData['car_model_year']) && $profileData['has_driving_license'] && ($profileData['country_name'] ?? '-') !== '-' && filled($profileData['area_level_1'] ?? null);
     @endphp
     <div class="card mt-4">
       <div class="card-header d-flex justify-content-between align-items-center">
@@ -142,8 +144,20 @@
             <div class="text-heading">{{ $profileData['country_name'] ?? '-' }}</div>
           </div>
           <div class="col-md-6">
-            <div class="fw-medium text-body-secondary">المدينة / المحافظة</div>
-            <div class="text-heading">{{ $profileData['city_name'] ?? '-' }}</div>
+            <div class="fw-medium text-body-secondary">المنطقة الأولى</div>
+            <div class="text-heading">{{ $profileData['area_level_1'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">المنطقة الثانية</div>
+            <div class="text-heading">{{ $profileData['area_level_2'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">المنطقة الثالثة</div>
+            <div class="text-heading">{{ $profileData['area_level_3'] ?: '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-medium text-body-secondary">الحي / المحلية</div>
+            <div class="text-heading">{{ $profileData['locality'] ?: '-' }}</div>
           </div>
         </div>
         <div class="mt-4">
@@ -235,7 +249,16 @@
                     <div class="d-flex flex-column">
                       <span class="fw-semibold">{{ $request->plan?->title ?? '-' }}</span>
                       @if($request->plan)
-                        <small class="text-muted">{{ $request->plan->city?->name ?? '' }}, {{ $request->plan->country?->name ?? '' }}</small>
+                        @php
+                          $requestLocation = implode(' ، ', array_filter([
+                            $request->locality,
+                            $request->area_level_3,
+                            $request->area_level_2,
+                            $request->area_level_1,
+                            $request->country?->name ?? $request->plan->country?->name,
+                          ]));
+                        @endphp
+                        <small class="text-muted">{{ $requestLocation !== '' ? $requestLocation : '-' }}</small>
                       @endif
                     </div>
                   </td>

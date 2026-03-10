@@ -34,8 +34,11 @@ class CaptainAccountDetailsRequest extends FormRequest
             'has_driving_license' => ['required', 'boolean'],
             'license_number' => ['nullable', 'string', 'max:50'],
             'license_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'country_id' => ['nullable', 'uuid', 'exists:countries,id'],
-            'city_id' => ['nullable', 'uuid', 'exists:cities,id'],
+            'country_id' => ['required', 'uuid', 'exists:countries,id'],
+            'area_level_1' => ['required', 'string', 'max:120'],
+            'area_level_2' => ['nullable', 'string', 'max:120'],
+            'area_level_3' => ['nullable', 'string', 'max:120'],
+            'locality' => ['nullable', 'string', 'max:120'],
             'car_available' => ['nullable', 'boolean'],
             'pickup_available' => ['nullable', 'boolean'],
         ];

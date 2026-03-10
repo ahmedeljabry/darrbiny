@@ -19,7 +19,7 @@
           <h5 class="mb-0">تفاصيل الخطة</h5>
         </div>
         <div class="card-body">
-          @include('admin.plans.form', ['plan' => null , []])
+          @include('admin.plans.form', ['plan' => null])
         </div>
       </div>
 

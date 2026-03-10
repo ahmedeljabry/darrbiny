@@ -29,7 +29,10 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             'المدرب',
             'الباقة',
             'الدولة',
-            'المدينة',
+            'المنطقة الأولى',
+            'المنطقة الثانية',
+            'المنطقة الثالثة',
+            'الحي / المحلية',
             'المبلغ',
             'العمولة',
             'تاريخ/وقت',
@@ -43,8 +46,11 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             $payment->user?->name ?? $payment->user_id,
             $payment->userRequest?->trainer?->name ?? '-',
             $payment->userRequest?->plan?->title ?? '-',
-            $payment->userRequest?->plan?->country?->name ?? '-',
-            $payment->userRequest?->plan?->city?->name ?? '-',
+            $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '-',
+            $payment->userRequest?->area_level_1 ?? '-',
+            $payment->userRequest?->area_level_2 ?? '-',
+            $payment->userRequest?->area_level_3 ?? '-',
+            $payment->userRequest?->locality ?? '-',
             number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
             number_format($payment->app_fee_minor / 100, 2) . ' ' . $payment->currency,
             $payment->created_at?->format('Y-m-d H:i:s'),
@@ -58,4 +64,3 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 }
-
