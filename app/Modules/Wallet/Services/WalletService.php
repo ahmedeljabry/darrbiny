@@ -6,7 +6,10 @@ namespace App\Modules\Wallet\Services;
 
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletTopupRequestNotification;
+use App\Notifications\WalletWithdrawalProcessedNotification;
+use App\Notifications\WalletWithdrawRequestNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -27,8 +30,52 @@ class WalletService
             ]);
 
             // Notify all admins
-            $admins = User::role('admin')->get();
+            $admins = User::role('ADMIN')->get();
             Notification::send($admins, new WalletTopupRequestNotification($transaction));
+
+            return $transaction;
+        });
+    }
+
+    /**
+     * Request wallet withdrawal
+     */
+    public function requestWithdrawal(User $user, int $amount, ?string $notes = null): WalletTransaction
+    {
+        abort_unless($amount > 0, 422, 'المبلغ يجب أن يكون أكبر من صفر');
+
+        return DB::transaction(function () use ($user, $amount, $notes) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+            $isTrainer = $user->hasRole('TRAINER') || $user->isCaptain();
+            if ($isTrainer) {
+                $hasBankDetails = filled($user->bank_account)
+                    && filled($user->iban)
+                    && filled($user->bank_name)
+                    && filled($user->bank_country_id);
+                abort_unless($hasBankDetails, 422, 'يجب استكمال بيانات الحساب البنكي قبل طلب السحب');
+            }
+
+            $pendingWithdrawals = (int) WalletTransaction::query()
+                ->where('user_id', $user->id)
+                ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+                ->where('status', WalletTransaction::STATUS_PENDING)
+                ->sum('amount');
+
+            $availableToWithdraw = max(0, (int) $user->points_balance - $pendingWithdrawals);
+            abort_unless($availableToWithdraw >= $amount, 422, 'رصيد المحفظة غير كافٍ لطلب السحب');
+
+            $transaction = WalletTransaction::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+                'status' => WalletTransaction::STATUS_PENDING,
+                'notes' => $notes,
+            ]);
+
+            // Notify all admins
+            $admins = User::role('ADMIN')->get();
+            Notification::send($admins, new WalletWithdrawRequestNotification($transaction));
 
             return $transaction;
         });
@@ -52,6 +99,43 @@ class WalletService
             // Add amount to user's wallet
             $user = $transaction->user;
             $user->increment('points_balance', $transaction->amount);
+            $user->notify(new WalletBalanceAddedNotification(
+                $transaction->amount,
+                'topup_request_approved',
+                $transaction->id
+            ));
+        });
+    }
+
+    /**
+     * Execute wallet withdrawal request
+     */
+    public function approveWithdrawal(WalletTransaction $transaction, User $admin): void
+    {
+        DB::transaction(function () use ($transaction, $admin) {
+            $transaction = WalletTransaction::query()
+                ->whereKey($transaction->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($transaction->type !== WalletTransaction::TYPE_WITHDRAW_REQUEST) {
+                throw new \Exception('Transaction is not a withdrawal request');
+            }
+
+            if ($transaction->status !== WalletTransaction::STATUS_PENDING) {
+                throw new \Exception('Transaction is not pending');
+            }
+
+            $user = User::query()->whereKey($transaction->user_id)->lockForUpdate()->firstOrFail();
+            abort_unless($user->points_balance >= $transaction->amount, 422, 'رصيد المستخدم غير كافٍ لتنفيذ طلب السحب');
+
+            $transaction->status = WalletTransaction::STATUS_APPROVED;
+            $transaction->processed_by = $admin->id;
+            $transaction->processed_at = now();
+            $transaction->save();
+
+            $user->decrement('points_balance', $transaction->amount);
+            $user->notify(new WalletWithdrawalProcessedNotification($transaction, true));
         });
     }
 
@@ -72,6 +156,11 @@ class WalletService
             ]);
 
             $user->increment('points_balance', $amount);
+            $user->notify(new WalletBalanceAddedNotification(
+                $amount,
+                'admin_adjustment',
+                $txn->id
+            ));
 
             return $txn;
         });
@@ -172,6 +261,14 @@ class WalletService
             $user->points_balance = $newBalance;
             $user->save();
 
+            if ($difference > 0) {
+                $user->notify(new WalletBalanceAddedNotification(
+                    $difference,
+                    'admin_balance_update',
+                    $txn->id
+                ));
+            }
+
             return $txn;
         });
     }
@@ -190,6 +287,28 @@ class WalletService
         $transaction->processed_at = now();
         $transaction->rejection_reason = $reason;
         $transaction->save();
+    }
+
+    /**
+     * Reject wallet withdrawal request
+     */
+    public function rejectWithdrawal(WalletTransaction $transaction, User $admin, string $reason): void
+    {
+        if ($transaction->type !== WalletTransaction::TYPE_WITHDRAW_REQUEST) {
+            throw new \Exception('Transaction is not a withdrawal request');
+        }
+
+        if ($transaction->status !== WalletTransaction::STATUS_PENDING) {
+            throw new \Exception('Transaction is not pending');
+        }
+
+        $transaction->status = WalletTransaction::STATUS_REJECTED;
+        $transaction->processed_by = $admin->id;
+        $transaction->processed_at = now();
+        $transaction->rejection_reason = $reason;
+        $transaction->save();
+
+        $transaction->user?->notify(new WalletWithdrawalProcessedNotification($transaction, false));
     }
 
     /**
@@ -228,6 +347,10 @@ class WalletService
             }
             // Payments subtract from balance (if they exist in wallet_transactions)
             elseif ($transaction->type === WalletTransaction::TYPE_PAYMENT) {
+                $calculatedBalance -= $transaction->amount;
+            }
+            // Executed withdrawals subtract from balance
+            elseif ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
                 $calculatedBalance -= $transaction->amount;
             }
             // Refunds add back to balance

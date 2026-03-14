@@ -26,9 +26,9 @@
   <div class="menu-inner-shadow"></div>
 
   @php
-    $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*');
+    $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*','admin.withdrawal-requests.*');
     $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
-    $financeOpen = request()->routeIs('admin.payments.*','admin.wallets.*','admin.wallet-transactions.*');
+    $financeOpen = request()->routeIs('admin.payments.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
     $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*');
     $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
     $reportsOpen = request()->routeIs('admin.reports.*');
@@ -47,7 +47,7 @@
     $canManagePayouts = auth()->user()?->can('manage_payouts') ?? false;
     $canManageGeo = auth()->user()?->can('manage_geo') ?? false;
 
-    $showOperations = $canManagePlans || $canManagePayments;
+    $showOperations = $canManagePlans || $canManagePayments || $canManageWallets;
     $showUsers = $canManageUsers || $canManageRatings;
     $showFinance = $canManagePayments || $canManageWallets;
     $showRewards = $canManageRewards;
@@ -90,6 +90,11 @@
           @if($canManagePayments)
             <li class="menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
               <a href="{{ route('admin.subscriptions.index') }}" class="menu-link">الاشتراكات</a>
+            </li>
+          @endif
+          @if($canManageWallets)
+            <li class="menu-item {{ request()->routeIs('admin.withdrawal-requests.*') ? 'active' : '' }}">
+              <a href="{{ route('admin.withdrawal-requests.index') }}" class="menu-link">طلبات السحب</a>
             </li>
           @endif
         </ul>

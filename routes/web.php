@@ -145,6 +145,12 @@ Route::middleware(['web'])
                 Route::get('/wallet-transactions/{id}', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'show'])->name('wallet-transactions.show');
                 Route::post('/wallet-transactions/{id}/approve', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'approve'])->name('wallet-transactions.approve');
                 Route::post('/wallet-transactions/{id}/reject', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'reject'])->name('wallet-transactions.reject');
+
+                // Withdrawal Requests
+                Route::get('/withdrawal-requests', [\App\Http\Controllers\Admin\WithdrawalRequestsController::class, 'index'])->name('withdrawal-requests.index');
+                Route::get('/withdrawal-requests/{id}', [\App\Http\Controllers\Admin\WithdrawalRequestsController::class, 'show'])->name('withdrawal-requests.show');
+                Route::post('/withdrawal-requests/{id}/approve', [\App\Http\Controllers\Admin\WithdrawalRequestsController::class, 'approve'])->name('withdrawal-requests.approve');
+                Route::post('/withdrawal-requests/{id}/reject', [\App\Http\Controllers\Admin\WithdrawalRequestsController::class, 'reject'])->name('withdrawal-requests.reject');
             });
 
             Route::middleware('can:manage_notifications')->group(function () {

@@ -6,6 +6,7 @@ namespace App\Modules\Wallet\Http\Controllers;
 
 use App\Modules\Wallet\Http\Requests\DeductWalletRequest;
 use App\Modules\Wallet\Http\Requests\TopupRequestRequest;
+use App\Modules\Wallet\Http\Requests\WithdrawRequestRequest;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -29,6 +30,25 @@ class WalletController extends BaseController
 
         return response()->json([
             'message' => 'تم إرسال طلب إضافة المبلغ بنجاح',
+            'data' => new \App\Modules\Wallet\Http\Resources\WalletTransactionResource($transaction),
+        ], 201);
+    }
+
+    /**
+     * Request wallet withdrawal
+     */
+    public function requestWithdrawal(WithdrawRequestRequest $request)
+    {
+        $user = $request->user();
+
+        $transaction = $this->service->requestWithdrawal(
+            $user,
+            (int) $request->input('amount'),
+            $request->input('notes')
+        );
+
+        return response()->json([
+            'message' => 'تم إرسال طلب السحب بنجاح',
             'data' => new \App\Modules\Wallet\Http\Resources\WalletTransactionResource($transaction),
         ], 201);
     }
@@ -76,7 +96,7 @@ class WalletController extends BaseController
         $user = $request->user();
         $limit = (int) $request->query('limit', 20);
         $status = $request->query('status'); // pending, approved, rejected
-        $type = $request->query('type'); // topup_request, refund, payment, adjustment
+        $type = $request->query('type'); // topup_request, withdraw_request, refund, payment, adjustment
 
         $query = \App\Models\WalletTransaction::where('user_id', $user->id);
 

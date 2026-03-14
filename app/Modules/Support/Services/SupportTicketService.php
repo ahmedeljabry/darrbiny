@@ -8,6 +8,7 @@ use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
 use App\Notifications\SupportTicketCreatedNotification;
+use App\Notifications\SupportTicketReplyNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -75,6 +76,11 @@ class SupportTicketService
             } elseif ($ticket->status === 'closed') {
                 $ticket->status = 'open';
                 $ticket->save();
+            }
+
+            if ($isAdmin && $ticket->user_id && $ticket->user_id !== $actor->id) {
+                $ticket->loadMissing('user');
+                $ticket->user?->notify(new SupportTicketReplyNotification($ticket, $ticketMessage));
             }
 
             return $ticketMessage->load('user');

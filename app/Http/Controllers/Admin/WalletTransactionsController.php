@@ -92,9 +92,17 @@ class WalletTransactionsController extends BaseController
             return back()->withErrors(['error' => 'لا يمكن الموافقة على معاملة غير معلقة']);
         }
 
-        $this->service->approveTopup($transaction, $request->user());
+        if ($transaction->type === WalletTransaction::TYPE_TOPUP_REQUEST) {
+            $this->service->approveTopup($transaction, $request->user());
+            return back()->with('status', 'تمت الموافقة على طلب الإضافة وإيداع المبلغ في المحفظة');
+        }
 
-        return back()->with('status', 'تم الموافقة على الطلب وإضافة المبلغ إلى المحفظة');
+        if ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
+            $this->service->approveWithdrawal($transaction, $request->user());
+            return back()->with('status', 'تم تنفيذ طلب السحب وخصم المبلغ من المحفظة');
+        }
+
+        return back()->withErrors(['error' => 'نوع المعاملة غير مدعوم للموافقة']);
     }
 
     public function reject(Request $request, string $id)
@@ -109,9 +117,16 @@ class WalletTransactionsController extends BaseController
             return back()->withErrors(['error' => 'لا يمكن رفض معاملة غير معلقة']);
         }
 
-        $this->service->rejectTopup($transaction, $request->user(), $request->input('rejection_reason'));
+        if ($transaction->type === WalletTransaction::TYPE_TOPUP_REQUEST) {
+            $this->service->rejectTopup($transaction, $request->user(), $request->input('rejection_reason'));
+            return back()->with('status', 'تم رفض طلب الإضافة');
+        }
 
-        return back()->with('status', 'تم رفض الطلب');
+        if ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
+            $this->service->rejectWithdrawal($transaction, $request->user(), $request->input('rejection_reason'));
+            return back()->with('status', 'تم رفض طلب السحب');
+        }
+
+        return back()->withErrors(['error' => 'نوع المعاملة غير مدعوم للرفض']);
     }
 }
-

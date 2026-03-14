@@ -1,13 +1,12 @@
 @extends('admin.layouts.app')
-@section('title', 'تفاصيل طلب المحفظة')
+@section('title', 'تفاصيل طلب السحب')
 @section('content')
 
-<!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.wallet-transactions.index') }}">طلبات المحفظة</a></li>
-    <li class="breadcrumb-item active" aria-current="page">تفاصيل طلب المحفظة</li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.withdrawal-requests.index') }}">طلبات السحب</a></li>
+    <li class="breadcrumb-item active" aria-current="page">تفاصيل طلب السحب</li>
   </ol>
 </nav>
 
@@ -33,80 +32,75 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">تفاصيل طلب المحفظة</h5>
-                <a href="{{ route('admin.wallet-transactions.index') }}" class="btn btn-outline-secondary">
+                <h5 class="mb-0">تفاصيل طلب السحب</h5>
+                <a href="{{ route('admin.withdrawal-requests.index') }}" class="btn btn-outline-secondary">
                     <i class="icon-base ti tabler-arrow-right me-1"></i> العودة
                 </a>
             </div>
             <div class="card-body">
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <h6>المستخدم</h6>
+                        <h6>بيانات المستخدم</h6>
                         <p class="mb-0">
-                            <strong>{{ $transaction->user->name ?? 'N/A' }}</strong><br>
-                            <small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small><br>
-                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($transaction->user->points_balance ?? 0) }}</small>
+                            <strong>{{ $withdrawalRequest->user?->name ?? 'N/A' }}</strong><br>
+                            <small class="text-muted">{{ $withdrawalRequest->user?->phone_with_cc ?? '' }}</small><br>
+                            @php
+                                $isTrainer = ($withdrawalRequest->user?->user_type?->value ?? null) === 'captain';
+                            @endphp
+                            <small class="text-muted">نوع الحساب: {{ $isTrainer ? 'مدرب' : 'طالب' }}</small><br>
+                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($withdrawalRequest->user?->points_balance ?? 0) }}</small>
                         </p>
                     </div>
                     <div class="col-md-6">
-                        <h6>تفاصيل الطلب</h6>
+                        <h6>بيانات الطلب</h6>
                         <p class="mb-0">
-                            <strong>المبلغ:</strong> {{ number_format($transaction->amount) }}<br>
-                            @php
-                                $typeMap = [
-                                    'topup_request' => 'طلب إضافة',
-                                    'withdraw_request' => 'طلب سحب',
-                                    'refund' => 'استرداد',
-                                    'payment' => 'دفع',
-                                    'adjustment' => 'تعديل إداري',
-                                ];
-                            @endphp
-                            <strong>النوع:</strong> {{ $typeMap[$transaction->type] ?? $transaction->type }}<br>
-                            <strong>الحالة:</strong> 
-                            @if($transaction->status === 'pending')
+                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amount) }} نقطة<br>
+                            <strong>النوع:</strong> طلب سحب<br>
+                            <strong>الحالة:</strong>
+                            @if($withdrawalRequest->status === 'pending')
                                 <span class="badge bg-label-warning">معلق</span>
-                            @elseif($transaction->status === 'approved')
-                                <span class="badge bg-label-success">موافق عليه</span>
+                            @elseif($withdrawalRequest->status === 'approved')
+                                <span class="badge bg-label-success">منفذ</span>
                             @else
                                 <span class="badge bg-label-danger">مرفوض</span>
                             @endif
                             <br>
-                            <strong>تاريخ الطلب:</strong> {{ $transaction->created_at->format('Y-m-d H:i') }}
+                            <strong>تاريخ الطلب:</strong> {{ $withdrawalRequest->created_at->format('Y-m-d H:i') }}
                         </p>
                     </div>
                 </div>
 
-                @if($transaction->notes)
+                @if($withdrawalRequest->notes)
                     <div class="mb-4">
-                        <h6>ملاحظات</h6>
-                        <p>{{ $transaction->notes }}</p>
+                        <h6>ملاحظات المستخدم</h6>
+                        <p>{{ $withdrawalRequest->notes }}</p>
                     </div>
                 @endif
 
-                @if($transaction->status === 'rejected' && $transaction->rejection_reason)
+                @if($withdrawalRequest->status === 'rejected' && $withdrawalRequest->rejection_reason)
                     <div class="mb-4">
                         <h6>سبب الرفض</h6>
-                        <p class="text-danger">{{ $transaction->rejection_reason }}</p>
+                        <p class="text-danger">{{ $withdrawalRequest->rejection_reason }}</p>
                     </div>
                 @endif
 
-                @if($transaction->processed_by)
+                @if($withdrawalRequest->processed_by)
                     <div class="mb-4">
                         <h6>المعالج</h6>
                         <p class="mb-0">
-                            <strong>{{ $transaction->processedBy->name ?? 'N/A' }}</strong><br>
-                            <small class="text-muted">تاريخ المعالجة: {{ $transaction->processed_at?->format('Y-m-d H:i') }}</small>
+                            <strong>{{ $withdrawalRequest->processedBy->name ?? 'N/A' }}</strong><br>
+                            <small class="text-muted">تاريخ المعالجة: {{ $withdrawalRequest->processed_at?->format('Y-m-d H:i') }}</small>
                         </p>
                     </div>
                 @endif
 
-                @if($transaction->status === 'pending')
+                @if($withdrawalRequest->status === 'pending')
                     <hr>
                     <div class="d-flex gap-2">
-                        <form method="POST" action="{{ route('admin.wallet-transactions.approve', $transaction->id) }}" class="d-inline">
+                        <form method="POST" action="{{ route('admin.withdrawal-requests.approve', $withdrawalRequest->id) }}" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من الموافقة على هذا الطلب؟')">
-                                <i class="icon-base ti tabler-check me-1"></i> الموافقة
+                            <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من تنفيذ طلب السحب؟ سيتم خصم الرصيد من المحفظة.')">
+                                <i class="icon-base ti tabler-check me-1"></i> تنفيذ الطلب
                             </button>
                         </form>
                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
@@ -114,14 +108,13 @@
                         </button>
                     </div>
 
-                    <!-- Reject Modal -->
                     <div class="modal fade" id="rejectModal" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <form method="POST" action="{{ route('admin.wallet-transactions.reject', $transaction->id) }}">
+                                <form method="POST" action="{{ route('admin.withdrawal-requests.reject', $withdrawalRequest->id) }}">
                                     @csrf
                                     <div class="modal-header">
-                                        <h5 class="modal-title">رفض الطلب</h5>
+                                        <h5 class="modal-title">رفض طلب السحب</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
@@ -132,7 +125,7 @@
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                        <button type="submit" class="btn btn-danger">رفض الطلب</button>
+                                        <button type="submit" class="btn btn-danger">تأكيد الرفض</button>
                                     </div>
                                 </form>
                             </div>
@@ -145,4 +138,3 @@
 </div>
 
 @endsection
-

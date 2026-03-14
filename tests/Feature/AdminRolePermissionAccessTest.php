@@ -97,6 +97,7 @@ class AdminRolePermissionAccessTest extends TestCase
             'geo_index' => ['admin.geo.index', 'manage_geo'],
             'ratings_index' => ['admin.ratings.index', 'manage_ratings'],
             'wallets_index' => ['admin.wallets.index', 'manage_wallets'],
+            'withdrawal_requests_index' => ['admin.withdrawal-requests.index', 'manage_wallets'],
             'notifications_index' => ['admin.notifications.index', 'manage_notifications'],
             'prizes_index' => ['admin.prizes.index', 'manage_rewards'],
             'roles_index' => ['admin.roles.index', 'manage_roles'],

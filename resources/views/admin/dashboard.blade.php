@@ -203,11 +203,21 @@
           <div class="d-flex align-items-center gap-2">
             <span class="legend-dot bg-primary"></span>
             <div>
-              <div class="fw-semibold">طلبات المحفظة</div>
-              <small class="text-muted">سحب/إيداع قيد الموافقة</small>
+              <div class="fw-semibold">طلبات الإيداع</div>
+              <small class="text-muted">طلبات إضافة رصيد للمحفظة</small>
             </div>
           </div>
           <a href="{{ route('admin.wallet-transactions.index') }}" class="badge bg-label-primary rounded-pill text-decoration-none">{{ $pendingWalletRequests }}</a>
+        </li>
+        <li class="list-group-item d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <span class="legend-dot bg-danger"></span>
+            <div>
+              <div class="fw-semibold">طلبات السحب</div>
+              <small class="text-muted">طلبات سحب من محافظ الطلاب والمدربين</small>
+            </div>
+          </div>
+          <a href="{{ route('admin.withdrawal-requests.index') }}" class="badge bg-label-danger rounded-pill text-decoration-none">{{ $pendingWithdrawalRequests }}</a>
         </li>
         <li class="list-group-item d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">

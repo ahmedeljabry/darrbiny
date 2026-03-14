@@ -6,15 +6,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\SupportTicketsExport;
 use App\Models\SupportTicket;
-use App\Models\SupportTicketMessage;
-use App\Models\User;
+use App\Modules\Support\Services\SupportTicketService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SupportTicketsController extends BaseController
 {
+    public function __construct(private readonly SupportTicketService $service) {}
+
     public function index(Request $request)
     {
         $status = $request->query('status');
@@ -59,16 +59,13 @@ class SupportTicketsController extends BaseController
             'status' => ['nullable','in:open,pending,closed'],
         ]);
 
-        SupportTicketMessage::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => null,
-            'author_type' => 'admin',
-            'message' => $data['message'],
-        ]);
-
-        if (!empty($data['status'])) {
-            $ticket->update(['status' => $data['status']]);
-        }
+        $this->service->addMessage(
+            $ticket,
+            $request->user(),
+            (string) $data['message'],
+            $data['status'] ?? null,
+            true
+        );
 
         return back()->with('status', 'تم إضافة الرد وتحديث الحالة');
     }

@@ -10,6 +10,7 @@ use App\Models\UserRequest;
 use App\Models\Plan;
 use App\Models\WalletTransaction;
 use App\Notifications\CourseCancelledNotification;
+use App\Notifications\WalletBalanceAddedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
@@ -211,7 +212,7 @@ class BookingsController extends BaseController
             if ($refundAmount > 0 && $booking->user) {
                 $booking->user->increment('points_balance', $refundAmount);
 
-                WalletTransaction::create([
+                $walletTransaction = WalletTransaction::create([
                     'user_id' => $booking->user->id,
                     'amount' => $refundAmount,
                     'type' => WalletTransaction::TYPE_REFUND,
@@ -220,6 +221,12 @@ class BookingsController extends BaseController
                     'processed_at' => now(),
                     'notes' => "إلغاء دورة #{$booking->id} - {$validated['reason']}",
                 ]);
+
+                $booking->user->notify(new WalletBalanceAddedNotification(
+                    $refundAmount,
+                    'course_cancellation_refund',
+                    $walletTransaction->id
+                ));
             }
 
             $notification = new CourseCancelledNotification(

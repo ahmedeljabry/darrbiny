@@ -128,11 +128,13 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
             Route::get('/wallet', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'index']);
             Route::get('/wallet/transactions', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'transactions']);
             Route::post('/wallet/topup-request', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'requestTopup']);
+            Route::post('/wallet/withdraw-request', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'requestWithdrawal']);
             Route::post('/wallet/deduct', [\App\Modules\Wallet\Http\Controllers\WalletController::class, 'deduct']);
 
             // Notifications
             Route::get('/notifications', [\App\Modules\Notifications\Http\Controllers\NotificationController::class, 'index']);
             Route::get('/notifications/unread-count', [\App\Modules\Notifications\Http\Controllers\NotificationController::class, 'unreadCount']);
+            Route::get('/notifications/badges', [\App\Modules\Notifications\Http\Controllers\NotificationController::class, 'badges']);
             Route::post('/notifications/{id}/read', [\App\Modules\Notifications\Http\Controllers\NotificationController::class, 'markAsRead']);
             Route::post('/notifications/read-all', [\App\Modules\Notifications\Http\Controllers\NotificationController::class, 'markAllAsRead']);
 

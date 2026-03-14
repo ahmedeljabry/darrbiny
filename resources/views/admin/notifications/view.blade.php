@@ -32,6 +32,7 @@
                                 <option value="SupportTicketCreated" @selected(request('type') == 'SupportTicketCreated')>تذاكر الدعم</option>
                                 <option value="PrizeRequest" @selected(request('type') == 'PrizeRequest')>طلبات الجوائز</option>
                                 <option value="WalletTopupRequest" @selected(request('type') == 'WalletTopupRequest')>طلبات المحفظة</option>
+                                <option value="WalletWithdrawRequest" @selected(request('type') == 'WalletWithdrawRequest')>طلبات السحب</option>
                                 <option value="CancellationRequest" @selected(request('type') == 'CancellationRequest')>طلبات الإلغاء</option>
                                 <option value="TrainerProfileUpdate" @selected(request('type') == 'TrainerProfileUpdate')>تعديلات ملفات المدربين</option>
                                 <option value="UserAccountDeleted" @selected(request('type') == 'UserAccountDeleted')>حذف الحسابات</option>
@@ -79,7 +80,7 @@
                                     <td>
                                         <div class="avatar">
                                             <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
-                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell')))) }}"></i>
+                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'wallet_withdraw_request' ? 'arrow-up-right-circle' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell'))))) }}"></i>
                                             </span>
                                         </div>
                                     </td>
@@ -101,6 +102,7 @@
                                                 'support_ticket_created' => 'تذكرة دعم',
                                                 'prize_request' => 'طلب جائزة',
                                                 'wallet_topup_request' => 'طلب محفظة',
+                                                'wallet_withdraw_request' => 'طلب سحب',
                                                 'cancellation_request' => 'طلب إلغاء',
                                                 'user_account_deleted' => 'حذف حساب',
                                                 'trainer_profile_update' => 'تعديل ملف مدرب',
@@ -154,4 +156,3 @@
 </div>
 
 @endsection
-

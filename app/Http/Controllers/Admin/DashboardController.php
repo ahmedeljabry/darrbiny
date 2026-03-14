@@ -29,7 +29,12 @@ class DashboardController extends BaseController
         $completedBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_COMPLETED)->count();
         $awaitingOffers = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_AWAITING_OFFERS)->count();
         $pendingCancellations = \App\Models\CancellationRequest::where('status', 'pending')->count();
-        $pendingWalletRequests = \App\Models\WalletTransaction::where('status', 'pending')->count();
+        $pendingWalletRequests = \App\Models\WalletTransaction::where('status', 'pending')
+            ->where('type', \App\Models\WalletTransaction::TYPE_TOPUP_REQUEST)
+            ->count();
+        $pendingWithdrawalRequests = \App\Models\WalletTransaction::where('status', 'pending')
+            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->count();
         $pendingPrizeRequests = \App\Models\RewardRedemption::where('status', 'pending')->count();
         $pendingSupportTickets = \App\Models\SupportTicket::where('status', 'open')->count();
         $unreadNotifications = auth()->user()->unreadNotifications()->count();
@@ -57,7 +62,7 @@ class DashboardController extends BaseController
         return view('admin.dashboard', compact(
             'planCount','countriesCount','usersCount','trainersCount',
             'bookingsCount','pendingBookings','activeBookings','completedBookings',
-            'pendingCancellations','pendingWalletRequests','pendingPrizeRequests',
+            'pendingCancellations','pendingWalletRequests','pendingWithdrawalRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
             'labels','userSeries','planSeries','bookingSeries',
             'range','salesMinor','appFeesMinor','trainerPayoutMinor','awaitingOffers'

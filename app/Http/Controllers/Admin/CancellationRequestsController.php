@@ -9,6 +9,7 @@ use App\Models\CancellationRequest;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Notifications\CancellationRequestNotification;
+use App\Notifications\WalletBalanceAddedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +119,7 @@ class CancellationRequestsController extends BaseController
                 $user->increment('points_balance', $refundAmount);
 
                 // Create wallet transaction record
-                WalletTransaction::create([
+                $walletTransaction = WalletTransaction::create([
                     'user_id' => $user->id,
                     'amount' => $refundAmount,
                     'type' => WalletTransaction::TYPE_REFUND,
@@ -127,6 +128,12 @@ class CancellationRequestsController extends BaseController
                     'processed_at' => now(),
                     'notes' => "إرجاع مبلغ طلب الإلغاء #{$cancellation->id} - قيمة الباقة: {$packageValue}",
                 ]);
+
+                $user->notify(new WalletBalanceAddedNotification(
+                    $refundAmount,
+                    'cancellation_refund',
+                    $walletTransaction->id
+                ));
             }
 
             // Send notifications

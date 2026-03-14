@@ -1,12 +1,11 @@
 @extends('admin.layouts.app')
-@section('title', 'طلبات المحفظة')
+@section('title', 'طلبات السحب')
 @section('content')
 
-<!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item active" aria-current="page">طلبات المحفظة</li>
+    <li class="breadcrumb-item active" aria-current="page">طلبات السحب</li>
   </ol>
 </nav>
 
@@ -22,17 +21,14 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3 pb-3">
                 <div class="d-flex align-items-center gap-3">
-                  <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
-                    <i class="icon-base ti tabler-wallet" style="font-size: 24px;"></i>
+                  <span class="avatar-initial rounded bg-label-danger" style="width: 48px; height: 48px;">
+                    <i class="icon-base ti tabler-arrow-up-right-circle" style="font-size: 24px;"></i>
                   </span>
                   <div>
-                    <h5 class="mb-0 fw-bold">طلبات المحفظة</h5>
-                    <small class="text-muted">إدارة طلبات الإضافة والسحب</small>
+                    <h5 class="mb-0 fw-bold">طلبات السحب</h5>
+                    <small class="text-muted">عرض وتنفيذ طلبات السحب للطالب والمدرب</small>
                   </div>
                 </div>
-                <a href="{{ route('admin.wallet-transactions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">
-                    <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
-                </a>
             </div>
             <div class="card-body pt-0">
                 <form method="get" class="row g-3 mb-4">
@@ -56,7 +52,7 @@
                         <select name="status" class="form-select form-select-sm">
                             <option value="">الكل</option>
                             <option value="pending" @selected(request('status') == 'pending')>معلق</option>
-                            <option value="approved" @selected(request('status') == 'approved')>موافق عليه</option>
+                            <option value="approved" @selected(request('status') == 'approved')>منفذ</option>
                             <option value="rejected" @selected(request('status') == 'rejected')>مرفوض</option>
                         </select>
                     </div>
@@ -79,65 +75,56 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-                            <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
-                            <th style="width: 150px;"><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
-                            <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-                            <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الطلب</th>
-                            <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
+                            <th style="width: 260px;">المستخدم</th>
+                            <th style="width: 130px;">نوع الحساب</th>
+                            <th style="width: 120px;">المبلغ</th>
+                            <th style="width: 120px;">الحالة</th>
+                            <th style="width: 160px;">تاريخ الطلب</th>
+                            <th style="width: 100px;" class="text-center">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($transactions as $transaction)
+                        @forelse($requests as $withdrawal)
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        @if($transaction->user?->profile_picture_url)
-                                            <img src="{{ $transaction->user->profile_picture_url }}" alt="{{ $transaction->user->name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
-                                        @else
-                                            <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 32px; height: 32px; font-size: 14px;">
-                                                {{ substr($transaction->user->name ?? 'U', 0, 1) }}
-                                            </span>
-                                        @endif
+                                        <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 32px; height: 32px; font-size: 14px;">
+                                            {{ substr($withdrawal->user?->name ?? 'U', 0, 1) }}
+                                        </span>
                                         <div>
-                                            <div class="fw-semibold">{{ $transaction->user->name ?? 'N/A' }}</div>
-                                            <small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small>
+                                            <div class="fw-semibold">{{ $withdrawal->user?->name ?? 'N/A' }}</div>
+                                            <small class="text-muted">{{ $withdrawal->user?->phone_with_cc ?? '' }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($transaction->amount) }} نقطة</span>
-                                </td>
-                                <td>
                                     @php
-                                        $typeLabels = [
-                                            'topup_request' => ['label' => 'طلب إضافة', 'class' => 'info'],
-                                            'withdraw_request' => ['label' => 'طلب سحب', 'class' => 'danger'],
-                                            'refund' => ['label' => 'استرداد', 'class' => 'success'],
-                                            'payment' => ['label' => 'دفع', 'class' => 'primary'],
-                                            'adjustment' => ['label' => 'تعديل إداري', 'class' => 'warning'],
-                                        ];
-                                        $typeConfig = $typeLabels[$transaction->type] ?? ['label' => $transaction->type, 'class' => 'secondary'];
+                                        $isTrainer = ($withdrawal->user?->user_type?->value ?? null) === 'captain';
                                     @endphp
-                                    <span class="badge bg-label-{{ $typeConfig['class'] }}">{{ $typeConfig['label'] }}</span>
+                                    <span class="badge bg-label-{{ $isTrainer ? 'info' : 'secondary' }}">
+                                        {{ $isTrainer ? 'مدرب' : 'طالب' }}
+                                    </span>
                                 </td>
                                 <td>
-                                    @if($transaction->status === 'pending')
+                                    <span class="fw-semibold">{{ number_format($withdrawal->amount) }} نقطة</span>
+                                </td>
+                                <td>
+                                    @if($withdrawal->status === 'pending')
                                         <span class="badge bg-label-warning">معلق</span>
-                                    @elseif($transaction->status === 'approved')
-                                        <span class="badge bg-label-success">موافق عليه</span>
+                                    @elseif($withdrawal->status === 'approved')
+                                        <span class="badge bg-label-success">منفذ</span>
                                     @else
                                         <span class="badge bg-label-danger">مرفوض</span>
                                     @endif
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span>{{ $transaction->created_at->format('Y-m-d') }}</span>
-                                        <small class="text-muted">{{ $transaction->created_at->format('H:i') }}</small>
+                                        <span>{{ $withdrawal->created_at->format('Y-m-d') }}</span>
+                                        <small class="text-muted">{{ $withdrawal->created_at->format('H:i') }}</small>
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <a href="{{ route('admin.wallet-transactions.show', $transaction->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="عرض التفاصيل">
+                                    <a href="{{ route('admin.withdrawal-requests.show', $withdrawal->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="عرض التفاصيل">
                                         <i class="icon-base ti tabler-eye"></i>
                                     </a>
                                 </td>
@@ -147,9 +134,9 @@
                                 <td colspan="6" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
-                                            <i class="icon-base ti tabler-wallet" style="font-size: 32px;"></i>
+                                            <i class="icon-base ti tabler-arrow-up-right-circle" style="font-size: 32px;"></i>
                                         </span>
-                                        <p class="text-muted mb-0">لا توجد طلبات</p>
+                                        <p class="text-muted mb-0">لا توجد طلبات سحب</p>
                                     </div>
                                 </td>
                             </tr>
@@ -157,24 +144,13 @@
                     </tbody>
                 </table>
             </div>
-            @if($transactions->hasPages())
+            @if($requests->hasPages())
                 <div class="card-footer border-top">
-                    {{ $transactions->withQueryString()->links() }}
+                    {{ $requests->withQueryString()->links() }}
                 </div>
             @endif
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        if (window.jQuery && $.fn.select2) {
-            const dir = @json(app()->getLocale() === 'en' ? 'ltr' : 'rtl');
-            $('.select2').select2({ dir: dir, width: '100%' });
-        }
-    });
-</script>
-@endpush
 
 @endsection

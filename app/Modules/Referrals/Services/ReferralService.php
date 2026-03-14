@@ -7,6 +7,7 @@ namespace App\Modules\Referrals\Services;
 use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\User;
+use App\Notifications\ReferralPointsAddedNotification;
 use Illuminate\Support\Facades\DB;
 
 class ReferralService
@@ -46,6 +47,7 @@ class ReferralService
         );
 
         $referral->increment('total_points_earned', $points);
+        $owner->notify(new ReferralPointsAddedNotification($points, $referredUser->name));
     }
 
     public function syncOwnerPaidSubscriptionPoints(User $owner): Referral

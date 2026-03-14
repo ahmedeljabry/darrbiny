@@ -7,6 +7,7 @@ namespace App\Models;
 class WalletTransaction extends BaseModel
 {
     const TYPE_TOPUP_REQUEST = 'topup_request';
+    const TYPE_WITHDRAW_REQUEST = 'withdraw_request';
     const TYPE_REFUND = 'refund';
     const TYPE_PAYMENT = 'payment';
     const TYPE_ADJUSTMENT = 'adjustment';
