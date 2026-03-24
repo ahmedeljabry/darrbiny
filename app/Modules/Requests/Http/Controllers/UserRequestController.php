@@ -114,7 +114,9 @@ class UserRequestController extends BaseController
         $effectiveAreaLevelOne = $this->resolveTrainerLocation($profile, 'area_level_1');
         $effectiveAreaLevelTwo = $this->resolveTrainerLocation($profile, 'area_level_2');
         $effectiveAreaLevelThree = $this->resolveTrainerLocation($profile, 'area_level_3');
-        $effectiveLocality = $this->resolveTrainerLocation($profile, 'locality');
+        $canSeeLocationMatchedOpenRequests = $canSeeOpenRequests
+            && filled($effectiveCountryId)
+            && filled($effectiveAreaLevelOne);
 
         $q = UserRequest::with([
             'user',
@@ -133,12 +135,11 @@ class UserRequestController extends BaseController
                 $query
             ) use (
                 $trainerId,
-                $canSeeOpenRequests,
+                $canSeeLocationMatchedOpenRequests,
                 $effectiveCountryId,
                 $effectiveAreaLevelOne,
                 $effectiveAreaLevelTwo,
-                $effectiveAreaLevelThree,
-                $effectiveLocality
+                $effectiveAreaLevelThree
             ) {
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                     $offerQuery->where('trainer_id', $trainerId);
@@ -147,51 +148,28 @@ class UserRequestController extends BaseController
                         $trainingQuery->where('trainer_id', $trainerId);
                     })
                     ->orWhere('trainer_id', $trainerId);
-                if ($canSeeOpenRequests) {
+                if ($canSeeLocationMatchedOpenRequests) {
                     $query->orWhere(function (
                         $openQuery
                     ) use (
                         $effectiveCountryId,
                         $effectiveAreaLevelOne,
                         $effectiveAreaLevelTwo,
-                        $effectiveAreaLevelThree,
-                        $effectiveLocality
+                        $effectiveAreaLevelThree
                     ) {
                         $openQuery->whereNull('trainer_id')
                             ->whereIn('status', [
                                 UserRequest::STATUS_PENDING_PAYMENT,
                                 UserRequest::STATUS_AWAITING_OFFERS,
-                            ]);
+                            ])
+                            ->where('country_id', $effectiveCountryId)
+                            ->where('area_level_1', $effectiveAreaLevelOne);
 
-                        if ($effectiveCountryId) {
-                            $openQuery->where(function ($countryQuery) use ($effectiveCountryId) {
-                                $countryQuery->whereNull('country_id')
-                                    ->orWhere('country_id', $effectiveCountryId);
-                            });
-                        }
-                        if ($effectiveAreaLevelOne) {
-                            $openQuery->where(function ($areaOneQuery) use ($effectiveAreaLevelOne) {
-                                $areaOneQuery->whereNull('area_level_1')
-                                    ->orWhere('area_level_1', $effectiveAreaLevelOne);
-                            });
-                        }
                         if ($effectiveAreaLevelTwo) {
-                            $openQuery->where(function ($areaTwoQuery) use ($effectiveAreaLevelTwo) {
-                                $areaTwoQuery->whereNull('area_level_2')
-                                    ->orWhere('area_level_2', $effectiveAreaLevelTwo);
-                            });
+                            $openQuery->where('area_level_2', $effectiveAreaLevelTwo);
                         }
                         if ($effectiveAreaLevelThree) {
-                            $openQuery->where(function ($areaThreeQuery) use ($effectiveAreaLevelThree) {
-                                $areaThreeQuery->whereNull('area_level_3')
-                                    ->orWhere('area_level_3', $effectiveAreaLevelThree);
-                            });
-                        }
-                        if ($effectiveLocality) {
-                            $openQuery->where(function ($localityQuery) use ($effectiveLocality) {
-                                $localityQuery->whereNull('locality')
-                                    ->orWhere('locality', $effectiveLocality);
-                            });
+                            $openQuery->where('area_level_3', $effectiveAreaLevelThree);
                         }
                     });
                 }
