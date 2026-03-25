@@ -23,11 +23,39 @@ class WalletWithdrawalRequestTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_user_can_request_wallet_withdrawal(): void
+    public function test_user_cannot_request_withdrawal_without_bank_details(): void
     {
         $user = User::factory()->create([
             'phone_with_cc' => '+10000005001',
             'points_balance' => 120,
+            'bank_account' => null,
+            'iban' => null,
+            'bank_name' => null,
+            'bank_country_id' => null,
+        ]);
+        $user->assignRole('USER');
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/wallet/withdraw-request', [
+            'amount' => 50,
+            'notes' => 'طلب سحب للتجربة',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false);
+
+        $this->assertSame(120, (int) $user->fresh()->points_balance);
+    }
+
+    public function test_user_can_request_wallet_withdrawal_with_complete_bank_details(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000005009',
+            'points_balance' => 120,
+            'bank_account' => '1234567890',
+            'iban' => 'SA0380000000608010167519',
+            'bank_name' => 'Test Bank',
+            'bank_country_id' => (string) \Illuminate\Support\Str::uuid(),
         ]);
         $user->assignRole('USER');
 

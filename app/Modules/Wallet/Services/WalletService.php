@@ -47,14 +47,11 @@ class WalletService
         return DB::transaction(function () use ($user, $amount, $notes) {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-            $isTrainer = $user->hasRole('TRAINER') || $user->isCaptain();
-            if ($isTrainer) {
-                $hasBankDetails = filled($user->bank_account)
-                    && filled($user->iban)
-                    && filled($user->bank_name)
-                    && filled($user->bank_country_id);
-                abort_unless($hasBankDetails, 422, 'يجب استكمال بيانات الحساب البنكي قبل طلب السحب');
-            }
+            $hasBankDetails = filled($user->bank_account)
+                && filled($user->iban)
+                && filled($user->bank_name)
+                && filled($user->bank_country_id);
+            abort_unless($hasBankDetails, 422, 'يجب استكمال بيانات الحساب البنكي قبل طلب السحب');
 
             $pendingWithdrawals = (int) WalletTransaction::query()
                 ->where('user_id', $user->id)
