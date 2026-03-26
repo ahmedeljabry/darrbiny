@@ -13,9 +13,7 @@ use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
-use App\Notifications\TrainerRegistrationPendingApprovalNotification;
 use App\Notifications\UserAccountDeletedNotification;
-use Illuminate\Support\Facades\Notification;
 use App\Models\Upload;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
@@ -50,33 +48,14 @@ class AuthController extends BaseController
         $user->assignRole($role);
         if ($type === 'captain') {
             $user->trainerProfile()->create([
-                'pending_approval' => true,
-                'pending_approval_at' => now(),
-            ]);
-            $user->update([
-                'banned_until' => now()->addYears(10),
-                'banned_reason' => 'مطلوب تنشيط من الإدارة',
+                'pending_approval' => false,
+                'pending_approval_at' => null,
+                'verified_at' => now(),
             ]);
         }
 
         if ($code = $request->input('referral_code')) {
             $this->referrals->processSignupReferral($user, $code);
-        }
-
-        if ($type === 'captain') {
-            $admins = User::role('ADMIN')->get();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new TrainerRegistrationPendingApprovalNotification($user));
-            }
-
-            return response()->json([
-                'message' => 'تم إنشاء الحساب وبانتظار موافقة الإدارة على التنشيط',
-                'data' => [
-                    'user' => (new UserResource($user))->resolve(),
-                    'requires_admin_approval' => true,
-                    'approval_status' => 'pending',
-                ],
-            ], 201);
         }
 
         $tokens = $this->auth->issueTokens($user);

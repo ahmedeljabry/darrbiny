@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\Country;
 use App\Models\Message;
+use App\Models\Plan;
+use App\Models\TrainerOffer;
 use App\Models\User;
+use App\Models\UserRequest;
 use App\Notifications\AdminMessageNotification;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\NewRequestAvailable;
@@ -37,12 +41,155 @@ class NotificationBadgesEndpointTest extends TestCase
             'email' => 'badges-user@example.com',
         ]);
         $user->assignRole('USER');
+        $user->assignRole('TRAINER');
 
         $otherUser = User::factory()->create([
             'phone_with_cc' => '+10000004002',
             'email' => 'badges-other@example.com',
         ]);
         $otherUser->assignRole('USER');
+
+        $country = Country::create([
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Badge Plan',
+            'description' => 'Plan for notification badges test',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user->trainerProfile()->create([
+            'country_id' => $country->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => 'North',
+            'locality' => 'Trainer Locality',
+        ]);
+
+        $studentRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'trainer_id' => null,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Jeddah Province',
+            'area_level_2' => 'Jeddah',
+            'area_level_3' => 'West',
+            'locality' => 'Student Locality',
+            'start_date' => now()->addDay()->toDateString(),
+            'start_time' => '09:00:00',
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+        ]);
+
+        $assignedTrainerRequest = UserRequest::create([
+            'user_id' => $otherUser->id,
+            'trainer_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Dammam Province',
+            'area_level_2' => 'Dammam',
+            'area_level_3' => 'East',
+            'locality' => 'Assigned Locality',
+            'start_date' => now()->addDays(2)->toDateString(),
+            'start_time' => '10:00:00',
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+        ]);
+
+        $openMatchedRequest = UserRequest::create([
+            'user_id' => $otherUser->id,
+            'trainer_id' => null,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => 'North',
+            'locality' => 'Open Locality',
+            'start_date' => now()->addDays(3)->toDateString(),
+            'start_time' => '11:00:00',
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+        ]);
+
+        $unmatchedOpenRequest = UserRequest::create([
+            'user_id' => $otherUser->id,
+            'trainer_id' => null,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => 'South',
+            'locality' => 'Unmatched Locality',
+            'start_date' => now()->addDays(4)->toDateString(),
+            'start_time' => '12:00:00',
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+        ]);
+
+        $trainerOne = User::factory()->create([
+            'phone_with_cc' => '+10000004003',
+            'email' => 'badges-trainer-one@example.com',
+        ]);
+        $trainerTwo = User::factory()->create([
+            'phone_with_cc' => '+10000004004',
+            'email' => 'badges-trainer-two@example.com',
+        ]);
+
+        TrainerOffer::create([
+            'user_request_id' => $studentRequest->id,
+            'trainer_id' => $trainerOne->id,
+            'price_minor' => 25000,
+            'message' => 'First offer',
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
+        TrainerOffer::create([
+            'user_request_id' => $studentRequest->id,
+            'trainer_id' => $trainerTwo->id,
+            'price_minor' => 27000,
+            'message' => 'Second offer',
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
+        TrainerOffer::create([
+            'user_request_id' => $assignedTrainerRequest->id,
+            'trainer_id' => $trainerTwo->id,
+            'price_minor' => 29000,
+            'message' => 'Not my offer count',
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
+        TrainerOffer::create([
+            'user_request_id' => $unmatchedOpenRequest->id,
+            'trainer_id' => $trainerOne->id,
+            'price_minor' => 31000,
+            'message' => 'Not my booking count',
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
 
         $conversation = Conversation::create([
             'user_one_id' => $user->id,
@@ -114,7 +261,11 @@ class NotificationBadgesEndpointTest extends TestCase
             ->assertJsonPath('data.rewards.count', 1)
             ->assertJsonPath('data.rewards.has_unread', true)
             ->assertJsonPath('data.account.count', 4)
-            ->assertJsonPath('data.account.has_unread', true);
+            ->assertJsonPath('data.account.has_unread', true)
+            ->assertJsonPath('data.offers.count', 2)
+            ->assertJsonPath('data.offers.has_unread', true)
+            ->assertJsonPath('data.bookings.count', 2)
+            ->assertJsonPath('data.bookings.has_unread', true);
     }
 
     public function test_badges_endpoint_requires_authentication(): void

@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Http\Controllers;
 
 use App\Models\Message;
+use App\Models\TrainerOffer;
+use App\Models\TrainerProfile;
+use App\Models\User;
+use App\Models\UserRequest;
 use App\Notifications\CancellationRequestNotification;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\NewRequestAvailable;
@@ -14,6 +18,7 @@ use App\Notifications\SupportTicketCreatedNotification;
 use App\Notifications\SupportTicketReplyNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
@@ -118,37 +123,20 @@ class NotificationController extends BaseController
         $walletCount = $this->countWalletNotifications($unreadNotifications);
         $rewardsCount = $this->countByTypes($unreadNotifications, self::REWARDS_NOTIFICATION_TYPES);
         $accountCount = $supportTicketsCount + $walletCount + $rewardsCount;
+        $offersCount = $this->offersCountForUser($user);
+        $bookingsCount = $this->trainerBookingsCountForUser($user);
 
         return response()->json([
             'data' => [
-                'notifications' => [
-                    'count' => $notificationsCount,
-                    'has_unread' => $notificationsCount > 0,
-                ],
-                'messages' => [
-                    'count' => $messagesCount,
-                    'has_unread' => $messagesCount > 0,
-                ],
-                'trainings' => [
-                    'count' => $trainingsCount,
-                    'has_unread' => $trainingsCount > 0,
-                ],
-                'support_tickets' => [
-                    'count' => $supportTicketsCount,
-                    'has_unread' => $supportTicketsCount > 0,
-                ],
-                'wallet' => [
-                    'count' => $walletCount,
-                    'has_unread' => $walletCount > 0,
-                ],
-                'rewards' => [
-                    'count' => $rewardsCount,
-                    'has_unread' => $rewardsCount > 0,
-                ],
-                'account' => [
-                    'count' => $accountCount,
-                    'has_unread' => $accountCount > 0,
-                ],
+                'notifications' => $this->badgePayload($notificationsCount),
+                'messages' => $this->badgePayload($messagesCount),
+                'trainings' => $this->badgePayload($trainingsCount),
+                'support_tickets' => $this->badgePayload($supportTicketsCount),
+                'wallet' => $this->badgePayload($walletCount),
+                'rewards' => $this->badgePayload($rewardsCount),
+                'account' => $this->badgePayload($accountCount),
+                'offers' => $this->badgePayload($offersCount),
+                'bookings' => $this->badgePayload($bookingsCount),
             ],
         ]);
     }
@@ -261,6 +249,107 @@ class NotificationController extends BaseController
             $payload = is_array($notification->data) ? $notification->data : [];
             return (int) ($payload['refund_amount'] ?? 0) > 0;
         })->count();
+    }
+
+    private function offersCountForUser(User $user): int
+    {
+        return TrainerOffer::query()
+            ->when(!$user->hasRole('ADMIN'), function (Builder $query) use ($user): void {
+                $query->whereHas('userRequest', function (Builder $requestQuery) use ($user): void {
+                    $requestQuery->where('user_id', $user->id);
+                });
+            })
+            ->count();
+    }
+
+    private function trainerBookingsCountForUser(User $user): int
+    {
+        return $this->trainerBookingsQueryForUser($user)->count();
+    }
+
+    private function trainerBookingsQueryForUser(User $user): Builder
+    {
+        $trainerId = (string) $user->id;
+        $canSeeOpenRequests = $user->hasRole('ADMIN') || strcasecmp((string) $user->id, $trainerId) === 0;
+        $profile = $canSeeOpenRequests
+            ? TrainerProfile::where('user_id', $trainerId)->first()
+            : null;
+        $effectiveCountryId = $this->resolveTrainerLocation($profile, 'country_id');
+        $effectiveAreaLevelOne = $this->resolveTrainerLocation($profile, 'area_level_1');
+        $effectiveAreaLevelTwo = $this->resolveTrainerLocation($profile, 'area_level_2');
+        $effectiveAreaLevelThree = $this->resolveTrainerLocation($profile, 'area_level_3');
+        $canSeeLocationMatchedOpenRequests = $canSeeOpenRequests
+            && filled($effectiveCountryId)
+            && filled($effectiveAreaLevelOne);
+
+        return UserRequest::query()
+            ->where(function (Builder $query) use (
+                $trainerId,
+                $canSeeLocationMatchedOpenRequests,
+                $effectiveCountryId,
+                $effectiveAreaLevelOne,
+                $effectiveAreaLevelTwo,
+                $effectiveAreaLevelThree
+            ): void {
+                $query->whereHas('offers', function (Builder $offerQuery) use ($trainerId): void {
+                    $offerQuery->where('trainer_id', $trainerId);
+                })
+                    ->orWhereHas('trainingDays', function (Builder $trainingQuery) use ($trainerId): void {
+                        $trainingQuery->where('trainer_id', $trainerId);
+                    })
+                    ->orWhere('trainer_id', $trainerId);
+
+                if ($canSeeLocationMatchedOpenRequests) {
+                    $query->orWhere(function (Builder $openQuery) use (
+                        $effectiveCountryId,
+                        $effectiveAreaLevelOne,
+                        $effectiveAreaLevelTwo,
+                        $effectiveAreaLevelThree
+                    ): void {
+                        $openQuery->whereNull('trainer_id')
+                            ->whereIn('status', [
+                                UserRequest::STATUS_PENDING_PAYMENT,
+                                UserRequest::STATUS_AWAITING_OFFERS,
+                            ])
+                            ->where('country_id', $effectiveCountryId)
+                            ->where('area_level_1', $effectiveAreaLevelOne);
+
+                        if ($effectiveAreaLevelTwo) {
+                            $openQuery->where('area_level_2', $effectiveAreaLevelTwo);
+                        }
+
+                        if ($effectiveAreaLevelThree) {
+                            $openQuery->where('area_level_3', $effectiveAreaLevelThree);
+                        }
+                    });
+                }
+            });
+    }
+
+    private function resolveTrainerLocation(?TrainerProfile $profile, string $field): ?string
+    {
+        if (!$profile) {
+            return null;
+        }
+
+        $value = $profile->getAttribute($field);
+        if (
+            $profile->pending_approval
+            && is_array($profile->pending_changes)
+            && array_key_exists($field, $profile->pending_changes)
+        ) {
+            $value = $profile->pending_changes[$field];
+        }
+
+        return $value;
+    }
+
+    private function badgePayload(int $count): array
+    {
+        return [
+            'count' => $count,
+            'has_unread' => $count > 0,
+        ];
     }
 }
 

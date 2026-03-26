@@ -23,7 +23,7 @@ class TrainerApprovalFlowTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_captain_registration_requires_admin_approval_and_notifies_admin(): void
+    public function test_captain_registration_is_approved_immediately_without_admin_notification(): void
     {
         Notification::fake();
 
@@ -43,22 +43,24 @@ class TrainerApprovalFlowTest extends TestCase
 
         $response
             ->assertCreated()
-            ->assertJsonPath('data.requires_admin_approval', true)
-            ->assertJsonPath('data.approval_status', 'pending')
-            ->assertJsonMissingPath('data.access_token');
+            ->assertJsonMissingPath('data.requires_admin_approval')
+            ->assertJsonPath('data.user.phone_with_cc', '+201555570001')
+            ->assertJsonPath('data.access_token', fn ($token) => is_string($token) && $token !== '')
+            ->assertJsonPath('data.refresh_token', fn ($token) => is_string($token) && $token !== '');
 
         $this->postJson('/api/v1/auth/login', [
             'phone_with_cc' => '+201555570001',
             'password' => 'password123',
-        ])->assertStatus(403)
-            ->assertJsonPath('errors.phone_with_cc.0', 'الحساب بانتظار موافقة الإدارة على التنشيط.');
+        ])->assertOk()
+            ->assertJsonPath('data.user.phone_with_cc', '+201555570001');
 
         $trainer = User::where('phone_with_cc', '+201555570001')->firstOrFail();
-        $this->assertTrue((bool) $trainer->trainerProfile?->pending_approval);
-        $this->assertNotNull($trainer->banned_until);
-        $this->assertSame('مطلوب تنشيط من الإدارة', $trainer->banned_reason);
+        $this->assertFalse((bool) $trainer->trainerProfile?->pending_approval);
+        $this->assertNotNull($trainer->trainerProfile?->verified_at);
+        $this->assertNull($trainer->banned_until);
+        $this->assertNull($trainer->banned_reason);
 
-        Notification::assertSentTo(
+        Notification::assertNotSentTo(
             $admin,
             TrainerRegistrationPendingApprovalNotification::class
         );
