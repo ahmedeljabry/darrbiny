@@ -217,7 +217,7 @@ class NotificationBadgesEndpointTest extends TestCase
             'phone_with_cc' => $user->phone_with_cc,
             'email' => $user->email,
             'subject' => 'Existing support ticket',
-            'status' => 'open',
+            'status' => 'pending',
         ]);
 
         $this->insertNotification($user, NewRequestAvailable::class, [
@@ -285,7 +285,7 @@ class NotificationBadgesEndpointTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
-    public function test_badges_endpoint_counts_support_tickets_without_support_notifications(): void
+    public function test_badges_endpoint_counts_only_in_progress_support_tickets(): void
     {
         $user = User::factory()->create([
             'phone_with_cc' => '+10000004005',
@@ -298,8 +298,17 @@ class NotificationBadgesEndpointTest extends TestCase
             'name' => $user->name,
             'phone_with_cc' => $user->phone_with_cc,
             'email' => $user->email,
-            'subject' => 'Support ticket without notification',
+            'subject' => 'Open support ticket',
             'status' => 'open',
+        ]);
+
+        SupportTicket::create([
+            'user_id' => null,
+            'name' => $user->name,
+            'phone_with_cc' => $user->phone_with_cc,
+            'email' => $user->email,
+            'subject' => 'In progress support ticket',
+            'status' => 'pending',
         ]);
 
         Sanctum::actingAs($user);

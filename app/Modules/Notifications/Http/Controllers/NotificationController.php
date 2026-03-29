@@ -219,6 +219,7 @@ class NotificationController extends BaseController
     {
         return SupportTicket::query()
             ->visibleToUser($user)
+            ->where('status', 'pending')
             ->count();
     }
 
@@ -353,4 +354,3 @@ class NotificationController extends BaseController
         ];
     }
 }
-

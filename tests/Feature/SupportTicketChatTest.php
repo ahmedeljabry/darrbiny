@@ -182,9 +182,11 @@ class SupportTicketChatTest extends TestCase
 
         $this->postJson('/api/v1/support-tickets/' . $ticket->id . '/messages', [
             'message' => 'Admin follow up',
+            'status' => 'pending',
         ])
             ->assertStatus(201)
             ->assertJsonPath('success', true)
+            ->assertJsonPath('data.ticket_status', 'pending')
             ->assertJsonPath('data.message.author_type', 'admin');
 
         $ticket->refresh();
@@ -239,11 +241,11 @@ class SupportTicketChatTest extends TestCase
 
         $this->postJson('/api/v1/support-tickets/' . $ticket->id . '/messages', [
             'message' => 'Admin reply after status update',
-            'status' => 'open',
+            'status' => 'pending',
         ])
             ->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.ticket_status', 'open');
+            ->assertJsonPath('data.ticket_status', 'pending');
 
         $ticket->refresh();
 
