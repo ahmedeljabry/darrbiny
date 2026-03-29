@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\Country;
 use App\Models\Message;
 use App\Models\Plan;
+use App\Models\SupportTicket;
 use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
@@ -210,6 +211,15 @@ class NotificationBadgesEndpointTest extends TestCase
             'is_read' => false,
         ]);
 
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'phone_with_cc' => $user->phone_with_cc,
+            'email' => $user->email,
+            'subject' => 'Existing support ticket',
+            'status' => 'open',
+        ]);
+
         $this->insertNotification($user, NewRequestAvailable::class, [
             'title' => 'طلب جديد',
             'message' => 'هناك طلب جديد متاح',
@@ -273,6 +283,35 @@ class NotificationBadgesEndpointTest extends TestCase
         $this->getJson('/api/v1/notifications/badges')
             ->assertStatus(401)
             ->assertJsonPath('success', false);
+    }
+
+    public function test_badges_endpoint_counts_support_tickets_without_support_notifications(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000004005',
+            'email' => 'badges-support-only@example.com',
+        ]);
+        $user->assignRole('USER');
+
+        SupportTicket::create([
+            'user_id' => null,
+            'name' => $user->name,
+            'phone_with_cc' => $user->phone_with_cc,
+            'email' => $user->email,
+            'subject' => 'Support ticket without notification',
+            'status' => 'open',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/notifications/badges')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.notifications.count', 0)
+            ->assertJsonPath('data.support_tickets.count', 1)
+            ->assertJsonPath('data.support_tickets.has_unread', true)
+            ->assertJsonPath('data.account.count', 1)
+            ->assertJsonPath('data.account.has_unread', true);
     }
 
     private function insertNotification(User $user, string $type, array $data, ?string $readAt = null): void

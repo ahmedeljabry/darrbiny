@@ -21,7 +21,7 @@ class SupportTicketController extends BaseController
      */
     public function store(CreateTicketRequest $request)
     {
-        $user = $request->user(); // Can be null for unauthenticated users
+        $user = $request->user('sanctum') ?? $request->user(); // Can be null for unauthenticated users
 
         $ticket = $this->service->createTicket($request->validated(), $user);
 
@@ -46,14 +46,10 @@ class SupportTicketController extends BaseController
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $ticketsQuery = SupportTicket::query()->withCount('messages')->latest();
-        if (!$user->hasRole('ADMIN')) {
-            $ticketsQuery->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->orWhere('email', $user->email)
-                    ->orWhere('phone_with_cc', $user->phone_with_cc);
-            });
-        }
+        $ticketsQuery = SupportTicket::query()
+            ->visibleToUser($user)
+            ->withCount('messages')
+            ->latest();
 
         $tickets = $ticketsQuery->paginate(20);
 
@@ -196,4 +192,3 @@ class SupportTicketController extends BaseController
         ];
     }
 }
-
