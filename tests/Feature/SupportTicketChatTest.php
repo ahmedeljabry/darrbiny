@@ -125,15 +125,16 @@ class SupportTicketChatTest extends TestCase
         ]);
         $user->assignRole('USER');
 
-        Sanctum::actingAs($user);
+        $token = $user->createToken('support-ticket-create')->plainTextToken;
 
-        $response = $this->postJson('/api/v1/support-tickets', [
-            'name' => 'Ticket Owner',
-            'phone_with_cc' => $user->phone_with_cc,
-            'email' => $user->email,
-            'subject' => 'Need support',
-            'details' => 'Ticket details',
-        ])
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/support-tickets', [
+                'name' => 'Ticket Owner',
+                'phone_with_cc' => $user->phone_with_cc,
+                'email' => $user->email,
+                'subject' => 'Need support',
+                'details' => 'Ticket details',
+            ])
             ->assertStatus(201)
             ->assertJsonPath('success', true);
 
@@ -185,6 +186,64 @@ class SupportTicketChatTest extends TestCase
             ->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.message.author_type', 'admin');
+
+        $ticket->refresh();
+
+        $this->assertSame($user->id, $ticket->user_id);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_type' => User::class,
+            'notifiable_id' => $user->id,
+            'type' => SupportTicketReplyNotification::class,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/notifications/badges')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.support_tickets.count', 1)
+            ->assertJsonPath('data.support_tickets.has_unread', true);
+    }
+
+    public function test_admin_reply_uses_existing_user_messages_to_link_legacy_ticket_owner(): void
+    {
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000003008',
+            'email' => 'message-owner@example.com',
+        ]);
+        $user->assignRole('USER');
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000003009',
+            'email' => 'message-admin@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        $ticket = SupportTicket::create([
+            'user_id' => null,
+            'name' => 'Legacy Message Owner',
+            'phone_with_cc' => '+19999999999',
+            'email' => 'other-contact@example.com',
+            'subject' => 'Legacy issue with stale contact info',
+            'status' => 'pending',
+        ]);
+
+        SupportTicketMessage::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'author_type' => 'user',
+            'message' => 'Authenticated user follow up',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson('/api/v1/support-tickets/' . $ticket->id . '/messages', [
+            'message' => 'Admin reply after status update',
+            'status' => 'open',
+        ])
+            ->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.ticket_status', 'open');
 
         $ticket->refresh();
 

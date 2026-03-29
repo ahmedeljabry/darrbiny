@@ -78,7 +78,7 @@ class SupportTicketService
                 $ticket->save();
             }
 
-            if (!$ticket->user_id && !$isAdmin && $this->ticketMatchesUser($ticket, $actor)) {
+            if (!$ticket->user_id && !$isAdmin) {
                 $ticket->user_id = $actor->id;
                 $ticket->save();
             }
@@ -106,6 +106,16 @@ class SupportTicketService
             return User::find($ticket->user_id);
         }
 
+        $messageOwnerId = $ticket->messages()
+            ->where('author_type', 'user')
+            ->whereNotNull('user_id')
+            ->latest('created_at')
+            ->value('user_id');
+
+        if ($messageOwnerId) {
+            return User::find($messageOwnerId);
+        }
+
         return User::query()
             ->where(function ($query) use ($ticket): void {
                 if (filled($ticket->email)) {
@@ -117,16 +127,6 @@ class SupportTicketService
                 }
             })
             ->first();
-    }
-
-    private function ticketMatchesUser(SupportTicket $ticket, User $user): bool
-    {
-        if ($ticket->user_id === $user->id) {
-            return true;
-        }
-
-        return (filled($ticket->email) && $ticket->email === $user->email)
-            || (filled($ticket->phone_with_cc) && $ticket->phone_with_cc === $user->phone_with_cc);
     }
 }
 
