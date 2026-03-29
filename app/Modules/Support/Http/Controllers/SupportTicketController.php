@@ -6,11 +6,13 @@ namespace App\Modules\Support\Http\Controllers;
 
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
+use App\Models\User;
 use App\Modules\Support\Http\Requests\CreateTicketRequest;
 use App\Modules\Support\Http\Requests\SendTicketMessageRequest;
 use App\Modules\Support\Services\SupportTicketService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class SupportTicketController extends BaseController
 {
@@ -21,7 +23,7 @@ class SupportTicketController extends BaseController
      */
     public function store(CreateTicketRequest $request)
     {
-        $user = $request->user(); // Can be null for unauthenticated users
+        $user = $this->resolveAuthenticatedUser($request);
 
         $ticket = $this->service->createTicket($request->validated(), $user);
 
@@ -46,14 +48,10 @@ class SupportTicketController extends BaseController
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $ticketsQuery = SupportTicket::query()->withCount('messages')->latest();
-        if (!$user->hasRole('ADMIN')) {
-            $ticketsQuery->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->orWhere('email', $user->email)
-                    ->orWhere('phone_with_cc', $user->phone_with_cc);
-            });
-        }
+        $ticketsQuery = SupportTicket::query()
+            ->visibleToUser($user)
+            ->withCount('messages')
+            ->latest();
 
         $tickets = $ticketsQuery->paginate(20);
 
@@ -195,5 +193,22 @@ class SupportTicketController extends BaseController
             'created_at' => $message->created_at?->toIso8601String(),
         ];
     }
-}
 
+    private function resolveAuthenticatedUser(Request $request): ?User
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($user instanceof User) {
+            return $user;
+        }
+
+        $token = $request->bearerToken();
+        if (!$token) {
+            return null;
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+        $tokenable = $accessToken?->tokenable;
+
+        return $tokenable instanceof User ? $tokenable : null;
+    }
+}

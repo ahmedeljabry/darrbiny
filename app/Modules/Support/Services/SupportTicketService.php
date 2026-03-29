@@ -38,7 +38,7 @@ class SupportTicketService
             ]);
 
             // Notify all admins
-            $admins = User::role('admin')->get();
+            $admins = User::role('ADMIN')->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new SupportTicketCreatedNotification($ticket));
             }
@@ -78,13 +78,55 @@ class SupportTicketService
                 $ticket->save();
             }
 
-            if ($isAdmin && $ticket->user_id && $ticket->user_id !== $actor->id) {
-                $ticket->loadMissing('user');
-                $ticket->user?->notify(new SupportTicketReplyNotification($ticket, $ticketMessage));
+            if (!$ticket->user_id && !$isAdmin) {
+                $ticket->user_id = $actor->id;
+                $ticket->save();
+            }
+
+            if ($isAdmin) {
+                $ticketOwner = $this->resolveTicketOwner($ticket);
+
+                if ($ticketOwner && $ticket->user_id !== $ticketOwner->id) {
+                    $ticket->user_id = $ticketOwner->id;
+                    $ticket->save();
+                }
+
+                if ($ticketOwner && $ticketOwner->id !== $actor->id) {
+                    $ticketOwner->notify(new SupportTicketReplyNotification($ticket, $ticketMessage));
+                }
             }
 
             return $ticketMessage->load('user');
         });
+    }
+
+    private function resolveTicketOwner(SupportTicket $ticket): ?User
+    {
+        if ($ticket->user_id) {
+            return User::find($ticket->user_id);
+        }
+
+        $messageOwnerId = $ticket->messages()
+            ->where('author_type', 'user')
+            ->whereNotNull('user_id')
+            ->latest('created_at')
+            ->value('user_id');
+
+        if ($messageOwnerId) {
+            return User::find($messageOwnerId);
+        }
+
+        return User::query()
+            ->where(function ($query) use ($ticket): void {
+                if (filled($ticket->email)) {
+                    $query->orWhere('email', $ticket->email);
+                }
+
+                if (filled($ticket->phone_with_cc)) {
+                    $query->orWhere('phone_with_cc', $ticket->phone_with_cc);
+                }
+            })
+            ->first();
     }
 }
 

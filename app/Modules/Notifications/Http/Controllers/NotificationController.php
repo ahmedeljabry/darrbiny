@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Http\Controllers;
 
 use App\Models\Message;
+use App\Models\SupportTicket;
 use App\Models\TrainerOffer;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -14,8 +15,6 @@ use App\Notifications\CourseCancelledNotification;
 use App\Notifications\NewRequestAvailable;
 use App\Notifications\ReferralPointsAddedNotification;
 use App\Notifications\ScheduleItemSentNotification;
-use App\Notifications\SupportTicketCreatedNotification;
-use App\Notifications\SupportTicketReplyNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,11 +29,6 @@ class NotificationController extends BaseController
         NewRequestAvailable::class,
         CancellationRequestNotification::class,
         CourseCancelledNotification::class,
-    ];
-
-    private const SUPPORT_NOTIFICATION_TYPES = [
-        SupportTicketReplyNotification::class,
-        SupportTicketCreatedNotification::class,
     ];
 
     private const REWARDS_NOTIFICATION_TYPES = [
@@ -119,7 +113,7 @@ class NotificationController extends BaseController
         $notificationsCount = $unreadNotifications->count();
         $messagesCount = $this->unreadMessagesCountForUser($user->id);
         $trainingsCount = $this->countByTypes($unreadNotifications, self::TRAINING_NOTIFICATION_TYPES);
-        $supportTicketsCount = $this->countByTypes($unreadNotifications, self::SUPPORT_NOTIFICATION_TYPES);
+        $supportTicketsCount = $this->supportTicketsCountForUser($user);
         $walletCount = $this->countWalletNotifications($unreadNotifications);
         $rewardsCount = $this->countByTypes($unreadNotifications, self::REWARDS_NOTIFICATION_TYPES);
         $accountCount = $supportTicketsCount + $walletCount + $rewardsCount;
@@ -218,6 +212,13 @@ class NotificationController extends BaseController
                     });
                 });
             })
+            ->count();
+    }
+
+    private function supportTicketsCountForUser(User $user): int
+    {
+        return SupportTicket::query()
+            ->visibleToUser($user)
             ->count();
     }
 
