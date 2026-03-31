@@ -166,7 +166,7 @@ class UsersController extends BaseController
         $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
         $hadPendingDetails = is_array($user->trainerProfile?->pending_changes) && !empty($user->trainerProfile->pending_changes);
 
-        abort_unless($this->approveTrainer($user), 422, 'No pending approval');
+        abort_unless($this->approveTrainer($user), 422, 'لا توجد موافقة معلقة لهذا المدرب');
 
         return back()->with('status', $hadPendingDetails
             ? 'تم الموافقة على تعديلات ملف المدرب'
@@ -178,8 +178,8 @@ class UsersController extends BaseController
     {
         $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
         
-        abort_unless($user->hasRole('TRAINER'), 422, 'User is not a trainer');
-        abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'No pending approval');
+        abort_unless($user->hasRole('TRAINER'), 422, 'المستخدم ليس مدرباً');
+        abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'لا توجد موافقة معلقة لهذا المدرب');
 
         $validated = $request->validate([
             'rejection_reason' => ['required', 'string', 'max:1000'],
@@ -250,7 +250,7 @@ class UsersController extends BaseController
             return back()->withErrors(['self_delete' => 'لا يمكنك حذف حسابك من لوحة التحكم.']);
         }
         $user->delete();
-        return back()->with('status', 'User frozen');
+        return back()->with('status', 'تم تجميد المستخدم بنجاح');
     }
 
     public function ban(string $id, Request $request)
@@ -265,7 +265,7 @@ class UsersController extends BaseController
             'banned_reason' => $data['reason'] ?? null,
         ]);
 
-        return back()->with('status', 'User banned until '.$user->banned_until->format('Y-m-d H:i'));
+        return back()->with('status', 'تم حظر المستخدم حتى '.$user->banned_until->format('Y-m-d H:i'));
     }
 
     public function unban(string $id)
@@ -278,7 +278,7 @@ class UsersController extends BaseController
         if ($user->trashed()) {
             $user->restore();
         }
-        return back()->with('status', 'User unbanned');
+        return back()->with('status', 'تم إلغاء حظر المستخدم بنجاح');
     }
 
     public function bulkAction(Request $request)
@@ -300,7 +300,10 @@ class UsersController extends BaseController
             return back()->withErrors(['error' => 'لا يمكنك تنفيذ هذا الإجراء على نفسك']);
         }
 
-        $users = User::with('trainerProfile')->whereIn('id', $userIds)->get();
+        $users = User::withTrashed()
+            ->with('trainerProfile')
+            ->whereIn('id', $userIds)
+            ->get();
         $count = 0;
 
         foreach ($users as $user) {

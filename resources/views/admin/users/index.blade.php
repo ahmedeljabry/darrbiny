@@ -96,7 +96,7 @@
 @if (session('status'))
   <div class="alert alert-success alert-dismissible" role="alert">
     {{ session('status') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
   </div>
 @endif
 @if ($errors->any())
@@ -381,7 +381,7 @@
 <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasBanUser" aria-labelledby="offcanvasBanUserLabel">
   <div class="offcanvas-header border-bottom">
     <h5 id="offcanvasBanUserLabel" class="offcanvas-title">حظر المستخدم</h5>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
   </div>
   <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
     <form id="banUserForm" class="pt-0" method="post">
