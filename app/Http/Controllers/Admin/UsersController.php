@@ -287,6 +287,10 @@ class UsersController extends BaseController
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['required', 'uuid', 'exists:users,id'],
             'action' => ['required', 'string', 'in:ban,unban,delete,approve_trainers'],
+        ], [], [
+            'user_ids' => 'المستخدمون المحددون',
+            'user_ids.*' => 'المستخدم المحدد',
+            'action' => 'الإجراء',
         ]);
 
         $userIds = $validated['user_ids'];

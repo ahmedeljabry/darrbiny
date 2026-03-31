@@ -68,6 +68,23 @@ class AdminUsersUnbanTest extends TestCase
         $this->assertNull($bannedUser->banned_reason);
     }
 
+    public function test_bulk_action_validation_messages_use_arabic_attribute_names(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = $this->createAdminUser();
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.users.index'))
+            ->post(route('admin.users.bulk-action'), []);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $response->assertSessionHasErrors([
+            'user_ids' => 'حقل المستخدمون المحددون مطلوب.',
+            'action' => 'حقل الإجراء مطلوب.',
+        ]);
+    }
+
     private function createAdminUser(): User
     {
         $admin = User::factory()->create([

@@ -237,8 +237,6 @@
     </form>
   </div>
   <div class="table-responsive">
-    <form id="bulkActionForm" method="post" action="{{ route('admin.users.bulk-action') }}">
-      @csrf
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
@@ -260,7 +258,7 @@
             <tr>
               <td class="text-center">
                 <div class="form-check">
-                  <input class="form-check-input user-checkbox" type="checkbox" name="user_ids[]" value="{{ $u->id }}" data-user-id="{{ $u->id }}">
+                  <input class="form-check-input user-checkbox" type="checkbox" value="{{ $u->id }}" data-user-id="{{ $u->id }}">
                 </div>
               </td>
               <td>
@@ -367,9 +365,12 @@
         @endforelse
       </tbody>
     </table>
-    <input type="hidden" name="action" id="bulkActionInput">
-    </form>
   </div>
+  <form id="bulkActionForm" method="post" action="{{ route('admin.users.bulk-action') }}" class="d-none">
+    @csrf
+    <div id="bulkActionUserIds"></div>
+    <input type="hidden" name="action" id="bulkActionInput">
+  </form>
   @if($users->hasPages())
     <div class="card-footer border-top">
       {{ $users->withQueryString()->links() }}
@@ -459,6 +460,7 @@ function clearSelection() {
 
 function bulkAction(action) {
   const form = document.getElementById('bulkActionForm');
+  const userIdsContainer = document.getElementById('bulkActionUserIds');
   const checked = document.querySelectorAll('.user-checkbox:checked');
   
   if (checked.length === 0) {
@@ -491,6 +493,15 @@ function bulkAction(action) {
   if (!confirm(confirmMessage)) {
     return;
   }
+
+  userIdsContainer.innerHTML = '';
+  checked.forEach((checkbox) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'user_ids[]';
+    input.value = checkbox.value;
+    userIdsContainer.appendChild(input);
+  });
 
   document.getElementById('bulkActionInput').value = action;
   form.submit();
