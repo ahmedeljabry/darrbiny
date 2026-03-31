@@ -82,6 +82,7 @@ class SettingsController extends BaseController
         $countryId = $request->query('country_id');
         $reservationFeeMinor = Fees::reservationFeeMinor($countryId);
         $appFeePercent = Fees::appFeePercent();
+        $contactPage = $this->getStringSetting('pages.contact');
 
         return response()->json([
             'pages' => [
@@ -96,6 +97,9 @@ class SettingsController extends BaseController
                 'app_fees_user' => $this->getFaqSetting('pages.sales'),
                 'app_fees_trainer' => $this->getFaqSetting('pages.sales_trainer'),
                 'faq' => $this->getFaqSetting('pages.faq'),
+                'contact' => $contactPage,
+                'contact_us' => $contactPage,
+                'contact-us' => $contactPage,
             ],
             'sales_fees' => [
                 'reservation_fee' => [
@@ -165,4 +169,3 @@ class SettingsController extends BaseController
             ->all();
     }
 }
-
