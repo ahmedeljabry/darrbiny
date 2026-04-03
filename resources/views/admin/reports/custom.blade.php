@@ -3,7 +3,7 @@
 @section('content')
 @php
   $supportsExcel = $supportsExcel ?? false;
-  $dateFilter = $dateFilter ?? null;
+  $filters = $filters ?? [];
 @endphp
 
 <!-- Breadcrumbs -->
@@ -27,14 +27,37 @@
       <a class="btn btn-sm btn-outline-primary" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">تصدير CSV</a>
     </div>
   </div>
-  @if($dateFilter !== null)
+  @if(!empty($filters))
     <div class="card-body border-top pb-0">
-      <form class="d-flex gap-2 align-items-end flex-wrap" method="get">
-        <div>
-          <label class="form-label mb-1">التاريخ</label>
-          <input type="date" name="date" value="{{ request('date', $dateFilter) }}" class="form-control">
+      <form class="row g-3 align-items-end" method="get">
+        @if(array_key_exists('name', $filters))
+          <div class="col-md-3">
+            <label class="form-label mb-1">الاسم</label>
+            <input type="text" name="name" value="{{ $filters['name'] }}" class="form-control" placeholder="ابحث بالاسم">
+          </div>
+        @endif
+        @if(array_key_exists('phone', $filters))
+          <div class="col-md-3">
+            <label class="form-label mb-1">رقم الجوال</label>
+            <input type="text" name="phone" value="{{ $filters['phone'] }}" class="form-control" placeholder="ابحث برقم الجوال">
+          </div>
+        @endif
+        @if(array_key_exists('date_from', $filters))
+          <div class="col-md-2">
+            <label class="form-label mb-1">من</label>
+            <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="form-control">
+          </div>
+        @endif
+        @if(array_key_exists('date_to', $filters))
+          <div class="col-md-2">
+            <label class="form-label mb-1">إلى</label>
+            <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="form-control">
+          </div>
+        @endif
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-primary flex-fill">تصفية</button>
+          <a class="btn btn-outline-secondary flex-fill" href="{{ url()->current() }}">إعادة</a>
         </div>
-        <button class="btn btn-primary">تصفية</button>
       </form>
     </div>
   @endif

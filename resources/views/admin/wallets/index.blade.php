@@ -129,6 +129,11 @@
               <input type="number" name="amount" class="form-control" min="1" step="1" required placeholder="أدخل المبلغ">
             </div>
             <div class="mb-3">
+              <label class="form-label">رقم الكورس (اختياري)</label>
+              <input type="text" name="course_reference" class="form-control" maxlength="100" placeholder="مثال: #12345 أو 7f21b0c4">
+              <small class="text-muted d-block mt-1">عند إدخاله سيتم حفظ الملاحظة تلقائيًا بصيغة: إضافة مستحقات كورس رقم ...</small>
+            </div>
+            <div class="mb-3">
               <label class="form-label">ملاحظة (اختياري)</label>
               <textarea name="notes" class="form-control" rows="3" placeholder="سبب الإضافة"></textarea>
             </div>

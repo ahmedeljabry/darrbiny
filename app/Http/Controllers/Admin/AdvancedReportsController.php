@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Maatwebsite\Excel\Facades\Excel;
@@ -45,7 +46,7 @@ class AdvancedReportsController extends BaseController
         Request $request,
         string $filename,
         bool $supportsExcel = false,
-        ?string $dateFilter = null
+        array $filters = []
     ) {
         if ($export = $this->maybeExportCsv($request, $filename, $headers, $rows)) {
             return $export;
@@ -56,20 +57,89 @@ class AdvancedReportsController extends BaseController
             'headers',
             'rows',
             'supportsExcel',
-            'dateFilter'
+            'filters'
         ));
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function resolveDateRange(Request $request): array
+    {
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        if (blank($dateFrom) && blank($dateTo)) {
+            $today = Carbon::today()->toDateString();
+
+            return [$today, $today];
+        }
+
+        return [
+            filled($dateFrom) ? (string) $dateFrom : null,
+            filled($dateTo) ? (string) $dateTo : null,
+        ];
+    }
+
+    private function applyDateRange(Builder $query, ?string $dateFrom, ?string $dateTo, string $column = 'created_at'): void
+    {
+        if ($dateFrom) {
+            $query->whereDate($column, '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate($column, '<=', $dateTo);
+        }
+    }
+
+    private function applyNamePhoneFilters(Builder $query, array $relations, string $name, string $phone): void
+    {
+        if ($name === '' && $phone === '') {
+            return;
+        }
+
+        $query->where(function (Builder $nestedQuery) use ($relations, $name, $phone): void {
+            foreach ($relations as $index => $relation) {
+                $method = $index === 0 ? 'whereHas' : 'orWhereHas';
+
+                $nestedQuery->{$method}($relation, function (Builder $personQuery) use ($name, $phone): void {
+                    if ($name !== '') {
+                        $personQuery->where('name', 'like', '%' . $name . '%');
+                    }
+
+                    if ($phone !== '') {
+                        $personQuery->where('phone_with_cc', 'like', '%' . $phone . '%');
+                    }
+                });
+            }
+        });
+    }
+
+    private function buildDailyFilters(Request $request, ?string $dateFrom, ?string $dateTo): array
+    {
+        return [
+            'name' => trim((string) $request->query('name', '')),
+            'phone' => trim((string) $request->query('phone', '')),
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ];
     }
 
     public function completedPayouts(Request $request)
     {
-        $date = $request->date('date') ?? Carbon::today();
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
 
-        $payments = Payment::with(['userRequest.trainer'])
+        $paymentsQuery = Payment::with(['userRequest.trainer'])
             ->where('type', Payment::TYPE_PLAN_FULL)
             ->where('status', Payment::STATUS_SUCCEEDED)
-            ->whereHas('userRequest', fn($q) => $q->where('status', UserRequest::STATUS_COMPLETED))
-            ->whereDate('created_at', $date)
-            ->get();
+            ->whereHas('userRequest', fn (Builder $query) => $query->where('status', UserRequest::STATUS_COMPLETED));
+
+        $this->applyDateRange($paymentsQuery, $dateFrom, $dateTo);
+        $this->applyNamePhoneFilters($paymentsQuery, ['userRequest.trainer'], $name, $phone);
+
+        $payments = $paymentsQuery->orderByDesc('created_at')->get();
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
@@ -80,26 +150,26 @@ class AdvancedReportsController extends BaseController
 
         $rows = $payments->map(function (Payment $p) {
             $trainer = $p->userRequest?->trainer;
+
             return [
-                $p->id,
                 $trainer?->name ?? '-',
                 $trainer?->phone_with_cc ?? '-',
                 $trainer?->bank_name ?? '-',
-                $trainer?->iban ?? '-',
                 $trainer?->bank_account ?? '-',
+                $trainer?->iban ?? '-',
                 number_format($p->trainer_net_minor / 100, 2),
-                $p->created_at,
+                $p->created_at?->format('Y-m-d H:i') ?? '-',
             ];
         })->all();
 
         return $this->view(
             'الكورسات المكتملة ومستحقات المدرب (يومي)',
-            ['المعرف', 'المدرب', 'الجوال', 'البنك', 'IBAN', 'حساب', 'صافي المدرب', 'تاريخ الدفعة'],
+            ['المدرب', 'الجوال', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تاريخ الدفعة'],
             $rows,
             $request,
             'completed-payouts',
             true,
-            $date->toDateString()
+            $this->buildDailyFilters($request, $dateFrom, $dateTo)
         );
     }
 
@@ -161,32 +231,39 @@ class AdvancedReportsController extends BaseController
 
     public function rejectedProgress(Request $request)
     {
-        $date = $request->date('date') ?? Carbon::today();
-        $items = UserScheduleProgress::with(['userRequest.user', 'userRequest.trainer'])
-            ->where('status', UserScheduleProgress::STATUS_REJECTED)
-            ->whereDate('created_at', $date)
-            ->get();
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+
+        $itemsQuery = UserScheduleProgress::with(['userRequest.user', 'userRequest.trainer'])
+            ->where('status', UserScheduleProgress::STATUS_REJECTED);
+
+        $this->applyDateRange($itemsQuery, $dateFrom, $dateTo);
+        $this->applyNamePhoneFilters($itemsQuery, ['userRequest.user', 'userRequest.trainer'], $name, $phone);
+
+        $items = $itemsQuery->orderByDesc('created_at')->get();
 
         $rows = $items->map(function (UserScheduleProgress $p) {
             return [
-                $p->id,
-                $p->userRequest?->id ?? '-',
+                $p->userRequest?->id ? ('#' . substr((string) $p->userRequest->id, 0, 8)) : '-',
                 $p->userRequest?->user?->name ?? '-',
+                $p->userRequest?->user?->phone_with_cc ?? '-',
                 $p->userRequest?->trainer?->name ?? '-',
+                $p->userRequest?->trainer?->phone_with_cc ?? '-',
                 $p->day_number,
-                $p->rejection_reason,
-                $p->created_at,
+                $p->rejection_reason ?: '-',
+                $p->created_at?->format('Y-m-d H:i') ?? '-',
             ];
         })->all();
 
         return $this->view(
             'الكورسات مع رفض في الإنجاز اليومي',
-            ['المعرف', 'الطلب', 'المستخدم', 'المدرب', 'اليوم', 'سبب الرفض', 'التاريخ'],
+            ['الطلب', 'الطالبة', 'جوال الطالبة', 'المدرب', 'جوال المدرب', 'اليوم', 'سبب الرفض', 'التاريخ'],
             $rows,
             $request,
             'rejected-progress',
             false,
-            $date->toDateString()
+            $this->buildDailyFilters($request, $dateFrom, $dateTo)
         );
     }
 

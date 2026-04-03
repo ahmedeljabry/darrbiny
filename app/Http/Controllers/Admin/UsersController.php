@@ -156,9 +156,13 @@ class UsersController extends BaseController
             ->latest()
             ->get();
 
+        $userDescription = $userRequests
+            ->first(fn (\App\Models\UserRequest $request): bool => filled($request->description))
+            ?->description;
+
         $trainerProfileView = $this->buildTrainerProfileView($user->trainerProfile);
 
-        return view('admin.users.show', compact('user', 'userRequests', 'trainerProfileView'));
+        return view('admin.users.show', compact('user', 'userRequests', 'userDescription', 'trainerProfileView'));
     }
 
     public function approveTrainerProfile(string $id)

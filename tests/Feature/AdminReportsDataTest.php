@@ -7,8 +7,11 @@ namespace Tests\Feature;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\PlanScheduleItem;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\UserScheduleProgress;
+use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -113,6 +116,191 @@ class AdminReportsDataTest extends TestCase
             ->assertOk()
             ->assertSee(Payment::TYPE_PLAN_FULL)
             ->assertDontSee(Payment::TYPE_PLAN_PARTIAL);
+    }
+
+    public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $student = User::factory()->create([
+            'name' => 'Payout Student',
+            'phone_with_cc' => '+10000008011',
+        ]);
+        $student->assignRole('USER');
+
+        $matchingTrainer = User::factory()->create([
+            'name' => 'Matching Trainer',
+            'phone_with_cc' => '+10000008012',
+            'user_type' => 'captain',
+            'bank_name' => 'Alpha Bank',
+            'bank_account' => '123456789',
+            'iban' => 'SA0300000000001234567891',
+        ]);
+        $matchingTrainer->assignRole('TRAINER');
+
+        $otherTrainer = User::factory()->create([
+            'name' => 'Other Trainer',
+            'phone_with_cc' => '+10000008013',
+            'user_type' => 'captain',
+            'bank_name' => 'Beta Bank',
+            'bank_account' => '987654321',
+            'iban' => 'SA0300000000001234567892',
+        ]);
+        $otherTrainer->assignRole('TRAINER');
+
+        $matchingRequest = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $matchingTrainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-04-01',
+            'status' => UserRequest::STATUS_COMPLETED,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $otherRequest = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $otherTrainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-04-04',
+            'status' => UserRequest::STATUS_COMPLETED,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Carbon::setTestNow('2026-04-02 10:00:00');
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $matchingRequest->id,
+            'amount_minor' => 9000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 900,
+            'trainer_net_minor' => 8100,
+        ]);
+
+        Carbon::setTestNow('2026-04-05 10:00:00');
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $otherRequest->id,
+            'amount_minor' => 11000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1100,
+            'trainer_net_minor' => 9900,
+        ]);
+        Carbon::setTestNow();
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.completed-payouts', [
+                'name' => 'Matching',
+                'phone' => '08012',
+                'date_from' => '2026-04-01',
+                'date_to' => '2026-04-03',
+            ]))
+            ->assertOk()
+            ->assertSee('Matching Trainer')
+            ->assertSee('+10000008012')
+            ->assertSee('Alpha Bank')
+            ->assertDontSee('Other Trainer')
+            ->assertDontSee('>المعرف<', false);
+    }
+
+    public function test_rejected_progress_report_filters_by_phone_and_date_range_and_hides_identifier_column(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $matchingStudent = User::factory()->create([
+            'name' => 'Matching Student',
+            'phone_with_cc' => '+10000008021',
+        ]);
+        $matchingStudent->assignRole('USER');
+
+        $otherStudent = User::factory()->create([
+            'name' => 'Other Student',
+            'phone_with_cc' => '+10000008022',
+        ]);
+        $otherStudent->assignRole('USER');
+
+        $trainer = User::factory()->create([
+            'name' => 'Progress Trainer',
+            'phone_with_cc' => '+10000008023',
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $matchingRequest = UserRequest::create([
+            'user_id' => $matchingStudent->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-04-02',
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $otherRequest = UserRequest::create([
+            'user_id' => $otherStudent->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-04-05',
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $scheduleItem = PlanScheduleItem::create([
+            'plan_id' => $plan->id,
+            'day_number' => 1,
+            'title' => 'Day 1',
+            'position' => 1,
+        ]);
+
+        Carbon::setTestNow('2026-04-02 12:00:00');
+        UserScheduleProgress::create([
+            'user_request_id' => $matchingRequest->id,
+            'plan_schedule_item_id' => $scheduleItem->id,
+            'day_number' => 1,
+            'status' => UserScheduleProgress::STATUS_REJECTED,
+            'rejection_reason' => 'Need correction',
+        ]);
+
+        Carbon::setTestNow('2026-04-06 12:00:00');
+        UserScheduleProgress::create([
+            'user_request_id' => $otherRequest->id,
+            'plan_schedule_item_id' => $scheduleItem->id,
+            'day_number' => 1,
+            'status' => UserScheduleProgress::STATUS_REJECTED,
+            'rejection_reason' => 'Late submission',
+        ]);
+        Carbon::setTestNow();
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.rejected-progress', [
+                'phone' => '08021',
+                'date_from' => '2026-04-01',
+                'date_to' => '2026-04-03',
+            ]))
+            ->assertOk()
+            ->assertSee('Matching Student')
+            ->assertSee('+10000008021')
+            ->assertSee('Progress Trainer')
+            ->assertDontSee('Other Student')
+            ->assertDontSee('>المعرف<', false);
     }
 
     private function createAdmin(): User

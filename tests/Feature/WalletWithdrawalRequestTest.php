@@ -240,4 +240,47 @@ class WalletWithdrawalRequestTest extends TestCase
         $payload = json_decode((string) $notification->data, true);
         $this->assertSame(WalletTransaction::STATUS_REJECTED, $payload['status'] ?? null);
     }
+
+    public function test_withdrawal_requests_index_shows_bank_fields_and_supports_excel_export(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Withdrawal User',
+            'phone_with_cc' => '+10000005010',
+            'points_balance' => 250,
+            'bank_name' => 'Test Bank',
+            'bank_account' => '1234567890',
+            'iban' => 'SA0380000000608010167519',
+            'bank_country_id' => (string) \Illuminate\Support\Str::uuid(),
+        ]);
+        $user->assignRole('USER');
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000005011',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        WalletTransaction::create([
+            'user_id' => $user->id,
+            'amount' => 75,
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.withdrawal-requests.index'))
+            ->assertOk()
+            ->assertSee('اسم البنك')
+            ->assertSee('رقم الحساب')
+            ->assertSee('IBAN')
+            ->assertSee('Test Bank')
+            ->assertSee('1234567890')
+            ->assertSee('SA0380000000608010167519');
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.withdrawal-requests.index', ['export' => 'excel']));
+
+        $response->assertOk();
+        $this->assertStringContainsString('.xlsx', (string) $response->headers->get('content-disposition'));
+    }
 }

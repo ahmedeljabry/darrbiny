@@ -24,12 +24,11 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
     public function headings(): array
     {
         return [
-            'المعرف',
             'المدرب',
             'الجوال',
             'البنك',
+            'رقم الحساب',
             'IBAN',
-            'حساب',
             'صافي المدرب',
             'تاريخ الدفعة',
         ];
@@ -39,12 +38,11 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
     {
         $trainer = $payment->userRequest?->trainer;
         return [
-            $payment->id,
             $trainer?->name ?? '-',
             $trainer?->phone_with_cc ?? '-',
             $trainer?->bank_name ?? '-',
-            $trainer?->iban ?? '-',
             $trainer?->bank_account ?? '-',
+            $trainer?->iban ?? '-',
             number_format($payment->trainer_net_minor / 100, 2),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];

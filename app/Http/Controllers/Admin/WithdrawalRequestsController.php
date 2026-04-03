@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\WithdrawalRequestsExport;
 use App\Models\WalletTransaction;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Maatwebsite\Excel\Facades\Excel;
 
 class WithdrawalRequestsController extends BaseController
 {
@@ -46,6 +48,17 @@ class WithdrawalRequestsController extends BaseController
 
         if ($dateTo) {
             $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        if ($request->query('export') === 'excel') {
+            $allRequests = (clone $query)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return Excel::download(
+                new WithdrawalRequestsExport($allRequests),
+                'withdrawal-requests-' . now()->format('Y-m-d') . '.xlsx'
+            );
         }
 
         $requests = $query->orderBy('created_at', 'desc')
@@ -105,4 +118,3 @@ class WithdrawalRequestsController extends BaseController
         return back()->with('status', 'تم رفض طلب السحب');
     }
 }
-

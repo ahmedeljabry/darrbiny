@@ -142,6 +142,8 @@ class WalletService
     public function addAdjustment(User $user, int $amount, User $admin, ?string $notes = null): WalletTransaction
     {
         return DB::transaction(function () use ($user, $amount, $admin, $notes) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amount,
@@ -177,6 +179,8 @@ class WalletService
     public function deduct(User $user, int $amount, ?string $notes = null, ?string $reference = null): WalletTransaction
     {
         return DB::transaction(function () use ($user, $amount, $notes, $reference) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
             // Check wallet balance
             abort_unless($user->points_balance >= $amount, 422, 'Insufficient wallet balance');
 
@@ -204,6 +208,8 @@ class WalletService
     public function deductAdjustment(User $user, int $amount, User $admin, ?string $notes = null): WalletTransaction
     {
         return DB::transaction(function () use ($user, $amount, $admin, $notes) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
             // Check wallet balance
             abort_unless($user->points_balance >= $amount, 422, 'Insufficient wallet balance');
 
@@ -229,6 +235,7 @@ class WalletService
     public function setBalance(User $user, int $newBalance, User $admin, ?string $notes = null): WalletTransaction
     {
         return DB::transaction(function () use ($user, $newBalance, $admin, $notes) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $oldBalance = $user->points_balance;
             $difference = $newBalance - $oldBalance;
 

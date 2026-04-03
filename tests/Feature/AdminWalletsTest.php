@@ -1,0 +1,88 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AdminWalletsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_admin_can_add_balance_from_wallets_page(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007001',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000007002',
+            'points_balance' => 20,
+        ]);
+        $user->assignRole('USER');
+
+        $this->actingAs($admin)
+            ->post(route('admin.wallets.store'), [
+                'user_id' => $user->id,
+                'amount' => 15,
+                'notes' => 'Administrative credit',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم إضافة الرصيد إلى المحفظة');
+
+        $this->assertSame(35, (int) $user->fresh()->points_balance);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $user->id,
+            'amount' => 15,
+            'type' => 'adjustment',
+            'status' => 'approved',
+        ]);
+    }
+
+    public function test_admin_credit_uses_standard_course_payout_note_when_course_reference_is_provided(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007003',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000007004',
+            'user_type' => 'captain',
+            'points_balance' => 0,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $this->actingAs($admin)
+            ->post(route('admin.wallets.store'), [
+                'user_id' => $trainer->id,
+                'amount' => 90,
+                'course_reference' => '#C-245',
+                'notes' => 'كورسات',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم إضافة الرصيد إلى المحفظة');
+
+        $this->assertSame(90, (int) $trainer->fresh()->points_balance);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $trainer->id,
+            'amount' => 90,
+            'type' => 'adjustment',
+            'status' => 'approved',
+            'notes' => 'إضافة مستحقات كورس رقم #C-245',
+        ]);
+    }
+}

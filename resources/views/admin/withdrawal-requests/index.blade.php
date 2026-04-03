@@ -29,6 +29,9 @@
                     <small class="text-muted">عرض وتنفيذ طلبات السحب للطالب والمدرب</small>
                   </div>
                 </div>
+                <a href="{{ route('admin.withdrawal-requests.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">
+                    <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
+                </a>
             </div>
             <div class="card-body pt-0">
                 <form method="get" class="row g-3 mb-4">
@@ -77,6 +80,9 @@
                         <tr>
                             <th style="width: 260px;">المستخدم</th>
                             <th style="width: 130px;">نوع الحساب</th>
+                            <th style="width: 160px;">اسم البنك</th>
+                            <th style="width: 170px;">رقم الحساب</th>
+                            <th style="width: 200px;">IBAN</th>
                             <th style="width: 120px;">المبلغ</th>
                             <th style="width: 120px;">الحالة</th>
                             <th style="width: 160px;">تاريخ الطلب</th>
@@ -105,6 +111,9 @@
                                         {{ $isTrainer ? 'مدرب' : 'طالب' }}
                                     </span>
                                 </td>
+                                <td>{{ $withdrawal->user?->bank_name ?? '-' }}</td>
+                                <td><span dir="ltr">{{ $withdrawal->user?->bank_account ?? '-' }}</span></td>
+                                <td><span dir="ltr">{{ $withdrawal->user?->iban ?? '-' }}</span></td>
                                 <td>
                                     <span class="fw-semibold">{{ number_format($withdrawal->amount) }} نقطة</span>
                                 </td>
@@ -131,7 +140,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="9" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-arrow-up-right-circle" style="font-size: 32px;"></i>

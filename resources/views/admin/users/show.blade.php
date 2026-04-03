@@ -19,44 +19,84 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="row g-4">
-        <div class="col-md-6">
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-3 col-md-4">
+          <div class="border rounded-3 p-3 bg-body-tertiary text-center">
+            <div class="fw-medium text-body-secondary mb-3">الصورة الشخصية</div>
+            @if($user->profile_picture_url)
+              <a href="{{ $user->profile_picture_url }}" target="_blank" rel="noopener noreferrer">
+                <img
+                  src="{{ $user->profile_picture_url }}"
+                  alt="الصورة الشخصية لـ {{ $user->name ?? 'المستخدم' }}"
+                  class="img-fluid rounded-3 border"
+                  style="width: 100%; max-height: 320px; object-fit: contain; background: #fff;">
+              </a>
+              <div class="mt-2">
+                <a href="{{ $user->profile_picture_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                  فتح الصورة
+                </a>
+              </div>
+            @else
+              <div class="d-flex flex-column align-items-center justify-content-center rounded-3 border bg-white" style="min-height: 240px;">
+                <span class="avatar-initial rounded-circle bg-label-secondary mb-2" style="width: 72px; height: 72px; font-size: 28px;">
+                  {{ substr($user->name ?? 'U', 0, 1) }}
+                </span>
+                <span class="text-body-secondary">لا توجد صورة شخصية</span>
+              </div>
+            @endif
+          </div>
+        </div>
+        <div class="col-lg-9 col-md-8">
+          <div class="row g-4">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الاسم</div>
           <div class="text-heading">{{ $user->name ?? '-' }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">البريد الإلكتروني</div>
           <div class="text-heading">{{ $user->email ?? '-' }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الهاتف</div>
           <div class="text-heading">{{ $user->phone_with_cc }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الأدوار</div>
           <div class="text-heading">
             {{ $user->getRoleNames()->map(fn($role) => \App\Support\AccessLabels::role($role))->implode(', ') ?: '-' }}
           </div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">الحالة</div>
           <div class="text-heading">{{ $user->isBanned() ? 'محظور' : 'نشط' }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">محظور حتى</div>
           <div class="text-heading">{{ $user->banned_until?->format('Y-m-d H:i') ?: '-' }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">سبب الحظر</div>
           <div class="text-heading">{{ $user->banned_reason ?: '-' }}</div>
         </div>
-        <div class="col-md-6">
+            <div class="col-12">
+          <div class="fw-medium text-body-secondary">وصف الطالبة</div>
+          <div class="text-heading">
+            @if(filled($userDescription ?? null))
+              {!! nl2br(e($userDescription)) !!}
+            @else
+              -
+            @endif
+          </div>
+        </div>
+            <div class="col-md-6">
           <div class="fw-medium text-body-secondary">النقاط</div>
           <div class="text-heading">
             <span class="badge bg-label-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
               <i class="icon-base ti tabler-coins me-1"></i>
               {{ number_format($user->points_balance ?? 0) }} نقطة
             </span>
+          </div>
+        </div>
           </div>
         </div>
       </div>

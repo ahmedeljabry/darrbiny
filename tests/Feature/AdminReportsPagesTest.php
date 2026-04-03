@@ -70,7 +70,7 @@ class AdminReportsPagesTest extends TestCase
             ->assertDontSee('تصدير Excel');
     }
 
-    public function test_daily_reports_expose_date_filter(): void
+    public function test_daily_reports_expose_name_phone_and_date_range_filters(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000004003',
@@ -81,10 +81,16 @@ class AdminReportsPagesTest extends TestCase
 
         $this->get(route('admin.reports.completed-payouts'))
             ->assertOk()
-            ->assertSee('name="date"', false);
+            ->assertSee('name="name"', false)
+            ->assertSee('name="phone"', false)
+            ->assertSee('name="date_from"', false)
+            ->assertSee('name="date_to"', false);
 
         $this->get(route('admin.reports.rejected-progress'))
             ->assertOk()
-            ->assertSee('name="date"', false);
+            ->assertSee('name="name"', false)
+            ->assertSee('name="phone"', false)
+            ->assertSee('name="date_from"', false)
+            ->assertSee('name="date_to"', false);
     }
 }

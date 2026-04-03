@@ -24,11 +24,14 @@ class WalletsController extends BaseController
         $data = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
             'amount' => ['required', 'integer', 'min:1'],
+            'course_reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = User::findOrFail($data['user_id']);
-        $this->wallets->addAdjustment($user, (int) $data['amount'], $request->user(), $data['notes'] ?? null);
+        $notes = $this->resolveCreditNotes($data);
+
+        $this->wallets->addAdjustment($user, (int) $data['amount'], $request->user(), $notes);
 
         return back()->with('status', 'تم إضافة الرصيد إلى المحفظة');
     }
@@ -44,5 +47,15 @@ class WalletsController extends BaseController
         $this->wallets->setBalance($user, (int) $data['balance'], $request->user(), $data['notes'] ?? null);
 
         return back()->with('status', 'تم تحديث رصيد المحفظة بنجاح');
+    }
+
+    private function resolveCreditNotes(array $data): ?string
+    {
+        $courseReference = trim((string) ($data['course_reference'] ?? ''));
+        if ($courseReference !== '') {
+            return 'إضافة مستحقات كورس رقم ' . $courseReference;
+        }
+
+        return $data['notes'] ?? null;
     }
 }
