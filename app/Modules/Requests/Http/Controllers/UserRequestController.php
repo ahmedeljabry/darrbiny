@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Http\Controllers;
 
-use App\Models\Payout;
 use App\Models\TrainerProfile;
 use App\Models\TrainingDay;
 use App\Models\UserRequest;
@@ -238,15 +237,9 @@ class UserRequestController extends BaseController
     {
         $req = UserRequest::findOrFail($id);
         $this->authorize('complete', $req);
-        $this->service->complete($req);
-        Payout::create([
-            'trainer_id' => $request->user()->id,
-            'user_request_id' => $req->id,
-            'amount_minor' => $req->total_paid_minor - $req->app_fee_reserved_minor,
-            'currency' => $req->currency,
-            'status' => Payout::STATUS_PENDING_REVIEW,
-        ]);
-        return response()->json(['data' => $req]);
+        $this->service->complete($req, $request->user());
+
+        return response()->json(['data' => $req->fresh()]);
     }
 
     private function resolveTrainerLocation(?TrainerProfile $profile, string $field): ?string

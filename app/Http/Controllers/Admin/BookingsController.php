@@ -9,6 +9,7 @@ use App\Models\CancellationRequest;
 use App\Models\UserRequest;
 use App\Models\Plan;
 use App\Models\WalletTransaction;
+use App\Modules\Requests\Services\RequestService;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use Illuminate\Http\Request;
@@ -18,6 +19,10 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class BookingsController extends BaseController
 {
+    public function __construct(
+        private readonly RequestService $requests,
+    ) {}
+
     public function index(Request $request)
     {
         $q = $request->query('q');
@@ -162,8 +167,13 @@ class BookingsController extends BaseController
 
         $booking = UserRequest::findOrFail($id);
         $oldStatus = $booking->status;
-        $booking->status = $request->status;
-        $booking->save();
+
+        if ($request->status === UserRequest::STATUS_COMPLETED) {
+            $this->requests->complete($booking, $request->user());
+        } else {
+            $booking->status = $request->status;
+            $booking->save();
+        }
 
         if ($request->notes) {
         }

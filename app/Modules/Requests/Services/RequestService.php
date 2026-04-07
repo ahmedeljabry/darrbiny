@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Services;
 
+use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Payout;
 use App\Models\TrainerOffer;
+use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
+use App\Notifications\WalletBalanceAddedNotification;
 use App\Services\ConversationService;
 
 class RequestService
@@ -79,10 +84,26 @@ class RequestService
         $this->ensureConversationExists($req);
     }
 
-    public function complete(UserRequest $req): void
+    public function complete(UserRequest $req, ?User $completedBy = null): void
     {
-        $req->status = UserRequest::STATUS_COMPLETED;
-        $req->save();
+        DB::transaction(function () use ($req, $completedBy): void {
+            $req = UserRequest::query()
+                ->with(['payments', 'trainer'])
+                ->lockForUpdate()
+                ->findOrFail($req->id);
+
+            if ($req->status !== UserRequest::STATUS_COMPLETED) {
+                $req->status = UserRequest::STATUS_COMPLETED;
+                $req->save();
+            }
+
+            $payment = $req->latestSuccessfulFullPayment();
+            if (!$payment || !$req->trainer_id) {
+                return;
+            }
+
+            $this->syncTrainerPayout($req, $payment, $completedBy);
+        });
     }
 
     private function findEligibleFreeRetrySource(string $userId, string $planId, ?string $trainerId): ?UserRequest
@@ -112,5 +133,66 @@ class RequestService
         if ($trainer && $user) {
             app(ConversationService::class)->findOrCreateConversation($trainer, $user);
         }
+    }
+
+    private function syncTrainerPayout(UserRequest $req, Payment $payment, ?User $completedBy = null): void
+    {
+        $walletAmount = (int) round($payment->trainer_net_minor / 100);
+        if ($walletAmount <= 0) {
+            return;
+        }
+
+        Payout::query()->firstOrCreate(
+            ['user_request_id' => $req->id],
+            [
+                'trainer_id' => $req->trainer_id,
+                'amount_minor' => $payment->trainer_net_minor,
+                'currency' => $payment->currency ?: $req->currency,
+                'status' => Payout::STATUS_PENDING_REVIEW,
+            ]
+        );
+
+        $notes = $this->buildTrainerPayoutWalletNote($req);
+
+        $existingWalletTransaction = WalletTransaction::query()
+            ->where('user_id', $req->trainer_id)
+            ->where('type', WalletTransaction::TYPE_ADJUSTMENT)
+            ->where('notes', $notes)
+            ->first();
+
+        if ($existingWalletTransaction) {
+            return;
+        }
+
+        $trainer = User::query()
+            ->whereKey($req->trainer_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$trainer) {
+            return;
+        }
+
+        $walletTransaction = WalletTransaction::create([
+            'user_id' => $trainer->id,
+            'amount' => $walletAmount,
+            'type' => WalletTransaction::TYPE_ADJUSTMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'notes' => $notes,
+            'processed_by' => $completedBy?->id,
+            'processed_at' => now(),
+        ]);
+
+        $trainer->increment('points_balance', $walletAmount);
+        $trainer->notify(new WalletBalanceAddedNotification(
+            $walletAmount,
+            'course_payout',
+            $walletTransaction->id
+        ));
+    }
+
+    private function buildTrainerPayoutWalletNote(UserRequest $req): string
+    {
+        return 'إضافة مستحقات كورس رقم ' . $req->id;
     }
 }
