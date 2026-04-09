@@ -138,7 +138,7 @@
                 data-app-fee-percent="{{ $appFeePercent }}"
                 data-preview-target="walletPreview{{ $u->id }}"
               >
-              <small class="text-muted d-block mt-1">يمكن خصم رسوم التطبيق تلقائيًا من هذا المبلغ قبل إضافته إلى المحفظة.</small>
+              <small class="text-muted d-block mt-1">لإضافة رصيد يدوي. إذا أدخلت رقم كورس فسيتم اعتماد صافي المدرب من تقرير المستحقات بدلًا من هذا الرقم.</small>
             </div>
             <div class="mb-3">
               <div class="form-check form-switch">
@@ -156,7 +156,7 @@
                   خصم رسوم التطبيق تلقائيًا ({{ rtrim(rtrim(number_format($appFeePercent, 2, '.', ''), '0'), '.') }}%)
                 </label>
               </div>
-              <small class="text-muted d-block mt-1">عند إدخال رقم الكورس سيتم الخصم دائمًا حتى إذا تم إلغاء هذا الخيار.</small>
+              <small class="text-muted d-block mt-1">هذا الخيار للرصيد اليدوي فقط. عند إدخال رقم الكورس سيتم استخدام صافي المدرب المحسوب مسبقًا.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">رقم الكورس (اختياري)</label>
@@ -168,7 +168,7 @@
                 placeholder="مثال: #12345 أو 7f21b0c4"
                 data-preview-target="walletPreview{{ $u->id }}"
               >
-              <small class="text-muted d-block mt-1">عند إدخاله سيتم حفظ الملاحظة تلقائيًا بصيغة: إضافة مستحقات كورس رقم ...</small>
+              <small class="text-muted d-block mt-1">عند إدخاله سيتم سحب صافي المدرب من الكورس المكتمل كما يظهر في تقرير مستحقات المدربين، وسيتم حفظ الملاحظة تلقائيًا.</small>
             </div>
             <div class="alert alert-info d-none" id="walletPreview{{ $u->id }}">
               <div class="d-flex justify-content-between">
