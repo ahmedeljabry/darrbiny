@@ -16,7 +16,7 @@ class DeductWalletRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string', 'max:500'],
             'reference' => ['nullable', 'string', 'max:255'],
         ];
@@ -26,7 +26,7 @@ class DeductWalletRequest extends FormRequest
     {
         return [
             'amount.required' => 'المبلغ مطلوب',
-            'amount.integer' => 'المبلغ يجب أن يكون رقماً صحيحاً',
+            'amount.numeric' => 'المبلغ يجب أن يكون رقماً',
             'amount.min' => 'المبلغ يجب أن يكون أكبر من صفر',
             'notes.max' => 'الملاحظات يجب أن تكون أقل من 500 حرف',
             'reference.max' => 'المرجع يجب أن يكون أقل من 255 حرف',

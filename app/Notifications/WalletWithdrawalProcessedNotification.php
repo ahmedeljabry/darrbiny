@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\WalletTransaction;
+use App\Support\WalletAmount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -24,16 +25,20 @@ class WalletWithdrawalProcessedNotification extends Notification
 
     public function toDatabase(object $notifiable): array
     {
+        $amountMinor = $this->transaction->amountMinor();
+        $formattedAmount = WalletAmount::formatMinor($amountMinor, 2);
+
         return [
             'type' => 'wallet_withdraw_processed',
             'transaction_id' => $this->transaction->id,
-            'amount' => $this->transaction->amount,
+            'amount' => $this->transaction->amountMajor(),
+            'amount_minor' => $amountMinor,
             'status' => $this->transaction->status,
             'rejection_reason' => $this->transaction->rejection_reason,
             'title' => $this->approved ? 'تم تنفيذ طلب السحب' : 'تم رفض طلب السحب',
             'message' => $this->approved
-                ? "تم تنفيذ طلب سحب {$this->transaction->amount} من محفظتك"
-                : "تم رفض طلب سحب {$this->transaction->amount} من محفظتك",
+                ? "تم تنفيذ طلب سحب {$formattedAmount} من محفظتك"
+                : "تم رفض طلب سحب {$formattedAmount} من محفظتك",
         ];
     }
 }

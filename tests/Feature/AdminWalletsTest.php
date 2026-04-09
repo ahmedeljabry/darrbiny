@@ -47,7 +47,7 @@ class AdminWalletsTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
-            'amount' => 15,
+            'amount' => 1500,
             'type' => 'adjustment',
             'status' => 'approved',
         ]);
@@ -131,7 +131,7 @@ class AdminWalletsTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
-            'amount' => 63,
+            'amount' => 6300,
             'type' => 'adjustment',
             'status' => 'approved',
             'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
@@ -174,7 +174,7 @@ class AdminWalletsTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
-            'amount' => 90,
+            'amount' => 9000,
             'type' => 'adjustment',
             'status' => 'approved',
             'notes' => 'Payout after fee',

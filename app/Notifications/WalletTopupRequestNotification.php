@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\WalletTransaction;
+use App\Support\WalletAmount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -24,6 +25,8 @@ class WalletTopupRequestNotification extends Notification
     public function toDatabase($notifiable): array
     {
         $user = $this->transaction->user;
+        $amountMinor = $this->transaction->amountMinor();
+        $formattedAmount = WalletAmount::formatMinor($amountMinor, 2);
 
         return [
             'type' => 'wallet_topup_request',
@@ -32,8 +35,9 @@ class WalletTopupRequestNotification extends Notification
             'user_id' => $user->id,
             'user_name' => $user->name,
             'user_phone' => $user->phone_with_cc,
-            'amount' => $this->transaction->amount,
-            'message' => "طلب إضافة {$this->transaction->amount} إلى محفظة المستخدم {$user->name}",
+            'amount' => $this->transaction->amountMajor(),
+            'amount_minor' => $amountMinor,
+            'message' => "طلب إضافة {$formattedAmount} إلى محفظة المستخدم {$user->name}",
         ];
     }
 }

@@ -272,8 +272,8 @@
                                  name="refund_amount"
                                  class="form-control"
                                  min="0"
-                                 step="1"
-                                 value="{{ (int) round($refundableAmountMinor / 100) }}"
+                                 step="0.01"
+                                 value="{{ number_format($refundableAmountMinor / 100, 2, '.', '') }}"
                                  required>
                           <small class="text-muted d-block mt-1">
                               إجمالي الدفعات الناجحة: {{ number_format($refundableAmountMinor / 100, 2) }} {{ $booking->currency }}

@@ -45,13 +45,13 @@
                         <p class="mb-0">
                             <strong>{{ $transaction->user->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small><br>
-                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($transaction->user->points_balance ?? 0) }}</small>
+                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($transaction->user->points_balance ?? 0, 2) }}</small>
                         </p>
                     </div>
                     <div class="col-md-6">
                         <h6>تفاصيل الطلب</h6>
                         <p class="mb-0">
-                            <strong>المبلغ:</strong> {{ number_format($transaction->amount) }}<br>
+                            <strong>المبلغ:</strong> {{ number_format($transaction->amountMajor(), 2) }}<br>
                             @php
                                 $typeMap = [
                                     'topup_request' => 'طلب إضافة',

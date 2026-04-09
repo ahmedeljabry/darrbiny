@@ -12,7 +12,8 @@ class WalletTransactionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'amount' => $this->amount,
+            'amount' => $this->amountMajor(),
+            'amount_minor' => $this->amountMinor(),
             'type' => $this->type,
             'status' => $this->status,
             'rejection_reason' => $this->rejection_reason,

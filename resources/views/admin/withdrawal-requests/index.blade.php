@@ -115,7 +115,7 @@
                                 <td><span dir="ltr">{{ $withdrawal->user?->bank_account ?? '-' }}</span></td>
                                 <td><span dir="ltr">{{ $withdrawal->user?->iban ?? '-' }}</span></td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($withdrawal->amount) }} نقطة</span>
+                                    <span class="fw-semibold">{{ number_format($withdrawal->amountMajor(), 2) }} نقطة</span>
                                 </td>
                                 <td>
                                     @if($withdrawal->status === 'pending')

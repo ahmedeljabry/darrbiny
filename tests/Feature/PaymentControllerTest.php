@@ -84,10 +84,10 @@ class PaymentControllerTest extends TestCase
             'total_paid_minor' => 12345,
         ]);
 
-        $this->assertSame(77, (int) $user->fresh()->points_balance);
+        $this->assertEquals(76.55, $user->fresh()->points_balance);
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
-            'amount' => 123,
+            'amount' => 12345,
             'type' => WalletTransaction::TYPE_PAYMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
         ]);
@@ -176,7 +176,7 @@ class PaymentControllerTest extends TestCase
         $this->assertSame(100, (int) $user->fresh()->points_balance);
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
-            'amount' => 100,
+            'amount' => 10000,
             'type' => WalletTransaction::TYPE_PAYMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
         ]);
@@ -208,7 +208,7 @@ class PaymentControllerTest extends TestCase
 
         WalletTransaction::create([
             'user_id' => $user->id,
-            'amount' => 150,
+            'amount' => 15000,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => 'Initial wallet funding',

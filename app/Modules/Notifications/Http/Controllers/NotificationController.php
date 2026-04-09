@@ -249,7 +249,7 @@ class NotificationController extends BaseController
             }
 
             $payload = is_array($notification->data) ? $notification->data : [];
-            return (int) ($payload['refund_amount'] ?? 0) > 0;
+            return (float) ($payload['refund_amount'] ?? 0) > 0;
         })->count();
     }
 

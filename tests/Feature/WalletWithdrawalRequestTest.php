@@ -72,7 +72,7 @@ class WalletWithdrawalRequestTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
-            'amount' => 50,
+            'amount' => 5000,
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -136,7 +136,7 @@ class WalletWithdrawalRequestTest extends TestCase
 
         WalletTransaction::create([
             'user_id' => $user->id,
-            'amount' => 80,
+            'amount' => 8000,
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -166,7 +166,7 @@ class WalletWithdrawalRequestTest extends TestCase
 
         $withdrawalRequest = WalletTransaction::create([
             'user_id' => $user->id,
-            'amount' => 40,
+            'amount' => 4000,
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -205,7 +205,7 @@ class WalletWithdrawalRequestTest extends TestCase
 
         $withdrawalRequest = WalletTransaction::create([
             'user_id' => $user->id,
-            'amount' => 40,
+            'amount' => 4000,
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -262,7 +262,7 @@ class WalletWithdrawalRequestTest extends TestCase
 
         WalletTransaction::create([
             'user_id' => $user->id,
-            'amount' => 75,
+            'amount' => 7500,
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);

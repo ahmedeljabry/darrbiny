@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Support\WalletAmount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +13,7 @@ class WalletBalanceAddedNotification extends Notification
     use Queueable;
 
     public function __construct(
-        public readonly int $amount,
+        public readonly int $amountMinor,
         public readonly string $reason = 'wallet_credit',
         public readonly ?string $transactionId = null,
     ) {}
@@ -24,13 +25,16 @@ class WalletBalanceAddedNotification extends Notification
 
     public function toDatabase(object $notifiable): array
     {
+        $formattedAmount = WalletAmount::formatMinor($this->amountMinor, 2);
+
         return [
             'type' => 'wallet_balance_added',
-            'amount' => $this->amount,
+            'amount' => WalletAmount::minorToMajor($this->amountMinor),
+            'amount_minor' => $this->amountMinor,
             'reason' => $this->reason,
             'transaction_id' => $this->transactionId,
             'title' => 'تم إضافة رصيد إلى محفظتك',
-            'message' => "تم إضافة {$this->amount} إلى محفظتك",
+            'message' => "تم إضافة {$formattedAmount} إلى محفظتك",
         ];
     }
 }

@@ -15,7 +15,7 @@ class CourseCancelledNotification extends Notification
     public function __construct(
         public readonly UserRequest $userRequest,
         public readonly string $reason,
-        public readonly int $refundAmount,
+        public readonly int|float $refundAmount,
     ) {}
 
     public function via(object $notifiable): array
@@ -42,7 +42,7 @@ class CourseCancelledNotification extends Notification
             'user_request_id' => $this->userRequest->id,
             'plan_title' => $planTitle,
             'reason' => $this->reason,
-            'refund_amount' => $this->refundAmount > 0 ? $this->refundAmount : null,
+            'refund_amount' => $this->refundAmount > 0 ? round((float) $this->refundAmount, 2) : null,
         ];
     }
 }

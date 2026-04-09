@@ -106,7 +106,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($transaction->amount) }} نقطة</span>
+                                    <span class="fw-semibold">{{ number_format($transaction->amountMajor(), 2) }} نقطة</span>
                                 </td>
                                 <td>
                                     @php

@@ -93,7 +93,7 @@
           <div class="text-heading">
             <span class="badge bg-label-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
               <i class="icon-base ti tabler-coins me-1"></i>
-              {{ number_format($user->points_balance ?? 0) }} نقطة
+              {{ number_format($user->points_balance ?? 0, 2) }} نقطة
             </span>
           </div>
         </div>

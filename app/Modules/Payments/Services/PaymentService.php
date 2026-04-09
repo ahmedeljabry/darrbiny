@@ -12,6 +12,7 @@ use App\Modules\Referrals\Services\ReferralService;
 use App\Modules\Requests\Services\RequestService;
 use App\Modules\Wallet\Services\WalletService;
 use App\Support\Fees;
+use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -86,12 +87,9 @@ class PaymentService
                 $request->payment_method === 'wallet'
                 && $request->status === Payment::STATUS_SUCCEEDED
             ) {
-                $walletAmount = $this->minorToWalletAmount($amountMinor);
-                abort_unless($walletAmount > 0, 422, 'Payment amount is required');
-
                 $this->wallets->deduct(
                     $user,
-                    $walletAmount,
+                    WalletAmount::minorToMajor($amountMinor),
                     null,
                     $payment->id
                 );
@@ -138,10 +136,5 @@ class PaymentService
         abort_unless($amountMinor > 0, 422, 'Unable to determine payment amount');
 
         return $amountMinor;
-    }
-
-    private function minorToWalletAmount(int $amountMinor): int
-    {
-        return (int) round($amountMinor / 100);
     }
 }

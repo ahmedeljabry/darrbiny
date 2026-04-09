@@ -45,7 +45,7 @@
                         <p class="mb-0">
                             <strong>{{ $redemption->user->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $redemption->user->phone_with_cc ?? '' }}</small><br>
-                            <small class="text-muted">رصيد النقاط الحالي: {{ number_format($redemption->user->points_balance ?? 0) }}</small>
+                            <small class="text-muted">رصيد النقاط الحالي: {{ number_format($redemption->user->points_balance ?? 0, 2) }}</small>
                         </p>
                     </div>
                     <div class="col-md-6">

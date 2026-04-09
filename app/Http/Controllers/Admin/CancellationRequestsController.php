@@ -114,14 +114,14 @@ class CancellationRequestsController extends BaseController
             $packageValue = $userRequest->plan?->price_min ?? 0;
             
             if ($totalPaid > 0) {
-                $refundAmount = (int) round($totalPaid / 100);
+                $refundAmountMinor = (int) $totalPaid;
                 $user = $userRequest->user;
-                $user->increment('points_balance', $refundAmount);
+                $user->increment('points_balance', $refundAmountMinor);
 
                 // Create wallet transaction record
                 $walletTransaction = WalletTransaction::create([
                     'user_id' => $user->id,
-                    'amount' => $refundAmount,
+                    'amount' => $refundAmountMinor,
                     'type' => WalletTransaction::TYPE_REFUND,
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'processed_by' => $request->user()->id,
@@ -130,7 +130,7 @@ class CancellationRequestsController extends BaseController
                 ]);
 
                 $user->notify(new WalletBalanceAddedNotification(
-                    $refundAmount,
+                    $refundAmountMinor,
                     'cancellation_refund',
                     $walletTransaction->id
                 ));

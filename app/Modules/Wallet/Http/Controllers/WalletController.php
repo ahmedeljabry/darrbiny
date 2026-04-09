@@ -8,6 +8,7 @@ use App\Modules\Wallet\Http\Requests\DeductWalletRequest;
 use App\Modules\Wallet\Http\Requests\TopupRequestRequest;
 use App\Modules\Wallet\Http\Requests\WithdrawRequestRequest;
 use App\Modules\Wallet\Services\WalletService;
+use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -43,7 +44,7 @@ class WalletController extends BaseController
 
         $transaction = $this->service->requestWithdrawal(
             $user,
-            (int) $request->input('amount'),
+            $request->input('amount'),
             $request->input('notes')
         );
 
@@ -70,13 +71,15 @@ class WalletController extends BaseController
             ->count();
 
         // Calculate balance from transactions (for verification)
-        $calculatedBalance = $this->service->calculateBalanceFromTransactions($user);
-        $balanceMatches = $user->points_balance === $calculatedBalance;
+        $calculatedBalanceMinor = $this->service->calculateBalanceFromTransactions($user);
+        $balanceMatches = $user->pointsBalanceMinor() === $calculatedBalanceMinor;
 
         return response()->json([
             'data' => [
                 'balance' => $user->points_balance,
-                'calculated_balance' => $calculatedBalance, // Balance calculated from transactions
+                'balance_minor' => $user->pointsBalanceMinor(),
+                'calculated_balance' => WalletAmount::minorToMajor($calculatedBalanceMinor), // Balance calculated from transactions
+                'calculated_balance_minor' => $calculatedBalanceMinor,
                 'balance_verified' => $balanceMatches, // True if stored balance matches calculated
                 'currency' => $user->currency ?? 'USD',
                 'statistics' => [

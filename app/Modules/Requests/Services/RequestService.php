@@ -149,8 +149,7 @@ class RequestService
             $payment->save();
         }
 
-        $walletAmount = (int) round($trainerNetMinor / 100);
-        if ($walletAmount <= 0) {
+        if ($trainerNetMinor <= 0) {
             return;
         }
 
@@ -187,7 +186,7 @@ class RequestService
 
         $walletTransaction = WalletTransaction::create([
             'user_id' => $trainer->id,
-            'amount' => $walletAmount,
+            'amount' => $trainerNetMinor,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => $notes,
@@ -195,9 +194,9 @@ class RequestService
             'processed_at' => now(),
         ]);
 
-        $trainer->increment('points_balance', $walletAmount);
+        $trainer->increment('points_balance', $trainerNetMinor);
         $trainer->notify(new WalletBalanceAddedNotification(
-            $walletAmount,
+            $trainerNetMinor,
             'course_payout',
             $walletTransaction->id
         ));

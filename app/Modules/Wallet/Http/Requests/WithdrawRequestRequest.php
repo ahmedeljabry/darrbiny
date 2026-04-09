@@ -16,7 +16,7 @@ class WithdrawRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -25,10 +25,9 @@ class WithdrawRequestRequest extends FormRequest
     {
         return [
             'amount.required' => 'المبلغ مطلوب',
-            'amount.integer' => 'المبلغ يجب أن يكون رقماً صحيحاً',
+            'amount.numeric' => 'المبلغ يجب أن يكون رقماً',
             'amount.min' => 'المبلغ يجب أن يكون أكبر من صفر',
             'notes.max' => 'الملاحظات يجب ألا تتجاوز 1000 حرف',
         ];
     }
 }
-

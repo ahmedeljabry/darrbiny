@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\WalletAmount;
+
 class WalletTransaction extends BaseModel
 {
     const TYPE_TOPUP_REQUEST = 'topup_request';
@@ -57,6 +59,16 @@ class WalletTransaction extends BaseModel
     public function scopeRejected($query)
     {
         return $query->where('status', self::STATUS_REJECTED);
+    }
+
+    public function amountMinor(): int
+    {
+        return (int) $this->getRawOriginal('amount');
+    }
+
+    public function amountMajor(): float
+    {
+        return WalletAmount::minorToMajor($this->amountMinor());
     }
 }
 

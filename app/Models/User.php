@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserType;
 use App\Support\StorageUrl;
+use App\Support\WalletAmount;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,10 +75,17 @@ class User extends Authenticatable
             'password' => 'hashed',
             'user_type' => UserType::class,
             'whatsapp_enabled' => 'bool',
-            'points_balance' => 'integer',
             'version' => 'integer',
             'banned_until' => 'datetime',
         ];
+    }
+
+    protected function pointsBalance(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (mixed $value): float => WalletAmount::minorToMajor((int) $value),
+            set: static fn (mixed $value): int => WalletAmount::majorToMinor($value),
+        );
     }
 
     protected static function booted(): void
@@ -171,6 +180,18 @@ class User extends Authenticatable
     public function deviceTokens(): HasMany
     {
         return $this->hasMany(UserDeviceToken::class);
+    }
+
+    public function pointsBalanceMinor(): int
+    {
+        return (int) $this->getRawOriginal('points_balance');
+    }
+
+    public function setPointsBalanceMinor(int $amountMinor): self
+    {
+        $this->attributes['points_balance'] = max(0, $amountMinor);
+
+        return $this;
     }
 
     public function routeNotificationForFcm(?Notification $notification = null): array

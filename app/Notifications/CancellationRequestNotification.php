@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\CancellationRequest;
+use App\Support\WalletAmount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -49,7 +50,7 @@ class CancellationRequestNotification extends Notification
             'status' => $status,
             'reason' => $this->cancellationRequest->reason,
             'refund_amount' => $status === 'approved' && $userRequest->total_paid_minor > 0
-                ? (int) round($userRequest->total_paid_minor / 100)
+                ? WalletAmount::minorToMajor((int) $userRequest->total_paid_minor)
                 : null,
         ];
     }

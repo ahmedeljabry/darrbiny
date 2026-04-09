@@ -48,7 +48,7 @@
                                 $isTrainer = ($withdrawalRequest->user?->user_type?->value ?? null) === 'captain';
                             @endphp
                             <small class="text-muted">نوع الحساب: {{ $isTrainer ? 'مدرب' : 'طالب' }}</small><br>
-                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($withdrawalRequest->user?->points_balance ?? 0) }}</small><br>
+                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($withdrawalRequest->user?->points_balance ?? 0, 2) }}</small><br>
                             <small class="text-muted">اسم البنك: {{ $withdrawalRequest->user?->bank_name ?? '-' }}</small><br>
                             <small class="text-muted">رقم الحساب: <span dir="ltr">{{ $withdrawalRequest->user?->bank_account ?? '-' }}</span></small><br>
                             <small class="text-muted">IBAN: <span dir="ltr">{{ $withdrawalRequest->user?->iban ?? '-' }}</span></small>
@@ -57,7 +57,7 @@
                     <div class="col-md-6">
                         <h6>بيانات الطلب</h6>
                         <p class="mb-0">
-                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amount) }} نقطة<br>
+                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amountMajor(), 2) }} نقطة<br>
                             <strong>النوع:</strong> طلب سحب<br>
                             <strong>الحالة:</strong>
                             @if($withdrawalRequest->status === 'pending')

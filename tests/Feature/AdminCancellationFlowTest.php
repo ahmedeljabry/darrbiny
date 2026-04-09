@@ -131,11 +131,11 @@ class AdminCancellationFlowTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame(100, $user->fresh()->points_balance);
+        $this->assertEquals(100, $user->fresh()->points_balance);
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
-            'amount' => 100,
+            'amount' => 10000,
         ]);
 
         $this->assertDatabaseHas('cancellation_requests', [

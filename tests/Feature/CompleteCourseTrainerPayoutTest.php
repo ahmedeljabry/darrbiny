@@ -79,7 +79,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
-            'amount' => 81,
+            'amount' => 8100,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
@@ -169,7 +169,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
-            'amount' => 90,
+            'amount' => 9000,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
@@ -244,7 +244,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
-            'amount' => 94,
+            'amount' => 9400,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
@@ -317,6 +317,74 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         $this->assertSame(90, (int) $trainer->fresh()->points_balance);
         $this->assertSame(1000, (int) $payment->fresh()->app_fee_minor);
         $this->assertSame(9000, (int) $payment->fresh()->trainer_net_minor);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $trainer->id,
+            'amount' => 9000,
+            'type' => WalletTransaction::TYPE_ADJUSTMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'processed_by' => $student->id,
+        ]);
+    }
+
+    public function test_completion_keeps_fractional_trainer_wallet_credit_after_app_fee(): void
+    {
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '10',
+        ]);
+
+        [, $plan] = $this->createLocationPlan();
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+10000009010',
+        ]);
+        $student->assignRole('USER');
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000009011',
+            'user_type' => 'captain',
+            'points_balance' => 0,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $booking = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 100,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 10,
+            'trainer_net_minor' => 90,
+        ]);
+
+        $token = $student->createToken('complete-course-fractional')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/v1/user-requests/{$booking->id}/complete")
+            ->assertOk()
+            ->assertJsonPath('data.status', UserRequest::STATUS_COMPLETED);
+
+        $this->assertEquals(0.90, $trainer->fresh()->points_balance);
+        $this->assertSame(10, (int) $payment->fresh()->app_fee_minor);
+        $this->assertSame(90, (int) $payment->fresh()->trainer_net_minor);
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,

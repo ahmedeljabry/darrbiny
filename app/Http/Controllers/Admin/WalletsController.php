@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Support\Fees;
+use App\Support\WalletAmount;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -28,32 +29,32 @@ class WalletsController extends BaseController
     {
         $data = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
-            'amount' => ['required_without:course_reference', 'nullable', 'integer', 'min:1'],
+            'amount' => ['required_without:course_reference', 'nullable', 'numeric', 'min:0.01'],
             'apply_app_fee' => ['nullable', 'boolean'],
             'course_reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = User::findOrFail($data['user_id']);
-        $creditedAmount = $this->resolveCreditedAmount($data);
+        $creditedAmountMinor = $this->resolveCreditedAmountMinor($data);
         $notes = $this->resolveCreditNotes($data);
 
-        $this->wallets->addAdjustment($user, $creditedAmount, $request->user(), $notes);
+        $this->wallets->addAdjustment($user, WalletAmount::minorToMajor($creditedAmountMinor), $request->user(), $notes);
 
-        $newBalance = (int) $user->fresh()->points_balance;
+        $newBalanceMinor = $user->fresh()->pointsBalanceMinor();
 
-        return back()->with('status', $this->buildStoreStatusMessage($data, $creditedAmount, $newBalance));
+        return back()->with('status', $this->buildStoreStatusMessage($data, $creditedAmountMinor, $newBalanceMinor));
     }
 
     public function update(Request $request, string $id)
     {
         $data = $request->validate([
-            'balance' => ['required', 'integer', 'min:0'],
+            'balance' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = User::findOrFail($id);
-        $this->wallets->setBalance($user, (int) $data['balance'], $request->user(), $data['notes'] ?? null);
+        $this->wallets->setBalance($user, $data['balance'], $request->user(), $data['notes'] ?? null);
 
         return back()->with('status', 'تم تحديث رصيد المحفظة بنجاح');
     }
@@ -68,23 +69,23 @@ class WalletsController extends BaseController
         return $data['notes'] ?? null;
     }
 
-    private function resolveCreditedAmount(array $data): int
+    private function resolveCreditedAmountMinor(array $data): int
     {
         if ($this->shouldResolveCompletedCoursePayout($data)) {
-            return $this->resolveCompletedCoursePayoutAmount($data);
+            return $this->resolveCompletedCoursePayoutAmountMinor($data);
         }
 
-        $grossAmount = (int) $data['amount'];
+        $grossAmountMinor = WalletAmount::majorToMinor($data['amount']);
 
         if (! $this->shouldApplyAppFee($data)) {
-            return $grossAmount;
+            return $grossAmountMinor;
         }
 
         $appFeePercent = max(0, Fees::appFeePercent());
-        $appFeeAmount = (int) round($grossAmount * ($appFeePercent / 100));
-        $appFeeAmount = min($appFeeAmount, $grossAmount);
+        $appFeeAmountMinor = (int) round($grossAmountMinor * ($appFeePercent / 100));
+        $appFeeAmountMinor = min($appFeeAmountMinor, $grossAmountMinor);
 
-        return max(0, $grossAmount - $appFeeAmount);
+        return max(0, $grossAmountMinor - $appFeeAmountMinor);
     }
 
     private function shouldApplyAppFee(array $data): bool
@@ -96,8 +97,11 @@ class WalletsController extends BaseController
         return filter_var($data['apply_app_fee'] ?? false, FILTER_VALIDATE_BOOL);
     }
 
-    private function buildStoreStatusMessage(array $data, int $creditedAmount, int $newBalance): string
+    private function buildStoreStatusMessage(array $data, int $creditedAmountMinor, int $newBalanceMinor): string
     {
+        $creditedAmount = WalletAmount::formatMajor(WalletAmount::minorToMajor($creditedAmountMinor), 2, true);
+        $newBalance = WalletAmount::formatMajor(WalletAmount::minorToMajor($newBalanceMinor), 2, true);
+
         if (! $this->shouldApplyAppFee($data)) {
             return "تم إضافة الرصيد إلى المحفظة. الرصيد الحالي: {$newBalance}";
         }
@@ -110,7 +114,7 @@ class WalletsController extends BaseController
         return trim((string) ($data['course_reference'] ?? '')) !== '';
     }
 
-    private function resolveCompletedCoursePayoutAmount(array $data): int
+    private function resolveCompletedCoursePayoutAmountMinor(array $data): int
     {
         $booking = $this->resolveCourseBooking($data);
         $payment = $booking->latestSuccessfulFullPayment();
@@ -119,7 +123,7 @@ class WalletsController extends BaseController
         abort_unless($payment instanceof Payment, 422, 'لا توجد دفعة كاملة ناجحة لهذا الكورس');
         abort_unless((string) $booking->trainer_id === (string) $data['user_id'], 422, 'هذا الكورس لا يخص هذا المدرب');
 
-        return (int) round(max(0, (int) $payment->trainer_net_minor) / 100);
+        return max(0, (int) $payment->trainer_net_minor);
     }
 
     private function resolveCourseBooking(array $data): UserRequest

@@ -55,7 +55,7 @@ class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapp
             $user?->bank_name ?? '-',
             $user?->bank_account ?? '-',
             $user?->iban ?? '-',
-            number_format((int) $withdrawalRequest->amount),
+            number_format($withdrawalRequest->amountMajor(), 2),
             $statusLabels[$withdrawalRequest->status] ?? $withdrawalRequest->status,
             $withdrawalRequest->created_at?->format('Y-m-d H:i:s') ?? '-',
         ];

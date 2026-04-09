@@ -10,6 +10,7 @@ use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletTopupRequestNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
 use App\Notifications\WalletWithdrawRequestNotification;
+use App\Support\WalletAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -18,12 +19,15 @@ class WalletService
     /**
      * Request wallet top-up
      */
-    public function requestTopup(User $user, int $amount, ?string $notes = null): WalletTransaction
+    public function requestTopup(User $user, int|float|string $amount, ?string $notes = null): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $notes) {
+        $amountMinor = WalletAmount::majorToMinor($amount);
+        abort_unless($amountMinor > 0, 422, 'المبلغ يجب أن يكون أكبر من صفر');
+
+        return DB::transaction(function () use ($user, $amountMinor, $notes) {
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountMinor,
                 'type' => WalletTransaction::TYPE_TOPUP_REQUEST,
                 'status' => WalletTransaction::STATUS_PENDING,
                 'notes' => $notes,
@@ -40,11 +44,12 @@ class WalletService
     /**
      * Request wallet withdrawal
      */
-    public function requestWithdrawal(User $user, int $amount, ?string $notes = null): WalletTransaction
+    public function requestWithdrawal(User $user, int|float|string $amount, ?string $notes = null): WalletTransaction
     {
-        abort_unless($amount > 0, 422, 'المبلغ يجب أن يكون أكبر من صفر');
+        $amountMinor = WalletAmount::majorToMinor($amount);
+        abort_unless($amountMinor > 0, 422, 'المبلغ يجب أن يكون أكبر من صفر');
 
-        return DB::transaction(function () use ($user, $amount, $notes) {
+        return DB::transaction(function () use ($user, $amountMinor, $notes) {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             $hasBankDetails = filled($user->bank_account)
@@ -59,12 +64,12 @@ class WalletService
                 ->where('status', WalletTransaction::STATUS_PENDING)
                 ->sum('amount');
 
-            $availableToWithdraw = max(0, (int) $user->points_balance - $pendingWithdrawals);
-            abort_unless($availableToWithdraw >= $amount, 422, 'رصيد المحفظة غير كافٍ لطلب السحب');
+            $availableToWithdrawMinor = max(0, $user->pointsBalanceMinor() - $pendingWithdrawals);
+            abort_unless($availableToWithdrawMinor >= $amountMinor, 422, 'رصيد المحفظة غير كافٍ لطلب السحب');
 
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountMinor,
                 'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
                 'status' => WalletTransaction::STATUS_PENDING,
                 'notes' => $notes,
@@ -95,9 +100,10 @@ class WalletService
 
             // Add amount to user's wallet
             $user = $transaction->user;
-            $user->increment('points_balance', $transaction->amount);
+            $amountMinor = $transaction->amountMinor();
+            $user->increment('points_balance', $amountMinor);
             $user->notify(new WalletBalanceAddedNotification(
-                $transaction->amount,
+                $amountMinor,
                 'topup_request_approved',
                 $transaction->id
             ));
@@ -124,14 +130,15 @@ class WalletService
             }
 
             $user = User::query()->whereKey($transaction->user_id)->lockForUpdate()->firstOrFail();
-            abort_unless($user->points_balance >= $transaction->amount, 422, 'رصيد المستخدم غير كافٍ لتنفيذ طلب السحب');
+            $amountMinor = $transaction->amountMinor();
+            abort_unless($user->pointsBalanceMinor() >= $amountMinor, 422, 'رصيد المستخدم غير كافٍ لتنفيذ طلب السحب');
 
             $transaction->status = WalletTransaction::STATUS_APPROVED;
             $transaction->processed_by = $admin->id;
             $transaction->processed_at = now();
             $transaction->save();
 
-            $user->decrement('points_balance', $transaction->amount);
+            $user->decrement('points_balance', $amountMinor);
             $user->notify(new WalletWithdrawalProcessedNotification($transaction, true));
         });
     }
@@ -139,14 +146,17 @@ class WalletService
     /**
      * Admin adjustment (credit) directly to wallet
      */
-    public function addAdjustment(User $user, int $amount, User $admin, ?string $notes = null): WalletTransaction
+    public function addAdjustment(User $user, int|float|string $amount, User $admin, ?string $notes = null): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $admin, $notes) {
+        $amountMinor = WalletAmount::majorToMinor($amount);
+        abort_unless($amountMinor > 0, 422, 'Amount must be greater than zero');
+
+        return DB::transaction(function () use ($user, $amountMinor, $admin, $notes) {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountMinor,
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes,
@@ -154,9 +164,9 @@ class WalletService
                 'processed_at' => now(),
             ]);
 
-            $user->increment('points_balance', $amount);
+            $user->increment('points_balance', $amountMinor);
             $user->notify(new WalletBalanceAddedNotification(
-                $amount,
+                $amountMinor,
                 'admin_adjustment',
                 $txn->id
             ));
@@ -176,18 +186,21 @@ class WalletService
      * @return WalletTransaction
      * @throws \Exception If insufficient balance
      */
-    public function deduct(User $user, int $amount, ?string $notes = null, ?string $reference = null): WalletTransaction
+    public function deduct(User $user, int|float|string $amount, ?string $notes = null, ?string $reference = null): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $notes, $reference) {
+        $amountMinor = WalletAmount::majorToMinor($amount);
+        abort_unless($amountMinor > 0, 422, 'Amount must be greater than zero');
+
+        return DB::transaction(function () use ($user, $amountMinor, $notes, $reference) {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             // Check wallet balance
-            abort_unless($user->points_balance >= $amount, 422, 'Insufficient wallet balance');
+            abort_unless($user->pointsBalanceMinor() >= $amountMinor, 422, 'Insufficient wallet balance');
 
             // Create wallet transaction record
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountMinor,
                 'type' => WalletTransaction::TYPE_PAYMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes ?? ($reference ? "Payment: {$reference}" : 'Wallet deduction'),
@@ -195,7 +208,7 @@ class WalletService
             ]);
 
             // Deduct from wallet balance
-            $user->decrement('points_balance', $amount);
+            $user->decrement('points_balance', $amountMinor);
 
             return $txn;
         });
@@ -205,17 +218,20 @@ class WalletService
      * Admin adjustment (debit) directly from wallet
      * Similar to deduct but explicitly marked as admin adjustment
      */
-    public function deductAdjustment(User $user, int $amount, User $admin, ?string $notes = null): WalletTransaction
+    public function deductAdjustment(User $user, int|float|string $amount, User $admin, ?string $notes = null): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $admin, $notes) {
+        $amountMinor = WalletAmount::majorToMinor($amount);
+        abort_unless($amountMinor > 0, 422, 'Amount must be greater than zero');
+
+        return DB::transaction(function () use ($user, $amountMinor, $admin, $notes) {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             // Check wallet balance
-            abort_unless($user->points_balance >= $amount, 422, 'Insufficient wallet balance');
+            abort_unless($user->pointsBalanceMinor() >= $amountMinor, 422, 'Insufficient wallet balance');
 
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountMinor,
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes ?? 'Admin adjustment (debit)',
@@ -223,7 +239,7 @@ class WalletService
                 'processed_at' => now(),
             ]);
 
-            $user->decrement('points_balance', $amount);
+            $user->decrement('points_balance', $amountMinor);
 
             return $txn;
         });
@@ -232,14 +248,17 @@ class WalletService
     /**
      * Set wallet balance directly (admin edit)
      */
-    public function setBalance(User $user, int $newBalance, User $admin, ?string $notes = null): WalletTransaction
+    public function setBalance(User $user, int|float|string $newBalance, User $admin, ?string $notes = null): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $newBalance, $admin, $notes) {
-            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $oldBalance = $user->points_balance;
-            $difference = $newBalance - $oldBalance;
+        $newBalanceMinor = WalletAmount::majorToMinor($newBalance);
+        abort_unless($newBalanceMinor >= 0, 422, 'Wallet balance must be zero or greater');
 
-            if ($difference === 0) {
+        return DB::transaction(function () use ($user, $newBalanceMinor, $admin, $notes) {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $oldBalanceMinor = $user->pointsBalanceMinor();
+            $differenceMinor = $newBalanceMinor - $oldBalanceMinor;
+
+            if ($differenceMinor === 0) {
                 // No change needed
                 return WalletTransaction::create([
                     'user_id' => $user->id,
@@ -254,20 +273,24 @@ class WalletService
 
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
-                'amount' => abs($difference),
+                'amount' => abs($differenceMinor),
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
-                'notes' => $notes ?? "تعديل الرصيد من {$oldBalance} إلى {$newBalance}",
+                'notes' => $notes ?? sprintf(
+                    'تعديل الرصيد من %s إلى %s',
+                    WalletAmount::formatMinor($oldBalanceMinor),
+                    WalletAmount::formatMinor($newBalanceMinor)
+                ),
                 'processed_by' => $admin->id,
                 'processed_at' => now(),
             ]);
 
-            $user->points_balance = $newBalance;
+            $user->setPointsBalanceMinor($newBalanceMinor);
             $user->save();
 
-            if ($difference > 0) {
+            if ($differenceMinor > 0) {
                 $user->notify(new WalletBalanceAddedNotification(
-                    $difference,
+                    $differenceMinor,
                     'admin_balance_update',
                     $txn->id
                 ));
@@ -349,11 +372,11 @@ class WalletService
                 WalletTransaction::TYPE_TOPUP_REQUEST,
                 WalletTransaction::TYPE_ADJUSTMENT,
             ])) {
-                $calculatedBalance += $transaction->amount;
+                $calculatedBalance += $transaction->amountMinor();
             }
             // Payments subtract from balance (if they exist in wallet_transactions)
             elseif ($transaction->type === WalletTransaction::TYPE_PAYMENT) {
-                $calculatedBalance -= $transaction->amount;
+                $calculatedBalance -= $transaction->amountMinor();
 
                 $paymentId = $this->extractPaymentIdFromTransactionNotes($transaction->notes);
                 if ($paymentId !== null) {
@@ -362,11 +385,11 @@ class WalletService
             }
             // Executed withdrawals subtract from balance
             elseif ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
-                $calculatedBalance -= $transaction->amount;
+                $calculatedBalance -= $transaction->amountMinor();
             }
             // Refunds add back to balance
             elseif ($transaction->type === WalletTransaction::TYPE_REFUND) {
-                $calculatedBalance += $transaction->amount;
+                $calculatedBalance += $transaction->amountMinor();
             }
         }
 
@@ -381,9 +404,7 @@ class WalletService
                 continue;
             }
 
-            // Payment amount is stored in minor units, convert to major
-            $amount = $this->minorToWalletAmount((int) $payment->amount_minor);
-            $calculatedBalance -= $amount;
+            $calculatedBalance -= (int) $payment->amount_minor;
         }
 
         return $calculatedBalance;
@@ -395,15 +416,10 @@ class WalletService
      */
     public function verifyBalance(User $user): bool
     {
-        $storedBalance = $user->points_balance;
+        $storedBalance = $user->pointsBalanceMinor();
         $calculatedBalance = $this->calculateBalanceFromTransactions($user);
 
         return $storedBalance === $calculatedBalance;
-    }
-
-    private function minorToWalletAmount(int $amountMinor): int
-    {
-        return (int) round($amountMinor / 100);
     }
 
     private function extractPaymentIdFromTransactionNotes(?string $notes): ?string

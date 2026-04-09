@@ -53,7 +53,7 @@
           <tr>
             <td>{{ $u->name ?? $u->id }}</td>
             <td>{{ $u->phone_with_cc }}</td>
-            <td><strong>{{ number_format($u->points_balance) }}</strong></td>
+            <td><strong>{{ number_format($u->points_balance, 2) }}</strong></td>
             <td>
               <div class="d-flex gap-2 justify-content-center">
                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editWalletModal{{ $u->id }}" title="تعديل الرصيد">
@@ -88,11 +88,11 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">الرصيد الحالي</label>
-              <input type="text" class="form-control" value="{{ number_format($u->points_balance) }}" readonly>
+              <input type="text" class="form-control" value="{{ number_format($u->points_balance, 2) }}" readonly>
             </div>
             <div class="mb-3">
               <label class="form-label">الرصيد الجديد</label>
-              <input type="number" name="balance" class="form-control" value="{{ $u->points_balance }}" min="0" step="1" required>
+              <input type="number" name="balance" class="form-control" value="{{ number_format($u->points_balance, 2, '.', '') }}" min="0" step="0.01" required>
             </div>
             <div class="mb-3">
               <label class="form-label">ملاحظة (اختياري)</label>
@@ -122,7 +122,7 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">الرصيد الحالي</label>
-              <input type="text" class="form-control" value="{{ number_format($u->points_balance) }}" readonly>
+              <input type="text" class="form-control" value="{{ number_format($u->points_balance, 2) }}" readonly>
             </div>
             <div class="mb-3">
               <label class="form-label">إجمالي المبلغ المراد إضافته</label>
@@ -130,11 +130,11 @@
                 type="number"
                 name="amount"
                 class="form-control js-wallet-amount"
-                min="1"
-                step="1"
+                min="0.01"
+                step="0.01"
                 required
                 placeholder="أدخل إجمالي المبلغ"
-                data-current-balance="{{ $u->points_balance }}"
+                data-current-balance="{{ number_format($u->points_balance, 2, '.', '') }}"
                 data-app-fee-percent="{{ $appFeePercent }}"
                 data-preview-target="walletPreview{{ $u->id }}"
               >
@@ -181,7 +181,7 @@
               </div>
               <div class="d-flex justify-content-between mt-2">
                 <span>الرصيد بعد الإضافة</span>
-                <strong class="js-preview-balance">{{ number_format($u->points_balance) }}</strong>
+                <strong class="js-preview-balance">{{ number_format($u->points_balance, 2) }}</strong>
               </div>
             </div>
             <div class="mb-3">
@@ -217,25 +217,31 @@
       const feeNode = preview.querySelector('.js-preview-fee');
       const netNode = preview.querySelector('.js-preview-net');
       const balanceNode = preview.querySelector('.js-preview-balance');
-      const currentBalance = parseInt(amountInput.dataset.currentBalance || '0', 10) || 0;
+      const currentBalanceMinor = Math.round((parseFloat(amountInput.dataset.currentBalance || '0') || 0) * 100);
       const appFeePercent = parseFloat(amountInput.dataset.appFeePercent || '0') || 0;
+      const formatAmount = function (amountMinor) {
+        return (amountMinor / 100).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
 
       const updatePreview = function () {
-        const grossAmount = parseInt(amountInput.value || '0', 10) || 0;
+        const grossAmountMinor = Math.round((parseFloat(amountInput.value || '0') || 0) * 100);
         const hasCourseReference = (courseReferenceInput?.value || '').trim() !== '';
         const shouldApplyAppFee = hasCourseReference || Boolean(applyAppFeeInput?.checked);
-        const feeAmount = shouldApplyAppFee ? Math.min(Math.round(grossAmount * (appFeePercent / 100)), grossAmount) : 0;
-        const netAmount = Math.max(0, grossAmount - feeAmount);
-        const nextBalance = currentBalance + netAmount;
+        const feeAmountMinor = shouldApplyAppFee ? Math.min(Math.round(grossAmountMinor * (appFeePercent / 100)), grossAmountMinor) : 0;
+        const netAmountMinor = Math.max(0, grossAmountMinor - feeAmountMinor);
+        const nextBalanceMinor = currentBalanceMinor + netAmountMinor;
 
-        if (grossAmount <= 0) {
+        if (grossAmountMinor <= 0) {
           preview.classList.add('d-none');
           return;
         }
 
-        feeNode.textContent = feeAmount.toLocaleString();
-        netNode.textContent = netAmount.toLocaleString();
-        balanceNode.textContent = nextBalance.toLocaleString();
+        feeNode.textContent = formatAmount(feeAmountMinor);
+        netNode.textContent = formatAmount(netAmountMinor);
+        balanceNode.textContent = formatAmount(nextBalanceMinor);
         preview.classList.remove('d-none');
       };
 

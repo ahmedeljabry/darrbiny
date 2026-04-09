@@ -12,6 +12,7 @@ use App\Models\WalletTransaction;
 use App\Modules\Requests\Services\RequestService;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\WalletBalanceAddedNotification;
+use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
@@ -186,7 +187,7 @@ class BookingsController extends BaseController
         abort_unless($request->user()->can('cancel_courses'), 403);
 
         $validated = $request->validate([
-            'refund_amount' => ['required', 'integer', 'min:0'],
+            'refund_amount' => ['required', 'numeric', 'min:0'],
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
@@ -218,13 +219,13 @@ class BookingsController extends BaseController
             $cancellation->processed_at = now();
             $cancellation->save();
 
-            $refundAmount = (int) $validated['refund_amount'];
-            if ($refundAmount > 0 && $booking->user) {
-                $booking->user->increment('points_balance', $refundAmount);
+            $refundAmountMinor = WalletAmount::majorToMinor($validated['refund_amount']);
+            if ($refundAmountMinor > 0 && $booking->user) {
+                $booking->user->increment('points_balance', $refundAmountMinor);
 
                 $walletTransaction = WalletTransaction::create([
                     'user_id' => $booking->user->id,
-                    'amount' => $refundAmount,
+                    'amount' => $refundAmountMinor,
                     'type' => WalletTransaction::TYPE_REFUND,
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'processed_by' => $request->user()->id,
@@ -233,7 +234,7 @@ class BookingsController extends BaseController
                 ]);
 
                 $booking->user->notify(new WalletBalanceAddedNotification(
-                    $refundAmount,
+                    $refundAmountMinor,
                     'course_cancellation_refund',
                     $walletTransaction->id
                 ));
@@ -242,7 +243,7 @@ class BookingsController extends BaseController
             $notification = new CourseCancelledNotification(
                 $booking,
                 $validated['reason'],
-                (int) $validated['refund_amount']
+                WalletAmount::minorToMajor($refundAmountMinor)
             );
 
             if ($booking->user) {

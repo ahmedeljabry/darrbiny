@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\WalletTransaction;
+use App\Support\WalletAmount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -24,6 +25,8 @@ class WalletWithdrawRequestNotification extends Notification
     public function toDatabase($notifiable): array
     {
         $user = $this->transaction->user;
+        $amountMinor = $this->transaction->amountMinor();
+        $formattedAmount = WalletAmount::formatMinor($amountMinor, 2);
 
         return [
             'type' => 'wallet_withdraw_request',
@@ -31,9 +34,10 @@ class WalletWithdrawRequestNotification extends Notification
             'user_id' => $user->id,
             'user_name' => $user->name,
             'user_phone' => $user->phone_with_cc,
-            'amount' => $this->transaction->amount,
+            'amount' => $this->transaction->amountMajor(),
+            'amount_minor' => $amountMinor,
             'title' => 'طلب سحب من المحفظة',
-            'message' => "طلب سحب {$this->transaction->amount} من محفظة المستخدم {$user->name}",
+            'message' => "طلب سحب {$formattedAmount} من محفظة المستخدم {$user->name}",
         ];
     }
 }
