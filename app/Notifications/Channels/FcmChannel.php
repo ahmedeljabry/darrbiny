@@ -15,10 +15,6 @@ use Throwable;
 
 class FcmChannel
 {
-    public function __construct(
-        private readonly Messaging $messaging,
-    ) {}
-
     public function send(object $notifiable, Notification $notification): void
     {
         $tokens = $notifiable->routeNotificationFor('fcm', $notification);
@@ -38,7 +34,7 @@ class FcmChannel
         }
 
         try {
-            $report = $this->messaging->sendMulticast(
+            $report = app(Messaging::class)->sendMulticast(
                 $this->resolveMessage($notifiable, $notification),
                 $tokens
             );
@@ -127,7 +123,7 @@ class FcmChannel
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array<string, string>
      */
     private function stringifyPayload(array $payload): array
@@ -141,11 +137,13 @@ class FcmChannel
 
             if (is_bool($value)) {
                 $data[$key] = $value ? '1' : '0';
+
                 continue;
             }
 
             if (is_scalar($value)) {
                 $data[$key] = (string) $value;
+
                 continue;
             }
 

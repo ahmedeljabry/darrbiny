@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,12 +123,21 @@ class PaymentControllerTest extends TestCase
             'needs_pickup' => false,
         ]);
 
+        $trainer = User::factory()->create(['phone_with_cc' => '+10000003003']);
+
+        TrainerOffer::create([
+            'user_request_id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'price_minor' => 10000,
+            'message' => 'Accepted trainer offer',
+            'status' => TrainerOffer::STATUS_ACCEPTED,
+        ]);
+
         $this->withToken($token)
             ->postJson('/api/v1/payments/plan', [
                 'user_request_id' => $userRequest->id,
                 'payment_method' => 'wallet',
                 'type' => Payment::TYPE_PLAN_FULL,
-                'price' => 10000,
             ])
             ->assertCreated()
             ->assertJsonPath('success', true)
@@ -149,6 +159,7 @@ class PaymentControllerTest extends TestCase
             'id' => $userRequest->id,
             'status' => UserRequest::STATUS_IN_TRAINING,
             'app_fee_reserved_minor' => 1500,
+            'total_paid_minor' => 10000,
         ]);
     }
 }

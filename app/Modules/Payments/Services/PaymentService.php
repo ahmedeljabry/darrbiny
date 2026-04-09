@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Payments\Services;
 
-use App\Modules\Requests\Services\RequestService;
+use App\Models\Payment;
+use App\Models\TrainerOffer;
+use App\Models\User;
+use App\Models\UserRequest;
 use App\Modules\Referrals\Services\ReferralService;
-use App\Models\{UserRequest,Payment,User};
+use App\Modules\Requests\Services\RequestService;
 use App\Support\Fees;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +25,7 @@ class PaymentService
      * Pay with wallet balance
      * Deducts amount from user's wallet (points_balance) and creates payment record
      */
-    public function payWithWallet(UserRequest $req, User $user , Request $request): Payment
+    public function payWithWallet(UserRequest $req, User $user, Request $request): Payment
     {
         $paymentType = (string) $request->input('type', Payment::TYPE_PLAN_FULL);
         abort_unless(
@@ -32,11 +35,11 @@ class PaymentService
         );
 
         if ($paymentType === Payment::TYPE_PLAN_FULL) {
-            abort_unless(in_array($request->status, [Payment::STATUS_PENDING,Payment::STATUS_SUCCEEDED,Payment::STATUS_FAILED]), 422, 'Invalid status');
-            if (!$req->relationLoaded('plan')) $req->load('plan');
-            $amountMinor = $request->price;
+            abort_unless(in_array($request->status, [Payment::STATUS_PENDING, Payment::STATUS_SUCCEEDED, Payment::STATUS_FAILED], true), 422, 'Invalid status');
+            $amountMinor = $this->resolveFullPaymentAmountMinor($req, $request);
         } else {
-            $amountMinor = $request->price;
+            $amountMinor = (int) $request->input('price', 0);
+            abort_unless($amountMinor > 0, 422, 'Payment amount is required');
         }
 
         return DB::transaction(function () use ($req, $user, $amountMinor, $request, $paymentType) {
@@ -45,10 +48,10 @@ class PaymentService
             if (
                 $paymentType === Payment::TYPE_PLAN_FULL &&
                 $request->status === Payment::STATUS_SUCCEEDED &&
-                !empty($user->referred_by)
+                ! empty($user->referred_by)
             ) {
                 User::query()->whereKey($user->id)->lockForUpdate()->first();
-                $isFirstSuccessfulPlanPayment = !Payment::query()
+                $isFirstSuccessfulPlanPayment = ! Payment::query()
                     ->where('user_id', $user->id)
                     ->where('type', Payment::TYPE_PLAN_FULL)
                     ->where('status', Payment::STATUS_SUCCEEDED)
@@ -78,6 +81,7 @@ class PaymentService
             ]);
             if ($paymentType === Payment::TYPE_PLAN_FULL) {
                 $req->app_fee_reserved_minor = $payment->app_fee_minor;
+                $req->total_paid_minor = $amountMinor;
                 $req->save();
                 $this->requests->markInTraining($req);
             } elseif ($paymentType === Payment::TYPE_PLAN_PARTIAL) {
@@ -92,5 +96,29 @@ class PaymentService
 
             return $payment;
         });
+    }
+
+    private function resolveFullPaymentAmountMinor(UserRequest $req, Request $request): int
+    {
+        $req->loadMissing('plan');
+
+        $acceptedOffer = $req->offers()
+            ->where('status', TrainerOffer::STATUS_ACCEPTED)
+            ->latest('created_at')
+            ->first();
+
+        $amountMinor = (int) ($acceptedOffer?->price_minor ?? 0);
+
+        if ($amountMinor <= 0) {
+            $amountMinor = (int) ($req->plan?->price_min ?? 0) * 100;
+        }
+
+        if ($amountMinor <= 0) {
+            $amountMinor = (int) $request->input('price', 0);
+        }
+
+        abort_unless($amountMinor > 0, 422, 'Unable to determine payment amount');
+
+        return $amountMinor;
     }
 }

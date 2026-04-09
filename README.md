@@ -37,8 +37,8 @@ Production-grade, secure, multi-tenant-ready API implementing auth, plans, reque
 4) Set these environment variables:
    - `FIREBASE_PROJECT=app`
    - `FIREBASE_CREDENTIALS=storage/app/firebase/service-account.json`
-   - `FIREBASE_STORAGE_DEFAULT_BUCKET=<your-project-id>.firebasestorage.app`
-   - `FIREBASE_DATABASE_URL=https://<your-project-id>-default-rtdb.firebaseio.com`
+   - `FIREBASE_STORAGE_DEFAULT_BUCKET=<your-project-id>.firebasestorage.app` (optional unless you use Firebase Storage)
+   - `FIREBASE_DATABASE_URL=https://<your-project-id>-default-rtdb.firebaseio.com` (optional unless you use Realtime Database)
 5) Run `php artisan migrate`.
 6) From the mobile app, call `POST /api/v1/notifications/devices` after login and whenever the FCM token changes.
 7) On logout, call `DELETE /api/v1/notifications/devices` to remove the device token.

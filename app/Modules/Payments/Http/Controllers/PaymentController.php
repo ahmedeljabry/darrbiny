@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Payments\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\{Payment,UserRequest};
+use App\Models\Payment;
+use App\Models\UserRequest;
+use App\Modules\Payments\Http\Resources\PaymentResource;
 use App\Modules\Payments\Services\PaymentService;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use App\Modules\Payments\Http\{Resources\PaymentResource};
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller as BaseController;
 
 class PaymentController extends BaseController
 {
@@ -27,6 +28,7 @@ class PaymentController extends BaseController
             'payment_method' => ['required', 'string', 'in:wallet,tap'],
             'type' => ['sometimes', 'string', 'in:plan_full,plan_partial'],
             'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
+            'price' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $paymentType = $validated['type'] ?? Payment::TYPE_PLAN_FULL;
@@ -46,6 +48,7 @@ class PaymentController extends BaseController
             $request->user(),
             $request
         );
+
         return response()->json(['data' => new PaymentResource($payment)], 201);
     }
 }
