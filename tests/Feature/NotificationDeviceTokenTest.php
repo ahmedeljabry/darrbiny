@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Notifications\Services\NotificationTopicService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\TestCase;
 
 class NotificationDeviceTokenTest extends TestCase
@@ -26,6 +28,11 @@ class NotificationDeviceTokenTest extends TestCase
             'phone_with_cc' => '+10000005001',
         ]);
         $user->assignRole('USER');
+        $topics = Mockery::mock(NotificationTopicService::class);
+        $topics->shouldReceive('subscribeUserToken')
+            ->once()
+            ->withArgs(fn (User $target, string $token): bool => $target->is($user) && $token === 'fcm-token-1');
+        $this->app->instance(NotificationTopicService::class, $topics);
 
         Sanctum::actingAs($user);
 
@@ -53,6 +60,14 @@ class NotificationDeviceTokenTest extends TestCase
             'phone_with_cc' => '+10000005002',
         ]);
         $user->assignRole('USER');
+        $topics = Mockery::mock(NotificationTopicService::class);
+        $topics->shouldReceive('subscribeUserToken')
+            ->once()
+            ->withArgs(fn (User $target, string $token): bool => $target->is($user) && $token === 'fcm-token-2');
+        $topics->shouldReceive('unsubscribeUserToken')
+            ->once()
+            ->withArgs(fn (User $target, string $token): bool => $target->is($user) && $token === 'fcm-token-2');
+        $this->app->instance(NotificationTopicService::class, $topics);
 
         Sanctum::actingAs($user);
 

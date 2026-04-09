@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
-use App\Models\UserDeviceToken;
+use App\Modules\Notifications\Services\NotificationTopicService;
 use App\Notifications\AdminMessageNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
@@ -18,6 +18,7 @@ class NotificationsAdminController extends BaseController
 {
     public function __construct(
         private readonly Messaging $messaging,
+        private readonly NotificationTopicService $topics,
     ) {}
 
     public function index()
@@ -98,9 +99,20 @@ class NotificationsAdminController extends BaseController
         $notification = new AdminMessageNotification($data['title'], $data['message']);
 
         if ($data['audience'] === 'user') {
-            [$recipientCount, $deviceTokenCount] = $this->resolveAudienceStats($data);
             $user = User::findOrFail($data['user_id']);
-            $user->notify($notification);
+            $recipientCount = 1;
+            $deviceTokenCount = null;
+            $user->notify(new AdminMessageNotification(
+                $data['title'],
+                $data['message'],
+                databaseOnly: true,
+            ));
+
+            $this->messaging->send($this->buildTopicMessage(
+                $data['title'],
+                $data['message'],
+                $this->topics->userTopic($user),
+            ));
         } else {
             $topic = $this->resolveAudienceTopic($data['audience']);
             $query = $this->resolveAudienceQuery($data['audience']);
@@ -120,25 +132,7 @@ class NotificationsAdminController extends BaseController
 
         $response = back()->with('status', $this->buildStatusMessage($recipientCount, $deviceTokenCount));
 
-        if ($data['audience'] === 'user' && $deviceTokenCount === 0) {
-            $response->with('warning', 'لا توجد أجهزة مسجلة لهذا الجمهور في جدول user_device_tokens، لذلك لن يصل Push Notification حتى يسجل التطبيق التوكن.');
-        }
-
         return $response;
-    }
-
-    /**
-     * @return array{0:int,1:int}
-     */
-    private function resolveAudienceStats(array $data): array
-    {
-        if ($data['audience'] === 'user') {
-            $user = User::withCount('deviceTokens')->findOrFail($data['user_id']);
-
-            return [1, (int) $user->device_tokens_count];
-        }
-
-        return [0, 0];
     }
 
     private function buildStatusMessage(int $recipientCount, ?int $deviceTokenCount = null): string

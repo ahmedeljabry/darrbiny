@@ -7,10 +7,15 @@ namespace App\Modules\Notifications\Http\Controllers;
 use App\Models\UserDeviceToken;
 use App\Modules\Notifications\Http\Requests\DeleteDeviceTokenRequest;
 use App\Modules\Notifications\Http\Requests\StoreDeviceTokenRequest;
+use App\Modules\Notifications\Services\NotificationTopicService;
 use Illuminate\Routing\Controller as BaseController;
 
 class NotificationDeviceController extends BaseController
 {
+    public function __construct(
+        private readonly NotificationTopicService $topics,
+    ) {}
+
     public function store(StoreDeviceTokenRequest $request)
     {
         $user = $request->user();
@@ -25,6 +30,8 @@ class NotificationDeviceController extends BaseController
                 'last_used_at' => now(),
             ]
         );
+
+        $this->topics->subscribeUserToken($user, $deviceToken->token);
 
         return response()->json([
             'message' => 'تم حفظ جهاز الإشعارات بنجاح',
@@ -42,6 +49,15 @@ class NotificationDeviceController extends BaseController
     {
         $user = $request->user();
         $validated = $request->validated();
+
+        $token = UserDeviceToken::query()
+            ->where('user_id', $user->id)
+            ->where('token', $validated['token'])
+            ->first();
+
+        if ($token) {
+            $this->topics->unsubscribeUserToken($user, $token->token);
+        }
 
         $deleted = UserDeviceToken::query()
             ->where('user_id', $user->id)

@@ -41,12 +41,13 @@ Production-grade, secure, multi-tenant-ready API implementing auth, plans, reque
    - `FIREBASE_DATABASE_URL=https://<your-project-id>-default-rtdb.firebaseio.com` (optional unless you use Realtime Database)
    - `FCM_TOPIC_TRAINERS=trainers`
    - `FCM_TOPIC_TRAINEES=trainees`
+   - `FCM_TOPIC_USER_PREFIX=user_`
 5) Run `php artisan migrate`.
 6) From the mobile app, call `POST /api/v1/notifications/devices` after login and whenever the FCM token changes.
 7) On logout, call `DELETE /api/v1/notifications/devices` to remove the device token.
 
 The backend now stores FCM registration tokens in `user_device_tokens` and sends existing Laravel notifications to both the database and Firebase Cloud Messaging.
-Admin broadcasts to grouped audiences can also send directly to Firebase topics using the configured trainer and trainee topic names.
+Admin notifications use Firebase topics for grouped audiences and per-user topics. When a device token is saved through `/api/v1/notifications/devices`, the backend subscribes it automatically to the configured topics for that user.
 
 ## Example Requests (curl)
 

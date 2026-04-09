@@ -60,6 +60,18 @@ class AdminNotificationsTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         Notification::fake();
+        $messaging = Mockery::mock(Messaging::class);
+        $messaging->shouldReceive('send')
+            ->once()
+            ->withArgs(function (CloudMessage $message) use (&$user): bool {
+                $payload = $message->jsonSerialize();
+
+                return ($payload['topic'] ?? null) === 'user_'.$user->id
+                    && ($payload['notification']['title'] ?? null) === 'تنبيه'
+                    && ($payload['notification']['body'] ?? null) === 'رسالة اختبار';
+            })
+            ->andReturn(['name' => 'projects/test/messages/2']);
+        $this->app->instance(Messaging::class, $messaging);
 
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000008003',
@@ -87,7 +99,6 @@ class AdminNotificationsTest extends TestCase
                 'message' => 'رسالة اختبار',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين. الأجهزة المستهدفة: 1')
-            ->assertSessionMissing('warning');
+            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين عبر Topic');
     }
 }
