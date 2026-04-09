@@ -91,4 +91,47 @@ class AdminWalletsTest extends TestCase
             'notes' => 'إضافة مستحقات كورس رقم #C-245',
         ]);
     }
+
+    public function test_admin_wallet_credit_can_apply_app_fee_without_course_reference(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '10',
+        ]);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007005',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000007006',
+            'user_type' => 'captain',
+            'points_balance' => 20,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $this->actingAs($admin)
+            ->post(route('admin.wallets.store'), [
+                'user_id' => $trainer->id,
+                'amount' => 100,
+                'apply_app_fee' => '1',
+                'notes' => 'Payout after fee',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم إضافة صافي 90 إلى المحفظة بعد خصم رسوم التطبيق. الرصيد الحالي: 110');
+
+        $this->assertSame(110, (int) $trainer->fresh()->points_balance);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $trainer->id,
+            'amount' => 90,
+            'type' => 'adjustment',
+            'status' => 'approved',
+            'notes' => 'Payout after fee',
+        ]);
+    }
 }

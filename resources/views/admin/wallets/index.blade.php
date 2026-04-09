@@ -138,7 +138,25 @@
                 data-app-fee-percent="{{ $appFeePercent }}"
                 data-preview-target="walletPreview{{ $u->id }}"
               >
-              <small class="text-muted d-block mt-1">إذا تم إدخال رقم الكورس، فسيتم خصم رسوم التطبيق تلقائيًا قبل إضافة الرصيد إلى المحفظة.</small>
+              <small class="text-muted d-block mt-1">يمكن خصم رسوم التطبيق تلقائيًا من هذا المبلغ قبل إضافته إلى المحفظة.</small>
+            </div>
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input js-apply-app-fee"
+                  type="checkbox"
+                  role="switch"
+                  id="applyAppFee{{ $u->id }}"
+                  name="apply_app_fee"
+                  value="1"
+                  checked
+                  data-preview-target="walletPreview{{ $u->id }}"
+                >
+                <label class="form-check-label" for="applyAppFee{{ $u->id }}">
+                  خصم رسوم التطبيق تلقائيًا ({{ rtrim(rtrim(number_format($appFeePercent, 2, '.', ''), '0'), '.') }}%)
+                </label>
+              </div>
+              <small class="text-muted d-block mt-1">عند إدخال رقم الكورس سيتم الخصم دائمًا حتى إذا تم إلغاء هذا الخيار.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">رقم الكورس (اختياري)</label>
@@ -195,6 +213,7 @@
 
       const modalBody = amountInput.closest('.modal-body');
       const courseReferenceInput = modalBody?.querySelector('.js-course-reference');
+      const applyAppFeeInput = modalBody?.querySelector('.js-apply-app-fee');
       const feeNode = preview.querySelector('.js-preview-fee');
       const netNode = preview.querySelector('.js-preview-net');
       const balanceNode = preview.querySelector('.js-preview-balance');
@@ -204,11 +223,12 @@
       const updatePreview = function () {
         const grossAmount = parseInt(amountInput.value || '0', 10) || 0;
         const hasCourseReference = (courseReferenceInput?.value || '').trim() !== '';
-        const feeAmount = hasCourseReference ? Math.min(Math.round(grossAmount * (appFeePercent / 100)), grossAmount) : 0;
+        const shouldApplyAppFee = hasCourseReference || Boolean(applyAppFeeInput?.checked);
+        const feeAmount = shouldApplyAppFee ? Math.min(Math.round(grossAmount * (appFeePercent / 100)), grossAmount) : 0;
         const netAmount = Math.max(0, grossAmount - feeAmount);
         const nextBalance = currentBalance + netAmount;
 
-        if (grossAmount <= 0 && !hasCourseReference) {
+        if (grossAmount <= 0) {
           preview.classList.add('d-none');
           return;
         }
@@ -221,6 +241,7 @@
 
       amountInput.addEventListener('input', updatePreview);
       courseReferenceInput?.addEventListener('input', updatePreview);
+      applyAppFeeInput?.addEventListener('change', updatePreview);
       updatePreview();
     });
   });

@@ -27,6 +27,7 @@ class WalletsController extends BaseController
         $data = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
             'amount' => ['required', 'integer', 'min:1'],
+            'apply_app_fee' => ['nullable', 'boolean'],
             'course_reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
@@ -69,7 +70,7 @@ class WalletsController extends BaseController
     {
         $grossAmount = (int) $data['amount'];
 
-        if (! $this->shouldApplyCourseFee($data)) {
+        if (! $this->shouldApplyAppFee($data)) {
             return $grossAmount;
         }
 
@@ -80,14 +81,18 @@ class WalletsController extends BaseController
         return max(0, $grossAmount - $appFeeAmount);
     }
 
-    private function shouldApplyCourseFee(array $data): bool
+    private function shouldApplyAppFee(array $data): bool
     {
-        return trim((string) ($data['course_reference'] ?? '')) !== '';
+        if (trim((string) ($data['course_reference'] ?? '')) !== '') {
+            return true;
+        }
+
+        return filter_var($data['apply_app_fee'] ?? false, FILTER_VALIDATE_BOOL);
     }
 
     private function buildStoreStatusMessage(array $data, int $creditedAmount, int $newBalance): string
     {
-        if (! $this->shouldApplyCourseFee($data)) {
+        if (! $this->shouldApplyAppFee($data)) {
             return "تم إضافة الرصيد إلى المحفظة. الرصيد الحالي: {$newBalance}";
         }
 
