@@ -23,16 +23,13 @@ class NotificationsAdminController extends BaseController
 
     public function index()
     {
-        $selectedUser = null;
-        $selectedUserId = old('user_id');
+        $users = User::query()
+            ->select('id', 'name', 'phone_with_cc')
+            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->get();
 
-        if (is_string($selectedUserId) && $selectedUserId !== '') {
-            $selectedUser = User::query()
-                ->select('id', 'name', 'phone_with_cc')
-                ->find($selectedUserId);
-        }
-
-        return view('admin.notifications.index', compact('selectedUser'));
+        return view('admin.notifications.index', compact('users'));
     }
 
     public function users(Request $request)
@@ -54,7 +51,8 @@ class NotificationsAdminController extends BaseController
             $query->where(function ($userQuery) use ($search): void {
                 $userQuery->where('id', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%")
-                    ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    ->orWhere('phone_with_cc', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 

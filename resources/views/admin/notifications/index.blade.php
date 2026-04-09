@@ -56,17 +56,19 @@
             <span class="input-group-text"><i class="ti tabler-user"></i></span>
             <select
               name="user_id"
-              class="form-select js-user-picker"
+              class="form-select select2 js-user-picker"
               style="width:100%"
               data-search-url="{{ route('admin.notifications.users') }}"
             >
               <option value="">— اختر مستخدمًا —</option>
-              @if($selectedUser)
-                <option value="{{ $selectedUser->id }}" selected>{{ $selectedUser->name ?? 'بدون اسم' }} — {{ $selectedUser->phone_with_cc ?: $selectedUser->id }}</option>
-              @endif
+              @foreach($users as $u)
+                <option value="{{ $u->id }}" @selected(old('user_id') === $u->id)>
+                  {{ $u->name ?? 'بدون اسم' }} — {{ $u->phone_with_cc ?: $u->id }}
+                </option>
+              @endforeach
             </select>
           </div>
-          <small class="text-muted">ابحث بالاسم أو رقم الجوال أو رقم المستخدم.</small>
+          <small class="text-muted">ابحث بالاسم أو رقم الجوال أو البريد الإلكتروني أو رقم المستخدم.</small>
         </div>
       </div>
 
@@ -125,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function(){
       },
       placeholder: '— اختر مستخدمًا —',
       allowClear: true,
-      minimumInputLength: 1,
+      minimumInputLength: 0,
       language: {
         inputTooShort: function() {
           return 'اكتب حرفًا واحدًا على الأقل للبحث';
