@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Models\UserDeviceToken;
 use App\Notifications\AdminMessageNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Str;
+use Kreait\Firebase\Contract\Messaging;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 
 class NotificationsAdminController extends BaseController
 {
+    public function __construct(
+        private readonly Messaging $messaging,
+    ) {}
+
     public function index()
     {
         $users = User::select('id','name','phone_with_cc')->latest()->limit(50)->get();
@@ -91,20 +98,84 @@ class NotificationsAdminController extends BaseController
         $notification = new AdminMessageNotification($data['title'], $data['message']);
 
         if ($data['audience'] === 'user') {
+            [$recipientCount, $deviceTokenCount] = $this->resolveAudienceStats($data);
             $user = User::findOrFail($data['user_id']);
             $user->notify($notification);
-        } elseif ($data['audience'] === 'trainers') {
-            $trainers = User::role('TRAINER')->select('id')->cursor();
-            foreach ($trainers->chunk(200) as $chunk) {
-                Notification::send($chunk->all(), $notification);
-            }
         } else {
-            $trainees = User::role('USER')->select('id')->cursor();
-            foreach ($trainees->chunk(200) as $chunk) {
-                Notification::send($chunk->all(), $notification);
-            }
+            $topic = $this->resolveAudienceTopic($data['audience']);
+            $query = $this->resolveAudienceQuery($data['audience']);
+            $recipientCount = (clone $query)->count();
+            $deviceTokenCount = null;
+
+            $query->select('id')->chunk(200, function ($chunk) use ($data): void {
+                Notification::send($chunk, new AdminMessageNotification(
+                    $data['title'],
+                    $data['message'],
+                    databaseOnly: true,
+                ));
+            });
+
+            $this->messaging->send($this->buildTopicMessage($data['title'], $data['message'], $topic));
         }
 
-        return back()->with('status', 'تم إرسال الإشعار');
+        $response = back()->with('status', $this->buildStatusMessage($recipientCount, $deviceTokenCount));
+
+        if ($data['audience'] === 'user' && $deviceTokenCount === 0) {
+            $response->with('warning', 'لا توجد أجهزة مسجلة لهذا الجمهور في جدول user_device_tokens، لذلك لن يصل Push Notification حتى يسجل التطبيق التوكن.');
+        }
+
+        return $response;
+    }
+
+    /**
+     * @return array{0:int,1:int}
+     */
+    private function resolveAudienceStats(array $data): array
+    {
+        if ($data['audience'] === 'user') {
+            $user = User::withCount('deviceTokens')->findOrFail($data['user_id']);
+
+            return [1, (int) $user->device_tokens_count];
+        }
+
+        return [0, 0];
+    }
+
+    private function buildStatusMessage(int $recipientCount, ?int $deviceTokenCount = null): string
+    {
+        if ($deviceTokenCount === null) {
+            return "تم إرسال الإشعار إلى {$recipientCount} مستخدمين عبر Topic";
+        }
+
+        return "تم إرسال الإشعار إلى {$recipientCount} مستخدمين. الأجهزة المستهدفة: {$deviceTokenCount}";
+    }
+
+    private function resolveAudienceQuery(string $audience)
+    {
+        return $audience === 'trainers'
+            ? User::role('TRAINER')
+            : User::role('USER');
+    }
+
+    private function resolveAudienceTopic(string $audience): string
+    {
+        return $audience === 'trainers'
+            ? (string) config('services.firebase.topics.trainers', 'trainers')
+            : (string) config('services.firebase.topics.trainees', 'trainees');
+    }
+
+    private function buildTopicMessage(string $title, string $message, string $topic): CloudMessage
+    {
+        return CloudMessage::new()
+            ->toTopic($topic)
+            ->withNotification(FirebaseNotification::create($title, $message))
+            ->withData([
+                'title' => $title,
+                'message' => $message,
+                'notification_type' => 'admin_message',
+                'topic' => $topic,
+            ])
+            ->withHighestPossiblePriority()
+            ->withDefaultSounds();
     }
 }

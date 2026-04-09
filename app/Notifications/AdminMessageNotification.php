@@ -14,10 +14,15 @@ class AdminMessageNotification extends Notification
     public function __construct(
         public readonly string $title,
         public readonly string $message,
+        public readonly bool $databaseOnly = false,
     ) {}
 
     public function via(object $notifiable): array
     {
+        if ($this->databaseOnly) {
+            return ['database'];
+        }
+
         return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 

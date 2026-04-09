@@ -16,6 +16,12 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
   </div>
 @endif
+@if (session('warning'))
+  <div class="alert alert-warning alert-dismissible" role="alert">
+    {{ session('warning') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+  </div>
+@endif
 @if ($errors->any())
   <div class="alert alert-danger" role="alert">
     <ul class="mb-0">
@@ -33,7 +39,7 @@
     </span>
     <div>
       <h5 class="mb-0">إرسال إشعار</h5>
-      <small class="text-body-secondary">أرسل إشعارًا لمستخدم محدد، جميع المدربين أو جميع المتدربين</small>
+      <small class="text-body-secondary">المدربون والمتدربون يتم إرسال Push لهم عبر Topics، أما المستخدم المحدد فيتم إرساله مباشرة من النظام</small>
     </div>
   </div>
   <div class="card-body">

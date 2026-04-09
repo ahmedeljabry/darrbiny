@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'firebase' => [
+        'topics' => [
+            'trainers' => env('FCM_TOPIC_TRAINERS', 'trainers'),
+            'trainees' => env('FCM_TOPIC_TRAINEES', 'trainees'),
+        ],
+    ],
+
 ];
