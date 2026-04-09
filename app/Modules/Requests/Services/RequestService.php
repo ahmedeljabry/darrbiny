@@ -226,12 +226,29 @@ class RequestService
         $storedTrainerNetMinor = max(0, (int) $payment->trainer_net_minor);
 
         if ($storedAppFeeMinor > 0 || $storedTrainerNetMinor > 0) {
-            $appFeeMinor = min($storedAppFeeMinor, $amountMinor);
-            $trainerNetMinor = $storedTrainerNetMinor > 0
-                ? min($storedTrainerNetMinor, $amountMinor)
-                : max(0, $amountMinor - $appFeeMinor);
+            $storedAppFeeMinor = min($storedAppFeeMinor, $amountMinor);
+            $storedTrainerNetMinor = min($storedTrainerNetMinor, $amountMinor);
+            $storedTotalMinor = $storedAppFeeMinor + $storedTrainerNetMinor;
 
-            return [$appFeeMinor, $trainerNetMinor];
+            if ($storedTotalMinor === $amountMinor) {
+                $currentAppFeePercent = max(0, Fees::appFeePercent());
+
+                if (
+                    $storedAppFeeMinor > 0
+                    || $storedTrainerNetMinor < $amountMinor
+                    || $currentAppFeePercent <= 0
+                ) {
+                    return [$storedAppFeeMinor, $storedTrainerNetMinor];
+                }
+            }
+
+            if ($storedAppFeeMinor > 0 && $storedTrainerNetMinor === 0) {
+                return [$storedAppFeeMinor, max(0, $amountMinor - $storedAppFeeMinor)];
+            }
+
+            if ($storedTrainerNetMinor > 0 && $storedTrainerNetMinor < $amountMinor && $storedAppFeeMinor === 0) {
+                return [max(0, $amountMinor - $storedTrainerNetMinor), $storedTrainerNetMinor];
+            }
         }
 
         $appFeePercent = max(0, Fees::appFeePercent());

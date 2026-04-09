@@ -260,6 +260,74 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         ]);
     }
 
+    public function test_completion_recalculates_app_fee_when_legacy_full_payment_stored_gross_trainer_net(): void
+    {
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '10',
+        ]);
+
+        [, $plan] = $this->createLocationPlan();
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+10000009008',
+        ]);
+        $student->assignRole('USER');
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000009009',
+            'user_type' => 'captain',
+            'points_balance' => 0,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $booking = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 10000,
+        ]);
+
+        $token = $student->createToken('complete-course-legacy-gross')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/v1/user-requests/{$booking->id}/complete")
+            ->assertOk()
+            ->assertJsonPath('data.status', UserRequest::STATUS_COMPLETED);
+
+        $this->assertSame(90, (int) $trainer->fresh()->points_balance);
+        $this->assertSame(1000, (int) $payment->fresh()->app_fee_minor);
+        $this->assertSame(9000, (int) $payment->fresh()->trainer_net_minor);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $trainer->id,
+            'amount' => 90,
+            'type' => WalletTransaction::TYPE_ADJUSTMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'processed_by' => $student->id,
+        ]);
+    }
+
     /**
      * @return array{0: Country, 1: Plan}
      */
