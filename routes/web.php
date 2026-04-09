@@ -156,6 +156,7 @@ Route::middleware(['web'])
             Route::middleware('can:manage_notifications')->group(function () {
                 Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'index'])->name('notifications.index');
                 Route::get('/notifications/view', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'view'])->name('notifications.view');
+                Route::get('/notifications/users', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'users'])->name('notifications.users');
                 Route::get('/notifications/{id}', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'show'])->name('notifications.show');
                 Route::post('/notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'markAsRead'])->name('notifications.mark-read');
                 Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Admin\NotificationsAdminController::class, 'markAllRead'])->name('notifications.mark-all-read');

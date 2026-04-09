@@ -54,13 +54,19 @@
           <label class="form-label">اختر المستخدم</label>
           <div class="input-group input-group-merge">
             <span class="input-group-text"><i class="ti tabler-user"></i></span>
-            <select name="user_id" class="form-select select2" style="width:100%">
+            <select
+              name="user_id"
+              class="form-select js-user-picker"
+              style="width:100%"
+              data-search-url="{{ route('admin.notifications.users') }}"
+            >
               <option value="">— اختر مستخدمًا —</option>
-              @foreach($users as $u)
-                <option value="{{ $u->id }}">{{ $u->name ?? 'بدون اسم' }} — {{ $u->phone_with_cc }}</option>
-              @endforeach
+              @if($selectedUser)
+                <option value="{{ $selectedUser->id }}" selected>{{ $selectedUser->name ?? 'بدون اسم' }} — {{ $selectedUser->phone_with_cc ?: $selectedUser->id }}</option>
+              @endif
             </select>
           </div>
+          <small class="text-muted">ابحث بالاسم أو رقم الجوال أو رقم المستخدم.</small>
         </div>
       </div>
 
@@ -94,7 +100,44 @@
 document.addEventListener('DOMContentLoaded', function(){
   if (window.jQuery && $.fn.select2) {
     const dir = @json(app()->getLocale() === 'en' ? 'ltr' : 'rtl');
-    $('.select2').select2({ dir: dir, width: '100%' });
+    const $userPicker = $('.js-user-picker');
+    $userPicker.select2({
+      dir: dir,
+      width: '100%',
+      ajax: {
+        url: $userPicker.data('search-url'),
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+          return {
+            q: params.term || '',
+            page: params.page || 1
+          };
+        },
+        processResults: function(data, params) {
+          params.page = params.page || 1;
+
+          return {
+            results: data.results || [],
+            pagination: data.pagination || { more: false }
+          };
+        }
+      },
+      placeholder: '— اختر مستخدمًا —',
+      allowClear: true,
+      minimumInputLength: 1,
+      language: {
+        inputTooShort: function() {
+          return 'اكتب حرفًا واحدًا على الأقل للبحث';
+        },
+        noResults: function() {
+          return 'لا توجد نتائج';
+        },
+        searching: function() {
+          return 'جاري البحث...';
+        }
+      }
+    });
   }
   function toggleUserSelect(){
     const val = document.querySelector('.js-audience').value;

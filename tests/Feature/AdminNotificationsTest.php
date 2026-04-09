@@ -101,4 +101,33 @@ class AdminNotificationsTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين عبر Topic');
     }
+
+    public function test_admin_can_search_notification_users(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000008005',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_notifications');
+
+        $matchingUser = User::factory()->create([
+            'name' => 'Maher Salem',
+            'phone_with_cc' => '+201234567890',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Another User',
+            'phone_with_cc' => '+10000008006',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.notifications.users', ['q' => 'Maher']))
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $matchingUser->id,
+                'text' => 'Maher Salem — +201234567890',
+            ]);
+    }
 }

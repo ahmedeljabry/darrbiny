@@ -23,8 +23,52 @@ class NotificationsAdminController extends BaseController
 
     public function index()
     {
-        $users = User::select('id','name','phone_with_cc')->latest()->limit(50)->get();
-        return view('admin.notifications.index', compact('users'));
+        $selectedUser = null;
+        $selectedUserId = old('user_id');
+
+        if (is_string($selectedUserId) && $selectedUserId !== '') {
+            $selectedUser = User::query()
+                ->select('id', 'name', 'phone_with_cc')
+                ->find($selectedUserId);
+        }
+
+        return view('admin.notifications.index', compact('selectedUser'));
+    }
+
+    public function users(Request $request)
+    {
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $search = trim((string) ($data['q'] ?? ''));
+        $page = (int) ($data['page'] ?? 1);
+        $perPage = 20;
+
+        $query = User::query()
+            ->select('id', 'name', 'phone_with_cc')
+            ->orderByDesc('created_at');
+
+        if ($search !== '') {
+            $query->where(function ($userQuery) use ($search): void {
+                $userQuery->where('id', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('phone_with_cc', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'results' => $users->map(fn (User $user): array => [
+                'id' => $user->id,
+                'text' => trim(($user->name ?: 'بدون اسم').' — '.($user->phone_with_cc ?: $user->id)),
+            ])->values()->all(),
+            'pagination' => [
+                'more' => $users->hasMorePages(),
+            ],
+        ]);
     }
 
     public function view(Request $request)
