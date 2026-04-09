@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Payout;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
@@ -25,7 +26,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_user_completion_credits_trainer_wallet_from_payment_net_and_does_not_duplicate(): void
+    public function test_user_completion_adds_net_amount_to_existing_trainer_wallet_balance_and_does_not_duplicate(): void
     {
         [, $plan] = $this->createLocationPlan();
 
@@ -37,7 +38,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         $trainer = User::factory()->create([
             'phone_with_cc' => '+10000009002',
             'user_type' => 'captain',
-            'points_balance' => 0,
+            'points_balance' => 20,
         ]);
         $trainer->assignRole('TRAINER');
 
@@ -74,7 +75,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', UserRequest::STATUS_COMPLETED);
 
-        $this->assertSame(81, (int) $trainer->fresh()->points_balance);
+        $this->assertSame(101, (int) $trainer->fresh()->points_balance);
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $trainer->id,
@@ -97,7 +98,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             ->postJson("/api/v1/user-requests/{$booking->id}/complete")
             ->assertOk();
 
-        $this->assertSame(81, (int) $trainer->fresh()->points_balance);
+        $this->assertSame(101, (int) $trainer->fresh()->points_balance);
         $this->assertSame(1, WalletTransaction::query()
             ->where('user_id', $trainer->id)
             ->where('notes', 'إضافة مستحقات كورس رقم ' . $booking->id)
@@ -105,6 +106,83 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         $this->assertSame(1, Payout::query()
             ->where('user_request_id', $booking->id)
             ->count());
+    }
+
+    public function test_user_completion_uses_app_fee_setting_when_payment_fee_fields_are_missing(): void
+    {
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '10',
+        ]);
+
+        [, $plan] = $this->createLocationPlan();
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+10000009006',
+        ]);
+        $student->assignRole('USER');
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000009007',
+            'user_type' => 'captain',
+            'points_balance' => 40,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $booking = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 0,
+        ]);
+
+        $token = $student->createToken('complete-course-setting-fee')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/v1/user-requests/{$booking->id}/complete")
+            ->assertOk()
+            ->assertJsonPath('data.status', UserRequest::STATUS_COMPLETED);
+
+        $this->assertSame(130, (int) $trainer->fresh()->points_balance);
+
+        $this->assertSame(1000, (int) $payment->fresh()->app_fee_minor);
+        $this->assertSame(9000, (int) $payment->fresh()->trainer_net_minor);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $trainer->id,
+            'amount' => 90,
+            'type' => WalletTransaction::TYPE_ADJUSTMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'processed_by' => $student->id,
+        ]);
+
+        $this->assertDatabaseHas('payouts', [
+            'trainer_id' => $trainer->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 9000,
+            'currency' => 'SAR',
+            'status' => Payout::STATUS_PENDING_REVIEW,
+        ]);
     }
 
     public function test_admin_marking_booking_completed_uses_same_trainer_wallet_credit_flow(): void

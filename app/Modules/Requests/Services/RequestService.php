@@ -11,6 +11,7 @@ use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
+use App\Support\Fees;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
 use App\Notifications\WalletBalanceAddedNotification;
@@ -137,7 +138,18 @@ class RequestService
 
     private function syncTrainerPayout(UserRequest $req, Payment $payment, ?User $completedBy = null): void
     {
-        $walletAmount = (int) round($payment->trainer_net_minor / 100);
+        [$appFeeMinor, $trainerNetMinor] = $this->resolveTrainerPayoutAmounts($payment);
+
+        if (
+            (int) $payment->app_fee_minor !== $appFeeMinor
+            || (int) $payment->trainer_net_minor !== $trainerNetMinor
+        ) {
+            $payment->app_fee_minor = $appFeeMinor;
+            $payment->trainer_net_minor = $trainerNetMinor;
+            $payment->save();
+        }
+
+        $walletAmount = (int) round($trainerNetMinor / 100);
         if ($walletAmount <= 0) {
             return;
         }
@@ -146,7 +158,7 @@ class RequestService
             ['user_request_id' => $req->id],
             [
                 'trainer_id' => $req->trainer_id,
-                'amount_minor' => $payment->trainer_net_minor,
+                'amount_minor' => $trainerNetMinor,
                 'currency' => $payment->currency ?: $req->currency,
                 'status' => Payout::STATUS_PENDING_REVIEW,
             ]
@@ -194,5 +206,38 @@ class RequestService
     private function buildTrainerPayoutWalletNote(UserRequest $req): string
     {
         return 'إضافة مستحقات كورس رقم ' . $req->id;
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function resolveTrainerPayoutAmounts(Payment $payment): array
+    {
+        $amountMinor = max(0, (int) $payment->amount_minor);
+
+        if (!$payment->isFullType()) {
+            return [
+                max(0, (int) $payment->app_fee_minor),
+                max(0, (int) $payment->trainer_net_minor ?: $amountMinor),
+            ];
+        }
+
+        $storedAppFeeMinor = max(0, (int) $payment->app_fee_minor);
+        $storedTrainerNetMinor = max(0, (int) $payment->trainer_net_minor);
+
+        if ($storedAppFeeMinor > 0 || $storedTrainerNetMinor > 0) {
+            $appFeeMinor = min($storedAppFeeMinor, $amountMinor);
+            $trainerNetMinor = $storedTrainerNetMinor > 0
+                ? min($storedTrainerNetMinor, $amountMinor)
+                : max(0, $amountMinor - $appFeeMinor);
+
+            return [$appFeeMinor, $trainerNetMinor];
+        }
+
+        $appFeePercent = max(0, Fees::appFeePercent());
+        $appFeeMinor = (int) round($amountMinor * ($appFeePercent / 100));
+        $appFeeMinor = min($appFeeMinor, $amountMinor);
+
+        return [$appFeeMinor, $amountMinor - $appFeeMinor];
     }
 }
