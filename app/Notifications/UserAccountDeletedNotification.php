@@ -6,7 +6,6 @@ namespace App\Notifications;
 
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 class UserAccountDeletedNotification extends Notification
@@ -19,13 +18,14 @@ class UserAccountDeletedNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase($notifiable): array
     {
         return [
             'type' => 'user_account_deleted',
+            'title' => 'حذف حساب مستخدم',
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,
             'user_phone' => $this->user->phone_with_cc,
@@ -34,4 +34,3 @@ class UserAccountDeletedNotification extends Notification
         ];
     }
 }
-

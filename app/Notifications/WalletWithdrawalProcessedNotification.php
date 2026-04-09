@@ -19,7 +19,7 @@ class WalletWithdrawalProcessedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -37,4 +37,3 @@ class WalletWithdrawalProcessedNotification extends Notification
         ];
     }
 }
-

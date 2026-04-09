@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Enums\UserType;
-use App\Models\Country;
+use App\Models\Upload;
 use App\Models\User;
 use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\DeleteAccountRequest;
@@ -13,14 +13,14 @@ use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
-use App\Notifications\UserAccountDeletedNotification;
-use App\Models\Upload;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Referrals\Services\ReferralService;
+use App\Notifications\UserAccountDeletedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class AuthController extends BaseController
@@ -59,6 +59,7 @@ class AuthController extends BaseController
         }
 
         $tokens = $this->auth->issueTokens($user);
+
         return response()->json([
             'message' => 'تم إنشاء الحساب بنجاح',
             'data' => array_merge([
@@ -71,7 +72,7 @@ class AuthController extends BaseController
     {
         $user = User::where('phone_with_cc', $request->input('phone_with_cc'))->first();
 
-        if (!$user || !$user->password || !Hash::check($request->input('password'), $user->password)) {
+        if (! $user || ! $user->password || ! Hash::check($request->input('password'), $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials',
                 'errors' => [
@@ -102,6 +103,7 @@ class AuthController extends BaseController
         }
 
         $tokens = $this->auth->issueTokens($user);
+
         return response()->json([
             'data' => array_merge([
                 'user' => (new UserResource($user))->resolve(),
@@ -122,17 +124,19 @@ class AuthController extends BaseController
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()?->delete();
+
         return response()->json(['data' => ['logout' => true]]);
     }
 
     public function refresh(Request $request)
     {
         $request->validate([
-            'refresh_token' => ['required','string'],
+            'refresh_token' => ['required', 'string'],
         ]);
         $user = User::where('phone_with_cc', $request->string('phone_with_cc'))->first() ?? $request->user();
-        abort_if(!$user, 401, 'Unauthenticated');
+        abort_if(! $user, 401, 'Unauthenticated');
         $tokens = $this->auth->refresh($user, $request->string('refresh_token'));
+
         return response()->json(['data' => $tokens]);
     }
 
@@ -140,7 +144,7 @@ class AuthController extends BaseController
     {
         $user = User::where('phone_with_cc', $request->string('mobile')->toString())->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'message' => 'رقم الجوال غير مسجل',
                 'errors' => [
@@ -269,7 +273,7 @@ class AuthController extends BaseController
         $user = $request->user();
 
         // Verify password
-        if (!Hash::check($request->input('password'), $user->password)) {
+        if (! Hash::check($request->input('password'), $user->password)) {
             return response()->json([
                 'message' => 'كلمة المرور غير صحيحة',
                 'errors' => [
@@ -279,7 +283,7 @@ class AuthController extends BaseController
         }
 
         // Notify admins before deletion
-        $admins = User::role('admin')->get();
+        $admins = User::role('ADMIN')->get();
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new UserAccountDeletedNotification($user));
         }
@@ -300,16 +304,18 @@ class AuthController extends BaseController
 
     private function deriveCurrencyFromPhone(?string $phone): string
     {
-        if (!$phone) {
+        if (! $phone) {
             return 'USD';
         }
 
         // crude derivation based on CC; real impl should parse using libphonenumber
         $map = [
-            '+20' => 'EGP', '+966' => 'SAR', '+971' => 'AED', '+1' => 'USD', '+44' => 'GBP', '+49' => 'EUR'
+            '+20' => 'EGP', '+966' => 'SAR', '+971' => 'AED', '+1' => 'USD', '+44' => 'GBP', '+49' => 'EUR',
         ];
         foreach ($map as $cc => $cur) {
-            if (str_starts_with($phone, $cc)) return $cur;
+            if (str_starts_with($phone, $cc)) {
+                return $cur;
+            }
         }
 
         return 'USD';

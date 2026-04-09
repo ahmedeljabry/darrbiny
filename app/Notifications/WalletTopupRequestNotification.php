@@ -6,7 +6,6 @@ namespace App\Notifications;
 
 use App\Models\WalletTransaction;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 class WalletTopupRequestNotification extends Notification
@@ -19,15 +18,16 @@ class WalletTopupRequestNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase($notifiable): array
     {
         $user = $this->transaction->user;
-        
+
         return [
             'type' => 'wallet_topup_request',
+            'title' => 'طلب شحن للمحفظة',
             'transaction_id' => $this->transaction->id,
             'user_id' => $user->id,
             'user_name' => $user->name,
@@ -37,4 +37,3 @@ class WalletTopupRequestNotification extends Notification
         ];
     }
 }
-

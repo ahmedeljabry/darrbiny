@@ -21,13 +21,13 @@ class TrainerProfileUpdateNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
     {
         $changedFields = implode(', ', array_keys($this->changes));
-        
+
         return [
             'title' => 'طلب موافقة على تعديلات ملف المدرب',
             'message' => "المدرب {$this->trainer->name} قام بتعديل بياناته ({$changedFields}) ويحتاج موافقة",
@@ -40,5 +40,3 @@ class TrainerProfileUpdateNotification extends Notification
         ];
     }
 }
-
-

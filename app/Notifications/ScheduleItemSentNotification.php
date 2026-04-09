@@ -6,8 +6,6 @@ namespace App\Notifications;
 
 use App\Models\UserScheduleProgress;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class ScheduleItemSentNotification extends Notification
@@ -20,14 +18,14 @@ class ScheduleItemSentNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase($notifiable): array
     {
         $userRequest = $this->scheduleProgress->userRequest;
         $planScheduleItem = $this->scheduleProgress->planScheduleItem;
-        
+
         return [
             'type' => 'schedule_item_sent',
             'user_request_id' => $userRequest->id,
@@ -38,4 +36,3 @@ class ScheduleItemSentNotification extends Notification
         ];
     }
 }
-

@@ -4,21 +4,24 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserType;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Support\StorageUrl;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use App\Support\StorageUrl;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRoles, HasUuids, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     /**
@@ -135,15 +138,15 @@ class User extends Authenticatable
 
     public function getProfilePictureUrlAttribute(): ?string
     {
-        if (!$this->profile_picture_id) {
+        if (! $this->profile_picture_id) {
             return null;
         }
 
-        if (!$this->relationLoaded('profilePicture')) {
+        if (! $this->relationLoaded('profilePicture')) {
             $this->load('profilePicture');
         }
 
-        if (!$this->profilePicture) {
+        if (! $this->profilePicture) {
             return null;
         }
 
@@ -163,5 +166,19 @@ class User extends Authenticatable
     public function plan()
     {
         return $this->hasMany(Plan::class);
+    }
+
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(UserDeviceToken::class);
+    }
+
+    public function routeNotificationForFcm(?Notification $notification = null): array
+    {
+        return $this->deviceTokens()
+            ->pluck('token')
+            ->filter(static fn (mixed $token): bool => is_string($token) && $token !== '')
+            ->values()
+            ->all();
     }
 }

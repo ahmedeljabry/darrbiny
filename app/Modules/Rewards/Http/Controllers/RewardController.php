@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Rewards\Http\Controllers;
 
+use App\Models\Referral;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
-use App\Models\Referral;
 use App\Models\User;
 use App\Modules\Referrals\Services\ReferralService;
 use App\Modules\Rewards\Http\Requests\PrizeRequestRequest;
 use App\Notifications\PrizeRequestNotification;
+use App\Support\StorageUrl;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use App\Support\StorageUrl;
 
 class RewardController extends BaseController
 {
@@ -73,7 +73,7 @@ class RewardController extends BaseController
                 'status' => 'pending',
             ]);
 
-            $admins = User::role('admin')->get();
+            $admins = User::role('ADMIN')->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new PrizeRequestNotification($redemption->load('user', 'reward')));
             }

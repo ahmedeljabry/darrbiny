@@ -6,7 +6,6 @@ namespace App\Notifications;
 
 use App\Models\SupportTicket;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 class SupportTicketCreatedNotification extends Notification
@@ -19,13 +18,14 @@ class SupportTicketCreatedNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase($notifiable): array
     {
         return [
             'type' => 'support_ticket_created',
+            'title' => 'تذكرة دعم جديدة',
             'ticket_id' => $this->ticket->id,
             'user_id' => $this->ticket->user_id,
             'name' => $this->ticket->name,
@@ -36,4 +36,3 @@ class SupportTicketCreatedNotification extends Notification
         ];
     }
 }
-

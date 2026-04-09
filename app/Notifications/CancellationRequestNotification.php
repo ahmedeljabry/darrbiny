@@ -7,7 +7,6 @@ namespace App\Notifications;
 use App\Models\CancellationRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\BroadcastMessage;
 
 class CancellationRequestNotification extends Notification
 {
@@ -19,7 +18,7 @@ class CancellationRequestNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -27,19 +26,19 @@ class CancellationRequestNotification extends Notification
         $userRequest = $this->cancellationRequest->userRequest;
         $user = $this->cancellationRequest->user;
         $status = $this->cancellationRequest->status;
-        
-        $title = match($status) {
+
+        $title = match ($status) {
             'approved' => 'تم قبول طلب الإلغاء',
             'rejected' => 'تم رفض طلب الإلغاء',
             default => 'طلب إلغاء دورة تدريبية',
         };
-        
-        $message = match($status) {
+
+        $message = match ($status) {
             'approved' => "تم قبول طلب إلغاء الدورة رقم #{$userRequest->id} وتم إرجاع المبلغ إلى محفظتك",
             'rejected' => "تم رفض طلب إلغاء الدورة رقم #{$userRequest->id}",
             default => "طلب المستخدم {$user->name} إلغاء الدورة رقم #{$userRequest->id}",
         };
-        
+
         return [
             'title' => $title,
             'message' => $message,
@@ -49,11 +48,9 @@ class CancellationRequestNotification extends Notification
             'user_id' => $user->id,
             'status' => $status,
             'reason' => $this->cancellationRequest->reason,
-            'refund_amount' => $status === 'approved' && $userRequest->total_paid_minor > 0 
-                ? (int) round($userRequest->total_paid_minor / 100) 
+            'refund_amount' => $status === 'approved' && $userRequest->total_paid_minor > 0
+                ? (int) round($userRequest->total_paid_minor / 100)
                 : null,
         ];
     }
 }
-
-

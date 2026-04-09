@@ -17,7 +17,7 @@ class NewRequestAvailable extends Notification implements ShouldQueue
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toArray($notifiable): array

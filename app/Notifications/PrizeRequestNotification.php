@@ -6,7 +6,6 @@ namespace App\Notifications;
 
 use App\Models\RewardRedemption;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 class PrizeRequestNotification extends Notification
@@ -19,13 +18,14 @@ class PrizeRequestNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', \App\Notifications\Channels\FcmChannel::class];
     }
 
     public function toDatabase($notifiable): array
     {
         return [
             'type' => 'prize_request',
+            'title' => 'طلب جائزة جديد',
             'redemption_id' => $this->redemption->id,
             'user_id' => $this->redemption->user_id,
             'user_name' => $this->redemption->user->name,
@@ -35,4 +35,3 @@ class PrizeRequestNotification extends Notification
         ];
     }
 }
-
