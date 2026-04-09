@@ -125,13 +125,46 @@
               <input type="text" class="form-control" value="{{ number_format($u->points_balance) }}" readonly>
             </div>
             <div class="mb-3">
-              <label class="form-label">المبلغ المراد إضافته</label>
-              <input type="number" name="amount" class="form-control" min="1" step="1" required placeholder="أدخل المبلغ">
+              <label class="form-label">إجمالي المبلغ المراد إضافته</label>
+              <input
+                type="number"
+                name="amount"
+                class="form-control js-wallet-amount"
+                min="1"
+                step="1"
+                required
+                placeholder="أدخل إجمالي المبلغ"
+                data-current-balance="{{ $u->points_balance }}"
+                data-app-fee-percent="{{ $appFeePercent }}"
+                data-preview-target="walletPreview{{ $u->id }}"
+              >
+              <small class="text-muted d-block mt-1">إذا تم إدخال رقم الكورس، فسيتم خصم رسوم التطبيق تلقائيًا قبل إضافة الرصيد إلى المحفظة.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">رقم الكورس (اختياري)</label>
-              <input type="text" name="course_reference" class="form-control" maxlength="100" placeholder="مثال: #12345 أو 7f21b0c4">
+              <input
+                type="text"
+                name="course_reference"
+                class="form-control js-course-reference"
+                maxlength="100"
+                placeholder="مثال: #12345 أو 7f21b0c4"
+                data-preview-target="walletPreview{{ $u->id }}"
+              >
               <small class="text-muted d-block mt-1">عند إدخاله سيتم حفظ الملاحظة تلقائيًا بصيغة: إضافة مستحقات كورس رقم ...</small>
+            </div>
+            <div class="alert alert-info d-none" id="walletPreview{{ $u->id }}">
+              <div class="d-flex justify-content-between">
+                <span>رسوم التطبيق ({{ rtrim(rtrim(number_format($appFeePercent, 2, '.', ''), '0'), '.') }}%)</span>
+                <strong class="js-preview-fee">0</strong>
+              </div>
+              <div class="d-flex justify-content-between mt-2">
+                <span>الصافي المضاف للمحفظة</span>
+                <strong class="js-preview-net">0</strong>
+              </div>
+              <div class="d-flex justify-content-between mt-2">
+                <span>الرصيد بعد الإضافة</span>
+                <strong class="js-preview-balance">{{ number_format($u->points_balance) }}</strong>
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label">ملاحظة (اختياري)</label>
@@ -147,5 +180,50 @@
     </div>
   </div>
 @endforeach
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const amountInputs = document.querySelectorAll('.js-wallet-amount');
+
+    amountInputs.forEach(function (amountInput) {
+      const previewId = amountInput.dataset.previewTarget;
+      const preview = document.getElementById(previewId);
+
+      if (!preview) {
+        return;
+      }
+
+      const modalBody = amountInput.closest('.modal-body');
+      const courseReferenceInput = modalBody?.querySelector('.js-course-reference');
+      const feeNode = preview.querySelector('.js-preview-fee');
+      const netNode = preview.querySelector('.js-preview-net');
+      const balanceNode = preview.querySelector('.js-preview-balance');
+      const currentBalance = parseInt(amountInput.dataset.currentBalance || '0', 10) || 0;
+      const appFeePercent = parseFloat(amountInput.dataset.appFeePercent || '0') || 0;
+
+      const updatePreview = function () {
+        const grossAmount = parseInt(amountInput.value || '0', 10) || 0;
+        const hasCourseReference = (courseReferenceInput?.value || '').trim() !== '';
+        const feeAmount = hasCourseReference ? Math.min(Math.round(grossAmount * (appFeePercent / 100)), grossAmount) : 0;
+        const netAmount = Math.max(0, grossAmount - feeAmount);
+        const nextBalance = currentBalance + netAmount;
+
+        if (grossAmount <= 0 && !hasCourseReference) {
+          preview.classList.add('d-none');
+          return;
+        }
+
+        feeNode.textContent = feeAmount.toLocaleString();
+        netNode.textContent = netAmount.toLocaleString();
+        balanceNode.textContent = nextBalance.toLocaleString();
+        preview.classList.remove('d-none');
+      };
+
+      amountInput.addEventListener('input', updatePreview);
+      courseReferenceInput?.addEventListener('input', updatePreview);
+      updatePreview();
+    });
+  });
+</script>
 
 @endsection

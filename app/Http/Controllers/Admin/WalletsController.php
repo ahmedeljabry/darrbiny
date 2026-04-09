@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Support\Fees;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -16,7 +17,9 @@ class WalletsController extends BaseController
     public function index()
     {
         $users = User::orderBy('name')->paginate(20);
-        return view('admin.wallets.index', compact('users'));
+        $appFeePercent = Fees::appFeePercent();
+
+        return view('admin.wallets.index', compact('users', 'appFeePercent'));
     }
 
     public function store(Request $request)
@@ -29,11 +32,14 @@ class WalletsController extends BaseController
         ]);
 
         $user = User::findOrFail($data['user_id']);
+        $creditedAmount = $this->resolveCreditedAmount($data);
         $notes = $this->resolveCreditNotes($data);
 
-        $this->wallets->addAdjustment($user, (int) $data['amount'], $request->user(), $notes);
+        $this->wallets->addAdjustment($user, $creditedAmount, $request->user(), $notes);
 
-        return back()->with('status', 'تم إضافة الرصيد إلى المحفظة');
+        $newBalance = (int) $user->fresh()->points_balance;
+
+        return back()->with('status', $this->buildStoreStatusMessage($data, $creditedAmount, $newBalance));
     }
 
     public function update(Request $request, string $id)
@@ -57,5 +63,34 @@ class WalletsController extends BaseController
         }
 
         return $data['notes'] ?? null;
+    }
+
+    private function resolveCreditedAmount(array $data): int
+    {
+        $grossAmount = (int) $data['amount'];
+
+        if (! $this->shouldApplyCourseFee($data)) {
+            return $grossAmount;
+        }
+
+        $appFeePercent = max(0, Fees::appFeePercent());
+        $appFeeAmount = (int) round($grossAmount * ($appFeePercent / 100));
+        $appFeeAmount = min($appFeeAmount, $grossAmount);
+
+        return max(0, $grossAmount - $appFeeAmount);
+    }
+
+    private function shouldApplyCourseFee(array $data): bool
+    {
+        return trim((string) ($data['course_reference'] ?? '')) !== '';
+    }
+
+    private function buildStoreStatusMessage(array $data, int $creditedAmount, int $newBalance): string
+    {
+        if (! $this->shouldApplyCourseFee($data)) {
+            return "تم إضافة الرصيد إلى المحفظة. الرصيد الحالي: {$newBalance}";
+        }
+
+        return "تم إضافة صافي {$creditedAmount} إلى المحفظة بعد خصم رسوم التطبيق. الرصيد الحالي: {$newBalance}";
     }
 }

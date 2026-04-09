@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +37,7 @@ class AdminWalletsTest extends TestCase
                 'notes' => 'Administrative credit',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'تم إضافة الرصيد إلى المحفظة');
+            ->assertSessionHas('status', 'تم إضافة الرصيد إلى المحفظة. الرصيد الحالي: 35');
 
         $this->assertSame(35, (int) $user->fresh()->points_balance);
 
@@ -51,6 +52,11 @@ class AdminWalletsTest extends TestCase
     public function test_admin_credit_uses_standard_course_payout_note_when_course_reference_is_provided(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
+
+        Setting::create([
+            'key' => 'fees.app_fee_percent',
+            'value' => '10',
+        ]);
 
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000007003',
@@ -68,12 +74,12 @@ class AdminWalletsTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.wallets.store'), [
                 'user_id' => $trainer->id,
-                'amount' => 90,
+                'amount' => 100,
                 'course_reference' => '#C-245',
                 'notes' => 'كورسات',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'تم إضافة الرصيد إلى المحفظة');
+            ->assertSessionHas('status', 'تم إضافة صافي 90 إلى المحفظة بعد خصم رسوم التطبيق. الرصيد الحالي: 90');
 
         $this->assertSame(90, (int) $trainer->fresh()->points_balance);
 
