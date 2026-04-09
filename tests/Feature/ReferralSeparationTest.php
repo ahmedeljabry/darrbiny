@@ -125,6 +125,7 @@ class ReferralSeparationTest extends TestCase
         $referredUser = User::factory()->create([
             'phone_with_cc' => '+10000000012',
             'referred_by' => $owner->id,
+            'points_balance' => 250,
         ]);
         $plan = $this->createPlan();
 
@@ -174,7 +175,7 @@ class ReferralSeparationTest extends TestCase
             'order' => 1,
         ]);
 
-        Role::findOrCreate('admin', 'web');
+        Role::findOrCreate('ADMIN', 'web');
         Sanctum::actingAs($user);
 
         $this->postJson('/api/v1/prizes/request', [
@@ -219,7 +220,7 @@ class ReferralSeparationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        Role::findOrCreate('admin', 'web');
+        Role::findOrCreate('ADMIN', 'web');
         Sanctum::actingAs($user);
 
         $this->postJson('/api/v1/prizes/request', [
@@ -251,7 +252,7 @@ class ReferralSeparationTest extends TestCase
             'order' => 3,
         ]);
 
-        Role::findOrCreate('admin', 'web');
+        Role::findOrCreate('ADMIN', 'web');
         Sanctum::actingAs($user);
 
         $this->postJson('/api/v1/prizes/request', [

@@ -341,6 +341,8 @@ class WalletService
             ->get();
 
         $calculatedBalance = 0;
+        $recordedWalletPaymentIds = [];
+
         foreach ($approvedTransactions as $transaction) {
             // Top-up requests and adjustments add to balance
             if (in_array($transaction->type, [
@@ -352,6 +354,11 @@ class WalletService
             // Payments subtract from balance (if they exist in wallet_transactions)
             elseif ($transaction->type === WalletTransaction::TYPE_PAYMENT) {
                 $calculatedBalance -= $transaction->amount;
+
+                $paymentId = $this->extractPaymentIdFromTransactionNotes($transaction->notes);
+                if ($paymentId !== null) {
+                    $recordedWalletPaymentIds[$paymentId] = true;
+                }
             }
             // Executed withdrawals subtract from balance
             elseif ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
@@ -370,8 +377,12 @@ class WalletService
             ->get();
 
         foreach ($walletPayments as $payment) {
+            if (isset($recordedWalletPaymentIds[$payment->id])) {
+                continue;
+            }
+
             // Payment amount is stored in minor units, convert to major
-            $amount = $payment->amount_minor / 100;
+            $amount = $this->minorToWalletAmount((int) $payment->amount_minor);
             $calculatedBalance -= $amount;
         }
 
@@ -388,5 +399,21 @@ class WalletService
         $calculatedBalance = $this->calculateBalanceFromTransactions($user);
 
         return $storedBalance === $calculatedBalance;
+    }
+
+    private function minorToWalletAmount(int $amountMinor): int
+    {
+        return (int) round($amountMinor / 100);
+    }
+
+    private function extractPaymentIdFromTransactionNotes(?string $notes): ?string
+    {
+        if (!is_string($notes) || !str_starts_with($notes, 'Payment: ')) {
+            return null;
+        }
+
+        $paymentId = trim(substr($notes, strlen('Payment: ')));
+
+        return $paymentId !== '' ? $paymentId : null;
     }
 }

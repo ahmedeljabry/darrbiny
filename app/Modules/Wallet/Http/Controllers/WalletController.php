@@ -58,7 +58,7 @@ class WalletController extends BaseController
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user()->fresh();
         
         // Get transaction statistics
         $totalTransactions = \App\Models\WalletTransaction::where('user_id', $user->id)->count();

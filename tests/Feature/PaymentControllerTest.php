@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -40,6 +41,7 @@ class PaymentControllerTest extends TestCase
 
         $user = User::factory()->create(['phone_with_cc' => '+10000003001']);
         $token = $user->createToken('test')->plainTextToken;
+        $user->update(['points_balance' => 200]);
 
         $userRequest = UserRequest::create([
             'user_id' => $user->id,
@@ -81,6 +83,14 @@ class PaymentControllerTest extends TestCase
             'status' => UserRequest::STATUS_AWAITING_OFFERS,
             'total_paid_minor' => 12345,
         ]);
+
+        $this->assertSame(77, (int) $user->fresh()->points_balance);
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $user->id,
+            'amount' => 123,
+            'type' => WalletTransaction::TYPE_PAYMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+        ]);
     }
 
     public function test_plan_full_payment_applies_app_fee_percent_from_settings(): void
@@ -109,6 +119,7 @@ class PaymentControllerTest extends TestCase
 
         $user = User::factory()->create(['phone_with_cc' => '+10000003002']);
         $token = $user->createToken('test')->plainTextToken;
+        $user->update(['points_balance' => 200]);
 
         $userRequest = UserRequest::create([
             'user_id' => $user->id,
@@ -161,5 +172,86 @@ class PaymentControllerTest extends TestCase
             'app_fee_reserved_minor' => 1500,
             'total_paid_minor' => 10000,
         ]);
+
+        $this->assertSame(100, (int) $user->fresh()->points_balance);
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $user->id,
+            'amount' => 100,
+            'type' => WalletTransaction::TYPE_PAYMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_wallet_summary_matches_stored_balance_after_wallet_plan_payment(): void
+    {
+        Queue::fake();
+
+        $country = Country::create([
+            'name' => 'Summary Country',
+            'iso2' => 'SC',
+            'currency' => 'USD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Plan Summary',
+            'description' => 'Wallet summary plan',
+            'price_min' => 100,
+            'duration_days' => '4',
+            'hours_count' => 8,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000003004',
+            'points_balance' => 150,
+        ]);
+
+        WalletTransaction::create([
+            'user_id' => $user->id,
+            'amount' => 150,
+            'type' => WalletTransaction::TYPE_ADJUSTMENT,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'notes' => 'Initial wallet funding',
+        ]);
+
+        $token = $user->createToken('wallet-summary')->plainTextToken;
+
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'currency' => 'USD',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $trainer = User::factory()->create(['phone_with_cc' => '+10000003005']);
+
+        TrainerOffer::create([
+            'user_request_id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'price_minor' => 10000,
+            'message' => 'Accepted trainer offer',
+            'status' => TrainerOffer::STATUS_ACCEPTED,
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => 'wallet',
+                'type' => Payment::TYPE_PLAN_FULL,
+            ])
+            ->assertCreated();
+
+        $this->withToken($token)
+            ->getJson('/api/v1/wallet')
+            ->assertOk()
+            ->assertJsonPath('data.balance', 50)
+            ->assertJsonPath('data.calculated_balance', 50)
+            ->assertJsonPath('data.balance_verified', true);
     }
 }
