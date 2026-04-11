@@ -1,101 +1,112 @@
 @extends('admin.layouts.app')
-@section('title','تقارير الاشتراكات')
+@section('title', 'تقارير الاشتراكات')
+
+@php
+  $countryOptions = $countries->pluck('name', 'id')->all();
+  $planOptions = $plans->pluck('title', 'id')->all();
+  $filterFields = [
+    ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم العميل أو المدرب أو رقم الطلب', 'col' => 'col-xl-4 col-md-6'],
+    ['name' => 'status', 'label' => 'الحالة', 'type' => 'select', 'options' => $statusOptions, 'placeholder' => 'كل الحالات', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'country_id', 'label' => 'الدولة', 'type' => 'select', 'options' => $countryOptions, 'placeholder' => 'كل الدول', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'plan_id', 'label' => 'الباقة', 'type' => 'select', 'options' => $planOptions, 'placeholder' => 'كل الباقات', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'from', 'label' => 'من تاريخ البدء', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'to', 'label' => 'إلى تاريخ البدء', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
+  ];
+
+  $completedCount = $subs->getCollection()->where('status', \App\Models\UserRequest::STATUS_COMPLETED)->count();
+  $trainingCount = $subs->getCollection()->where('status', \App\Models\UserRequest::STATUS_IN_TRAINING)->count();
+@endphp
+
 @section('content')
+  @include('admin.reports.partials.page-header', [
+    'title' => 'تقارير الاشتراكات',
+    'subtitle' => 'عرض موحد لحالة الاشتراكات والطلبات مع فلترة حسب الباقة، الدولة، حالة الطلب، والبحث النصي.',
+    'icon' => 'calendar-event',
+    'tone' => 'info',
+    'tags' => [
+      ['label' => 'حالات الطلبات', 'icon' => 'timeline'],
+      ['label' => 'فلترة بالتاريخ والباقة', 'icon' => 'calendar'],
+    ],
+    'actions' => [
+      ['label' => 'تصدير Excel', 'url' => route('admin.reports.subscriptions', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
+    ],
+    'stats' => [
+      ['label' => 'إجمالي النتائج', 'value' => number_format($count ?? 0), 'icon' => 'list-details'],
+      ['label' => 'مكتملة في الصفحة', 'value' => number_format($completedCount), 'icon' => 'circle-check', 'tone' => 'success'],
+      ['label' => 'قيد التدريب في الصفحة', 'value' => number_format($trainingCount), 'icon' => 'activity', 'tone' => 'primary'],
+      ['label' => 'الباقات المتاحة', 'value' => number_format(count($planOptions)), 'icon' => 'package', 'tone' => 'warning'],
+    ],
+  ])
 
-<!-- Breadcrumbs -->
-<nav aria-label="breadcrumb" class="mb-4">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.reports.index') }}">التقارير</a></li>
-    <li class="breadcrumb-item active" aria-current="page">تقارير الاشتراكات</li>
-  </ol>
-</nav>
+  <div class="card report-panel">
+    <div class="card-body">
+      @include('admin.reports.partials.filter-fields', [
+        'fields' => $filterFields,
+        'values' => $filters,
+        'resetUrl' => route('admin.reports.subscriptions'),
+        'title' => 'فلترة الاشتراكات',
+        'subtitle' => 'ابحث عن أي طلب بحسب العميل أو المدرب أو الباقة أو فترة البدء.',
+      ])
 
-<div class="card border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3">
-    <div class="d-flex align-items-center gap-2">
-      <span class="avatar-initial rounded bg-label-info">
-        <i class="icon-base ti tabler-calendar-event"></i>
-      </span>
-      <div>
-        <h5 class="mb-0">الاشتراكات</h5>
-        <small class="text-body-secondary">جميع الاشتراكات والطلبات</small>
+      <div class="table-responsive">
+        <table class="table table-hover report-table">
+          <thead>
+            <tr>
+              <th>المعرف</th>
+              <th>المستخدم</th>
+              <th>المدرب</th>
+              <th>الباقة / الدولة</th>
+              <th>الحالة</th>
+              <th>تاريخ البدء</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($subs as $subscription)
+              @php
+                $statusTone = match ($subscription->status) {
+                  \App\Models\UserRequest::STATUS_COMPLETED => 'success',
+                  \App\Models\UserRequest::STATUS_CANCELLED => 'danger',
+                  \App\Models\UserRequest::STATUS_IN_TRAINING => 'primary',
+                  \App\Models\UserRequest::STATUS_PENDING_PAYMENT,
+                  \App\Models\UserRequest::STATUS_AWAITING_OFFERS,
+                  \App\Models\UserRequest::STATUS_OFFER_SELECTED,
+                  \App\Models\UserRequest::STATUS_PAID => 'warning',
+                  default => 'secondary',
+                };
+              @endphp
+              <tr>
+                <td><code class="text-primary">{{ substr($subscription->id, 0, 8) }}</code></td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ $subscription->user?->name ?? 'غير معروف' }}</span>
+                    <small class="text-muted">{{ $subscription->user?->phone_with_cc ?? $subscription->user_id }}</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ $subscription->trainer?->name ?? 'بدون مدرب' }}</span>
+                    <small class="text-muted">{{ $subscription->trainer?->phone_with_cc ?? '—' }}</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ $subscription->plan?->title ?? 'غير محدد' }}</span>
+                    <small class="text-muted">{{ $subscription->country?->name ?? $subscription->plan?->country?->name ?? '—' }}</small>
+                  </div>
+                </td>
+                <td><span class="report-status report-status--{{ $statusTone }}">{{ $statusOptions[$subscription->status] ?? $subscription->status }}</span></td>
+                <td><small class="text-muted">{{ $subscription->start_date?->toDateString() ?? '—' }}</small></td>
+              </tr>
+            @empty
+              @include('admin.reports.partials.empty-state', ['colspan' => 6, 'icon' => 'calendar-off', 'message' => 'لا توجد اشتراكات مطابقة للفلاتر الحالية'])
+            @endforelse
+          </tbody>
+        </table>
       </div>
     </div>
-    <a href="{{ route('admin.reports.subscriptions', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success">
-      <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
-    </a>
-  </div>
-  <div class="card-body">
-    <form class="row g-3 mb-4" method="get">
-      <div class="col-md-6">
-        <label class="form-label">الحالة</label>
-        <select name="status" class="form-select select2">
-          <option value="">جميع الحالات</option>
-          @foreach(['pending_payment','awaiting_offers','offer_selected','paid','in_training','completed','cancelled'] as $s)
-            <option value="{{ $s }}" @selected(request('status')===$s)>{{ str_replace('_',' ',$s) }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="col-md-6 d-flex align-items-end">
-        <button class="btn btn-primary w-100">
-          <i class="icon-base ti tabler-filter me-1"></i> تصفية
-        </button>
-      </div>
-    </form>
-    
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
-            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-            <th><i class="icon-base ti tabler-package me-1"></i> الخطة</th>
-            <th><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-            <th><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse($subs as $r)
-            <tr>
-              <td><code class="text-primary">{{ substr($r->id, 0, 8) }}</code></td>
-              <td>
-                <div class="d-flex flex-column">
-                  <span class="fw-semibold">{{ $r->user?->name ?? 'غير معروف' }}</span>
-                  <small class="text-muted">{{ substr($r->user_id, 0, 8) }}</small>
-                </div>
-              </td>
-              <td>
-                <span class="fw-semibold">{{ $r->plan?->title ?? 'غير محدد' }}</span>
-              </td>
-              <td>
-                <span class="badge bg-label-{{ $r->status === 'completed' ? 'success' : ($r->status === 'cancelled' ? 'danger' : 'warning') }}">
-                  {{ str_replace('_', ' ', $r->status) }}
-                </span>
-              </td>
-              <td>
-                <small class="text-muted">{{ $r->start_date?->toDateString() ?? '—' }}</small>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="5" class="text-center py-5">
-                <div class="d-flex flex-column align-items-center">
-                  <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
-                    <i class="icon-base ti tabler-calendar-event" style="font-size: 32px;"></i>
-                  </span>
-                  <p class="text-muted mb-0">لا توجد بيانات</p>
-                </div>
-              </td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
+
     @if($subs->hasPages())
-      <div class="card-footer border-0">{{ $subs->withQueryString()->links() }}</div>
+      <div class="card-footer border-0 bg-white">{{ $subs->withQueryString()->links() }}</div>
     @endif
   </div>
-</div>
 @endsection
-

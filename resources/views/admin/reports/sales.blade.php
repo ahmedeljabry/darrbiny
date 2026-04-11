@@ -1,129 +1,113 @@
 @extends('admin.layouts.app')
-@section('title','تقارير المبيعات')
+@section('title', 'تقارير المبيعات')
+
+@php
+  $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
+  $countryOptions = $countries->pluck('name', 'id')->all();
+  $filterFields = [
+    ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم المستخدم أو المدرب أو رقم الطلب', 'col' => 'col-xl-4 col-md-6'],
+    ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => [
+      \App\Models\Payment::TYPE_PLAN_PARTIAL => 'رسوم الجدية',
+      \App\Models\Payment::TYPE_PLAN_FULL => 'دفع كلي',
+    ], 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'payment_method', 'label' => 'طريقة الدفع', 'type' => 'select', 'options' => $paymentMethodOptions, 'placeholder' => 'كل الوسائل', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'country_id', 'label' => 'الدولة', 'type' => 'select', 'options' => $countryOptions, 'placeholder' => 'كل الدول', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'from', 'label' => 'من تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'to', 'label' => 'إلى تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
+  ];
+@endphp
+
 @section('content')
+  @include('admin.reports.partials.page-header', [
+    'title' => 'تقارير المبيعات',
+    'subtitle' => 'لوحة مبيعات أنظف مع فلترة حسب الدولة، نوع الدفع، الوسيلة، والبحث النصي.',
+    'icon' => 'chart-line',
+    'tone' => 'success',
+    'tags' => [
+      ['label' => 'المدفوعات الناجحة فقط', 'icon' => 'circle-check'],
+      ['label' => 'فلاتر متعددة', 'icon' => 'adjustments-horizontal'],
+    ],
+    'actions' => [
+      ['label' => 'تصدير Excel', 'url' => route('admin.reports.sales', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
+    ],
+    'stats' => [
+      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins'],
+      ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
+      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'chart-histogram', 'tone' => 'info'],
+      ['label' => 'وسائل الدفع النشطة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
+    ],
+  ])
 
-<!-- Breadcrumbs -->
-<nav aria-label="breadcrumb" class="mb-4">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.reports.index') }}">التقارير</a></li>
-    <li class="breadcrumb-item active" aria-current="page">تقارير المبيعات</li>
-  </ol>
-</nav>
+  <div class="card report-panel">
+    <div class="card-body">
+      @include('admin.reports.partials.filter-fields', [
+        'fields' => $filterFields,
+        'values' => $filters,
+        'resetUrl' => route('admin.reports.sales'),
+        'title' => 'فلترة المبيعات',
+        'subtitle' => 'امزج بين التاريخ والدولة والوسيلة والبحث للوصول لأي دفعة بسرعة.',
+      ])
 
-<div class="card mb-4 border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-3">
-    <div class="d-flex align-items-center gap-2">
-      <span class="avatar-initial rounded bg-label-success">
-        <i class="icon-base ti tabler-chart-line"></i>
-      </span>
-      <div>
-        <h5 class="mb-0">المبيعات (المدفوعات الناجحة)</h5>
-        <small class="text-body-secondary">تقرير شامل للمبيعات والمدفوعات</small>
-      </div>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ route('admin.reports.sales', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success">
-        <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
-      </a>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="row g-3 mb-4">
-      <div class="col-md-12">
-        <form class="row g-2" method="get">
-          <div class="col-md-4">
-            <input type="date" name="from" value="{{ request('from') }}" class="form-control" placeholder="من تاريخ">
-          </div>
-          <div class="col-md-4">
-            <input type="date" name="to" value="{{ request('to') }}" class="form-control" placeholder="إلى تاريخ">
-          </div>
-          <div class="col-md-3">
-            <select name="type" class="form-select">
-              <option value="">كل الأنواع</option>
-              <option value="{{ \App\Models\Payment::TYPE_PLAN_PARTIAL }}" @selected(($paymentType ?? request('type')) === \App\Models\Payment::TYPE_PLAN_PARTIAL)>رسوم الجدية</option>
-              <option value="{{ \App\Models\Payment::TYPE_PLAN_FULL }}" @selected(($paymentType ?? request('type')) === \App\Models\Payment::TYPE_PLAN_FULL)>دفع كلي</option>
-            </select>
-          </div>
-          <div class="col-md-1">
-            <button class="btn btn-primary w-100">
-              <i class="icon-base ti tabler-filter me-1"></i> تصفية
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-    
-    <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
-      <i class="icon-base ti tabler-currency-dollar"></i>
-      <div>
-        <strong>الإجمالي:</strong> <span class="fw-bold text-success">{{ number_format(($total ?? 0)/100,2) }} {{ $payments->first()?->currency ?? 'SAR' }}</span>
-      </div>
-    </div>
-    
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
-            <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-            <th><i class="icon-base ti tabler-flag me-1"></i> الدولة</th>
-            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الأولى</th>
-            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الثانية</th>
-            <th><i class="icon-base ti tabler-map-pin me-1"></i> المنطقة الثالثة</th>
-            <th><i class="icon-base ti tabler-map-pin me-1"></i> الحي / المحلية</th>
-            <th><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
-            <th><i class="icon-base ti tabler-percentage me-1"></i> رسوم التطبيق</th>
-            <th><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
-            <th><i class="icon-base ti tabler-calendar me-1"></i> التاريخ</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse($payments as $p)
+      <div class="table-responsive">
+        <table class="table table-hover report-table">
+          <thead>
             <tr>
-              <td><code class="text-primary">{{ substr($p->id, 0, 8) }}</code></td>
-              <td>
-                <div class="d-flex flex-column">
-                  <span class="fw-semibold">{{ $p->user?->name ?? 'غير معروف' }}</span>
-                  <small class="text-muted">{{ $p->user_id }}</small>
-                </div>
-              </td>
-              <td>{{ $p->userRequest?->country?->name ?? $p->userRequest?->plan?->country?->name ?? '—' }}</td>
-              <td>{{ $p->userRequest?->area_level_1 ?? '—' }}</td>
-              <td>{{ $p->userRequest?->area_level_2 ?? '—' }}</td>
-              <td>{{ $p->userRequest?->area_level_3 ?? '—' }}</td>
-              <td>{{ $p->userRequest?->locality ?? '—' }}</td>
-              <td>
-                <span class="fw-semibold text-success">{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</span>
-              </td>
-              <td>
-                <span class="fw-semibold text-warning">{{ number_format($p->app_fee_minor/100,2) }} {{ $p->currency }}</span>
-              </td>
-              <td>
-                <span class="badge bg-label-primary">{{ $p->typeLabel() }}</span>
-              </td>
-              <td>
-                <small class="text-muted">{{ $p->created_at?->format('Y-m-d H:i') }}</small>
-              </td>
+              <th>المعرف</th>
+              <th>المستخدم</th>
+              <th>المدرب / الباقة</th>
+              <th>الدولة</th>
+              <th>الموقع</th>
+              <th>المبلغ</th>
+              <th>رسوم التطبيق</th>
+              <th>النوع / الوسيلة</th>
+              <th>التاريخ</th>
             </tr>
-          @empty
-            <tr>
-              <td colspan="11" class="text-center py-5">
-                <div class="d-flex flex-column align-items-center">
-                  <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
-                    <i class="icon-base ti tabler-chart-line" style="font-size: 32px;"></i>
-                  </span>
-                  <p class="text-muted mb-0">لا توجد بيانات</p>
-                </div>
-              </td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @forelse($payments as $payment)
+              <tr>
+                <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ $payment->user?->name ?? 'غير معروف' }}</span>
+                    <small class="text-muted">{{ $payment->user?->phone_with_cc ?? $payment->user_id }}</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ $payment->userRequest?->trainer?->name ?? 'بدون مدرب' }}</span>
+                    <small class="text-muted">{{ $payment->userRequest?->plan?->title ?? 'بدون باقة' }}</small>
+                  </div>
+                </td>
+                <td>{{ $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '—' }}</td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span>{{ $payment->userRequest?->area_level_1 ?? '—' }}</span>
+                    <small class="text-muted">
+                      {{ collect([$payment->userRequest?->area_level_2, $payment->userRequest?->area_level_3, $payment->userRequest?->locality])->filter()->implode(' / ') ?: 'بدون تفاصيل إضافية' }}
+                    </small>
+                  </div>
+                </td>
+                <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-warning">{{ number_format($payment->app_fee_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td>
+                  <div class="d-flex flex-column gap-1">
+                    <span class="badge bg-label-primary">{{ $payment->typeLabel() }}</span>
+                    <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
+                  </div>
+                </td>
+                <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
+              </tr>
+            @empty
+              @include('admin.reports.partials.empty-state', ['colspan' => 9, 'icon' => 'chart-line', 'message' => 'لا توجد نتائج مطابقة للفلاتر الحالية'])
+            @endforelse
+          </tbody>
+        </table>
+      </div>
     </div>
+
     @if($payments->hasPages())
-      <div class="card-footer border-0">{{ $payments->withQueryString()->links() }}</div>
+      <div class="card-footer border-0 bg-white">{{ $payments->withQueryString()->links() }}</div>
     @endif
   </div>
-</div>
 @endsection

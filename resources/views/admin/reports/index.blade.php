@@ -1,112 +1,142 @@
 @extends('admin.layouts.app')
-@section('title','كل التقارير')
-@section('content')
-
-<!-- Breadcrumbs -->
-<nav aria-label="breadcrumb" class="mb-4">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item active" aria-current="page">كل التقارير</li>
-  </ol>
-</nav>
+@section('title', 'كل التقارير')
 
 @php
   $reports = [
-    ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
-    ['title' => 'المدفوعات', 'desc' => 'جميع المدفوعات مع التصفية بالحالة والنوع', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
-    ['title' => 'الاشتراكات', 'desc' => 'اشتراكات المستخدمين وحالات الطلبات', 'route' => 'admin.reports.subscriptions', 'icon' => 'calendar-event', 'color' => 'info'],
-    ['title' => 'مبيعات الباقات', 'desc' => 'مبيعات خطط التدريب ورسومها', 'route' => 'admin.reports.plan-sales', 'icon' => 'package', 'color' => 'info'],
-    ['title' => 'رسوم التطبيق', 'desc' => 'رسوم التطبيق على المدفوعات المكتملة من نوع plan_full', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
-    ['title' => 'ضريبة القيمة المضافة', 'desc' => 'ضريبة القيمة المضافة على المدفوعات المكتملة', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
-    ['title' => 'مستحقات المدربين', 'desc' => 'المبالغ المستحقة للكورسات المكتملة', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
-    ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التدريب', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],
-    ['title' => 'بانتظار العروض', 'desc' => 'طلبات تحتاج عروض أسعار من المدربين', 'route' => 'admin.reports.awaiting-offers', 'icon' => 'clock-hour-4', 'color' => 'warning'],
-    ['title' => 'رفض الإنجاز اليومي', 'desc' => 'التقدم اليومي المرفوض حسب التاريخ', 'route' => 'admin.reports.rejected-progress', 'icon' => 'x', 'color' => 'danger'],
-    ['title' => 'أرصدة المحافظ', 'desc' => 'المستخدمون الذين لديهم أرصدة في المحفظة', 'route' => 'admin.reports.wallet-balances', 'icon' => 'wallet', 'color' => 'success'],
-    ['title' => 'النقاط', 'desc' => 'نقاط الإحالة المكتسبة لكل مستخدم أو مدرب', 'route' => 'admin.reports.points-balances', 'icon' => 'stars', 'color' => 'secondary'],
-    ['title' => 'استبدال المكافآت', 'desc' => 'طلبات استبدال النقاط بالمكافآت', 'route' => 'admin.reports.reward-redemptions', 'icon' => 'gift', 'color' => 'info'],
-    ['title' => 'الدفع عبر المحفظة', 'desc' => 'العمليات المدفوعة باستخدام المحفظة', 'route' => 'admin.reports.wallet-payments', 'icon' => 'credit-card-pay', 'color' => 'primary'],
+    'تقارير مالية' => [
+      ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
+      ['title' => 'المدفوعات', 'desc' => 'كل المدفوعات مع فلاتر متعددة تشمل الحالة والباقة وطريقة الدفع.', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
+      ['title' => 'مبيعات الباقات', 'desc' => 'عرض مخصص لعمليات الدفع الكلي الخاصة بالباقات ورسومها.', 'route' => 'admin.reports.plan-sales', 'icon' => 'package', 'color' => 'info'],
+      ['title' => 'رسوم التطبيق', 'desc' => 'مراجعة رسوم التطبيق على المدفوعات المكتملة من نوع plan_full.', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
+      ['title' => 'ضريبة القيمة المضافة', 'desc' => 'تتبع الضريبة المحتسبة على المعاملات المكتملة والقابلة للتصفية.', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
+      ['title' => 'الدفع عبر المحفظة', 'desc' => 'عرض مخصص للعمليات الناجحة التي تمت عبر المحفظة.', 'route' => 'admin.reports.wallet-payments', 'icon' => 'credit-card-pay', 'color' => 'primary'],
+    ],
+    'تقارير تشغيلية' => [
+      ['title' => 'الاشتراكات', 'desc' => 'حالات الطلبات والاشتراكات مع فلترة بالباقة والدولة والتاريخ.', 'route' => 'admin.reports.subscriptions', 'icon' => 'calendar-event', 'color' => 'info'],
+      ['title' => 'مستحقات المدربين', 'desc' => 'صافي مستحقات الكورسات المكتملة مع فلترة بالاسم والجوال والتاريخ.', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
+      ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التدريب وقيمتها وتاريخ بدايتها.', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],
+      ['title' => 'بانتظار العروض', 'desc' => 'طلبات تحتاج عروض أسعار ومتابعة تشغيلية.', 'route' => 'admin.reports.awaiting-offers', 'icon' => 'clock-hour-4', 'color' => 'warning'],
+      ['title' => 'رفض الإنجاز اليومي', 'desc' => 'الإنجازات اليومية المرفوضة مع فلترة بالاسم والجوال والنطاق الزمني.', 'route' => 'admin.reports.rejected-progress', 'icon' => 'alert-circle', 'color' => 'danger'],
+    ],
+    'تقارير إحالة ومكافآت' => [
+      ['title' => 'أرصدة المحافظ', 'desc' => 'المستخدمون الذين لديهم رصيد حالي في المحفظة.', 'route' => 'admin.reports.wallet-balances', 'icon' => 'wallet', 'color' => 'success'],
+      ['title' => 'النقاط', 'desc' => 'عدد التسجيلات المحسوبة كنقاط إحالة لكل مستخدم أو مدرب.', 'route' => 'admin.reports.points-balances', 'icon' => 'stars', 'color' => 'secondary'],
+      ['title' => 'استبدال المكافآت', 'desc' => 'طلبات استبدال النقاط بالمكافآت وحالتها.', 'route' => 'admin.reports.reward-redemptions', 'icon' => 'gift', 'color' => 'info'],
+    ],
   ];
+
+  $recentPaymentFilters = [
+    ['name' => 'from', 'label' => 'من تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-4'],
+    ['name' => 'to', 'label' => 'إلى تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-4'],
+  ];
+
+  $successfulCount = $payments->where('status', \App\Models\Payment::STATUS_SUCCEEDED)->count();
+  $totalMinor = (int) $payments->sum('amount_minor');
+  $rangeValues = ['from' => $from, 'to' => $to];
 @endphp
 
-<div class="card mb-4 border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h5 class="mb-0">مركز التقارير</h5>
-    <small class="text-body-secondary">اختر التقرير المطلوب مباشرة من هنا</small>
-  </div>
-  <div class="card-body">
-    <div class="row g-3">
-      @foreach($reports as $report)
-        <div class="col-xl-3 col-lg-4 col-md-6 col-12">
-          <a href="{{ route($report['route']) }}" class="text-decoration-none">
-            <div class="card h-100 border-0 shadow-sm report-card">
-              <div class="card-body">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar-initial rounded bg-label-{{ $report['color'] }}">
+@section('content')
+  @include('admin.reports.partials.page-header', [
+    'title' => 'مركز التقارير',
+    'subtitle' => 'واجهة موحدة للوصول السريع إلى كل تقارير الإدارة، مع معاينة مباشرة لآخر المدفوعات وإمكانية فلترتها بالتاريخ.',
+    'icon' => 'chart-donut-3',
+    'tone' => 'primary',
+    'tags' => [
+      ['label' => 'تقارير مالية وتشغيلية', 'icon' => 'layout-grid'],
+      ['label' => 'تصميم موحد وسريع', 'icon' => 'stars'],
+    ],
+    'stats' => [
+      ['label' => 'عدد التقارير', 'value' => number_format(collect($reports)->flatten(1)->count()), 'icon' => 'layout-grid'],
+      ['label' => 'المدفوعات المعروضة', 'value' => number_format($payments->count()), 'icon' => 'credit-card', 'tone' => 'info'],
+      ['label' => 'العمليات الناجحة', 'value' => number_format($successfulCount), 'icon' => 'circle-check', 'tone' => 'success'],
+      ['label' => 'إجمالي المعاينة', 'value' => number_format($totalMinor / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins', 'tone' => 'warning'],
+    ],
+  ])
+
+  @foreach($reports as $groupTitle => $groupReports)
+    <div class="card report-panel mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="mb-1">{{ $groupTitle }}</h5>
+            <p class="text-muted mb-0 small">اختر التقرير المناسب ثم استخدم الفلاتر المخصصة داخل الصفحة.</p>
+          </div>
+          <span class="report-tag">
+            <i class="icon-base ti tabler-layout-grid"></i>
+            {{ count($groupReports) }} تقارير
+          </span>
+        </div>
+
+        <div class="row g-3">
+          @foreach($groupReports as $report)
+            <div class="col-xl-4 col-lg-6">
+              <a href="{{ route($report['route']) }}" class="report-directory-card">
+                <div class="report-directory-card__top">
+                  <span class="report-directory-card__icon bg-label-{{ $report['color'] }}">
                     <i class="icon-base ti tabler-{{ $report['icon'] }}"></i>
                   </span>
-                  <h6 class="mb-0 text-dark">{{ $report['title'] }}</h6>
+                  <span class="report-tag">{{ $report['title'] }}</span>
                 </div>
-                <p class="mb-0 text-body-secondary small">{{ $report['desc'] }}</p>
-              </div>
+                <div class="report-directory-card__title">{{ $report['title'] }}</div>
+                <p class="report-directory-card__desc">{{ $report['desc'] }}</p>
+                <div class="report-directory-card__foot">
+                  <span>فتح التقرير</span>
+                  <i class="icon-base ti tabler-arrow-up-left"></i>
+                </div>
+              </a>
             </div>
-          </a>
+          @endforeach
         </div>
-      @endforeach
+      </div>
+    </div>
+  @endforeach
+
+  <div class="card report-panel">
+    <div class="card-body">
+      @include('admin.reports.partials.filter-fields', [
+        'fields' => $recentPaymentFilters,
+        'values' => $rangeValues,
+        'resetUrl' => route('admin.reports.index'),
+        'title' => 'آخر المدفوعات',
+        'subtitle' => 'فلترة المعاينة الزمنية لآخر المدفوعات الظاهرة في هذه الصفحة.',
+      ])
+
+      <div class="table-responsive">
+        <table class="table table-hover report-table">
+          <thead>
+            <tr>
+              <th>المعرف</th>
+              <th>المستخدم</th>
+              <th>المبلغ</th>
+              <th>النوع</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($payments as $payment)
+              @php
+                $statusTone = match ($payment->status) {
+                  \App\Models\Payment::STATUS_SUCCEEDED => 'success',
+                  \App\Models\Payment::STATUS_PENDING => 'warning',
+                  \App\Models\Payment::STATUS_FAILED => 'danger',
+                  default => 'secondary',
+                };
+              @endphp
+              <tr>
+                <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
+                <td>{{ $payment->user?->name ?? 'غير معروف' }}</td>
+                <td>{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</td>
+                <td>{{ $payment->typeLabel() }}</td>
+                <td><span class="report-status report-status--{{ $statusTone }}">{{ $payment->statusLabel() }}</span></td>
+                <td>{{ $payment->created_at?->format('Y-m-d H:i') }}</td>
+              </tr>
+            @empty
+              @include('admin.reports.partials.empty-state', ['colspan' => 6, 'icon' => 'credit-card', 'message' => 'لا توجد مدفوعات في هذا النطاق الزمني'])
+            @endforelse
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
-
-<div class="card border-0 shadow-sm">
-  <div class="card-header border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <h6 class="mb-0">آخر المدفوعات</h6>
-    <form class="d-flex gap-2 flex-wrap" method="get">
-      <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
-      <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
-      <button class="btn btn-sm btn-primary">تصفية</button>
-    </form>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>المعرف</th>
-          <th>المستخدم</th>
-          <th>المبلغ</th>
-          <th>النوع</th>
-          <th>الحالة</th>
-          <th>التاريخ</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse($payments as $p)
-          <tr>
-            <td><code class="text-primary">{{ substr($p->id, 0, 8) }}</code></td>
-            <td>{{ $p->user?->name ?? 'غير معروف' }}</td>
-            <td>{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</td>
-            <td>{{ $p->typeLabel() }}</td>
-            <td>{{ $p->status }}</td>
-            <td>{{ $p->created_at?->format('Y-m-d H:i') }}</td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="6" class="text-center text-body-secondary p-4">لا توجد بيانات</td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
-</div>
-
-@push('styles')
-<style>
-  .report-card {
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .report-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 .5rem 1.25rem rgba(47,43,61,.12) !important;
-  }
-</style>
-@endpush
 @endsection
