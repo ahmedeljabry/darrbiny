@@ -28,7 +28,7 @@ class PointsBalancesExport implements FromCollection, WithHeadings, WithMapping,
             'الاسم',
             'الجوال',
             'النوع',
-            'النقاط',
+            'نقاط الإحالة',
         ];
     }
 
@@ -39,7 +39,7 @@ class PointsBalancesExport implements FromCollection, WithHeadings, WithMapping,
             $user->name ?? '-',
             $user->phone_with_cc ?? '-',
             $user->hasRole('TRAINER') ? 'مدرب' : 'مستخدم',
-            $user->points_balance,
+            (int) ($user->referral_points_earned ?? 0),
         ];
     }
 

@@ -297,7 +297,24 @@ class AdvancedReportsController extends BaseController
 
     public function pointsBalances(Request $request)
     {
-        $users = User::with('roles')->get();
+        $users = User::query()
+            ->with('roles')
+            ->select('users.*')
+            ->selectSub(function ($query): void {
+                $query->from('users as referred_users')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('referred_users.referred_by', 'users.id')
+                    ->whereExists(function ($paymentQuery): void {
+                        $paymentQuery->selectRaw('1')
+                            ->from('payments')
+                            ->whereColumn('payments.user_id', 'referred_users.id')
+                            ->where('payments.type', Payment::TYPE_PLAN_FULL)
+                            ->where('payments.status', Payment::STATUS_SUCCEEDED);
+                    });
+            }, 'referral_points_earned')
+            ->orderByDesc('referral_points_earned')
+            ->orderBy('name')
+            ->get();
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
@@ -311,12 +328,12 @@ class AdvancedReportsController extends BaseController
             $u->name ?? '-',
             $u->phone_with_cc ?? '-',
             $u->hasRole('TRAINER') ? 'مدرب' : 'مستخدم',
-            $u->points_balance,
+            (int) ($u->referral_points_earned ?? 0),
         ])->all();
 
         return $this->view(
-            'تقرير النقاط لكل مستخدم/مدرب',
-            ['المعرف', 'الاسم', 'الجوال', 'النوع', 'النقاط'],
+            'تقرير نقاط الإحالة لكل مستخدم/مدرب',
+            ['المعرف', 'الاسم', 'الجوال', 'النوع', 'نقاط الإحالة'],
             $rows,
             $request,
             'points-balances',

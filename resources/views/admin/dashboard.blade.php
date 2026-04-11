@@ -3,12 +3,6 @@
 @php
   $today = \Illuminate\Support\Carbon::now();
   $rangeOptions = ['day' => 'اليوم', 'month' => 'هذا الشهر', 'year' => 'هذا العام'];
-  $statusData = [
-    'قيد الدفع' => $pendingBookings,
-    'بانتظار العروض' => $awaitingOffers,
-    'قيد التنفيذ' => $activeBookings,
-    'مكتملة' => $completedBookings,
-  ];
 @endphp
 
 @section('content')
@@ -43,7 +37,7 @@
                 <div class="d-flex align-items-start gap-2">
                   <span class="icon-pill bg-label-primary"><i class="ti tabler-cash"></i></span>
                   <div>
-                    <p class="text-muted small mb-0">مبيعات الفترة</p>
+                    <p class="text-muted small mb-0">إجمالي المبيعات</p>
                     <h4 class="mb-0">{{ number_format($salesMinor/100, 2) }}</h4>
                     <small class="text-muted">{{ $rangeOptions[$range ?? 'day'] ?? 'اليوم' }}</small>
                   </div>
@@ -57,9 +51,9 @@
                 <div class="d-flex align-items-start gap-2">
                   <span class="icon-pill bg-label-info"><i class="ti tabler-receipt-2"></i></span>
                   <div>
-                    <p class="text-muted small mb-0">رسوم التطبيق</p>
-                    <h4 class="mb-0">{{ number_format($appFeesMinor/100, 2) }}</h4>
-                    <small class="text-muted">مجمعة</small>
+                    <p class="text-muted small mb-0">رسوم الحجز</p>
+                    <h4 class="mb-0">{{ number_format($reservationFeesMinor/100, 2) }}</h4>
+                    <small class="text-muted">من دفعات رسوم الحجز</small>
                   </div>
                 </div>
               </div>
@@ -71,9 +65,9 @@
                 <div class="d-flex align-items-start gap-2">
                   <span class="icon-pill bg-label-success"><i class="ti tabler-wallet"></i></span>
                   <div>
-                    <p class="text-muted small mb-0">مستحقات المدربين</p>
-                    <h4 class="mb-0">{{ number_format($trainerPayoutMinor/100, 2) }}</h4>
-                    <small class="text-muted">جاهزة للتحويل</small>
+                    <p class="text-muted small mb-0">رسوم الباقات</p>
+                    <h4 class="mb-0">{{ number_format($packageFeesMinor/100, 2) }}</h4>
+                    <small class="text-muted">تشمل رسوم الجدية والدفع الكلي</small>
                   </div>
                 </div>
               </div>
@@ -104,9 +98,9 @@
   @php
     $stateCards = [
       ['label' => 'بانتظار العروض', 'value' => $awaitingOffers, 'desc' => 'طلبات تحتاج عروض', 'color' => 'warning', 'icon' => 'clock'],
-      ['label' => 'قيد التنفيذ', 'value' => $activeBookings, 'desc' => 'حجوزات نشطة', 'color' => 'info', 'icon' => 'activity'],
+      ['label' => 'قيد التدريب', 'value' => $activeBookings, 'desc' => 'حجوزات نشطة', 'color' => 'info', 'icon' => 'activity'],
       ['label' => 'مكتملة', 'value' => $completedBookings, 'desc' => 'جاهزة للإغلاق', 'color' => 'success', 'icon' => 'check'],
-      ['label' => 'قيد الدفع', 'value' => $pendingBookings, 'desc' => 'بانتظار تأكيد الدفع', 'color' => 'danger', 'icon' => 'credit-card'],
+      ['label' => 'الكورسات الملغاة', 'value' => $cancelledBookings, 'desc' => 'تم إلغاؤها', 'color' => 'danger', 'icon' => 'x'],
     ];
   @endphp
   @foreach($stateCards as $card)
@@ -154,9 +148,9 @@
       <div class="card-body">
         <div id="chart-statuses" style="height: 260px;"></div>
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <span class="badge bg-label-danger">قيد الدفع</span>
+          <span class="badge bg-label-danger">الكورسات الملغاة</span>
           <span class="badge bg-label-warning">بانتظار العروض</span>
-          <span class="badge bg-label-info">قيد التنفيذ</span>
+          <span class="badge bg-label-info">قيد التدريب</span>
           <span class="badge bg-label-success">مكتملة</span>
         </div>
       </div>
@@ -309,13 +303,13 @@ document.addEventListener('DOMContentLoaded', function(){
     series: [{
       name: 'الطلبات',
       data: [
-        {{ $pendingBookings }},
+        {{ $cancelledBookings }},
         {{ $awaitingOffers }},
         {{ $activeBookings }},
         {{ $completedBookings }}
       ]
     }],
-    xaxis: { categories: ['قيد الدفع','بانتظار العروض','قيد التنفيذ','مكتملة'] },
+    xaxis: { categories: ['الكورسات الملغاة','بانتظار العروض','قيد التدريب','مكتملة'] },
     colors: ['#ef4444', '#f59e0b', '#0ea5e9', '#22c55e'],
     grid: { borderColor: '#e5e7eb', strokeDashArray: 4 }
   }).render();

@@ -24,9 +24,9 @@ class DashboardController extends BaseController
         $usersCount = \App\Models\User::count();
         $trainersCount = \App\Models\User::role('TRAINER')->count();
         $bookingsCount = \App\Models\UserRequest::count();
-        $pendingBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_PENDING_PAYMENT)->count();
         $activeBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_IN_TRAINING)->count();
         $completedBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_COMPLETED)->count();
+        $cancelledBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_CANCELLED)->count();
         $awaitingOffers = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_AWAITING_OFFERS)->count();
         $pendingCancellations = \App\Models\CancellationRequest::where('status', 'pending')->count();
         $pendingWalletRequests = \App\Models\WalletTransaction::where('status', 'pending')
@@ -42,10 +42,15 @@ class DashboardController extends BaseController
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $now]);
         $salesMinor = (int) $succeededPayments->clone()->sum('amount_minor');
-        $appFeesMinor = (int) $succeededPayments->clone()->sum('app_fee_minor');
-        $trainerPayoutMinor = (int) $succeededPayments->clone()
-            ->whereHas('userRequest', fn($q) => $q->where('status', \App\Models\UserRequest::STATUS_COMPLETED))
-            ->sum('trainer_net_minor');
+        $reservationFeesMinor = (int) $succeededPayments->clone()
+            ->where('type', \App\Models\Payment::TYPE_RESERVATION_FEE)
+            ->sum('amount_minor');
+        $packageFeesMinor = (int) $succeededPayments->clone()
+            ->whereIn('type', [
+                \App\Models\Payment::TYPE_PLAN_PARTIAL,
+                \App\Models\Payment::TYPE_PLAN_FULL,
+            ])
+            ->sum('amount_minor');
 
         $labels = [];
         $userSeries = [];
@@ -61,11 +66,12 @@ class DashboardController extends BaseController
 
         return view('admin.dashboard', compact(
             'planCount','countriesCount','usersCount','trainersCount',
-            'bookingsCount','pendingBookings','activeBookings','completedBookings',
+            'bookingsCount','activeBookings','completedBookings',
+            'cancelledBookings',
             'pendingCancellations','pendingWalletRequests','pendingWithdrawalRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
             'labels','userSeries','planSeries','bookingSeries',
-            'range','salesMinor','appFeesMinor','trainerPayoutMinor','awaitingOffers'
+            'range','salesMinor','reservationFeesMinor','packageFeesMinor','awaitingOffers'
         ));
     }
 

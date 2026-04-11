@@ -118,6 +118,61 @@ class AdminReportsDataTest extends TestCase
             ->assertDontSee(Payment::TYPE_PLAN_PARTIAL);
     }
 
+    public function test_sales_report_can_filter_by_payment_type(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $user = User::factory()->create([
+            'name' => 'Filtered Sales User',
+            'phone_with_cc' => '+10000008031',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PAID,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 2500,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 2500,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 8000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 800,
+            'trainer_net_minor' => 7200,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reports.sales', ['type' => Payment::TYPE_PLAN_PARTIAL]))
+            ->assertOk();
+
+        $response
+            ->assertSee('رسوم الجدية')
+            ->assertSee('25.00 SAR')
+            ->assertDontSee('80.00 SAR');
+    }
+
     public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void
     {
         $admin = $this->createAdmin();
@@ -301,6 +356,63 @@ class AdminReportsDataTest extends TestCase
             ->assertSee('Progress Trainer')
             ->assertDontSee('Other Student')
             ->assertDontSee('>المعرف<', false);
+    }
+
+    public function test_points_report_shows_referral_points_not_wallet_balance(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $owner = User::factory()->create([
+            'name' => 'Referral Owner',
+            'phone_with_cc' => '+10000008041',
+            'points_balance' => 777,
+        ]);
+        $owner->assignRole('USER');
+
+        $referredUser = User::factory()->create([
+            'name' => 'Referred User',
+            'phone_with_cc' => '+10000008042',
+            'referred_by' => $owner->id,
+        ]);
+        $referredUser->assignRole('USER');
+
+        $request = UserRequest::create([
+            'user_id' => $referredUser->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $referredUser->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1000,
+            'trainer_net_minor' => 9000,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reports.points-balances'))
+            ->assertOk()
+            ->assertSee('نقاط الإحالة');
+
+        $normalizedHtml = preg_replace('/\s+/u', ' ', $response->getContent());
+
+        $this->assertIsString($normalizedHtml);
+        $this->assertMatchesRegularExpression(
+            '/Referral Owner.*?\+10000008041.*?(?:مستخدم|مدرب).*?<td>\s*1\s*<\/td>/u',
+            $normalizedHtml
+        );
+        $this->assertDoesNotMatchRegularExpression('/Referral Owner.*?777/u', $normalizedHtml);
     }
 
     private function createAdmin(): User

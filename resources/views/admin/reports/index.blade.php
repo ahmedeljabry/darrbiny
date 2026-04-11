@@ -19,11 +19,11 @@
     ['title' => 'رسوم التطبيق', 'desc' => 'رسوم التطبيق على المدفوعات المكتملة من نوع plan_full', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
     ['title' => 'ضريبة القيمة المضافة', 'desc' => 'ضريبة القيمة المضافة على المدفوعات المكتملة', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
     ['title' => 'مستحقات المدربين', 'desc' => 'المبالغ المستحقة للكورسات المكتملة', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
-    ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التنفيذ', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],
+    ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التدريب', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],
     ['title' => 'بانتظار العروض', 'desc' => 'طلبات تحتاج عروض أسعار من المدربين', 'route' => 'admin.reports.awaiting-offers', 'icon' => 'clock-hour-4', 'color' => 'warning'],
     ['title' => 'رفض الإنجاز اليومي', 'desc' => 'التقدم اليومي المرفوض حسب التاريخ', 'route' => 'admin.reports.rejected-progress', 'icon' => 'x', 'color' => 'danger'],
     ['title' => 'أرصدة المحافظ', 'desc' => 'المستخدمون الذين لديهم أرصدة في المحفظة', 'route' => 'admin.reports.wallet-balances', 'icon' => 'wallet', 'color' => 'success'],
-    ['title' => 'النقاط', 'desc' => 'رصيد النقاط لكل مستخدم أو مدرب', 'route' => 'admin.reports.points-balances', 'icon' => 'stars', 'color' => 'secondary'],
+    ['title' => 'النقاط', 'desc' => 'نقاط الإحالة المكتسبة لكل مستخدم أو مدرب', 'route' => 'admin.reports.points-balances', 'icon' => 'stars', 'color' => 'secondary'],
     ['title' => 'استبدال المكافآت', 'desc' => 'طلبات استبدال النقاط بالمكافآت', 'route' => 'admin.reports.reward-redemptions', 'icon' => 'gift', 'color' => 'info'],
     ['title' => 'الدفع عبر المحفظة', 'desc' => 'العمليات المدفوعة باستخدام المحفظة', 'route' => 'admin.reports.wallet-payments', 'icon' => 'credit-card-pay', 'color' => 'primary'],
   ];

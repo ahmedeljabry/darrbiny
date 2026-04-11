@@ -29,16 +29,17 @@ class ReportsController extends BaseController
     {
         $from = $this->parseDate($request->input('from'));
         $to = $this->parseDate($request->input('to'), true);
-        ['payments' => $payments, 'totalMinor' => $total] = $service->sales($from, $to);
+        $paymentType = $this->parseSalesPaymentType($request->query('type'));
+        ['payments' => $payments, 'totalMinor' => $total] = $service->sales($from, $to, $paymentType);
         
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new SalesReportExport($service->salesCollection($from, $to)),
+                new SalesReportExport($service->salesCollection($from, $to, $paymentType)),
                 'sales-report-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
         
-        return view('admin.reports.sales', compact('payments','from','to','total'));
+        return view('admin.reports.sales', compact('payments','from','to','total','paymentType'));
     }
 
     public function payments(Request $request, ReportsService $service)
@@ -134,5 +135,21 @@ class ReportsController extends BaseController
         }
 
         return $endOfDay ? $date->endOfDay() : $date->startOfDay();
+    }
+
+    private function parseSalesPaymentType(?string $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : null;
+
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        return in_array($value, [
+            \App\Models\Payment::TYPE_PLAN_PARTIAL,
+            \App\Models\Payment::TYPE_PLAN_FULL,
+        ], true)
+            ? $value
+            : null;
     }
 }

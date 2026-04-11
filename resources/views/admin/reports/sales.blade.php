@@ -31,14 +31,25 @@
   <div class="card-body">
     <div class="row g-3 mb-4">
       <div class="col-md-12">
-        <form class="d-flex gap-2 flex-wrap" method="get">
-          <div class="flex-grow-1 d-flex gap-2">
+        <form class="row g-2" method="get">
+          <div class="col-md-4">
             <input type="date" name="from" value="{{ request('from') }}" class="form-control" placeholder="من تاريخ">
+          </div>
+          <div class="col-md-4">
             <input type="date" name="to" value="{{ request('to') }}" class="form-control" placeholder="إلى تاريخ">
           </div>
-          <button class="btn btn-primary">
-            <i class="icon-base ti tabler-filter me-1"></i> تصفية
-          </button>
+          <div class="col-md-3">
+            <select name="type" class="form-select">
+              <option value="">كل الأنواع</option>
+              <option value="{{ \App\Models\Payment::TYPE_PLAN_PARTIAL }}" @selected(($paymentType ?? request('type')) === \App\Models\Payment::TYPE_PLAN_PARTIAL)>رسوم الجدية</option>
+              <option value="{{ \App\Models\Payment::TYPE_PLAN_FULL }}" @selected(($paymentType ?? request('type')) === \App\Models\Payment::TYPE_PLAN_FULL)>دفع كلي</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <button class="btn btn-primary w-100">
+              <i class="icon-base ti tabler-filter me-1"></i> تصفية
+            </button>
+          </div>
         </form>
       </div>
     </div>

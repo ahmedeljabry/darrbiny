@@ -122,6 +122,28 @@ class ReportsServiceTest extends TestCase
         $this->assertCount(30, $collection);
     }
 
+    public function test_sales_can_be_filtered_by_payment_type(): void
+    {
+        $this->createPayment([
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 2_500,
+        ]);
+        $this->createPayment([
+            'type' => Payment::TYPE_PLAN_FULL,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 8_500,
+        ]);
+
+        ['payments' => $payments, 'totalMinor' => $totalMinor] = app(ReportsService::class)->sales(
+            paymentType: Payment::TYPE_PLAN_PARTIAL,
+        );
+
+        $this->assertSame(1, $payments->total());
+        $this->assertSame(2_500, $totalMinor);
+        $this->assertSame(Payment::TYPE_PLAN_PARTIAL, $payments->first()->type);
+    }
+
     public function test_payments_and_subscriptions_collections_return_full_filtered_rows(): void
     {
         for ($i = 0; $i < 28; $i++) {

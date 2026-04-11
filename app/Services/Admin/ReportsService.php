@@ -22,9 +22,9 @@ final class ReportsService
             ->get();
     }
 
-    public function sales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
+    public function sales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, ?string $paymentType = null): array
     {
-        $query = $this->salesQuery($from, $to);
+        $query = $this->salesQuery($from, $to, $paymentType);
 
         $totalMinor = (int) (clone $query)->sum('amount_minor');
 
@@ -34,9 +34,9 @@ final class ReportsService
         ];
     }
 
-    public function salesCollection(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Collection
+    public function salesCollection(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, ?string $paymentType = null): Collection
     {
-        return $this->salesQuery($from, $to)->latest()->get();
+        return $this->salesQuery($from, $to, $paymentType)->latest()->get();
     }
 
     public function paymentsList(?string $type = null, ?string $status = null): LengthAwarePaginator
@@ -125,9 +125,10 @@ final class ReportsService
         return $this->paymentsWithinRange($from, $to)->where('status', Payment::STATUS_SUCCEEDED);
     }
 
-    private function salesQuery(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): Builder
+    private function salesQuery(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, ?string $paymentType = null): Builder
     {
         return $this->succeededPaymentsWithinRange($from, $to)
+            ->when($paymentType, fn (Builder $query, string $type) => $query->where('type', $type))
             ->with([
                 'user',
                 'userRequest.country',
