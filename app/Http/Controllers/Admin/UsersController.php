@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AdminStoreUserRequest;
 use App\Http\Requests\Admin\AdminUpdateUserRequest;
 use App\Models\Country;
+use App\Models\Payment;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Models\UserRequest;
 use App\Notifications\TrainerProfileApprovalNotification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -147,22 +149,62 @@ class UsersController extends BaseController
                 'roles',
                 'profilePicture',
                 'trainerProfile.country',
+                'referrer:id,name,phone_with_cc,referral_code',
             ])
             ->findOrFail($id);
 
         // Get user requests for students
-        $userRequests = \App\Models\UserRequest::with(['country', 'plan.country', 'trainer'])
+        $userRequests = UserRequest::with(['country', 'plan.country', 'trainer'])
             ->where('user_id', $id)
             ->latest()
             ->get();
 
+        $referredUsers = User::withTrashed()
+            ->with('roles')
+            ->select('id', 'name', 'phone_with_cc', 'referred_by', 'created_at', 'deleted_at')
+            ->selectSub(
+                Payment::query()
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('payments.user_id', 'users.id')
+                    ->where('payments.type', Payment::TYPE_PLAN_FULL)
+                    ->where('payments.status', Payment::STATUS_SUCCEEDED),
+                'successful_full_payments_count'
+            )
+            ->selectSub(
+                Payment::query()
+                    ->selectRaw('COALESCE(SUM(amount_minor), 0)')
+                    ->whereColumn('payments.user_id', 'users.id')
+                    ->where('payments.type', Payment::TYPE_PLAN_FULL)
+                    ->where('payments.status', Payment::STATUS_SUCCEEDED),
+                'successful_full_payments_total_minor'
+            )
+            ->selectSub(
+                UserRequest::query()
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('user_requests.user_id', 'users.id')
+                    ->whereIn('user_requests.status', [
+                        UserRequest::STATUS_IN_TRAINING,
+                        UserRequest::STATUS_COMPLETED,
+                    ]),
+                'paid_subscriptions_count'
+            )
+            ->where('referred_by', $user->id)
+            ->latest()
+            ->get();
+
         $userDescription = $userRequests
-            ->first(fn (\App\Models\UserRequest $request): bool => filled($request->description))
+            ->first(fn (UserRequest $request): bool => filled($request->description))
             ?->description;
 
         $trainerProfileView = $this->buildTrainerProfileView($user->trainerProfile);
 
-        return view('admin.users.show', compact('user', 'userRequests', 'userDescription', 'trainerProfileView'));
+        return view('admin.users.show', compact(
+            'user',
+            'userRequests',
+            'userDescription',
+            'trainerProfileView',
+            'referredUsers'
+        ));
     }
 
     public function approveTrainerProfile(string $id)

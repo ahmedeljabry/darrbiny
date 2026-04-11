@@ -3,6 +3,8 @@
 @php
   $today = \Illuminate\Support\Carbon::now();
   $rangeOptions = ['day' => 'اليوم', 'month' => 'هذا الشهر', 'year' => 'هذا العام'];
+  $fromValue = ($from ?? null) instanceof \DateTimeInterface ? $from->format('Y-m-d') : '';
+  $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 @endphp
 
 @section('content')
@@ -15,13 +17,14 @@
             <div class="d-flex align-items-center gap-2 mb-2">
               <span class="chip chip-primary">تحديث {{ $today->translatedFormat('d M') }}</span>
               <span class="text-muted small">{{ $today->translatedFormat('l d M Y') }}</span>
+              <span class="chip chip-ghost">{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</span>
             </div>
             <h3 class="fw-bold mb-1 text-dark">التحكم في الطلبات والمبيعات من مكان واحد</h3>
-            <p class="mb-0 text-body-secondary">راقب العروض، المدفوعات، مستحقات المدربين، وأرسل التنبيهات بسرعة.</p>
+            <p class="mb-0 text-body-secondary">راقب العروض، المدفوعات، مستحقات المدربين، وأرسل التنبيهات بسرعة ضمن النطاق الزمني المحدد.</p>
           </div>
           <div class="d-flex flex-wrap gap-2">
             @foreach($rangeOptions as $key => $label)
-              <a href="{{ request()->fullUrlWithQuery(['range' => $key]) }}"
+              <a href="{{ route('admin.dashboard', ['range' => $key]) }}"
                  class="chip {{ ($range ?? 'day') === $key ? 'chip-primary' : 'chip-ghost' }}">
                 {{ $label }}
               </a>
@@ -30,8 +33,36 @@
           </div>
         </div>
 
+        <form method="get" class="row g-2 align-items-end mt-3 dashboard-range-form">
+          <div class="col-xl-3 col-md-4">
+            <label class="form-label small text-muted mb-1">من تاريخ</label>
+            <input type="date" name="from" value="{{ $fromValue }}" class="form-control">
+          </div>
+          <div class="col-xl-3 col-md-4">
+            <label class="form-label small text-muted mb-1">إلى تاريخ</label>
+            <input type="date" name="to" value="{{ $toValue }}" class="form-control">
+          </div>
+          <div class="col-xl-2 col-md-4">
+            <button class="btn btn-primary w-100">
+              <i class="ti tabler-filter me-1"></i>
+              تطبيق النطاق
+            </button>
+          </div>
+          <div class="col-xl-2 col-md-4">
+            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary w-100">
+              <i class="ti tabler-rotate-2 me-1"></i>
+              إعادة
+            </a>
+          </div>
+          <div class="col-xl-2 col-md-8">
+            <div class="small text-muted">
+              {{ $usesCustomRange ? 'فلترة مخصصة مفعلة' : 'يمكنك استخدام الفترة الجاهزة أو تحديد تاريخين' }}
+            </div>
+          </div>
+        </form>
+
         <div class="row g-3 mt-3">
-          <div class="col-12 col-lg-3 col-md-6">
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
             <div class="card metric h-100">
               <div class="card-body">
                 <div class="d-flex align-items-start gap-2">
@@ -39,13 +70,13 @@
                   <div>
                     <p class="text-muted small mb-0">إجمالي المبيعات</p>
                     <h4 class="mb-0">{{ number_format($salesMinor/100, 2) }}</h4>
-                    <small class="text-muted">{{ $rangeOptions[$range ?? 'day'] ?? 'اليوم' }}</small>
+                    <small class="text-muted">{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</small>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-12 col-lg-3 col-md-6">
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
             <div class="card metric h-100">
               <div class="card-body">
                 <div class="d-flex align-items-start gap-2">
@@ -53,17 +84,17 @@
                   <div>
                     <p class="text-muted small mb-0">رسوم الحجز</p>
                     <h4 class="mb-0">{{ number_format($reservationFeesMinor/100, 2) }}</h4>
-                    <small class="text-muted">من دفعات رسوم الحجز</small>
+                    <small class="text-muted">ضمن النطاق المحدد</small>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-12 col-lg-3 col-md-6">
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
             <div class="card metric h-100">
               <div class="card-body">
                 <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-success"><i class="ti tabler-wallet"></i></span>
+                  <span class="icon-pill bg-label-success"><i class="ti tabler-stack-3"></i></span>
                   <div>
                     <p class="text-muted small mb-0">رسوم الباقات</p>
                     <h4 class="mb-0">{{ number_format($packageFeesMinor/100, 2) }}</h4>
@@ -73,7 +104,63 @@
               </div>
             </div>
           </div>
-          <div class="col-12 col-lg-3 col-md-6">
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
+            <div class="card metric h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="icon-pill bg-label-danger"><i class="ti tabler-credit-card-off"></i></span>
+                  <div>
+                    <p class="text-muted small mb-0">المصروفات</p>
+                    <h4 class="mb-0">{{ number_format($expensesMinor/100, 2) }}</h4>
+                    <small class="text-muted">المسجلة ضمن النطاق المحدد</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
+            <div class="card metric h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="icon-pill bg-label-primary"><i class="ti tabler-wallet"></i></span>
+                  <div>
+                    <p class="text-muted small mb-0">رصيد محفظة التطبيق</p>
+                    <h4 class="mb-0">{{ number_format($appWalletBalanceMinor/100, 2) }}</h4>
+                    <small class="text-muted">صافي الربح بعد خصم المصروفات</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
+            <div class="card metric h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="icon-pill bg-label-warning"><i class="ti tabler-calendar-dollar"></i></span>
+                  <div>
+                    <p class="text-muted small mb-0">قيمة الحجوزات</p>
+                    <h4 class="mb-0">{{ number_format($bookingsValueMinor/100, 2) }}</h4>
+                    <small class="text-muted">الحجوزات المدفوعة بالكامل</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
+            <div class="card metric h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="icon-pill bg-label-dark"><i class="ti tabler-chart-arrows-vertical"></i></span>
+                  <div>
+                    <p class="text-muted small mb-0">صافي الربح</p>
+                    <h4 class="mb-0">{{ number_format($netProfitMinor/100, 2) }}</h4>
+                    <small class="text-muted">رسوم الباقات + رسوم الحجز - المصروفات</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
             <div class="card metric h-100">
               <div class="card-body">
                 <div class="d-flex align-items-start gap-2">
@@ -81,7 +168,7 @@
                   <div>
                     <p class="text-muted small mb-0">تنبيهات غير مقروءة</p>
                     <h4 class="mb-0">{{ $unreadNotifications }}</h4>
-                    <small class="text-muted">مركز الإشعارات</small>
+                    <small class="text-muted">{{ $rangeLabel ?? 'مركز الإشعارات' }}</small>
                   </div>
                 </div>
               </div>
@@ -126,7 +213,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <div>
-          <p class="mb-1 text-muted small">آخر 7 أيام</p>
+          <p class="mb-1 text-muted small">اتجاه {{ $trendLabel ?? 'يومي' }}</p>
           <h5 class="mb-0">المستخدمون / الخطط / الحجوزات</h5>
         </div>
         <span class="badge bg-label-primary">مباشر</span>
@@ -140,7 +227,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <div>
-          <p class="mb-1 text-muted small">توزيع الحالات</p>
+          <p class="mb-1 text-muted small">توزيع الحالات ضمن الفترة</p>
           <h5 class="mb-0">صحة الحجز</h5>
         </div>
         <span class="badge bg-label-secondary">الآن</span>
@@ -163,7 +250,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <div>
-          <p class="mb-1 text-muted small">توزيع عام</p>
+          <p class="mb-1 text-muted small">التسجيلات الجديدة ضمن الفترة</p>
           <h5 class="mb-0">الخطط / الدول / المستخدمون</h5>
         </div>
         <span class="badge bg-label-secondary">توزيع</span>
@@ -177,7 +264,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <div>
-          <p class="mb-1 text-muted small">تنبيهات عاجلة</p>
+          <p class="mb-1 text-muted small">تنبيهات عاجلة ضمن الفترة</p>
           <h5 class="mb-0">المهام ذات الأولوية</h5>
         </div>
         <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.index') }}">مركز الإشعارات</a>
@@ -257,6 +344,7 @@
   .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .icon-pill { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:12px; }
   .hero-surface { background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); }
+  .dashboard-range-form .form-control { min-height: 42px; }
 </style>
 @endpush
 

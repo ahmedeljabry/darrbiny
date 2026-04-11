@@ -95,6 +95,10 @@ Route::middleware(['web'])
             Route::middleware('can:manage_payments')->group(function () {
                 Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionsController::class, 'index'])->name('subscriptions.index');
                 Route::get('/payments', [\App\Http\Controllers\Admin\PaymentsAdminController::class, 'index'])->name('payments.index');
+                Route::get('/app-expenses', [\App\Http\Controllers\Admin\AppExpensesController::class, 'index'])->name('app-expenses.index');
+                Route::post('/app-expenses', [\App\Http\Controllers\Admin\AppExpensesController::class, 'store'])->name('app-expenses.store');
+                Route::put('/app-expenses/{id}', [\App\Http\Controllers\Admin\AppExpensesController::class, 'update'])->name('app-expenses.update');
+                Route::delete('/app-expenses/{id}', [\App\Http\Controllers\Admin\AppExpensesController::class, 'destroy'])->name('app-expenses.destroy');
             });
 
             Route::middleware('can:manage_reports')->group(function () {

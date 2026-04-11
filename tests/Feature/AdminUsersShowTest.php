@@ -98,4 +98,38 @@ class AdminUsersShowTest extends TestCase
             ->assertSee('الصورة الشخصية')
             ->assertSee('uploads/profile-review.jpg');
     }
+
+    public function test_user_show_page_displays_referral_section_and_referred_users(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000006021',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_users');
+
+        $owner = User::factory()->create([
+            'name' => 'Referral Owner',
+            'phone_with_cc' => '+10000006022',
+            'referral_code' => 'INVITE123456',
+        ]);
+        $owner->assignRole('USER');
+
+        $referredUser = User::factory()->create([
+            'name' => 'Invited Student',
+            'phone_with_cc' => '+10000006023',
+            'referred_by' => $owner->id,
+        ]);
+        $referredUser->assignRole('USER');
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.show', $owner->id))
+            ->assertOk()
+            ->assertSee('الدعوات والإحالات')
+            ->assertSee('INVITE123456')
+            ->assertSee('المستخدمون المسجلون بكود الدعوة')
+            ->assertSee('Invited Student')
+            ->assertSee('+10000006023');
+    }
 }

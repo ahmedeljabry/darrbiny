@@ -9,6 +9,7 @@ use App\Support\WalletAmount;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -138,6 +139,16 @@ class User extends Authenticatable
     public function bankCountry()
     {
         return $this->belongsTo(Country::class, 'bank_country_id');
+    }
+
+    public function referrer(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by');
+    }
+
+    public function referredUsers(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by');
     }
 
     public function profilePicture()

@@ -102,6 +102,106 @@
       </div>
     </div>
   </div>
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-0">الدعوات والإحالات</h5>
+        <small class="text-muted">مراجعة كود الدعوة والمستخدمين الذين سجلوا من خلاله</small>
+      </div>
+      <span class="badge bg-label-primary">{{ $referredUsers->count() }} تسجيلات عبر الكود</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+            <div class="fw-medium text-body-secondary mb-2">كود الدعوة</div>
+            <div class="text-heading d-flex align-items-center gap-2 flex-wrap">
+              <code class="fs-6">{{ $user->referral_code ?? '-' }}</code>
+              @if(filled($user->referral_code))
+                <span class="badge bg-label-success">نشط</span>
+              @endif
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+            <div class="fw-medium text-body-secondary mb-2">تم التسجيل عبر كود</div>
+            @if($user->referrer)
+              <div class="text-heading">{{ $user->referrer->name }}</div>
+              <div class="text-muted small">{{ $user->referrer->phone_with_cc }}</div>
+              <div class="mt-2"><code>{{ $user->referrer->referral_code }}</code></div>
+            @else
+              <div class="text-heading">لم يتم التسجيل عبر كود دعوة</div>
+            @endif
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+            <div class="fw-medium text-body-secondary mb-2">ملخص الإحالات</div>
+            <div class="text-heading">{{ $referredUsers->count() }} مستخدم</div>
+            <div class="text-muted small">سجلوا باستخدام كود الدعوة الخاص بهذا المستخدم</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">المستخدمون المسجلون بكود الدعوة</h6>
+          @if($referredUsers->isNotEmpty())
+            <span class="badge bg-label-info">{{ $referredUsers->count() }} مستخدم</span>
+          @endif
+        </div>
+
+        @if($referredUsers->isNotEmpty())
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>المستخدم</th>
+                  <th>الأدوار</th>
+                  <th>تاريخ التسجيل</th>
+                  <th>اشتراكات مدفوعة</th>
+                  <th>دفعات كاملة ناجحة</th>
+                  <th>إجمالي المدفوع</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach($referredUsers as $referredUser)
+                  <tr>
+                    <td>
+                      <div class="d-flex flex-column">
+                        <a href="{{ route('admin.users.show', $referredUser->id) }}" class="fw-semibold text-primary text-decoration-none">
+                          {{ $referredUser->name ?? '-' }}
+                        </a>
+                        <small class="text-muted">{{ $referredUser->phone_with_cc ?? '-' }}</small>
+                      </div>
+                    </td>
+                    <td>
+                      {{ $referredUser->getRoleNames()->map(fn($role) => \App\Support\AccessLabels::role($role))->implode(', ') ?: '-' }}
+                    </td>
+                    <td>{{ $referredUser->created_at?->format('Y-m-d H:i') ?? '-' }}</td>
+                    <td>
+                      <span class="badge bg-label-primary">{{ (int) ($referredUser->paid_subscriptions_count ?? 0) }}</span>
+                    </td>
+                    <td>
+                      <span class="badge bg-label-success">{{ (int) ($referredUser->successful_full_payments_count ?? 0) }}</span>
+                    </td>
+                    <td>
+                      {{ number_format(((int) ($referredUser->successful_full_payments_total_minor ?? 0)) / 100, 2) }}
+                    </td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        @else
+          <div class="border rounded-3 p-4 bg-body-tertiary text-center text-muted">
+            لا يوجد مستخدمون سجلوا باستخدام كود الدعوة الخاص بهذا المستخدم حتى الآن.
+          </div>
+        @endif
+      </div>
+    </div>
+  </div>
   @if($trainerProfileView)
     @php
       $profile = $user->trainerProfile;
