@@ -66,21 +66,29 @@ class AdminReportsDataTest extends TestCase
             ->assertSee($country->name);
     }
 
-    public function test_app_fees_report_includes_only_plan_full_payments_with_fees(): void
+    public function test_subscriptions_report_shows_order_number_and_amount(): void
     {
         $admin = $this->createAdmin();
-        [, $plan] = $this->createLocationPlan();
+        [$country, $plan] = $this->createLocationPlan();
 
         $user = User::factory()->create([
-            'name' => 'Fees User',
+            'name' => 'Subscriptions User',
             'phone_with_cc' => '+10000008002',
         ]);
 
+        $trainer = User::factory()->create([
+            'name' => 'Subscriptions Trainer',
+            'phone_with_cc' => '+10000008003',
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+
         $request = UserRequest::create([
             'user_id' => $user->id,
+            'trainer_id' => $trainer->id,
             'plan_id' => $plan->id,
             'start_date' => now()->toDateString(),
-            'status' => UserRequest::STATUS_PAID,
+            'status' => UserRequest::STATUS_IN_TRAINING,
             'currency' => 'SAR',
             'has_user_car' => false,
             'wants_trainer_car' => true,
@@ -99,23 +107,14 @@ class AdminReportsDataTest extends TestCase
             'trainer_net_minor' => 6300,
         ]);
 
-        Payment::create([
-            'user_id' => $user->id,
-            'user_request_id' => $request->id,
-            'amount_minor' => 2000,
-            'currency' => 'SAR',
-            'type' => Payment::TYPE_PLAN_PARTIAL,
-            'payment_method' => 'wallet',
-            'status' => Payment::STATUS_SUCCEEDED,
-            'app_fee_minor' => 0,
-            'trainer_net_minor' => 2000,
-        ]);
-
         $this->actingAs($admin)
-            ->get(route('admin.reports.app-fees'))
+            ->get(route('admin.reports.subscriptions'))
             ->assertOk()
-            ->assertSee(Payment::TYPE_PLAN_FULL)
-            ->assertDontSee(Payment::TYPE_PLAN_PARTIAL);
+            ->assertSee('رقم الطلب')
+            ->assertSee('المبلغ')
+            ->assertSee('#' . substr((string) $request->id, 0, 8))
+            ->assertSee('70.00 SAR')
+            ->assertSee($country->name);
     }
 
     public function test_sales_report_can_filter_by_payment_type(): void
@@ -401,7 +400,7 @@ class AdminReportsDataTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.points-balances'))
+            ->get(route('admin.rewards.points'))
             ->assertOk()
             ->assertSee('نقاط الإحالة');
 

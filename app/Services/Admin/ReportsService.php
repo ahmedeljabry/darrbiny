@@ -224,7 +224,16 @@ final class ReportsService
     private function subscriptionsQuery(array $filters = []): Builder
     {
         return UserRequest::query()
-            ->with(['plan', 'plan.country', 'country', 'user', 'trainer'])
+            ->with([
+                'plan',
+                'plan.country',
+                'country',
+                'user',
+                'trainer',
+                'payments' => fn ($query) => $query
+                    ->where('status', Payment::STATUS_SUCCEEDED)
+                    ->latest(),
+            ])
             ->when($filters['status'] ?? null, fn (Builder $query, string $requestStatus) => $query->where('status', $requestStatus))
             ->when($filters['plan_id'] ?? null, fn (Builder $query, string $planId) => $query->where('plan_id', $planId))
             ->when($filters['country_id'] ?? null, function (Builder $query, string $countryId): void {

@@ -29,7 +29,7 @@
     $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*','admin.withdrawal-requests.*');
     $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
     $financeOpen = request()->routeIs('admin.payments.*','admin.app-expenses.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
-    $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*');
+    $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*','admin.rewards.*');
     $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
     $reportsOpen = request()->routeIs('admin.reports.*');
     $geoOpen = request()->routeIs('admin.geo.*');
@@ -162,6 +162,12 @@
           <li class="menu-item {{ request()->routeIs('admin.prize-redemptions.*') ? 'active' : '' }}">
             <a href="{{ route('admin.prize-redemptions.index') }}" class="menu-link">طلبات الجوائز</a>
           </li>
+          <li class="menu-item {{ request()->routeIs('admin.rewards.points') ? 'active' : '' }}">
+            <a href="{{ route('admin.rewards.points') }}" class="menu-link">النقاط</a>
+          </li>
+          <li class="menu-item {{ request()->routeIs('admin.rewards.redemptions-report') ? 'active' : '' }}">
+            <a href="{{ route('admin.rewards.redemptions-report') }}" class="menu-link">استبدال المكافآت</a>
+          </li>
         </ul>
       </li>
     @endif
@@ -206,35 +212,14 @@
             <li class="menu-item {{ request()->routeIs('admin.reports.subscriptions') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.subscriptions') }}" class="menu-link">الاشتراكات</a>
             </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.plan-sales') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.plan-sales') }}" class="menu-link">مبيعات الباقات</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.app-fees') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.app-fees') }}" class="menu-link">رسوم التطبيق</a>
-            </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.vat') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.vat') }}" class="menu-link">ضريبة القيمة المضافة</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.active-courses') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.active-courses') }}" class="menu-link">الكورسات النشطة</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.awaiting-offers') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.awaiting-offers') }}" class="menu-link">بانتظار العروض</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.rejected-progress') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.rejected-progress') }}" class="menu-link">رفض الإنجاز اليومي</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.wallet-balances') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.wallet-balances') }}" class="menu-link">أرصدة المحافظ</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.points-balances') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.points-balances') }}" class="menu-link">النقاط</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.reward-redemptions') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.reward-redemptions') }}" class="menu-link">استبدال المكافآت</a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('admin.reports.wallet-payments') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.wallet-payments') }}" class="menu-link">دفع عبر المحفظة</a>
             </li>
           @endif
           @if($canManagePayouts)

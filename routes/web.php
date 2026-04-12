@@ -106,16 +106,9 @@ Route::middleware(['web'])
                 Route::get('/reports/sales', [\App\Http\Controllers\Admin\ReportsController::class, 'sales'])->name('reports.sales');
                 Route::get('/reports/payments', [\App\Http\Controllers\Admin\ReportsController::class, 'payments'])->name('reports.payments');
                 Route::get('/reports/subscriptions', [\App\Http\Controllers\Admin\ReportsController::class, 'subscriptions'])->name('reports.subscriptions');
-                Route::get('/reports/plan-sales', [\App\Http\Controllers\Admin\ReportsController::class, 'planSales'])->name('reports.plan-sales');
-                Route::get('/reports/app-fees', [\App\Http\Controllers\Admin\ReportsController::class, 'appFees'])->name('reports.app-fees');
                 Route::get('/reports/vat', [\App\Http\Controllers\Admin\ReportsController::class, 'vat'])->name('reports.vat');
-                Route::get('/reports/active-courses', [AdvancedReportsController::class, 'activeCourses'])->name('reports.active-courses');
-                Route::get('/reports/awaiting-offers', [AdvancedReportsController::class, 'awaitingOffers'])->name('reports.awaiting-offers');
                 Route::get('/reports/rejected-progress', [AdvancedReportsController::class, 'rejectedProgress'])->name('reports.rejected-progress');
                 Route::get('/reports/wallet-balances', [AdvancedReportsController::class, 'walletBalances'])->name('reports.wallet-balances');
-                Route::get('/reports/points-balances', [AdvancedReportsController::class, 'pointsBalances'])->name('reports.points-balances');
-                Route::get('/reports/reward-redemptions', [AdvancedReportsController::class, 'rewardRedemptions'])->name('reports.reward-redemptions');
-                Route::get('/reports/wallet-payments', [AdvancedReportsController::class, 'walletPayments'])->name('reports.wallet-payments');
             });
             Route::get('/reports/completed-payouts', [AdvancedReportsController::class, 'completedPayouts'])
                 ->name('reports.completed-payouts')
@@ -184,6 +177,8 @@ Route::middleware(['web'])
                 Route::get('/prize-redemptions/{id}', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'show'])->name('prize-redemptions.show');
                 Route::post('/prize-redemptions/{id}/approve', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'approve'])->name('prize-redemptions.approve');
                 Route::post('/prize-redemptions/{id}/reject', [\App\Http\Controllers\Admin\PrizeRedemptionsController::class, 'reject'])->name('prize-redemptions.reject');
+                Route::get('/rewards/points', [AdvancedReportsController::class, 'pointsBalances'])->name('rewards.points');
+                Route::get('/rewards/redemptions-report', [AdvancedReportsController::class, 'rewardRedemptions'])->name('rewards.redemptions-report');
             });
             // Roles & permissions
             Route::middleware('can:manage_roles')->group(function () {

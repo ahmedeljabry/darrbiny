@@ -101,6 +101,8 @@ class AdminRolePermissionAccessTest extends TestCase
             'withdrawal_requests_index' => ['admin.withdrawal-requests.index', 'manage_wallets'],
             'notifications_index' => ['admin.notifications.index', 'manage_notifications'],
             'prizes_index' => ['admin.prizes.index', 'manage_rewards'],
+            'rewards_points' => ['admin.rewards.points', 'manage_rewards'],
+            'rewards_redemptions_report' => ['admin.rewards.redemptions-report', 'manage_rewards'],
             'roles_index' => ['admin.roles.index', 'manage_roles'],
             'permissions_index' => ['admin.permissions.index', 'manage_permissions'],
             'settings_index' => ['admin.settings.index', 'manage_settings'],

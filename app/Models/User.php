@@ -46,6 +46,7 @@ class User extends Authenticatable
         'referred_by',
         'points_balance',
         'bank_account',
+        'bank_account_name',
         'iban',
         'bank_name',
         'bank_country_id',

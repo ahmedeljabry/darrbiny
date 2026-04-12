@@ -24,9 +24,10 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
             'الخطة',
+            'المبلغ',
             'الحالة',
             'تاريخ البدء',
             'تاريخ الإنشاء',
@@ -35,10 +36,18 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
 
     public function map($subscription): array
     {
+        $amountMinor = max(
+            (int) ($subscription->total_paid_minor ?? 0),
+            method_exists($subscription, 'totalSuccessfulPaymentsMinor')
+                ? $subscription->totalSuccessfulPaymentsMinor()
+                : 0
+        );
+
         return [
             $subscription->id,
             $subscription->user?->name ?? $subscription->user_id,
             $subscription->plan?->title ?? $subscription->plan_id,
+            number_format($amountMinor / 100, 2) . ' ' . ($subscription->currency ?? 'SAR'),
             $subscription->status,
             $subscription->start_date?->toDateString(),
             $subscription->created_at?->format('Y-m-d H:i:s'),

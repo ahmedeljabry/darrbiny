@@ -6,22 +6,15 @@
     'تقارير مالية' => [
       ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
       ['title' => 'المدفوعات', 'desc' => 'كل المدفوعات مع فلاتر متعددة تشمل الحالة والباقة وطريقة الدفع.', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
-      ['title' => 'مبيعات الباقات', 'desc' => 'عرض مخصص لعمليات الدفع الكلي الخاصة بالباقات ورسومها.', 'route' => 'admin.reports.plan-sales', 'icon' => 'package', 'color' => 'info'],
-      ['title' => 'رسوم التطبيق', 'desc' => 'مراجعة رسوم التطبيق على المدفوعات المكتملة من نوع plan_full.', 'route' => 'admin.reports.app-fees', 'icon' => 'percentage', 'color' => 'warning'],
       ['title' => 'ضريبة القيمة المضافة', 'desc' => 'تتبع الضريبة المحتسبة على المعاملات المكتملة والقابلة للتصفية.', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
-      ['title' => 'الدفع عبر المحفظة', 'desc' => 'عرض مخصص للعمليات الناجحة التي تمت عبر المحفظة.', 'route' => 'admin.reports.wallet-payments', 'icon' => 'credit-card-pay', 'color' => 'primary'],
     ],
     'تقارير تشغيلية' => [
       ['title' => 'الاشتراكات', 'desc' => 'حالات الطلبات والاشتراكات مع فلترة بالباقة والدولة والتاريخ.', 'route' => 'admin.reports.subscriptions', 'icon' => 'calendar-event', 'color' => 'info'],
       ['title' => 'مستحقات المدربين', 'desc' => 'صافي مستحقات الكورسات المكتملة مع فلترة بالاسم والجوال والتاريخ.', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
-      ['title' => 'الكورسات النشطة', 'desc' => 'الطلبات التي ما زالت قيد التدريب وقيمتها وتاريخ بدايتها.', 'route' => 'admin.reports.active-courses', 'icon' => 'activity', 'color' => 'primary'],
-      ['title' => 'بانتظار العروض', 'desc' => 'طلبات تحتاج عروض أسعار ومتابعة تشغيلية.', 'route' => 'admin.reports.awaiting-offers', 'icon' => 'clock-hour-4', 'color' => 'warning'],
       ['title' => 'رفض الإنجاز اليومي', 'desc' => 'الإنجازات اليومية المرفوضة مع فلترة بالاسم والجوال والنطاق الزمني.', 'route' => 'admin.reports.rejected-progress', 'icon' => 'alert-circle', 'color' => 'danger'],
     ],
-    'تقارير إحالة ومكافآت' => [
+    'تقارير المحافظ' => [
       ['title' => 'أرصدة المحافظ', 'desc' => 'المستخدمون الذين لديهم رصيد حالي في المحفظة.', 'route' => 'admin.reports.wallet-balances', 'icon' => 'wallet', 'color' => 'success'],
-      ['title' => 'النقاط', 'desc' => 'عدد التسجيلات المحسوبة كنقاط إحالة لكل مستخدم أو مدرب.', 'route' => 'admin.reports.points-balances', 'icon' => 'stars', 'color' => 'secondary'],
-      ['title' => 'استبدال المكافآت', 'desc' => 'طلبات استبدال النقاط بالمكافآت وحالتها.', 'route' => 'admin.reports.reward-redemptions', 'icon' => 'gift', 'color' => 'info'],
     ],
   ];
 

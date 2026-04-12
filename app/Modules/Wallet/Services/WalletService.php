@@ -53,6 +53,7 @@ class WalletService
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             $hasBankDetails = filled($user->bank_account)
+                && filled($user->bank_account_name)
                 && filled($user->iban)
                 && filled($user->bank_name)
                 && filled($user->bank_country_id);

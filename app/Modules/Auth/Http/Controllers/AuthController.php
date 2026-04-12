@@ -172,6 +172,7 @@ class AuthController extends BaseController
 
         $user->update([
             'bank_account' => $request->input('bank_account'),
+            'bank_account_name' => $request->input('bank_account_name'),
             'iban' => $request->input('iban'),
             'bank_name' => $request->input('bank_name'),
             'bank_country_id' => $request->input('bank_country_id'),
@@ -181,6 +182,7 @@ class AuthController extends BaseController
             'message' => 'تم تحديث معلومات الحساب البنكي بنجاح',
             'data' => [
                 'bank_account' => $user->bank_account,
+                'bank_account_name' => $user->bank_account_name,
                 'iban' => $user->iban,
                 'bank_name' => $user->bank_name,
                 'bank_country_id' => $user->bank_country_id,
@@ -195,6 +197,7 @@ class AuthController extends BaseController
         return response()->json([
             'data' => [
                 'bank_account' => $user->bank_account,
+                'bank_account_name' => $user->bank_account_name,
                 'iban' => $user->iban,
                 'bank_name' => $user->bank_name,
                 'bank_country_id' => $user->bank_country_id,

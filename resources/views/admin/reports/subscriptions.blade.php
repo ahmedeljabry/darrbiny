@@ -52,10 +52,11 @@
         <table class="table table-hover report-table">
           <thead>
             <tr>
-              <th>المعرف</th>
+              <th>رقم الطلب</th>
               <th>المستخدم</th>
               <th>المدرب</th>
               <th>الباقة / الدولة</th>
+              <th>المبلغ</th>
               <th>الحالة</th>
               <th>تاريخ البدء</th>
             </tr>
@@ -63,6 +64,10 @@
           <tbody>
             @forelse($subs as $subscription)
               @php
+                $subscriptionAmountMinor = max(
+                  (int) ($subscription->total_paid_minor ?? 0),
+                  $subscription->totalSuccessfulPaymentsMinor()
+                );
                 $statusTone = match ($subscription->status) {
                   \App\Models\UserRequest::STATUS_COMPLETED => 'success',
                   \App\Models\UserRequest::STATUS_CANCELLED => 'danger',
@@ -75,7 +80,7 @@
                 };
               @endphp
               <tr>
-                <td><code class="text-primary">{{ substr($subscription->id, 0, 8) }}</code></td>
+                <td><code class="text-primary">#{{ substr((string) $subscription->id, 0, 8) }}</code></td>
                 <td>
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ $subscription->user?->name ?? 'غير معروف' }}</span>
@@ -94,11 +99,14 @@
                     <small class="text-muted">{{ $subscription->country?->name ?? $subscription->plan?->country?->name ?? '—' }}</small>
                   </div>
                 </td>
+                <td>
+                  <span class="fw-semibold">{{ number_format($subscriptionAmountMinor / 100, 2) }} {{ $subscription->currency ?? 'SAR' }}</span>
+                </td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $statusOptions[$subscription->status] ?? $subscription->status }}</span></td>
                 <td><small class="text-muted">{{ $subscription->start_date?->toDateString() ?? '—' }}</small></td>
               </tr>
             @empty
-              @include('admin.reports.partials.empty-state', ['colspan' => 6, 'icon' => 'calendar-off', 'message' => 'لا توجد اشتراكات مطابقة للفلاتر الحالية'])
+              @include('admin.reports.partials.empty-state', ['colspan' => 7, 'icon' => 'calendar-off', 'message' => 'لا توجد اشتراكات مطابقة للفلاتر الحالية'])
             @endforelse
           </tbody>
         </table>

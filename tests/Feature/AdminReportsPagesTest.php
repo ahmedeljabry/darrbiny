@@ -34,17 +34,12 @@ class AdminReportsPagesTest extends TestCase
             'admin.reports.sales',
             'admin.reports.payments',
             'admin.reports.subscriptions',
-            'admin.reports.plan-sales',
-            'admin.reports.app-fees',
             'admin.reports.vat',
             'admin.reports.completed-payouts',
-            'admin.reports.active-courses',
-            'admin.reports.awaiting-offers',
             'admin.reports.rejected-progress',
             'admin.reports.wallet-balances',
-            'admin.reports.points-balances',
-            'admin.reports.reward-redemptions',
-            'admin.reports.wallet-payments',
+            'admin.rewards.points',
+            'admin.rewards.redemptions-report',
         ];
 
         foreach ($routes as $routeName) {
@@ -61,11 +56,11 @@ class AdminReportsPagesTest extends TestCase
         $admin->assignRole('ADMIN');
         $this->actingAs($admin);
 
-        $this->get(route('admin.reports.active-courses'))
+        $this->get(route('admin.rewards.points'))
             ->assertOk()
             ->assertSee('تصدير Excel');
 
-        $this->get(route('admin.reports.awaiting-offers'))
+        $this->get(route('admin.rewards.redemptions-report'))
             ->assertOk()
             ->assertDontSee('تصدير Excel');
     }
