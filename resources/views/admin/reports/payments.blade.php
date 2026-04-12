@@ -5,6 +5,7 @@
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $planOptions = $plans->pluck('title', 'id')->all();
+  $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
   $filterFields = [
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'رقم العملية أو الطلب أو اسم العميل/المدرب', 'col' => 'col-xl-4 col-md-6'],
     ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => $typeOptions, 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
@@ -103,7 +104,7 @@
                 <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
-                    <span class="badge bg-label-primary">{{ $payment->typeLabel() }}</span>
+                    <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>
                     <small class="text-muted">{{ $payment->type }}</small>
                   </div>
                 </td>

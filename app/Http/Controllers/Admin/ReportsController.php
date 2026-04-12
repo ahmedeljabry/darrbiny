@@ -44,6 +44,7 @@ class ReportsController extends BaseController
         
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
+        $typeOptions = $this->reportTypeOptions();
 
         return view('admin.reports.sales', compact(
             'payments',
@@ -52,7 +53,8 @@ class ReportsController extends BaseController
             'averageMinor',
             'filters',
             'paymentMethods',
-            'countries'
+            'countries',
+            'typeOptions'
         ));
     }
 
@@ -72,7 +74,7 @@ class ReportsController extends BaseController
         $countries = $this->countryOptions();
         $plans = $this->planOptions();
         $statusOptions = Payment::statusLabels();
-        $typeOptions = Payment::typeLabels();
+        $typeOptions = $this->reportTypeOptions();
         
         return view('admin.reports.payments', compact(
             'payments',
@@ -191,7 +193,7 @@ class ReportsController extends BaseController
 
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
-        $typeOptions = Payment::typeLabels();
+        $typeOptions = $this->reportTypeOptions();
         
         return view('admin.reports.vat', compact(
             'payments',
@@ -347,6 +349,14 @@ class ReportsController extends BaseController
             UserRequest::STATUS_IN_TRAINING => 'قيد التدريب',
             UserRequest::STATUS_COMPLETED => 'مكتمل',
             UserRequest::STATUS_CANCELLED => 'ملغي',
+        ];
+    }
+
+    private function reportTypeOptions(): array
+    {
+        return [
+            ...Payment::typeLabels(),
+            Payment::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
         ];
     }
 }

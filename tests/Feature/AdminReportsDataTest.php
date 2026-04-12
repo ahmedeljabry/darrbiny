@@ -167,7 +167,7 @@ class AdminReportsDataTest extends TestCase
             ->assertOk();
 
         $response
-            ->assertSee('رسوم الجدية')
+            ->assertSee('رسوم الحجز')
             ->assertSee('25.00 SAR')
             ->assertDontSee('80.00 SAR');
     }

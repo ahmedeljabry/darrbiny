@@ -4,6 +4,7 @@
 @php
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
+  $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
   $filterFields = [
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم العميل أو المدرب أو رقم الطلب', 'col' => 'col-xl-4 col-md-6'],
     ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => $typeOptions, 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
@@ -78,7 +79,7 @@
                 <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
-                    <span class="badge bg-label-primary">{{ $payment->typeLabel() }}</span>
+                    <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>

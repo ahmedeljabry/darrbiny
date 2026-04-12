@@ -28,7 +28,7 @@
   @php
     $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*','admin.withdrawal-requests.*');
     $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
-    $financeOpen = request()->routeIs('admin.payments.*','admin.app-expenses.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
+    $financeOpen = request()->routeIs('admin.payments.*','admin.app-wallet-account.*','admin.app-expenses.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
     $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*','admin.rewards.*');
     $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
     $reportsOpen = request()->routeIs('admin.reports.*');
@@ -132,6 +132,9 @@
           @if($canManagePayments)
             <li class="menu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
               <a href="{{ route('admin.payments.index') }}" class="menu-link">المدفوعات</a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('admin.app-wallet-account.*') ? 'active' : '' }}">
+              <a href="{{ route('admin.app-wallet-account.index') }}" class="menu-link">حساب محفظة التطبيق</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.app-expenses.*') ? 'active' : '' }}">
               <a href="{{ route('admin.app-expenses.index') }}" class="menu-link">مصروفات التطبيق</a>

@@ -92,6 +92,7 @@ class AdminRolePermissionAccessTest extends TestCase
             'bookings_index' => ['admin.bookings.index', 'manage_plans'],
             'users_index' => ['admin.users.index', 'manage_users'],
             'payments_index' => ['admin.payments.index', 'manage_payments'],
+            'app_wallet_account_index' => ['admin.app-wallet-account.index', 'manage_payments'],
             'app_expenses_index' => ['admin.app-expenses.index', 'manage_payments'],
             'reports_index' => ['admin.reports.index', 'manage_reports'],
             'payouts_report' => ['admin.reports.completed-payouts', 'manage_payouts'],

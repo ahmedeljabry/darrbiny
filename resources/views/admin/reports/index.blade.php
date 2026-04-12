@@ -26,6 +26,10 @@
   $successfulCount = $payments->where('status', \App\Models\Payment::STATUS_SUCCEEDED)->count();
   $totalMinor = (int) $payments->sum('amount_minor');
   $rangeValues = ['from' => $from, 'to' => $to];
+  $reportTypeLabels = [
+    ...\App\Models\Payment::typeLabels(),
+    \App\Models\Payment::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
+  ];
 @endphp
 
 @section('content')
@@ -120,7 +124,7 @@
                 <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
                 <td>{{ $payment->user?->name ?? 'غير معروف' }}</td>
                 <td>{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</td>
-                <td>{{ $payment->typeLabel() }}</td>
+                <td>{{ $reportTypeLabels[$payment->type] ?? $payment->typeLabel() }}</td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $payment->statusLabel() }}</span></td>
                 <td>{{ $payment->created_at?->format('Y-m-d H:i') }}</td>
               </tr>

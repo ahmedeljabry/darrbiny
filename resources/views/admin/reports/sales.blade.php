@@ -4,12 +4,10 @@
 @php
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
+  $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
   $filterFields = [
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم المستخدم أو المدرب أو رقم الطلب', 'col' => 'col-xl-4 col-md-6'],
-    ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => [
-      \App\Models\Payment::TYPE_PLAN_PARTIAL => 'رسوم الجدية',
-      \App\Models\Payment::TYPE_PLAN_FULL => 'دفع كلي',
-    ], 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => $typeOptions, 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'payment_method', 'label' => 'طريقة الدفع', 'type' => 'select', 'options' => $paymentMethodOptions, 'placeholder' => 'كل الوسائل', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'country_id', 'label' => 'الدولة', 'type' => 'select', 'options' => $countryOptions, 'placeholder' => 'كل الدول', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'from', 'label' => 'من تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
@@ -92,7 +90,7 @@
                 <td><span class="fw-semibold text-warning">{{ number_format($payment->app_fee_minor / 100, 2) }} {{ $payment->currency }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
-                    <span class="badge bg-label-primary">{{ $payment->typeLabel() }}</span>
+                    <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>
