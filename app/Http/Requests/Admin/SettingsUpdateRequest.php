@@ -47,6 +47,9 @@ class SettingsUpdateRequest extends FormRequest
             'user_roles.*' => ['nullable','string','max:255'],
             'user_restrictions' => ['nullable','array'],
             'user_restrictions.*' => ['nullable','string','max:255'],
+            'report_exchange_rates' => ['nullable','array'],
+            'report_exchange_rates.*.currency' => ['nullable', 'regex:/^[A-Za-z]{3}$/'],
+            'report_exchange_rates.*.rate' => ['nullable', 'numeric', 'gt:0'],
         ];
 
         foreach ([

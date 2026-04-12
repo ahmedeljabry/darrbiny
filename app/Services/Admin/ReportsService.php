@@ -6,6 +6,7 @@ namespace App\Services\Admin;
 
 use App\Models\Payment;
 use App\Models\UserRequest;
+use App\Support\ReportCurrencyConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -13,6 +14,10 @@ use Illuminate\Support\Collection;
 
 final class ReportsService
 {
+    public function __construct(
+        private readonly ReportCurrencyConverter $reportCurrencyConverter
+    ) {}
+
     public function recentPayments(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, int $limit = 50): Collection
     {
         return $this->paymentsWithinRange($from, $to)
@@ -28,7 +33,7 @@ final class ReportsService
             'type' => $paymentType,
         ]);
 
-        $totalMinor = (int) (clone $query)->sum('amount_minor');
+        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
 
         return [
             'payments' => (clone $query)->latest()->paginate(25),
@@ -51,7 +56,7 @@ final class ReportsService
             $filters
         );
 
-        $totalMinor = (int) (clone $query)->sum('amount_minor');
+        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
         $count = (int) (clone $query)->count();
 
         return [
@@ -84,7 +89,7 @@ final class ReportsService
     public function paymentsReport(array $filters = []): array
     {
         $query = $this->paymentsQuery($filters);
-        $totalMinor = (int) (clone $query)->sum('amount_minor');
+        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
         $count = (int) (clone $query)->count();
 
         return [
@@ -118,7 +123,7 @@ final class ReportsService
     public function planSales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
         $query = $this->planSalesQuery($from, $to, $filters);
-        $totalMinor = (int) (clone $query)->sum('amount_minor');
+        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
         $count = (int) (clone $query)->count();
 
         return [
@@ -137,7 +142,7 @@ final class ReportsService
     public function appFees(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
         $query = $this->appFeesQuery($from, $to, $filters);
-        $totalMinor = (int) (clone $query)->sum('app_fee_minor');
+        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'app_fee_minor');
         $count = (int) (clone $query)->count();
 
         return [
@@ -160,9 +165,11 @@ final class ReportsService
 
         $vatRate = $vatPercent / 100;
         $vatTotalMinor = $vatRate > 0
-            ? (int) (clone $query)
-                ->selectRaw('COALESCE(SUM(ROUND(amount_minor * ?, 0)), 0) as total', [$vatRate])
-                ->value('total')
+            ? (clone $query)
+                ->selectRaw('currency, COALESCE(SUM(ROUND(amount_minor * ?, 0)), 0) as total_minor', [$vatRate])
+                ->groupBy('currency')
+                ->get()
+                ->sum(fn ($row) => $this->reportCurrencyConverter->convertMinor((int) $row->total_minor, (string) $row->currency))
             : 0;
         $count = (int) (clone $query)->count();
 

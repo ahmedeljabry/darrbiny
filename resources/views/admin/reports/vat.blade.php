@@ -2,6 +2,7 @@
 @section('title', 'تقرير ضريبة القيمة المضافة')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
@@ -24,12 +25,13 @@
     'tags' => [
       ['label' => 'النسبة الحالية ' . number_format((float) $vatPercent, 2) . '%', 'icon' => 'percentage'],
       ['label' => 'فلاتر متعددة', 'icon' => 'adjustments-horizontal'],
+      ['label' => 'الإجماليات محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.vat', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي الضريبة', 'value' => number_format(($vatTotalMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'receipt-tax'],
+      ['label' => 'إجمالي الضريبة', 'value' => number_format(($vatTotalMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'receipt-tax'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
       ['label' => 'نسبة الضريبة', 'value' => number_format((float) $vatPercent, 2) . '%', 'icon' => 'percentage', 'tone' => 'warning'],
       ['label' => 'أنواع الدفع المتاحة', 'value' => number_format(count($typeOptions)), 'icon' => 'tags', 'tone' => 'secondary'],
@@ -45,6 +47,10 @@
         'title' => 'فلترة الضريبة',
         'subtitle' => 'استخدم النوع وطريقة الدفع والدولة والتاريخ للوصول إلى المعاملات المطلوبة.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>إجمالي الضريبة في أعلى الصفحة محول إلى {{ $reportCurrency }}، بينما تبقى مبالغ الصفوف وضريبة كل صف بالعملة الأصلية للمعاملة.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">

@@ -6,11 +6,16 @@ namespace App\Services\Admin;
 
 use App\Models\AppExpense;
 use App\Models\Payment;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final class AppWalletAccountService
 {
+    public function __construct(
+        private readonly ReportCurrencyConverter $reportCurrencyConverter
+    ) {}
+
     public function sourceOptions(): array
     {
         return [
@@ -21,6 +26,52 @@ final class AppWalletAccountService
             AppExpense::TYPE_TRAINER_DUES => 'صادر: مستحقات مدربين',
             AppExpense::TYPE_PACKAGE_REFUND => 'صادر: استرداد باقات',
             AppExpense::TYPE_PROFIT_WITHDRAWAL => 'صادر: سحب أرباح',
+        ];
+    }
+
+    /**
+     * @return array{incoming_minor:int, outgoing_minor:int, net_minor:int}
+     */
+    public function summary(array $filters = []): array
+    {
+        $incomingMinor = 0;
+        $outgoingMinor = 0;
+
+        if (($filters['direction'] ?? null) !== 'out') {
+            $incomingQuery = $this->incomingPaymentsQuery($filters);
+            $source = $filters['source'] ?? null;
+
+            if ($source === 'app_fee') {
+                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'app_fee_minor');
+            } elseif (in_array($source, [Payment::TYPE_RESERVATION_FEE, Payment::TYPE_PLAN_PARTIAL], true)) {
+                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'amount_minor');
+            } else {
+                $reservationAndPackageFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
+                    (clone $incomingQuery)
+                    ->whereIn('type', [
+                        Payment::TYPE_RESERVATION_FEE,
+                        Payment::TYPE_PLAN_PARTIAL,
+                    ]),
+                    'amount_minor'
+                );
+
+                $fullPaymentAppFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
+                    (clone $incomingQuery)->where('type', Payment::TYPE_PLAN_FULL),
+                    'app_fee_minor'
+                );
+
+                $incomingMinor = $reservationAndPackageFeesMinor + $fullPaymentAppFeesMinor;
+            }
+        }
+
+        if (($filters['direction'] ?? null) !== 'in') {
+            $outgoingMinor = (int) $this->outgoingExpensesQuery($filters)->sum('amount_minor');
+        }
+
+        return [
+            'incoming_minor' => $incomingMinor,
+            'outgoing_minor' => $outgoingMinor,
+            'net_minor' => $incomingMinor - $outgoingMinor,
         ];
     }
 
@@ -60,7 +111,9 @@ final class AppWalletAccountService
                         $payment->userRequest?->plan?->title ? 'الباقة: ' . $payment->userRequest->plan->title : null,
                     ])->filter()->implode(' | ') ?: '—',
                     'amount_minor' => $amountMinor,
+                    'report_amount_minor' => $this->reportCurrencyConverter->convertMinor($amountMinor, $payment->currency),
                     'currency' => $payment->currency ?: 'SAR',
+                    'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
                     'notes' => 'وسيلة الدفع: ' . strtoupper((string) ($payment->payment_method ?? '-')),
                     'occurred_at' => $payment->created_at,
                 ];
@@ -88,7 +141,9 @@ final class AppWalletAccountService
                     'counterparty' => $expense->creator?->name ?? 'الإدارة',
                     'details' => $expense->updater?->name ? 'آخر تحديث بواسطة: ' . $expense->updater->name : '—',
                     'amount_minor' => (int) $expense->amount_minor,
+                    'report_amount_minor' => $this->reportCurrencyConverter->convertMinor((int) $expense->amount_minor, 'SAR'),
                     'currency' => 'SAR',
+                    'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
                     'notes' => $expense->notes ?: '—',
                     'occurred_at' => $expense->created_at,
                 ];

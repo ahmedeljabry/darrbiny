@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Models\UserRequest;
 use App\Services\Admin\ReportsService;
 use Carbon\CarbonImmutable;
@@ -97,6 +98,42 @@ class ReportsServiceTest extends TestCase
 
         $this->assertSame(3_000, $appFeesMinor);
         $this->assertSame(1_800, $vatTotalMinor);
+    }
+
+    public function test_report_totals_are_converted_to_report_currency_when_rates_exist(): void
+    {
+        config()->set('app.vat_percent', 15.0);
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $this->createPayment([
+            'currency' => 'SAR',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 10_000,
+            'app_fee_minor' => 1_000,
+        ]);
+
+        $this->createPayment([
+            'currency' => 'EGP',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 10_000,
+            'app_fee_minor' => 1_000,
+        ]);
+
+        $service = app(ReportsService::class);
+
+        ['totalMinor' => $salesMinor] = $service->sales();
+        ['totalMinor' => $paymentsMinor] = $service->paymentsReport();
+        ['totalMinor' => $appFeesMinor] = $service->appFees();
+        ['vatTotalMinor' => $vatTotalMinor] = $service->vatReport();
+
+        $this->assertSame(10_800, $salesMinor);
+        $this->assertSame(10_800, $paymentsMinor);
+        $this->assertSame(1_080, $appFeesMinor);
+        $this->assertSame(1_620, $vatTotalMinor);
     }
 
     public function test_sales_collection_returns_all_filtered_rows_for_export(): void

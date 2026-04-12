@@ -2,6 +2,7 @@
 @section('title', 'كل التقارير')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $reports = [
     'تقارير مالية' => [
       ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
@@ -24,7 +25,6 @@
   ];
 
   $successfulCount = $payments->where('status', \App\Models\Payment::STATUS_SUCCEEDED)->count();
-  $totalMinor = (int) $payments->sum('amount_minor');
   $rangeValues = ['from' => $from, 'to' => $to];
   $reportTypeLabels = [
     ...\App\Models\Payment::typeLabels(),
@@ -46,7 +46,7 @@
       ['label' => 'عدد التقارير', 'value' => number_format(collect($reports)->flatten(1)->count()), 'icon' => 'layout-grid'],
       ['label' => 'المدفوعات المعروضة', 'value' => number_format($payments->count()), 'icon' => 'credit-card', 'tone' => 'info'],
       ['label' => 'العمليات الناجحة', 'value' => number_format($successfulCount), 'icon' => 'circle-check', 'tone' => 'success'],
-      ['label' => 'إجمالي المعاينة', 'value' => number_format($totalMinor / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins', 'tone' => 'warning'],
+      ['label' => 'إجمالي المعاينة', 'value' => number_format(($previewTotalMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins', 'tone' => 'warning'],
     ],
   ])
 
@@ -97,6 +97,10 @@
         'title' => 'آخر المدفوعات',
         'subtitle' => 'فلترة المعاينة الزمنية لآخر المدفوعات الظاهرة في هذه الصفحة.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>إجماليات البطاقات هنا محولة إلى {{ $reportCurrency }} حسب معدلات التحويل في الإعدادات، بينما يحتفظ الجدول أدناه بعملة كل عملية كما دُفعت فعلياً.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">

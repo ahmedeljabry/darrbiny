@@ -8,8 +8,10 @@ use App\Models\AppExpense;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Services\Admin\AppWalletAccountService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -120,6 +122,8 @@ class AdminDashboardTest extends TestCase
             'updated_by' => $admin->id,
         ]);
 
+        $walletBalance = number_format(app(AppWalletAccountService::class)->summary()['net_minor'] / 100, 2);
+
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
@@ -136,8 +140,10 @@ class AdminDashboardTest extends TestCase
             ->assertSee('123.45')
             ->assertSee('580.23')
             ->assertSee('80.00')
+            ->assertSee($walletBalance)
             ->assertSee('345.67')
-            ->assertSee('623.68');
+            ->assertSee('623.68')
+            ->assertSee('الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ');
     }
 
     public function test_dashboard_supports_custom_date_range_filter(): void
@@ -232,6 +238,8 @@ class AdminDashboardTest extends TestCase
         ]);
         Carbon::setTestNow();
 
+        $walletBalance = number_format(app(AppWalletAccountService::class)->summary()['net_minor'] / 100, 2);
+
         $this->actingAs($admin)
             ->get(route('admin.dashboard', [
                 'from' => '2026-01-01',
@@ -244,6 +252,71 @@ class AdminDashboardTest extends TestCase
             ->assertSee('111.11')
             ->assertSee('10.00')
             ->assertSee('101.11')
+            ->assertSee($walletBalance)
             ->assertDontSee('333.33');
+    }
+
+    public function test_dashboard_financial_totals_are_converted_to_report_currency(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009021',
+            'email' => 'admin-dashboard-currency@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Egypt',
+            'iso2' => 'EG',
+            'currency' => 'EGP',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Dashboard Currency Plan',
+            'description' => 'Plan used for converted dashboard totals',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000009022',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'EGP',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10_000,
+            'currency' => 'EGP',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('8.00 SAR')
+            ->assertSee('محول للريال');
     }
 }

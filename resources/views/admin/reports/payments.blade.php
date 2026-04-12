@@ -2,6 +2,7 @@
 @section('title', 'تقارير المدفوعات')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $planOptions = $plans->pluck('title', 'id')->all();
@@ -30,12 +31,13 @@
     'tags' => [
       ['label' => 'بحث نصي متعدد', 'icon' => 'search'],
       ['label' => 'فلترة بحسب الباقة والدولة', 'icon' => 'world'],
+      ['label' => 'المجاميع محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.payments', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي المدفوعات', 'value' => number_format(($totalMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins'],
+      ['label' => 'إجمالي المدفوعات', 'value' => number_format(($totalMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'info'],
       ['label' => 'العمليات الناجحة في الصفحة', 'value' => number_format($successfulCount), 'icon' => 'circle-check', 'tone' => 'success'],
       ['label' => 'قيد الانتظار في الصفحة', 'value' => number_format($pendingCount), 'icon' => 'clock-hour-4', 'tone' => 'warning'],
@@ -53,7 +55,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>الجدول يعرض المستخدم، المدرب، الباقة، الدولة، الحالة، ونوع الدفع في صف واحد لتسهيل المراجعة السريعة.</p>
+        <p>إجمالي المدفوعات في البطاقات محول إلى {{ $reportCurrency }} حسب معدل التحويل المحدد، بينما يعرض الجدول أدناه قيمة كل عملية بعملتها الأصلية.</p>
       </div>
 
       <div class="table-responsive">

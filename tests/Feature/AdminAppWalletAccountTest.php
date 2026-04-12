@@ -9,6 +9,7 @@ use App\Models\AppExpense;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -128,6 +129,50 @@ class AdminAppWalletAccountTest extends TestCase
             'app-wallet-account-' . now()->format('Y-m-d') . '.xlsx',
             fn (AppWalletAccountExport $export) => true
         );
+    }
+
+    public function test_app_wallet_summary_is_converted_to_riyal_while_entries_keep_original_currency(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009605',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_payments');
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        [$user, $request] = $this->createPaidRequestContext();
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10_000,
+            'currency' => 'EGP',
+            'type' => Payment::TYPE_RESERVATION_FEE,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 10_000,
+        ]);
+
+        AppExpense::query()->create([
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
+            'amount_minor' => 500,
+            'notes' => 'Wallet converted expense',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.app-wallet-account.index'))
+            ->assertOk()
+            ->assertSee('8.00 SAR')
+            ->assertSee('5.00 SAR')
+            ->assertSee('3.00 SAR')
+            ->assertSee('100.00 EGP');
     }
 
     /**

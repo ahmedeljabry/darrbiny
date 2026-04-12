@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\PlanScheduleItem;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
@@ -170,6 +171,52 @@ class AdminReportsDataTest extends TestCase
             ->assertSee('رسوم الحجز')
             ->assertSee('25.00 SAR')
             ->assertDontSee('80.00 SAR');
+    }
+
+    public function test_sales_report_summary_is_converted_to_riyal_while_rows_keep_original_currency(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Egypt Sales User',
+            'phone_with_cc' => '+20000008032',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PAID,
+            'currency' => 'EGP',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10000,
+            'currency' => 'EGP',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1000,
+            'trainer_net_minor' => 9000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.sales'))
+            ->assertOk()
+            ->assertSee('8.00 SAR')
+            ->assertSee('100.00 EGP')
+            ->assertSee('المجاميع محولة إلى SAR');
     }
 
     public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void

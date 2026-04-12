@@ -4,6 +4,7 @@
 @include('admin.reports.partials.theme')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $filterFields = [
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم العميل أو المدرب أو رقم الطلب أو الملاحظات', 'col' => 'col-xl-4 col-md-6'],
     ['name' => 'direction', 'label' => 'نوع الحركة', 'type' => 'select', 'options' => $directionOptions, 'placeholder' => 'كل الحركات', 'col' => 'col-xl-2 col-md-3'],
@@ -45,6 +46,7 @@
           <p>كشف حساب موحد لكل ما دخل إلى محفظة التطبيق من رسوم الحجز ورسوم التطبيق، وكل ما خرج منها كمصروفات تشغيلية أو مالية.</p>
           <div class="report-hero__tags">
             <span class="report-tag"><i class="icon-base ti tabler-arrow-down-left"></i> وارد وصادر في شاشة واحدة</span>
+            <span class="report-tag"><i class="icon-base ti tabler-exchange"></i> المجاميع بالـ {{ $reportCurrency }}</span>
             <span class="report-tag"><i class="icon-base ti tabler-file-excel"></i> يدعم تصدير Excel</span>
           </div>
         </div>
@@ -67,7 +69,7 @@
           <div class="d-flex align-items-center justify-content-between gap-2">
             <div>
               <div class="report-stat__label">إجمالي الوارد</div>
-              <p class="report-stat__value">{{ number_format($incomingMinor / 100, 2) }}</p>
+              <p class="report-stat__value">{{ number_format($incomingMinor / 100, 2) }} {{ $reportCurrency }}</p>
             </div>
             <span class="avatar-initial rounded bg-label-success">
               <i class="icon-base ti tabler-arrow-down-left"></i>
@@ -80,7 +82,7 @@
           <div class="d-flex align-items-center justify-content-between gap-2">
             <div>
               <div class="report-stat__label">إجمالي الصادر</div>
-              <p class="report-stat__value">{{ number_format($outgoingMinor / 100, 2) }}</p>
+              <p class="report-stat__value">{{ number_format($outgoingMinor / 100, 2) }} {{ $reportCurrency }}</p>
             </div>
             <span class="avatar-initial rounded bg-label-danger">
               <i class="icon-base ti tabler-arrow-up-right"></i>
@@ -93,7 +95,7 @@
           <div class="d-flex align-items-center justify-content-between gap-2">
             <div>
               <div class="report-stat__label">صافي المحفظة</div>
-              <p class="report-stat__value">{{ number_format($netMinor / 100, 2) }}</p>
+              <p class="report-stat__value">{{ number_format($netMinor / 100, 2) }} {{ $reportCurrency }}</p>
             </div>
             <span class="avatar-initial rounded bg-label-primary">
               <i class="icon-base ti tabler-wallet"></i>
@@ -128,7 +130,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>الوارد يشمل رسوم الحجز الثابتة ورسوم الحجز على الباقات ورسوم التطبيق على الدفع الكلي، بينما الصادر يعكس كل مصروفات التطبيق المسجلة.</p>
+        <p>الوارد يشمل رسوم الحجز الثابتة ورسوم الحجز على الباقات ورسوم التطبيق على الدفع الكلي، بينما الصادر يعكس كل مصروفات التطبيق المسجلة. بطاقات الملخص والتقسيمات أدناه محولة إلى {{ $reportCurrency }}، أما الجدول فيعرض العملة الأصلية لكل حركة.</p>
       </div>
 
       @if($sourceBreakdowns->isNotEmpty())
@@ -138,7 +140,7 @@
               <div class="wallet-account-breakdown h-100">
                 <div class="small text-muted mb-2">{{ $item['label'] }}</div>
                 <div class="wallet-account-breakdown__value text-{{ $item['tone'] === 'success' ? 'success' : 'danger' }}">
-                  {{ number_format($item['amount_minor'] / 100, 2) }}
+                  {{ number_format($item['amount_minor'] / 100, 2) }} {{ $reportCurrency }}
                 </div>
               </div>
             </div>

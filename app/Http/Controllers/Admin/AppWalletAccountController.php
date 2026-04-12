@@ -29,6 +29,7 @@ class AppWalletAccountController extends BaseController
         ];
 
         $entriesCollection = $this->service->ledgerEntries($filters);
+        $summary = $this->service->summary($filters);
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
@@ -37,12 +38,12 @@ class AppWalletAccountController extends BaseController
             );
         }
 
-        $incomingMinor = (int) $entriesCollection->where('direction', 'in')->sum('amount_minor');
-        $outgoingMinor = (int) $entriesCollection->where('direction', 'out')->sum('amount_minor');
-        $netMinor = $incomingMinor - $outgoingMinor;
+        $incomingMinor = $summary['incoming_minor'];
+        $outgoingMinor = $summary['outgoing_minor'];
+        $netMinor = $summary['net_minor'];
         $sourceTotalsMinor = $entriesCollection
             ->groupBy('source_key')
-            ->map(fn (Collection $items) => (int) $items->sum('amount_minor'));
+            ->map(fn (Collection $items) => (int) $items->sum('report_amount_minor'));
 
         $entries = $this->paginate($entriesCollection, $request);
         $sourceOptions = $this->service->sourceOptions();

@@ -2,6 +2,7 @@
 @section('title', 'تقارير المبيعات')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
@@ -24,14 +25,15 @@
     'tags' => [
       ['label' => 'المدفوعات الناجحة فقط', 'icon' => 'circle-check'],
       ['label' => 'فلاتر متعددة', 'icon' => 'adjustments-horizontal'],
+      ['label' => 'المجاميع محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.sales', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins'],
+      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
-      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'chart-histogram', 'tone' => 'info'],
+      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'info'],
       ['label' => 'وسائل الدفع النشطة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
     ],
   ])
@@ -45,6 +47,10 @@
         'title' => 'فلترة المبيعات',
         'subtitle' => 'امزج بين التاريخ والدولة والوسيلة والبحث للوصول لأي دفعة بسرعة.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>إجماليات التقرير ومتوسطاته معروضة بالـ {{ $reportCurrency }} بعد تطبيق معدل التحويل، بينما يحتفظ كل صف بالعملة الأصلية الخاصة بالعملية.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">

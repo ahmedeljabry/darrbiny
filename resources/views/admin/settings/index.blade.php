@@ -70,6 +70,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
               <a href="#site" class="btn btn-sm btn-outline-primary"><i class="icon-base ti tabler-world me-1"></i>الموقع</a>
+              <a href="#financial-rates" class="btn btn-sm btn-outline-success"><i class="icon-base ti tabler-exchange me-1"></i>التحويل</a>
               <a href="#videos" class="btn btn-sm btn-outline-info"><i class="icon-base ti tabler-video me-1"></i>الفيديو</a>
               <a href="#pages" class="btn btn-sm btn-outline-secondary"><i class="icon-base ti tabler-file-text me-1"></i>الصفحات</a>
               <a href="#roles" class="btn btn-sm btn-outline-warning"><i class="icon-base ti tabler-shield me-1"></i>الأدوار</a>
@@ -348,8 +349,99 @@
                         </div>
                       </div>
 
+                      <div id="financial-rates" class="mt-4">
+                        <div class="card border border-info h-100">
+                          <div class="card-body">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                              <span class="avatar-initial rounded bg-label-info">
+                                <i class="icon-base ti tabler-exchange"></i>
+                              </span>
+                              <div>
+                                <h6 class="mb-0">معدلات تحويل التقارير إلى {{ $reportCurrency }}</h6>
+                                <small class="text-muted">تستخدم في إجماليات التقارير والداشبورد المالي ومحفظة التطبيق</small>
+                              </div>
+                            </div>
+
+                            <p class="text-body-secondary small mb-3">
+                              أدخل قيمة <strong>1</strong> من العملة الأصلية كم تساوي بالـ <strong>{{ $reportCurrency }}</strong>.
+                              مثال: إذا كان <strong>1 EGP = 0.075 SAR</strong> فاكتب <strong>0.075</strong>.
+                            </p>
+
+                            <div class="alert alert-info">
+                              <div class="d-flex align-items-start gap-2">
+                                <i class="icon-base ti tabler-info-circle mt-1"></i>
+                                <div>
+                                  <strong>مهم:</strong> صفوف التقارير ستبقى بعملة العملية الأصلية، لكن الإجماليات والمتوسطات وصافي المحافظ ستُعرض بالـ {{ $reportCurrency }}.
+                                  الريال السعودي ثابت بقيمة <strong>1.000000</strong> ولا يحتاج إلى إضافته هنا.
+                                </div>
+                              </div>
+                            </div>
+
+                            @if(!empty($paymentCurrencies))
+                              <div class="mb-3">
+                                <div class="small text-muted mb-2">عملات موجودة حالياً في المدفوعات</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                  @foreach($paymentCurrencies as $currency)
+                                    <span class="badge bg-label-secondary">{{ $currency }}</span>
+                                  @endforeach
+                                </div>
+                              </div>
+                            @endif
+
+                            <div id="report-exchange-rates-list" class="d-flex flex-column gap-3 report-exchange-rates-list">
+                              @foreach($reportExchangeRates as $index => $rateRow)
+                                <div class="row g-2 align-items-end report-exchange-rate-row">
+                                  <div class="col-lg-4">
+                                    <label class="form-label fw-semibold">رمز العملة</label>
+                                    <div class="input-group input-group-merge">
+                                      <span class="input-group-text"><i class="ti tabler-currency"></i></span>
+                                      <input
+                                        type="text"
+                                        class="form-control js-exchange-currency"
+                                        name="report_exchange_rates[{{ $index }}][currency]"
+                                        value="{{ strtoupper((string) ($rateRow['currency'] ?? '')) }}"
+                                        placeholder="EGP"
+                                        maxlength="3"
+                                        style="text-transform: uppercase"
+                                      >
+                                    </div>
+                                  </div>
+                                  <div class="col-lg-5">
+                                    <label class="form-label fw-semibold">قيمة 1 من العملة بالـ {{ $reportCurrency }}</label>
+                                    <div class="input-group input-group-merge">
+                                      <span class="input-group-text"><i class="ti tabler-calculator"></i></span>
+                                      <input
+                                        type="number"
+                                        step="0.000001"
+                                        min="0.000001"
+                                        class="form-control js-exchange-rate"
+                                        name="report_exchange_rates[{{ $index }}][rate]"
+                                        value="{{ $rateRow['rate'] ?? '' }}"
+                                        placeholder="0.075000"
+                                      >
+                                    </div>
+                                  </div>
+                                  <div class="col-lg-3 d-grid">
+                                    <button type="button" class="btn btn-outline-danger js-remove-exchange-rate">
+                                      <i class="icon-base ti tabler-trash me-1"></i> حذف
+                                    </button>
+                                  </div>
+                                </div>
+                              @endforeach
+                            </div>
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                              <small class="text-muted">يمكنك تعديل المعدلات في أي وقت، وستنعكس مباشرة على المجاميع في الإدارة.</small>
+                              <button type="button" class="btn btn-sm btn-outline-info js-add-exchange-rate">
+                                <i class="icon-base ti tabler-plus me-1"></i> إضافة معدل تحويل
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <button class="btn btn-primary mt-3">
-                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ الرسوم
+                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ الرسوم ومعدلات التحويل
                       </button>
                     </form>
                   </div>
@@ -839,6 +931,13 @@
   .settings-list-row .btn {
     min-width: 84px;
   }
+  .report-exchange-rate-row {
+    border: 1px dashed rgba(13, 110, 253, 0.18);
+    border-radius: 14px;
+    padding: 0.85rem;
+    background: linear-gradient(180deg, rgba(13, 110, 253, 0.03), rgba(13, 110, 253, 0.01));
+    margin: 0;
+  }
   .is-invalid {
     border-color: #dc3545;
   }
@@ -969,6 +1068,93 @@
         }
       }
     });
+  });
+  </script>
+@endpush
+
+@push('scripts')
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const list = document.getElementById('report-exchange-rates-list');
+    if (!list) return;
+
+    function reindexExchangeRates() {
+      list.querySelectorAll('.report-exchange-rate-row').forEach((row, index) => {
+        const currencyInput = row.querySelector('.js-exchange-currency');
+        const rateInput = row.querySelector('.js-exchange-rate');
+
+        if (currencyInput) {
+          currencyInput.name = `report_exchange_rates[${index}][currency]`;
+        }
+
+        if (rateInput) {
+          rateInput.name = `report_exchange_rates[${index}][rate]`;
+        }
+      });
+    }
+
+    function addExchangeRateRow(currency = '', rate = '') {
+      const row = document.createElement('div');
+      row.className = 'row g-2 align-items-end report-exchange-rate-row';
+      row.innerHTML = `
+        <div class="col-lg-4">
+          <label class="form-label fw-semibold">رمز العملة</label>
+          <div class="input-group input-group-merge">
+            <span class="input-group-text"><i class="ti tabler-currency"></i></span>
+            <input type="text" class="form-control js-exchange-currency" maxlength="3" placeholder="EGP" style="text-transform: uppercase">
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <label class="form-label fw-semibold">قيمة 1 من العملة بالـ {{ $reportCurrency }}</label>
+          <div class="input-group input-group-merge">
+            <span class="input-group-text"><i class="ti tabler-calculator"></i></span>
+            <input type="number" step="0.000001" min="0.000001" class="form-control js-exchange-rate" placeholder="0.075000">
+          </div>
+        </div>
+        <div class="col-lg-3 d-grid">
+          <button type="button" class="btn btn-outline-danger js-remove-exchange-rate">
+            <i class="icon-base ti tabler-trash me-1"></i> حذف
+          </button>
+        </div>
+      `;
+
+      row.querySelector('.js-exchange-currency').value = currency;
+      row.querySelector('.js-exchange-rate').value = rate;
+      list.appendChild(row);
+      reindexExchangeRates();
+    }
+
+    document.addEventListener('click', function(e){
+      const addButton = e.target.closest('.js-add-exchange-rate');
+      if (addButton) {
+        addExchangeRateRow();
+      }
+
+      const removeButton = e.target.closest('.js-remove-exchange-rate');
+      if (removeButton) {
+        const row = removeButton.closest('.report-exchange-rate-row');
+        const rows = list.querySelectorAll('.report-exchange-rate-row');
+
+        if (!row) return;
+
+        if (rows.length > 1) {
+          row.remove();
+        } else {
+          row.querySelectorAll('input').forEach((input) => { input.value = ''; });
+        }
+
+        reindexExchangeRates();
+      }
+    });
+
+    document.addEventListener('input', function(e){
+      const currencyInput = e.target.closest('.js-exchange-currency');
+      if (currencyInput) {
+        currencyInput.value = currencyInput.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+      }
+    });
+
+    reindexExchangeRates();
   });
   </script>
 @endpush

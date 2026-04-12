@@ -6,6 +6,7 @@ namespace App\Services\Admin;
 
 use App\Models\Setting;
 use App\Models\Upload;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 
@@ -54,6 +55,12 @@ final class SettingsService
         $this->save('payment.tap.webhook_secret', $data['tap_webhook_secret'] ?? null);
         $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
+        if (array_key_exists('report_exchange_rates', $data)) {
+            $this->save(
+                'reports.exchange_rates_to_sar',
+                json_encode($this->normalizeReportExchangeRates($data['report_exchange_rates'] ?? []), JSON_UNESCAPED_UNICODE)
+            );
+        }
         
         if (!empty($data['country_fees']) && is_array($data['country_fees'])) {
             foreach ($data['country_fees'] as $countryId => $feeMinor) {
@@ -180,6 +187,31 @@ final class SettingsService
             ->map(static fn ($item) => trim((string) $item))
             ->filter(static fn ($item) => $item !== '')
             ->values()
+            ->all();
+    }
+
+    private function normalizeReportExchangeRates(?array $rows): array
+    {
+        return collect($rows ?? [])
+            ->mapWithKeys(function ($row): array {
+                if (! is_array($row)) {
+                    return [];
+                }
+
+                $currency = strtoupper(trim((string) ($row['currency'] ?? '')));
+                $rate = is_numeric($row['rate'] ?? null) ? round((float) $row['rate'], 6) : null;
+
+                if (
+                    ! preg_match('/^[A-Z]{3}$/', $currency)
+                    || $currency === ReportCurrencyConverter::REPORT_CURRENCY
+                    || $rate === null
+                    || $rate <= 0
+                ) {
+                    return [];
+                }
+
+                return [$currency => $rate];
+            })
             ->all();
     }
 }

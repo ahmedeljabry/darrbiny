@@ -15,6 +15,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\UserRequest;
 use App\Services\Admin\ReportsService;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
@@ -22,12 +23,14 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportsController extends BaseController
 {
-    public function index(Request $request, ReportsService $service)
+    public function index(Request $request, ReportsService $service, ReportCurrencyConverter $reportCurrencyConverter)
     {
         $from = $this->parseDate($request->input('from'));
         $to = $this->parseDate($request->input('to'), true);
         $payments = $service->recentPayments($from, $to, 50);
-        return view('admin.reports.index', compact('payments','from','to'));
+        $previewTotalMinor = $reportCurrencyConverter->sumCollectionMinorToReportCurrency($payments);
+
+        return view('admin.reports.index', compact('payments', 'from', 'to', 'previewTotalMinor'));
     }
 
     public function sales(Request $request, ReportsService $service)
