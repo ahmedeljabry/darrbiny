@@ -1,350 +1,510 @@
 @extends('admin.layouts.app')
 @section('title', 'لوحة التحكم')
+
+@include('admin.reports.partials.theme')
+
 @php
   $today = \Illuminate\Support\Carbon::now();
   $rangeOptions = ['day' => 'اليوم', 'month' => 'هذا الشهر', 'year' => 'هذا العام'];
   $fromValue = ($from ?? null) instanceof \DateTimeInterface ? $from->format('Y-m-d') : '';
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
+
+  $financeCards = [
+    ['label' => 'إجمالي المبيعات', 'value' => number_format($salesMinor / 100, 2), 'desc' => $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم'), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'رسوم الحجز', 'value' => number_format($reservationFeesMinor / 100, 2), 'desc' => 'ضمن النطاق المحدد', 'icon' => 'receipt-2', 'tone' => 'info'],
+    ['label' => 'رسوم الباقات', 'value' => number_format($packageFeesMinor / 100, 2), 'desc' => 'تشمل رسوم الجدية والدفع الكلي', 'icon' => 'stack-3', 'tone' => 'primary'],
+    ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2), 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
+    ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2), 'desc' => 'صافي الربح بعد خصم المصروفات', 'icon' => 'wallet', 'tone' => 'primary'],
+    ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2), 'desc' => 'الحجوزات المدفوعة بالكامل', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
+    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2), 'desc' => 'رسوم الباقات + رسوم الحجز - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
+    ['label' => 'تنبيهات غير مقروءة', 'value' => number_format($unreadNotifications), 'desc' => $rangeLabel ?? 'مركز الإشعارات', 'icon' => 'bell', 'tone' => 'danger'],
+  ];
+
+  $stateCards = [
+    ['label' => 'بانتظار العروض', 'value' => $awaitingOffers, 'desc' => 'طلبات تحتاج تسعير ومتابعة سريعة', 'icon' => 'clock-hour-4', 'tone' => 'warning'],
+    ['label' => 'قيد التدريب', 'value' => $activeBookings, 'desc' => 'حجوزات نشطة داخل مرحلة التنفيذ', 'icon' => 'activity', 'tone' => 'info'],
+    ['label' => 'مكتملة', 'value' => $completedBookings, 'desc' => 'طلبات جاهزة للإغلاق والمتابعة', 'icon' => 'circle-check', 'tone' => 'success'],
+    ['label' => 'الكورسات الملغاة', 'value' => $cancelledBookings, 'desc' => 'تم إلغاؤها وتحتاج مراجعة الأثر المالي', 'icon' => 'circle-x', 'tone' => 'danger'],
+  ];
+
+  $overviewStats = [
+    ['label' => 'إجمالي الحجوزات', 'value' => number_format($bookingsCount), 'icon' => 'calendar-check', 'tone' => 'primary'],
+    ['label' => 'المستخدمون الجدد', 'value' => number_format($usersCount), 'icon' => 'users', 'tone' => 'success'],
+    ['label' => 'المدربون الجدد', 'value' => number_format($trainersCount), 'icon' => 'user-star', 'tone' => 'info'],
+    ['label' => 'الخطط الجديدة', 'value' => number_format($planCount), 'icon' => 'package', 'tone' => 'warning'],
+    ['label' => 'الدول الجديدة', 'value' => number_format($countriesCount), 'icon' => 'world', 'tone' => 'secondary'],
+  ];
+
+  $queueItems = [
+    ['label' => 'طلبات الإلغاء', 'desc' => 'مراجعة الطلبات المعلقة', 'value' => $pendingCancellations, 'route' => route('admin.cancellation-requests.index'), 'tone' => 'warning', 'icon' => 'rotate-clockwise-2'],
+    ['label' => 'طلبات الإيداع', 'desc' => 'طلبات إضافة رصيد للمحفظة', 'value' => $pendingWalletRequests, 'route' => route('admin.wallet-transactions.index'), 'tone' => 'primary', 'icon' => 'wallet'],
+    ['label' => 'طلبات السحب', 'desc' => 'طلبات سحب من محافظ الطلاب والمدربين', 'value' => $pendingWithdrawalRequests, 'route' => route('admin.withdrawal-requests.index'), 'tone' => 'danger', 'icon' => 'arrow-up-right-circle'],
+    ['label' => 'طلبات الجوائز', 'desc' => 'استبدال النقاط بالمكافآت', 'value' => $pendingPrizeRequests, 'route' => route('admin.prize-redemptions.index'), 'tone' => 'info', 'icon' => 'gift'],
+    ['label' => 'تذاكر الدعم', 'desc' => 'حالات تحتاج رد أو تصعيد', 'value' => $pendingSupportTickets, 'route' => route('admin.support.index'), 'tone' => 'secondary', 'icon' => 'message-2'],
+    ['label' => 'تنبيهات النظام', 'desc' => 'تنبيهات غير مقروءة تحتاج مراجعة', 'value' => $unreadNotifications, 'route' => route('admin.notifications.index'), 'tone' => 'danger', 'icon' => 'bell-ringing'],
+  ];
+
+  $quickLinks = array_values(array_filter([
+    auth()->user()?->can('manage_plans') ? ['label' => 'الحجوزات', 'desc' => 'فتح الطلبات وإدارة الحالات', 'route' => route('admin.bookings.index'), 'icon' => 'clipboard-list', 'tone' => 'primary'] : null,
+    auth()->user()?->can('manage_payments') ? ['label' => 'المدفوعات', 'desc' => 'مراجعة حركة السداد والرسوم', 'route' => route('admin.payments.index'), 'icon' => 'credit-card', 'tone' => 'success'] : null,
+    auth()->user()?->can('manage_payments') ? ['label' => 'الاشتراكات', 'desc' => 'متابعة جميع الطلبات والباقات', 'route' => route('admin.subscriptions.index'), 'icon' => 'calendar-event', 'tone' => 'info'] : null,
+    auth()->user()?->can('manage_payments') ? ['label' => 'مصروفات التطبيق', 'desc' => 'إدارة المصروفات وصافي الربح', 'route' => route('admin.app-expenses.index'), 'icon' => 'cash-banknote', 'tone' => 'warning'] : null,
+    auth()->user()?->can('manage_reports') ? ['label' => 'التقارير', 'desc' => 'مركز التقارير والتحليلات', 'route' => route('admin.reports.index'), 'icon' => 'chart-donut-3', 'tone' => 'secondary'] : null,
+    auth()->user()?->can('manage_notifications') ? ['label' => 'الإشعارات', 'desc' => 'عرض الرسائل والتنبيهات', 'route' => route('admin.notifications.index'), 'icon' => 'send', 'tone' => 'danger'] : null,
+  ]));
 @endphp
 
 @section('content')
-<div class="row g-4">
-  <div class="col-12">
-    <div class="card border-0 shadow-sm hero-surface">
-      <div class="card-body p-4">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="chip chip-primary">تحديث {{ $today->translatedFormat('d M') }}</span>
-              <span class="text-muted small">{{ $today->translatedFormat('l d M Y') }}</span>
-              <span class="chip chip-ghost">{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</span>
-            </div>
-            <h3 class="fw-bold mb-1 text-dark">التحكم في الطلبات والمبيعات من مكان واحد</h3>
-            <p class="mb-0 text-body-secondary">راقب العروض، المدفوعات، مستحقات المدربين، وأرسل التنبيهات بسرعة ضمن النطاق الزمني المحدد.</p>
-          </div>
-          <div class="d-flex flex-wrap gap-2">
-            @foreach($rangeOptions as $key => $label)
-              <a href="{{ route('admin.dashboard', ['range' => $key]) }}"
-                 class="chip {{ ($range ?? 'day') === $key ? 'chip-primary' : 'chip-ghost' }}">
-                {{ $label }}
-              </a>
-            @endforeach
-            <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.bookings.index') }}">إدارة الحجوزات</a>
+<div class="dashboard-shell">
+  <div class="report-hero report-hero--primary">
+    <div class="report-hero__body">
+      <div class="report-hero__lead">
+        <span class="report-hero__icon bg-label-primary">
+          <i class="icon-base ti tabler-layout-dashboard"></i>
+        </span>
+        <div class="report-hero__text">
+          <h2>لوحة التحكم الرئيسية</h2>
+          <p>واجهة موحدة لمراقبة المبيعات، حالة التشغيل، والتنبيهات اليومية باستخدام نفس مكونات التقارير وبترتيب أوضح للأولويات.</p>
+          <div class="report-hero__tags">
+            <span class="report-tag"><i class="icon-base ti tabler-calendar"></i>{{ $today->translatedFormat('l d M Y') }}</span>
+            <span class="report-tag"><i class="icon-base ti tabler-clock-hour-4"></i>{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</span>
+            <span class="report-tag"><i class="icon-base ti tabler-filter-check"></i>{{ $usesCustomRange ? 'فلترة مخصصة مفعلة' : 'فترة جاهزة مفعلة' }}</span>
           </div>
         </div>
+      </div>
 
-        <form method="get" class="row g-2 align-items-end mt-3 dashboard-range-form">
-          <div class="col-xl-3 col-md-4">
-            <label class="form-label small text-muted mb-1">من تاريخ</label>
-            <input type="date" name="from" value="{{ $fromValue }}" class="form-control">
-          </div>
-          <div class="col-xl-3 col-md-4">
-            <label class="form-label small text-muted mb-1">إلى تاريخ</label>
-            <input type="date" name="to" value="{{ $toValue }}" class="form-control">
-          </div>
-          <div class="col-xl-2 col-md-4">
-            <button class="btn btn-primary w-100">
-              <i class="ti tabler-filter me-1"></i>
-              تطبيق النطاق
-            </button>
-          </div>
-          <div class="col-xl-2 col-md-4">
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary w-100">
-              <i class="ti tabler-rotate-2 me-1"></i>
-              إعادة
-            </a>
-          </div>
-          <div class="col-xl-2 col-md-8">
-            <div class="small text-muted">
-              {{ $usesCustomRange ? 'فلترة مخصصة مفعلة' : 'يمكنك استخدام الفترة الجاهزة أو تحديد تاريخين' }}
-            </div>
-          </div>
-        </form>
+      <div class="report-hero__actions">
+        @foreach($rangeOptions as $key => $label)
+          <a
+            href="{{ route('admin.dashboard', ['range' => $key]) }}"
+            class="btn {{ ($range ?? 'day') === $key && ! $usesCustomRange ? 'btn-primary' : 'btn-outline-primary' }}"
+          >
+            {{ $label }}
+          </a>
+        @endforeach
+        @can('manage_plans')
+          <a class="btn btn-outline-secondary" href="{{ route('admin.bookings.index') }}">
+            <i class="icon-base ti tabler-arrow-up-left me-1"></i>
+            إدارة الحجوزات
+          </a>
+        @endcan
+      </div>
+    </div>
 
-        <div class="row g-3 mt-3">
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-primary"><i class="ti tabler-cash"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">إجمالي المبيعات</p>
-                    <h4 class="mb-0">{{ number_format($salesMinor/100, 2) }}</h4>
-                    <small class="text-muted">{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</small>
-                  </div>
-                </div>
-              </div>
+    <div class="row g-3 report-stats mt-2">
+      <div class="col-xl-3 col-md-6">
+        <div class="report-stat">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>
+              <div class="report-stat__label">إجمالي الحجوزات</div>
+              <p class="report-stat__value">{{ number_format($bookingsCount) }}</p>
             </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-info"><i class="ti tabler-receipt-2"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">رسوم الحجز</p>
-                    <h4 class="mb-0">{{ number_format($reservationFeesMinor/100, 2) }}</h4>
-                    <small class="text-muted">ضمن النطاق المحدد</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-success"><i class="ti tabler-stack-3"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">رسوم الباقات</p>
-                    <h4 class="mb-0">{{ number_format($packageFeesMinor/100, 2) }}</h4>
-                    <small class="text-muted">تشمل رسوم الجدية والدفع الكلي</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-danger"><i class="ti tabler-credit-card-off"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">المصروفات</p>
-                    <h4 class="mb-0">{{ number_format($expensesMinor/100, 2) }}</h4>
-                    <small class="text-muted">المسجلة ضمن النطاق المحدد</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-primary"><i class="ti tabler-wallet"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">رصيد محفظة التطبيق</p>
-                    <h4 class="mb-0">{{ number_format($appWalletBalanceMinor/100, 2) }}</h4>
-                    <small class="text-muted">صافي الربح بعد خصم المصروفات</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-warning"><i class="ti tabler-calendar-dollar"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">قيمة الحجوزات</p>
-                    <h4 class="mb-0">{{ number_format($bookingsValueMinor/100, 2) }}</h4>
-                    <small class="text-muted">الحجوزات المدفوعة بالكامل</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-dark"><i class="ti tabler-chart-arrows-vertical"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">صافي الربح</p>
-                    <h4 class="mb-0">{{ number_format($netProfitMinor/100, 2) }}</h4>
-                    <small class="text-muted">رسوم الباقات + رسوم الحجز - المصروفات</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-xxl-2 col-xl-3 col-lg-4 col-md-6">
-            <div class="card metric h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start gap-2">
-                  <span class="icon-pill bg-label-danger"><i class="ti tabler-bell"></i></span>
-                  <div>
-                    <p class="text-muted small mb-0">تنبيهات غير مقروءة</p>
-                    <h4 class="mb-0">{{ $unreadNotifications }}</h4>
-                    <small class="text-muted">{{ $rangeLabel ?? 'مركز الإشعارات' }}</small>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <span class="avatar-initial rounded bg-label-primary"><i class="icon-base ti tabler-calendar-check"></i></span>
           </div>
         </div>
-
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="report-stat">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>
+              <div class="report-stat__label">المستخدمون الجدد</div>
+              <p class="report-stat__value">{{ number_format($usersCount) }}</p>
+            </div>
+            <span class="avatar-initial rounded bg-label-success"><i class="icon-base ti tabler-users"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="report-stat">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>
+              <div class="report-stat__label">المدربون الجدد</div>
+              <p class="report-stat__value">{{ number_format($trainersCount) }}</p>
+            </div>
+            <span class="avatar-initial rounded bg-label-info"><i class="icon-base ti tabler-user-star"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="report-stat">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>
+              <div class="report-stat__label">الخطط / الدول</div>
+              <p class="report-stat__value">{{ number_format($planCount) }} / {{ number_format($countriesCount) }}</p>
+            </div>
+            <span class="avatar-initial rounded bg-label-warning"><i class="icon-base ti tabler-package"></i></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="row g-3 mt-2">
-  @php
-    $stateCards = [
-      ['label' => 'بانتظار العروض', 'value' => $awaitingOffers, 'desc' => 'طلبات تحتاج عروض', 'color' => 'warning', 'icon' => 'clock'],
-      ['label' => 'قيد التدريب', 'value' => $activeBookings, 'desc' => 'حجوزات نشطة', 'color' => 'info', 'icon' => 'activity'],
-      ['label' => 'مكتملة', 'value' => $completedBookings, 'desc' => 'جاهزة للإغلاق', 'color' => 'success', 'icon' => 'check'],
-      ['label' => 'الكورسات الملغاة', 'value' => $cancelledBookings, 'desc' => 'تم إلغاؤها', 'color' => 'danger', 'icon' => 'x'],
-    ];
-  @endphp
-  @foreach($stateCards as $card)
-    <div class="col-xl-3 col-md-6 col-sm-12">
-      <div class="card h-100 border-0 shadow-sm metric">
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card report-panel">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="d-flex align-items-center gap-2">
-              <span class="icon-pill bg-label-{{ $card['color'] }}"><i class="ti tabler-{{ $card['icon'] }}"></i></span>
-              <span class="badge bg-label-{{ $card['color'] }}">{{ $card['label'] }}</span>
+          <div class="report-filter-card mb-0">
+            <div class="report-filter-card__header">
+              <div class="report-filter-card__title">
+                <span class="report-filter-card__icon">
+                  <i class="icon-base ti tabler-adjustments-horizontal"></i>
+                </span>
+                <div>
+                  <h6>فلترة لوحة التحكم</h6>
+                  <p>تحكم في جميع أرقام الصفحة من نفس النطاق الزمني بدل التنقل بين أكثر من شاشة.</p>
+                </div>
+              </div>
+              <div class="report-toolbar-note">النطاق الحالي: {{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</div>
             </div>
-          </div>
-          <h3 class="mb-1">{{ $card['value'] }}</h3>
-          <small class="text-muted">{{ $card['desc'] }}</small>
-        </div>
-      </div>
-    </div>
-  @endforeach
-</div>
 
-<div class="row g-3 mt-2">
-  <div class="col-lg-8">
-    <div class="card h-100 shadow-sm">
-      <div class="card-header border-0 d-flex align-items-center justify-content-between">
-        <div>
-          <p class="mb-1 text-muted small">اتجاه {{ $trendLabel ?? 'يومي' }}</p>
-          <h5 class="mb-0">المستخدمون / الخطط / الحجوزات</h5>
-        </div>
-        <span class="badge bg-label-primary">مباشر</span>
-      </div>
-      <div class="card-body">
-        <div id="chart-users-plans" style="height: 320px;"></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4">
-    <div class="card h-100 shadow-sm">
-      <div class="card-header border-0 d-flex align-items-center justify-content-between">
-        <div>
-          <p class="mb-1 text-muted small">توزيع الحالات ضمن الفترة</p>
-          <h5 class="mb-0">صحة الحجز</h5>
-        </div>
-        <span class="badge bg-label-secondary">الآن</span>
-      </div>
-      <div class="card-body">
-        <div id="chart-statuses" style="height: 260px;"></div>
-        <div class="d-flex flex-wrap gap-2 mt-2">
-          <span class="badge bg-label-danger">الكورسات الملغاة</span>
-          <span class="badge bg-label-warning">بانتظار العروض</span>
-          <span class="badge bg-label-info">قيد التدريب</span>
-          <span class="badge bg-label-success">مكتملة</span>
+            <form method="get" class="row g-3 align-items-end">
+              <div class="col-xl-4 col-md-6">
+                <label class="report-form-label">من تاريخ</label>
+                <input type="date" name="from" value="{{ $fromValue }}" class="form-control report-input">
+              </div>
+              <div class="col-xl-4 col-md-6">
+                <label class="report-form-label">إلى تاريخ</label>
+                <input type="date" name="to" value="{{ $toValue }}" class="form-control report-input">
+              </div>
+              <div class="col-xl-2 col-md-6">
+                <button class="btn btn-primary w-100">
+                  <i class="icon-base ti tabler-filter me-1"></i>
+                  تطبيق
+                </button>
+              </div>
+              <div class="col-xl-2 col-md-6">
+                <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary w-100 report-reset">
+                  <i class="icon-base ti tabler-rotate-2 me-1"></i>
+                  إعادة
+                </a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="row g-3 mt-2">
-  <div class="col-lg-6">
-    <div class="card h-100 shadow-sm">
-      <div class="card-header border-0 d-flex align-items-center justify-content-between">
-        <div>
-          <p class="mb-1 text-muted small">التسجيلات الجديدة ضمن الفترة</p>
-          <h5 class="mb-0">الخطط / الدول / المستخدمون</h5>
+    <div class="col-xl-4">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
+            <div>
+              <h5 class="mb-1">وصول سريع</h5>
+              <p class="text-muted mb-0 small">اختصارات مرتبة حسب أكثر المهام تكرارًا في التشغيل اليومي.</p>
+            </div>
+            <span class="report-tag"><i class="icon-base ti tabler-bolt"></i>{{ count($quickLinks) }} اختصارات</span>
+          </div>
+
+          <div class="row g-3">
+            @forelse($quickLinks as $link)
+              <div class="col-md-6 col-xl-12">
+                <a href="{{ $link['route'] }}" class="report-directory-card dashboard-shortcut-card">
+                  <div class="report-directory-card__top">
+                    <span class="report-directory-card__icon bg-label-{{ $link['tone'] }}">
+                      <i class="icon-base ti tabler-{{ $link['icon'] }}"></i>
+                    </span>
+                    <span class="report-tag">{{ $link['label'] }}</span>
+                  </div>
+                  <div class="report-directory-card__title">{{ $link['label'] }}</div>
+                  <p class="report-directory-card__desc">{{ $link['desc'] }}</p>
+                  <div class="report-directory-card__foot">
+                    <span>فتح القسم</span>
+                    <i class="icon-base ti tabler-arrow-up-left"></i>
+                  </div>
+                </a>
+              </div>
+            @empty
+              <div class="col-12">
+                <div class="report-empty">
+                  <span class="report-empty__icon"><i class="icon-base ti tabler-lock"></i></span>
+                  <div>لا توجد اختصارات متاحة بحسب الصلاحيات الحالية.</div>
+                </div>
+              </div>
+            @endforelse
+          </div>
         </div>
-        <span class="badge bg-label-secondary">توزيع</span>
-      </div>
-      <div class="card-body">
-        <div id="chart-overview" style="height: 280px;"></div>
       </div>
     </div>
   </div>
-  <div class="col-lg-6">
-    <div class="card h-100 shadow-sm">
-      <div class="card-header border-0 d-flex align-items-center justify-content-between">
+
+  <div class="card report-panel">
+    <div class="card-body">
+      <div class="dashboard-section-head">
         <div>
-          <p class="mb-1 text-muted small">تنبيهات عاجلة ضمن الفترة</p>
-          <h5 class="mb-0">المهام ذات الأولوية</h5>
+          <h5 class="mb-1">الملخص المالي</h5>
+          <p class="text-muted mb-0 small">جميع مؤشرات النقدية والرسوم مجمعة في شبكة موحدة لقراءة أسرع.</p>
         </div>
-        <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.index') }}">مركز الإشعارات</a>
+        <span class="report-tag"><i class="icon-base ti tabler-coins"></i>{{ $rangeLabel ?? 'الفترة الحالية' }}</span>
       </div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-warning"></span>
-            <div>
-              <div class="fw-semibold">طلبات الإلغاء</div>
-              <small class="text-muted">مراجعة الطلبات المعلقة</small>
+
+      <div class="row g-3">
+        @foreach($financeCards as $card)
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="dashboard-metric-card h-100">
+              <div class="dashboard-metric-card__top">
+                <span class="dashboard-metric-card__icon bg-label-{{ $card['tone'] }}">
+                  <i class="icon-base ti tabler-{{ $card['icon'] }}"></i>
+                </span>
+                <span class="report-status report-status--{{ $card['tone'] === 'secondary' ? 'secondary' : $card['tone'] }}">{{ $card['label'] }}</span>
+              </div>
+              <div class="dashboard-metric-card__value">{{ $card['value'] }}</div>
+              <div class="dashboard-metric-card__desc">{{ $card['desc'] }}</div>
             </div>
           </div>
-          <a href="{{ route('admin.cancellation-requests.index') }}" class="badge bg-label-warning rounded-pill text-decoration-none">{{ $pendingCancellations }}</a>
-        </li>
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-primary"></span>
+        @endforeach
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
             <div>
-              <div class="fw-semibold">طلبات الإيداع</div>
-              <small class="text-muted">طلبات إضافة رصيد للمحفظة</small>
+              <h5 class="mb-1">حالة التشغيل</h5>
+              <p class="text-muted mb-0 small">ترتيب واضح لمسار الطلب من العروض وحتى الإغلاق والإلغاء.</p>
             </div>
+            <span class="report-tag"><i class="icon-base ti tabler-activity-heartbeat"></i>متابعة مباشرة</span>
           </div>
-          <a href="{{ route('admin.wallet-transactions.index') }}" class="badge bg-label-primary rounded-pill text-decoration-none">{{ $pendingWalletRequests }}</a>
-        </li>
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-danger"></span>
+
+          <div class="row g-3">
+            @foreach($stateCards as $card)
+              <div class="col-md-6">
+                <div class="dashboard-status-card h-100">
+                  <div class="dashboard-status-card__top">
+                    <span class="dashboard-status-card__icon bg-label-{{ $card['tone'] }}">
+                      <i class="icon-base ti tabler-{{ $card['icon'] }}"></i>
+                    </span>
+                    <span class="report-status report-status--{{ $card['tone'] }}">{{ $card['label'] }}</span>
+                  </div>
+                  <div class="dashboard-status-card__value">{{ $card['value'] }}</div>
+                  <div class="dashboard-status-card__desc">{{ $card['desc'] }}</div>
+                </div>
+              </div>
+            @endforeach
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-5">
+      <div class="card report-panel h-100">
+        <div class="card-body p-0">
+          <div class="dashboard-section-head dashboard-section-head--padded">
             <div>
-              <div class="fw-semibold">طلبات السحب</div>
-              <small class="text-muted">طلبات سحب من محافظ الطلاب والمدربين</small>
+              <h5 class="mb-1">قائمة المتابعة السريعة</h5>
+              <p class="text-muted mb-0 small">صف المهام ذات الأولوية حسب الطلبات والتنبيهات المفتوحة الآن.</p>
             </div>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.index') }}">مركز الإشعارات</a>
           </div>
-          <a href="{{ route('admin.withdrawal-requests.index') }}" class="badge bg-label-danger rounded-pill text-decoration-none">{{ $pendingWithdrawalRequests }}</a>
-        </li>
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-info"></span>
+
+          <ul class="list-group list-group-flush dashboard-queue">
+            @foreach($queueItems as $item)
+              <li class="list-group-item d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="dashboard-queue__icon bg-label-{{ $item['tone'] }}">
+                    <i class="icon-base ti tabler-{{ $item['icon'] }}"></i>
+                  </span>
+                  <div>
+                    <div class="fw-semibold">{{ $item['label'] }}</div>
+                    <small class="text-muted">{{ $item['desc'] }}</small>
+                  </div>
+                </div>
+                <a href="{{ $item['route'] }}" class="badge bg-label-{{ $item['tone'] }} rounded-pill text-decoration-none">{{ $item['value'] }}</a>
+              </li>
+            @endforeach
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
             <div>
-              <div class="fw-semibold">طلبات الجوائز</div>
-              <small class="text-muted">استبدال النقاط</small>
+              <h5 class="mb-1">اتجاه المستخدمين / الخطط / الحجوزات</h5>
+              <p class="text-muted mb-0 small">قراءة يومية أو شهرية للحركة العامة داخل النظام بحسب النطاق المختار.</p>
             </div>
+            <span class="report-tag"><i class="icon-base ti tabler-chart-area"></i>{{ $trendLabel ?? 'يومي' }}</span>
           </div>
-          <a href="{{ route('admin.prize-redemptions.index') }}" class="badge bg-label-info rounded-pill text-decoration-none">{{ $pendingPrizeRequests }}</a>
-        </li>
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-secondary"></span>
+          <div id="chart-users-plans" style="height: 320px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
             <div>
-              <div class="fw-semibold">تذاكر الدعم</div>
-              <small class="text-muted">قيد المعالجة</small>
+              <h5 class="mb-1">توزيع الحالات</h5>
+              <p class="text-muted mb-0 small">ملخص بصري سريع لمكان تراكم العمل التشغيلي داخل دورة الطلب.</p>
             </div>
+            <span class="report-tag"><i class="icon-base ti tabler-chart-bar"></i>الآن</span>
           </div>
-          <a href="{{ route('admin.support.index') }}" class="badge bg-label-secondary rounded-pill text-decoration-none">{{ $pendingSupportTickets }}</a>
-        </li>
-        <li class="list-group-item d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <span class="legend-dot bg-danger"></span>
+          <div id="chart-statuses" style="height: 260px;"></div>
+          <div class="report-note-box mt-3">
+            <p>الأولوية اليومية تبدأ من <strong>بانتظار العروض</strong> ثم <strong>قيد التدريب</strong> لأنهما الأكثر تأثيرًا على التحويل والرضا.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
             <div>
-              <div class="fw-semibold">تنبيهات غير مقروءة</div>
-              <small class="text-muted">رسائل النظام</small>
+              <h5 class="mb-1">حجم القاعدة الحالية</h5>
+              <p class="text-muted mb-0 small">مقارنة سريعة بين الخطط، الدول، والمستخدمين المسجلين في الفترة الحالية.</p>
             </div>
+            <span class="report-tag"><i class="icon-base ti tabler-chart-donut"></i>توزيع</span>
           </div>
-          <a href="{{ route('admin.notifications.index') }}" class="badge bg-label-danger rounded-pill text-decoration-none">{{ $unreadNotifications }}</a>
-        </li>
-      </ul>
+          <div id="chart-overview" style="height: 280px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-7">
+      <div class="card report-panel h-100">
+        <div class="card-body">
+          <div class="dashboard-section-head">
+            <div>
+              <h5 class="mb-1">مؤشرات التشغيل السريعة</h5>
+              <p class="text-muted mb-0 small">بطاقات ثانوية لقراءة التوسع الحالي في المستخدمين والطلبات دون مغادرة الصفحة.</p>
+            </div>
+            <span class="report-tag"><i class="icon-base ti tabler-sparkles"></i>Snapshot</span>
+          </div>
+
+          <div class="row g-3">
+            @foreach($overviewStats as $stat)
+              <div class="col-md-6 col-xl">
+                <div class="report-stat dashboard-mini-stat h-100">
+                  <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div>
+                      <div class="report-stat__label">{{ $stat['label'] }}</div>
+                      <p class="report-stat__value">{{ $stat['value'] }}</p>
+                    </div>
+                    <span class="avatar-initial rounded bg-label-{{ $stat['tone'] }}">
+                      <i class="icon-base ti tabler-{{ $stat['icon'] }}"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            @endforeach
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 @push('styles')
 <style>
-  .chip { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px; font-size:13px; text-decoration:none; }
-  .chip-primary { background:#e0e7ff; color:#312e81; border:1px solid #c7d2fe; }
-  .chip-ghost { background:#fff; color:#4b5563; border:1px solid #e5e7eb; }
-  .metric { border: 1px solid #eef2f6; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .icon-pill { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:12px; }
-  .hero-surface { background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); }
-  .dashboard-range-form .form-control { min-height: 42px; }
+  .dashboard-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .dashboard-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-section-head--padded {
+    padding: 1.4rem 1.4rem 0;
+    margin-bottom: 0.8rem;
+  }
+
+  .dashboard-shortcut-card .report-directory-card__desc {
+    min-height: auto;
+  }
+
+  .dashboard-metric-card,
+  .dashboard-status-card {
+    height: 100%;
+    border: 1px solid rgba(106, 125, 156, 0.12);
+    border-radius: 22px;
+    padding: 1.1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+    box-shadow: 0 12px 30px rgba(47, 43, 61, 0.06);
+  }
+
+  .dashboard-metric-card__top,
+  .dashboard-status-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-metric-card__icon,
+  .dashboard-status-card__icon,
+  .dashboard-queue__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .dashboard-metric-card__value,
+  .dashboard-status-card__value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+  }
+
+  .dashboard-metric-card__desc,
+  .dashboard-status-card__desc {
+    color: #64748b;
+    font-size: 0.88rem;
+  }
+
+  .dashboard-mini-stat {
+    border-radius: 20px;
+  }
+
+  .report-status--info {
+    color: #155e75;
+    background: #ecfeff;
+  }
+
+  .dashboard-queue .list-group-item {
+    border-color: #eef2f7;
+    padding: 1rem 1.4rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .dashboard-metric-card__value,
+    .dashboard-status-card__value {
+      font-size: 1.45rem;
+    }
+
+    .dashboard-section-head--padded {
+      padding: 1.15rem 1.15rem 0;
+    }
+
+    .dashboard-queue .list-group-item {
+      padding: 0.95rem 1.15rem;
+    }
+  }
 </style>
 @endpush
 
@@ -377,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   new ApexCharts(document.querySelector('#chart-overview'), {
     chart: { type: 'donut', height: 280 },
-    labels: ['الخطط','الدول','المستخدمون'],
+    labels: ['الخطط', 'الدول', 'المستخدمون'],
     series: [{{ $planCount }}, {{ $countriesCount }}, {{ $usersCount }}],
     legend: { position: 'bottom' },
     colors: ['#6366f1', '#22d3ee', '#22c55e'],
@@ -397,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function(){
         {{ $completedBookings }}
       ]
     }],
-    xaxis: { categories: ['الكورسات الملغاة','بانتظار العروض','قيد التدريب','مكتملة'] },
+    xaxis: { categories: ['الكورسات الملغاة', 'بانتظار العروض', 'قيد التدريب', 'مكتملة'] },
     colors: ['#ef4444', '#f59e0b', '#0ea5e9', '#22c55e'],
     grid: { borderColor: '#e5e7eb', strokeDashArray: 4 }
   }).render();

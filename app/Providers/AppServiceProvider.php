@@ -12,6 +12,7 @@ use App\Modules\Payments\Services\PaymentProvider;
 use App\Modules\Payments\Services\DummyProvider;
 use App\Modules\Payments\Services\TapProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Pagination\Paginator;
 use App\Models\Setting;
 use App\Support\StorageUrl;
 
@@ -30,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
+
         Rating::observe(RatingObserver::class);
 
         Gate::policy(UserRequest::class, UserRequestPolicy::class);
