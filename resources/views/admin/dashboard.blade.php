@@ -28,12 +28,15 @@
   ];
 
   $overviewStats = [
-    ['label' => 'إجمالي الحجوزات', 'value' => number_format($bookingsCount), 'icon' => 'calendar-check', 'tone' => 'primary'],
-    ['label' => 'المستخدمون الجدد', 'value' => number_format($usersCount), 'icon' => 'users', 'tone' => 'success'],
-    ['label' => 'المدربون الجدد', 'value' => number_format($trainersCount), 'icon' => 'user-star', 'tone' => 'info'],
-    ['label' => 'الخطط الجديدة', 'value' => number_format($planCount), 'icon' => 'package', 'tone' => 'warning'],
-    ['label' => 'الدول الجديدة', 'value' => number_format($countriesCount), 'icon' => 'world', 'tone' => 'secondary'],
+    ['label' => 'إجمالي الحجوزات', 'value' => $bookingsCount, 'formatted' => number_format($bookingsCount), 'icon' => 'calendar-check', 'tone' => 'primary'],
+    ['label' => 'المستخدمون الجدد', 'value' => $usersCount, 'formatted' => number_format($usersCount), 'icon' => 'users', 'tone' => 'success'],
+    ['label' => 'المدربون الجدد', 'value' => $trainersCount, 'formatted' => number_format($trainersCount), 'icon' => 'user-star', 'tone' => 'info'],
+    ['label' => 'الخطط الجديدة', 'value' => $planCount, 'formatted' => number_format($planCount), 'icon' => 'package', 'tone' => 'warning'],
+    ['label' => 'الدول الجديدة', 'value' => $countriesCount, 'formatted' => number_format($countriesCount), 'icon' => 'world', 'tone' => 'secondary'],
   ];
+  $overviewStatsLabels = array_column($overviewStats, 'label');
+  $overviewStatsSeries = array_column($overviewStats, 'value');
+  $overviewStatsTotal = array_sum($overviewStatsSeries);
   $overviewSeries = [$planCount, $countriesCount, $usersCount];
   $overviewTotal = array_sum($overviewSeries);
 
@@ -345,7 +348,7 @@
                   <div class="d-flex align-items-center justify-content-between gap-2">
                     <div>
                       <div class="report-stat__label">{{ $stat['label'] }}</div>
-                      <p class="report-stat__value">{{ $stat['value'] }}</p>
+                      <p class="report-stat__value">{{ $stat['formatted'] }}</p>
                     </div>
                     <span class="avatar-initial rounded bg-label-{{ $stat['tone'] }}">
                       <i class="icon-base ti tabler-{{ $stat['icon'] }}"></i>
@@ -354,6 +357,18 @@
                 </div>
               </div>
             @endforeach
+          </div>
+
+          <div class="dashboard-mini-chart mt-4 pt-3 border-top">
+            @if($overviewStatsTotal > 0)
+              <div id="chart-quick-stats" style="height: 250px;"></div>
+            @else
+              <div class="report-empty dashboard-mini-chart__empty">
+                <span class="report-empty__icon"><i class="icon-base ti tabler-chart-bar"></i></span>
+                <div class="fw-semibold">لا توجد مؤشرات كافية لعرض الرسم حالياً</div>
+                <div class="text-muted small">سيظهر الرسم فور توفر حجوزات أو مستخدمين أو خطط ضمن النطاق المحدد.</div>
+              </div>
+            @endif
           </div>
         </div>
       </div>
@@ -433,6 +448,10 @@
     border-radius: 20px;
   }
 
+  .dashboard-mini-chart__empty {
+    min-height: 250px;
+  }
+
   .report-status--info {
     color: #155e75;
     background: #ecfeff;
@@ -500,6 +519,45 @@ document.addEventListener('DOMContentLoaded', function(){
       legend: { position: 'bottom' },
       colors: ['#6366f1', '#22d3ee', '#22c55e'],
       stroke: { width: 0 }
+    }).render();
+  }
+
+  const quickStatsChart = document.querySelector('#chart-quick-stats');
+  if (quickStatsChart) {
+    new ApexCharts(quickStatsChart, {
+      chart: { type: 'bar', height: 250, toolbar: { show: false }, foreColor: '#6b7280' },
+      series: [{
+        name: 'المؤشر',
+        data: @json($overviewStatsSeries),
+      }],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 8,
+          barHeight: '52%',
+          distributed: true,
+        }
+      },
+      dataLabels: { enabled: true },
+      xaxis: {
+        categories: @json($overviewStatsLabels),
+        min: 0,
+      },
+      yaxis: {
+        labels: {
+          maxWidth: 180,
+        }
+      },
+      legend: { show: false },
+      colors: ['#6366f1', '#22c55e', '#06b6d4', '#f59e0b', '#64748b'],
+      grid: { borderColor: '#e5e7eb', strokeDashArray: 4 },
+      tooltip: {
+        y: {
+          formatter: function(value) {
+            return value.toLocaleString('en-US');
+          }
+        }
+      }
     }).render();
   }
 
