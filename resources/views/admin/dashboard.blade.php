@@ -12,7 +12,7 @@
   $financeCards = [
     ['label' => 'إجمالي المبيعات', 'value' => number_format($salesMinor / 100, 2), 'desc' => $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم'), 'icon' => 'cash', 'tone' => 'success'],
     ['label' => 'رسوم الحجز', 'value' => number_format($reservationFeesMinor / 100, 2), 'desc' => 'ضمن النطاق المحدد', 'icon' => 'receipt-2', 'tone' => 'info'],
-    ['label' => 'رسوم الباقات', 'value' => number_format($packageFeesMinor / 100, 2), 'desc' => 'تشمل رسوم الجدية والدفع الكلي', 'icon' => 'stack-3', 'tone' => 'primary'],
+    ['label' => 'رسوم الباقات', 'value' => number_format($packageFeesMinor / 100, 2), 'desc' => 'تشمل رسوم الحجز على الباقات والدفع الكلي', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2), 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2), 'desc' => 'صافي الربح بعد خصم المصروفات', 'icon' => 'wallet', 'tone' => 'primary'],
     ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2), 'desc' => 'الحجوزات المدفوعة بالكامل', 'icon' => 'calendar-dollar', 'tone' => 'warning'],

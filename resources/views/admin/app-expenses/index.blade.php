@@ -46,7 +46,7 @@
             <div>
               <div class="text-muted small">إجمالي الأرباح الخام</div>
               <h4 class="mb-1">{{ number_format($grossProfitMinor / 100, 2) }}</h4>
-              <small class="text-muted">رسوم الحجز + رسوم الجدية + رسوم التطبيق على الدفع الكلي</small>
+              <small class="text-muted">رسوم الحجز الثابتة + رسوم الحجز على الباقات + رسوم التطبيق على الدفع الكلي</small>
             </div>
           </div>
         </div>
@@ -129,20 +129,28 @@
             <h5 class="mb-1">سجل المصروفات</h5>
             <small class="text-muted">يمكن للإدارة تعديل أو حذف المصروفات المسجلة</small>
           </div>
-          <form method="get" class="d-flex gap-2 flex-wrap">
-            <select name="type" class="form-select form-select-sm" style="min-width: 220px;">
-              <option value="">كل الأنواع</option>
-              @foreach($typeOptions as $value => $label)
-                <option value="{{ $value }}" @selected(($filters['type'] ?? null) === $value)>{{ $label }}</option>
-              @endforeach
-            </select>
-            <button class="btn btn-sm btn-primary" type="submit">
-              <i class="icon-base ti tabler-filter me-1"></i> تصفية
-            </button>
-            <a href="{{ route('admin.app-expenses.index') }}" class="btn btn-sm btn-outline-secondary">
-              <i class="icon-base ti tabler-rotate-2 me-1"></i> إعادة
+          <div class="d-flex gap-2 flex-wrap">
+            <a
+              href="{{ route('admin.app-expenses.index', array_merge(request()->query(), ['export' => 'excel'])) }}"
+              class="btn btn-sm btn-success"
+            >
+              <i class="icon-base ti tabler-file-excel me-1"></i> تصدير Excel
             </a>
-          </form>
+            <form method="get" class="d-flex gap-2 flex-wrap">
+              <select name="type" class="form-select form-select-sm" style="min-width: 220px;">
+                <option value="">كل الأنواع</option>
+                @foreach($typeOptions as $value => $label)
+                  <option value="{{ $value }}" @selected(($filters['type'] ?? null) === $value)>{{ $label }}</option>
+                @endforeach
+              </select>
+              <button class="btn btn-sm btn-primary" type="submit">
+                <i class="icon-base ti tabler-filter me-1"></i> تصفية
+              </button>
+              <a href="{{ route('admin.app-expenses.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="icon-base ti tabler-rotate-2 me-1"></i> إعادة
+              </a>
+            </form>
+          </div>
         </div>
         <div class="card-body border-top pt-3">
           <div class="row g-2 mb-3">

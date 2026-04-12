@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\AppExpensesExport;
 use App\Models\AppExpense;
 use App\Models\Payment;
 use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AppExpensesController extends BaseController
 {
@@ -18,9 +20,16 @@ class AppExpensesController extends BaseController
             'type' => $this->resolveType($request->query('type')),
         ];
 
-        $expenses = AppExpense::query()
-            ->with(['creator', 'updater'])
-            ->when($filters['type'], fn ($query, $type) => $query->where('type', $type))
+        $query = $this->expensesQuery($filters);
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new AppExpensesExport((clone $query)->latest()->get()),
+                'app-expenses-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
+        $expenses = (clone $query)
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -119,5 +128,12 @@ class AppExpensesController extends BaseController
             ->sum('app_fee_minor');
 
         return $retainedFeesMinor + $fullPaymentAppFeesMinor;
+    }
+
+    private function expensesQuery(array $filters)
+    {
+        return AppExpense::query()
+            ->with(['creator', 'updater'])
+            ->when($filters['type'], fn ($query, $type) => $query->where('type', $type));
     }
 }

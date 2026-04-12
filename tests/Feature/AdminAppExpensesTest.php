@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Exports\AppExpensesExport;
 use App\Models\AppExpense;
 use App\Models\Country;
 use App\Models\Payment;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class AdminAppExpensesTest extends TestCase
@@ -140,6 +142,37 @@ class AdminAppExpensesTest extends TestCase
         $this->assertDatabaseMissing('app_expenses', [
             'id' => $expense->id,
         ]);
+    }
+
+    public function test_admin_can_export_app_expenses_to_excel(): void
+    {
+        Excel::fake();
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009504',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_payments');
+
+        AppExpense::query()->create([
+            'type' => AppExpense::TYPE_TRAINER_DUES,
+            'amount_minor' => 12_500,
+            'notes' => 'Trainer dues export',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.app-expenses.index', [
+                'type' => AppExpense::TYPE_TRAINER_DUES,
+                'export' => 'excel',
+            ]))
+            ->assertOk();
+
+        Excel::assertDownloaded(
+            'app-expenses-' . now()->format('Y-m-d') . '.xlsx',
+            fn (AppExpensesExport $export) => true
+        );
     }
 
     /**
