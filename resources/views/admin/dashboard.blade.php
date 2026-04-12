@@ -34,6 +34,8 @@
     ['label' => 'الخطط الجديدة', 'value' => number_format($planCount), 'icon' => 'package', 'tone' => 'warning'],
     ['label' => 'الدول الجديدة', 'value' => number_format($countriesCount), 'icon' => 'world', 'tone' => 'secondary'],
   ];
+  $overviewSeries = [$planCount, $countriesCount, $usersCount];
+  $overviewTotal = array_sum($overviewSeries);
 
   $queueItems = [
     ['label' => 'طلبات الإلغاء', 'desc' => 'مراجعة الطلبات المعلقة', 'value' => $pendingCancellations, 'route' => route('admin.cancellation-requests.index'), 'tone' => 'warning', 'icon' => 'rotate-clockwise-2'],
@@ -44,14 +46,6 @@
     ['label' => 'تنبيهات النظام', 'desc' => 'تنبيهات غير مقروءة تحتاج مراجعة', 'value' => $unreadNotifications, 'route' => route('admin.notifications.index'), 'tone' => 'danger', 'icon' => 'bell-ringing'],
   ];
 
-  $quickLinks = array_values(array_filter([
-    auth()->user()?->can('manage_plans') ? ['label' => 'الحجوزات', 'desc' => 'فتح الطلبات وإدارة الحالات', 'route' => route('admin.bookings.index'), 'icon' => 'clipboard-list', 'tone' => 'primary'] : null,
-    auth()->user()?->can('manage_payments') ? ['label' => 'المدفوعات', 'desc' => 'مراجعة حركة السداد والرسوم', 'route' => route('admin.payments.index'), 'icon' => 'credit-card', 'tone' => 'success'] : null,
-    auth()->user()?->can('manage_payments') ? ['label' => 'الاشتراكات', 'desc' => 'متابعة جميع الطلبات والباقات', 'route' => route('admin.subscriptions.index'), 'icon' => 'calendar-event', 'tone' => 'info'] : null,
-    auth()->user()?->can('manage_payments') ? ['label' => 'مصروفات التطبيق', 'desc' => 'إدارة المصروفات وصافي الربح', 'route' => route('admin.app-expenses.index'), 'icon' => 'cash-banknote', 'tone' => 'warning'] : null,
-    auth()->user()?->can('manage_reports') ? ['label' => 'التقارير', 'desc' => 'مركز التقارير والتحليلات', 'route' => route('admin.reports.index'), 'icon' => 'chart-donut-3', 'tone' => 'secondary'] : null,
-    auth()->user()?->can('manage_notifications') ? ['label' => 'الإشعارات', 'desc' => 'عرض الرسائل والتنبيهات', 'route' => route('admin.notifications.index'), 'icon' => 'send', 'tone' => 'danger'] : null,
-  ]));
 @endphp
 
 @section('content')
@@ -139,90 +133,44 @@
     </div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-xl-8">
-      <div class="card report-panel">
-        <div class="card-body">
-          <div class="report-filter-card mb-0">
-            <div class="report-filter-card__header">
-              <div class="report-filter-card__title">
-                <span class="report-filter-card__icon">
-                  <i class="icon-base ti tabler-adjustments-horizontal"></i>
-                </span>
-                <div>
-                  <h6>فلترة لوحة التحكم</h6>
-                  <p>تحكم في جميع أرقام الصفحة من نفس النطاق الزمني بدل التنقل بين أكثر من شاشة.</p>
-                </div>
-              </div>
-              <div class="report-toolbar-note">النطاق الحالي: {{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</div>
-            </div>
-
-            <form method="get" class="row g-3 align-items-end">
-              <div class="col-xl-4 col-md-6">
-                <label class="report-form-label">من تاريخ</label>
-                <input type="date" name="from" value="{{ $fromValue }}" class="form-control report-input">
-              </div>
-              <div class="col-xl-4 col-md-6">
-                <label class="report-form-label">إلى تاريخ</label>
-                <input type="date" name="to" value="{{ $toValue }}" class="form-control report-input">
-              </div>
-              <div class="col-xl-2 col-md-6">
-                <button class="btn btn-primary w-100">
-                  <i class="icon-base ti tabler-filter me-1"></i>
-                  تطبيق
-                </button>
-              </div>
-              <div class="col-xl-2 col-md-6">
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary w-100 report-reset">
-                  <i class="icon-base ti tabler-rotate-2 me-1"></i>
-                  إعادة
-                </a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-4">
-      <div class="card report-panel h-100">
-        <div class="card-body">
-          <div class="dashboard-section-head">
+  <div class="card report-panel">
+    <div class="card-body">
+      <div class="report-filter-card mb-0">
+        <div class="report-filter-card__header">
+          <div class="report-filter-card__title">
+            <span class="report-filter-card__icon">
+              <i class="icon-base ti tabler-adjustments-horizontal"></i>
+            </span>
             <div>
-              <h5 class="mb-1">وصول سريع</h5>
-              <p class="text-muted mb-0 small">اختصارات مرتبة حسب أكثر المهام تكرارًا في التشغيل اليومي.</p>
+              <h6>فلترة لوحة التحكم</h6>
+              <p>تحكم في جميع أرقام الصفحة من نفس النطاق الزمني بدل التنقل بين أكثر من شاشة.</p>
             </div>
-            <span class="report-tag"><i class="icon-base ti tabler-bolt"></i>{{ count($quickLinks) }} اختصارات</span>
           </div>
-
-          <div class="row g-3">
-            @forelse($quickLinks as $link)
-              <div class="col-md-6 col-xl-12">
-                <a href="{{ $link['route'] }}" class="report-directory-card dashboard-shortcut-card">
-                  <div class="report-directory-card__top">
-                    <span class="report-directory-card__icon bg-label-{{ $link['tone'] }}">
-                      <i class="icon-base ti tabler-{{ $link['icon'] }}"></i>
-                    </span>
-                    <span class="report-tag">{{ $link['label'] }}</span>
-                  </div>
-                  <div class="report-directory-card__title">{{ $link['label'] }}</div>
-                  <p class="report-directory-card__desc">{{ $link['desc'] }}</p>
-                  <div class="report-directory-card__foot">
-                    <span>فتح القسم</span>
-                    <i class="icon-base ti tabler-arrow-up-left"></i>
-                  </div>
-                </a>
-              </div>
-            @empty
-              <div class="col-12">
-                <div class="report-empty">
-                  <span class="report-empty__icon"><i class="icon-base ti tabler-lock"></i></span>
-                  <div>لا توجد اختصارات متاحة بحسب الصلاحيات الحالية.</div>
-                </div>
-              </div>
-            @endforelse
-          </div>
+          <div class="report-toolbar-note">النطاق الحالي: {{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</div>
         </div>
+
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-xl-4 col-md-6">
+            <label class="report-form-label">من تاريخ</label>
+            <input type="date" name="from" value="{{ $fromValue }}" class="form-control report-input">
+          </div>
+          <div class="col-xl-4 col-md-6">
+            <label class="report-form-label">إلى تاريخ</label>
+            <input type="date" name="to" value="{{ $toValue }}" class="form-control report-input">
+          </div>
+          <div class="col-xl-2 col-md-6">
+            <button class="btn btn-primary w-100">
+              <i class="icon-base ti tabler-filter me-1"></i>
+              تطبيق
+            </button>
+          </div>
+          <div class="col-xl-2 col-md-6">
+            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary w-100 report-reset">
+              <i class="icon-base ti tabler-rotate-2 me-1"></i>
+              إعادة
+            </a>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -366,7 +314,15 @@
             </div>
             <span class="report-tag"><i class="icon-base ti tabler-chart-donut"></i>توزيع</span>
           </div>
-          <div id="chart-overview" style="height: 280px;"></div>
+          @if($overviewTotal > 0)
+            <div id="chart-overview" style="height: 280px;"></div>
+          @else
+            <div class="report-empty dashboard-overview-empty">
+              <span class="report-empty__icon"><i class="icon-base ti tabler-chart-donut"></i></span>
+              <div class="fw-semibold">لا توجد بيانات كافية لعرض الرسم حالياً</div>
+              <div class="text-muted small">سيظهر الرسم تلقائياً بعد إضافة خطط أو دول أو مستخدمين ضمن النطاق المحدد.</div>
+            </div>
+          @endif
         </div>
       </div>
     </div>
@@ -427,10 +383,6 @@
     margin-bottom: 0.8rem;
   }
 
-  .dashboard-shortcut-card .report-directory-card__desc {
-    min-height: auto;
-  }
-
   .dashboard-metric-card,
   .dashboard-status-card {
     height: 100%;
@@ -486,6 +438,10 @@
     background: #ecfeff;
   }
 
+  .dashboard-overview-empty {
+    min-height: 280px;
+  }
+
   .dashboard-queue .list-group-item {
     border-color: #eef2f7;
     padding: 1rem 1.4rem;
@@ -535,14 +491,17 @@ document.addEventListener('DOMContentLoaded', function(){
     colors: ['#22c55e', '#0ea5e9', '#f59e0b']
   }).render();
 
-  new ApexCharts(document.querySelector('#chart-overview'), {
-    chart: { type: 'donut', height: 280 },
-    labels: ['الخطط', 'الدول', 'المستخدمون'],
-    series: [{{ $planCount }}, {{ $countriesCount }}, {{ $usersCount }}],
-    legend: { position: 'bottom' },
-    colors: ['#6366f1', '#22d3ee', '#22c55e'],
-    stroke: { width: 0 }
-  }).render();
+  const overviewChart = document.querySelector('#chart-overview');
+  if (overviewChart) {
+    new ApexCharts(overviewChart, {
+      chart: { type: 'donut', height: 280 },
+      labels: ['الخطط', 'الدول', 'المستخدمون'],
+      series: [{{ $planCount }}, {{ $countriesCount }}, {{ $usersCount }}],
+      legend: { position: 'bottom' },
+      colors: ['#6366f1', '#22d3ee', '#22c55e'],
+      stroke: { width: 0 }
+    }).render();
+  }
 
   new ApexCharts(document.querySelector('#chart-statuses'), {
     chart: { type: 'bar', height: 260, toolbar: { show: false }, foreColor: '#6b7280' },
