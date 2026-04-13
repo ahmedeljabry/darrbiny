@@ -87,11 +87,11 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertSee('حساب محفظة التطبيق')
             ->assertSee('رسوم الحجز الثابتة')
             ->assertSee('رسوم الحجز على الباقات')
-            ->assertSee('رسوم التطبيق على الدفع الكلي')
+            ->assertSee('الدفع الكلي')
             ->assertSee('مصروفات تشغيل')
-            ->assertSee('180.00')
+            ->assertSee('350.00')
             ->assertSee('60.00')
-            ->assertSee('120.00');
+            ->assertSee('290.00');
     }
 
     public function test_admin_can_export_app_wallet_account_to_excel(): void
@@ -173,6 +173,39 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertSee('5.00 SAR')
             ->assertSee('3.00 SAR')
             ->assertSee('100.00 EGP');
+    }
+
+    public function test_admin_can_filter_app_wallet_by_app_fee_analysis(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009606',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_payments');
+
+        [$user, $request] = $this->createPaidRequestContext();
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 20_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 3_000,
+            'trainer_net_minor' => 17_000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.app-wallet-account.index', [
+                'direction' => 'in',
+                'source' => 'app_fee',
+            ]))
+            ->assertOk()
+            ->assertSee('رسوم التطبيق على الدفع الكلي')
+            ->assertSee('30.00')
+            ->assertDontSee('200.00');
     }
 
     /**

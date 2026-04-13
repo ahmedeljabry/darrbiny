@@ -21,6 +21,7 @@ final class AppWalletAccountService
         return [
             Payment::TYPE_RESERVATION_FEE => 'وارد: رسوم الحجز الثابتة',
             Payment::TYPE_PLAN_PARTIAL => 'وارد: رسوم الحجز على الباقات',
+            Payment::TYPE_PLAN_FULL => 'وارد: الدفع الكلي',
             'app_fee' => 'وارد: رسوم التطبيق على الدفع الكلي',
             AppExpense::TYPE_OPERATING_EXPENSE => 'صادر: مصروفات تشغيل',
             AppExpense::TYPE_TRAINER_DUES => 'صادر: مستحقات مدربين',
@@ -43,24 +44,8 @@ final class AppWalletAccountService
 
             if ($source === 'app_fee') {
                 $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'app_fee_minor');
-            } elseif (in_array($source, [Payment::TYPE_RESERVATION_FEE, Payment::TYPE_PLAN_PARTIAL], true)) {
-                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'amount_minor');
             } else {
-                $reservationAndPackageFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-                    (clone $incomingQuery)
-                    ->whereIn('type', [
-                        Payment::TYPE_RESERVATION_FEE,
-                        Payment::TYPE_PLAN_PARTIAL,
-                    ]),
-                    'amount_minor'
-                );
-
-                $fullPaymentAppFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-                    (clone $incomingQuery)->where('type', Payment::TYPE_PLAN_FULL),
-                    'app_fee_minor'
-                );
-
-                $incomingMinor = $reservationAndPackageFeesMinor + $fullPaymentAppFeesMinor;
+                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'amount_minor');
             }
         }
 
@@ -89,10 +74,12 @@ final class AppWalletAccountService
             return collect();
         }
 
+        $sourceFilter = $filters['source'] ?? null;
+
         return $this->incomingPaymentsQuery($filters)
             ->get()
-            ->map(function (Payment $payment): object {
-                $isAppFeeEntry = $payment->type === Payment::TYPE_PLAN_FULL;
+            ->map(function (Payment $payment) use ($sourceFilter): object {
+                $isAppFeeEntry = $sourceFilter === 'app_fee' && $payment->type === Payment::TYPE_PLAN_FULL;
                 $amountMinor = $isAppFeeEntry ? (int) $payment->app_fee_minor : (int) $payment->amount_minor;
                 $sourceKey = $isAppFeeEntry ? 'app_fee' : (string) $payment->type;
 
@@ -157,24 +144,21 @@ final class AppWalletAccountService
         $query = Payment::query()
             ->with(['user', 'userRequest.trainer', 'userRequest.plan'])
             ->where('status', Payment::STATUS_SUCCEEDED)
-            ->where(function (Builder $builder): void {
-                $builder
-                    ->whereIn('type', [
-                        Payment::TYPE_RESERVATION_FEE,
-                        Payment::TYPE_PLAN_PARTIAL,
-                    ])
-                    ->orWhere(function (Builder $nested): void {
-                        $nested
-                            ->where('type', Payment::TYPE_PLAN_FULL)
-                            ->where('app_fee_minor', '>', 0);
-                    });
-            });
+            ->whereIn('type', [
+                Payment::TYPE_RESERVATION_FEE,
+                Payment::TYPE_PLAN_PARTIAL,
+                Payment::TYPE_PLAN_FULL,
+            ]);
 
         if ($source === 'app_fee') {
             $query
                 ->where('type', Payment::TYPE_PLAN_FULL)
                 ->where('app_fee_minor', '>', 0);
-        } elseif (in_array($source, [Payment::TYPE_RESERVATION_FEE, Payment::TYPE_PLAN_PARTIAL], true)) {
+        } elseif (in_array($source, [
+            Payment::TYPE_RESERVATION_FEE,
+            Payment::TYPE_PLAN_PARTIAL,
+            Payment::TYPE_PLAN_FULL,
+        ], true)) {
             $query->where('type', $source);
         } elseif ($source !== null && ! $this->isIncomingSource($source)) {
             $query->whereRaw('1 = 0');
@@ -254,6 +238,7 @@ final class AppWalletAccountService
         return match ($sourceKey) {
             Payment::TYPE_RESERVATION_FEE => 'تحصيل رسوم الحجز الثابتة',
             Payment::TYPE_PLAN_PARTIAL => 'تحصيل رسوم الحجز على الباقات',
+            Payment::TYPE_PLAN_FULL => 'تحصيل دفعة كلية من العميل',
             'app_fee' => 'تحصيل رسوم التطبيق من دفعة كلية',
             default => 'حركة واردة على محفظة التطبيق',
         };
@@ -264,6 +249,7 @@ final class AppWalletAccountService
         return in_array($source, [
             Payment::TYPE_RESERVATION_FEE,
             Payment::TYPE_PLAN_PARTIAL,
+            Payment::TYPE_PLAN_FULL,
             'app_fee',
         ], true);
     }
