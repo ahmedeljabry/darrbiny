@@ -136,13 +136,13 @@ class AdminDashboardTest extends TestCase
             ->assertSee('صافي الربح')
             ->assertSee('قيد التدريب')
             ->assertSee('الكورسات الملغاة')
-            ->assertSee('703.68')
-            ->assertSee('123.45')
-            ->assertSee('580.23')
+            ->assertSee('392.57')
+            ->assertSee('358.01')
+            ->assertSee('34.56')
             ->assertSee('80.00')
             ->assertSee($walletBalance)
             ->assertSee('345.67')
-            ->assertSee('623.68')
+            ->assertSee('312.57')
             ->assertSee('الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ');
     }
 
@@ -249,9 +249,9 @@ class AdminDashboardTest extends TestCase
             ->assertSee('name="from"', false)
             ->assertSee('name="to"', false)
             ->assertSee('فلترة مخصصة مفعلة')
-            ->assertSee('111.11')
+            ->assertSee('11.11')
             ->assertSee('10.00')
-            ->assertSee('101.11')
+            ->assertSee('1.11')
             ->assertSee($walletBalance)
             ->assertDontSee('333.33');
     }
@@ -316,7 +316,7 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('8.00 SAR')
+            ->assertSee('0.80 SAR')
             ->assertSee('محول للريال');
     }
 }

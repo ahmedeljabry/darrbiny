@@ -67,18 +67,18 @@ class DashboardController extends BaseController
 
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
-        $salesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($succeededPayments, 'amount_minor');
         $reservationFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-            $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_RESERVATION_FEE),
-            'amount_minor'
-        );
-        $packageFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
             $succeededPayments->clone()->whereIn('type', [
+                \App\Models\Payment::TYPE_RESERVATION_FEE,
                 \App\Models\Payment::TYPE_PLAN_PARTIAL,
-                \App\Models\Payment::TYPE_PLAN_FULL,
             ]),
             'amount_minor'
         );
+        $packageFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
+            $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
+            'app_fee_minor'
+        );
+        $salesMinor = $reservationFeesMinor + $packageFeesMinor;
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
             $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
             'amount_minor'
@@ -86,7 +86,7 @@ class DashboardController extends BaseController
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
-        $netProfitMinor = ($reservationFeesMinor + $packageFeesMinor) - $expensesMinor;
+        $netProfitMinor = $salesMinor - $expensesMinor;
         $appWalletBalanceMinor = $this->appWalletAccountService->summary()['net_minor'];
 
         [

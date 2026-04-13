@@ -26,10 +26,7 @@
 
   $successfulCount = $payments->where('status', \App\Models\Payment::STATUS_SUCCEEDED)->count();
   $rangeValues = ['from' => $from, 'to' => $to];
-  $reportTypeLabels = [
-    ...\App\Models\Payment::typeLabels(),
-    \App\Models\Payment::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
-  ];
+  $reportTypeLabels = \App\Models\Payment::reportTypeLabels();
 @endphp
 
 @section('content')

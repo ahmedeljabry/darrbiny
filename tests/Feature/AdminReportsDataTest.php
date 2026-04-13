@@ -168,9 +168,61 @@ class AdminReportsDataTest extends TestCase
             ->assertOk();
 
         $response
-            ->assertSee('رسوم الحجز')
+            ->assertSee('رسوم الحجز على الباقات')
             ->assertSee('25.00 SAR')
             ->assertDontSee('80.00 SAR');
+    }
+
+    public function test_payments_report_shows_distinct_type_labels_for_reservation_variants(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $user = User::factory()->create([
+            'name' => 'Payments Types User',
+            'phone_with_cc' => '+10000008033',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PAID,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 1500,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_RESERVATION_FEE,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 1500,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 2500,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 2500,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.payments'))
+            ->assertOk()
+            ->assertSee('رسوم الحجز الثابتة')
+            ->assertSee('رسوم الحجز على الباقات');
     }
 
     public function test_sales_report_summary_is_converted_to_riyal_while_rows_keep_original_currency(): void

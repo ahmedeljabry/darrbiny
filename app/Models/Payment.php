@@ -60,6 +60,15 @@ class Payment extends BaseModel
         ];
     }
 
+    public static function reportTypeLabels(): array
+    {
+        return [
+            self::TYPE_RESERVATION_FEE => 'رسوم الحجز الثابتة',
+            self::TYPE_PLAN_PARTIAL => 'رسوم الحجز على الباقات',
+            self::TYPE_PLAN_FULL => 'دفع كلي',
+        ];
+    }
+
     public static function typeLabelFor(?string $type): string
     {
         return self::typeLabels()[$type] ?? (string) $type;

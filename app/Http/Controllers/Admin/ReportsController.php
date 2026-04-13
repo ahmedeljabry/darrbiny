@@ -357,9 +357,6 @@ class ReportsController extends BaseController
 
     private function reportTypeOptions(): array
     {
-        return [
-            ...Payment::typeLabels(),
-            Payment::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
-        ];
+        return Payment::reportTypeLabels();
     }
 }
