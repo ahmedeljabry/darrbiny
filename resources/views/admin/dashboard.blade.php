@@ -11,13 +11,13 @@
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 
   $financeCards = [
-    ['label' => 'إجمالي المبيعات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
-    ['label' => 'رسوم الحجز', 'value' => number_format($reservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'تشمل الرسوم الثابتة ورسوم الحجز على الباقات • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
-    ['label' => 'رسوم الباقات', 'value' => number_format($packageFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق على الدفعات الكلية فقط • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
+    ['label' => 'إجمالي المبيعات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'وارد رسوم الحجز على الباقات + وارد رسوم التطبيق ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'وارد: رسوم الحجز على الباقات', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'مطابق لحركات الوارد في شاشة المحفظة • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
+    ['label' => 'وارد: رسوم التطبيق على الدفع الكلي', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق فقط من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ', 'icon' => 'wallet', 'tone' => 'primary'],
     ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الحجوزات المدفوعة بالكامل • محول للريال', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
-    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي المبيعات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
+    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
     ['label' => 'تنبيهات غير مقروءة', 'value' => number_format($unreadNotifications), 'desc' => $rangeLabel ?? 'مركز الإشعارات', 'icon' => 'bell', 'tone' => 'danger'],
   ];
 

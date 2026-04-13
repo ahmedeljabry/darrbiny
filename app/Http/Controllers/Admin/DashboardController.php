@@ -65,20 +65,22 @@ class DashboardController extends BaseController
             ->whereBetween('created_at', [$from, $to])
             ->count();
 
+        $dashboardIncomeFilters = [
+            'from' => $from,
+            'to' => $to,
+            'direction' => 'in',
+        ];
+        $packageReservationFeesMinor = $this->appWalletAccountService->summary([
+            ...$dashboardIncomeFilters,
+            'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
+        ])['incoming_minor'];
+        $appFeesMinor = $this->appWalletAccountService->summary([
+            ...$dashboardIncomeFilters,
+            'source' => 'app_fee',
+        ])['incoming_minor'];
+        $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
-        $reservationFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-            $succeededPayments->clone()->whereIn('type', [
-                \App\Models\Payment::TYPE_RESERVATION_FEE,
-                \App\Models\Payment::TYPE_PLAN_PARTIAL,
-            ]),
-            'amount_minor'
-        );
-        $packageFeesMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-            $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
-            'app_fee_minor'
-        );
-        $salesMinor = $reservationFeesMinor + $packageFeesMinor;
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
             $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
             'amount_minor'
@@ -104,7 +106,7 @@ class DashboardController extends BaseController
             'pendingCancellations','pendingWalletRequests','pendingWithdrawalRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
             'labels','userSeries','planSeries','bookingSeries',
-            'range','salesMinor','reservationFeesMinor','packageFeesMinor','awaitingOffers',
+            'range','salesMinor','packageReservationFeesMinor','appFeesMinor','awaitingOffers',
             'from','to','rangeLabel','usesCustomRange','trendLabel',
             'bookingsValueMinor','expensesMinor','netProfitMinor','appWalletBalanceMinor'
         ));
