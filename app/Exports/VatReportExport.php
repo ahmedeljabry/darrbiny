@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,10 +13,14 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class VatReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $payments,
         private readonly float $vatPercent
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -27,9 +32,9 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             'المعرف',
             'المستخدم',
-            'المبلغ',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
-            'ضريبة القيمة المضافة',
+            'ضريبة القيمة المضافة (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'التاريخ',
         ];
     }
@@ -40,9 +45,9 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             $payment->id,
             $payment->user?->name ?? $payment->user_id,
-            number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
             $payment->type,
-            number_format($vatMinor / 100, 2),
+            $this->reportCurrencyConverter->formatConvertedMinor($vatMinor, $payment->currency),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
     }

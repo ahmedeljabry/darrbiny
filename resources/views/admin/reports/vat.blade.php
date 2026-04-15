@@ -3,6 +3,7 @@
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
@@ -49,7 +50,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>إجمالي الضريبة في أعلى الصفحة محول إلى {{ $reportCurrency }}، بينما تبقى مبالغ الصفوف وضريبة كل صف بالعملة الأصلية للمعاملة.</p>
+        <p>كل مبالغ هذا التقرير، بما فيها ضريبة كل صف، معروضة بالـ {{ $reportCurrency }} بعد التحويل.</p>
       </div>
 
       <div class="table-responsive">
@@ -82,14 +83,14 @@
                     <small class="text-muted">{{ $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '—' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
                     <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-danger">{{ number_format($vatMinor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-danger">{{ $converter->formatConvertedMinor($vatMinor, $payment->currency) }}</span></td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>
             @empty

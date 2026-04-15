@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,9 +13,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $payments
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -33,8 +38,8 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             'المنطقة الثانية',
             'المنطقة الثالثة',
             'الحي / المحلية',
-            'المبلغ',
-            'العمولة',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'العمولة (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'تاريخ/وقت',
         ];
     }
@@ -51,8 +56,8 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             $payment->userRequest?->area_level_2 ?? '-',
             $payment->userRequest?->area_level_3 ?? '-',
             $payment->userRequest?->locality ?? '-',
-            number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
-            number_format($payment->app_fee_minor / 100, 2) . ' ' . $payment->currency,
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
     }

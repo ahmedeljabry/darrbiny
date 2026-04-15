@@ -3,6 +3,7 @@
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $planOptions = $plans->pluck('title', 'id')->all();
@@ -55,7 +56,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>إجمالي المدفوعات في البطاقات محول إلى {{ $reportCurrency }} حسب معدل التحويل المحدد، بينما يعرض الجدول أدناه قيمة كل عملية بعملتها الأصلية.</p>
+        <p>كل مبالغ هذا التقرير معروضة بالـ {{ $reportCurrency }} حسب معدل التحويل المحدد في الإعدادات.</p>
       </div>
 
       <div class="table-responsive">
@@ -103,7 +104,7 @@
                     <small class="text-muted">{{ $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '—' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
                     <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>

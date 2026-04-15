@@ -3,6 +3,7 @@
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
@@ -49,7 +50,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>إجماليات التقرير ومتوسطاته معروضة بالـ {{ $reportCurrency }} بعد تطبيق معدل التحويل، بينما يحتفظ كل صف بالعملة الأصلية الخاصة بالعملية.</p>
+        <p>كل مبالغ التقرير معروضة بالـ {{ $reportCurrency }} بعد تطبيق معدل التحويل، كما يتم خصم مبالغ الإلغاءات المعتمدة من إجمالي المبيعات.</p>
       </div>
 
       <div class="table-responsive">
@@ -92,8 +93,8 @@
                     </small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
-                <td><span class="fw-semibold text-warning">{{ number_format($payment->app_fee_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
+                <td><span class="fw-semibold text-warning">{{ $converter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
                     <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>

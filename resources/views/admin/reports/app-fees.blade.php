@@ -2,6 +2,8 @@
 @section('title', 'تقرير رسوم التطبيق')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $filterFields = [
@@ -22,14 +24,15 @@
     'tags' => [
       ['label' => 'النوع plan_full فقط', 'icon' => 'filter'],
       ['label' => 'إجمالي الرسوم والمتوسط', 'icon' => 'calculator'],
+      ['label' => 'المبالغ محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.app-fees', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي الرسوم', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'percentage'],
+      ['label' => 'إجمالي الرسوم', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'percentage'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
-      ['label' => 'متوسط الرسم', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'chart-histogram', 'tone' => 'info'],
+      ['label' => 'متوسط الرسم', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'info'],
       ['label' => 'وسائل الدفع المتاحة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'secondary'],
     ],
   ])
@@ -43,6 +46,10 @@
         'title' => 'فلترة رسوم التطبيق',
         'subtitle' => 'ركّز على الرسوم بحسب الدولة أو وسيلة الدفع أو الفترة أو البحث النصي.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>كل رسوم التطبيق في هذا التقرير معروضة بالـ {{ $reportCurrency }} بعد التحويل.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">
@@ -80,7 +87,7 @@
                     <small class="text-muted">{{ $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '—' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-warning">{{ number_format($payment->app_fee_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-warning">{{ $converter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
                     <span class="badge bg-label-primary">{{ $payment->typeLabel() }}</span>

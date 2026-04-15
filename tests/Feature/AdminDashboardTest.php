@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\AppExpense;
+use App\Models\CancellationRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -318,5 +319,96 @@ class AdminDashboardTest extends TestCase
             ->assertOk()
             ->assertSee('0.80 SAR')
             ->assertSee('محول للريال');
+    }
+
+    public function test_dashboard_sales_and_profit_deduct_approved_cancellation_refunds(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009031',
+            'email' => 'admin-dashboard-cancellation@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        $country = Country::create([
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Dashboard Cancellation Plan',
+            'description' => 'Plan used for cancellation deduction on dashboard',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000009032',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_CANCELLED,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 2000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 2000,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 8000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 800,
+            'trainer_net_minor' => 7200,
+        ]);
+
+        CancellationRequest::create([
+            'user_request_id' => $request->id,
+            'user_id' => $user->id,
+            'reason' => 'Dashboard cancellation',
+            'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 5000,
+            'processed_at' => now(),
+        ]);
+
+        AppExpense::create([
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
+            'amount_minor' => 100,
+            'notes' => 'Dashboard cancellation expense',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('14.00 SAR')
+            ->assertSee('4.00 SAR')
+            ->assertSee('10.00 SAR')
+            ->assertSee('1.00 SAR')
+            ->assertSee('13.00 SAR');
     }
 }

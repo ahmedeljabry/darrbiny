@@ -74,6 +74,7 @@
                             $fullPayment = $userRequest->latestSuccessfulFullPayment();
                             $partialPayment = $userRequest->latestSuccessfulPartialPayment();
                             $successfulPaymentsMinor = $userRequest->totalSuccessfulPaymentsMinor();
+                            $refundAmountMinor = (int) ($cancellation->refund_amount_minor ?? $successfulPaymentsMinor);
                         @endphp
                         @if($fullPayment)
                             <p class="mb-1"><strong>قيمة الباقة:</strong> {{ number_format($fullPayment->amount_minor / 100, 2) }} {{ $userRequest->currency }}</p>
@@ -83,7 +84,7 @@
                             <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ number_format($partialPayment->amount_minor / 100, 2) }} {{ $userRequest->currency }}</p>
                         @endif
                         <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ number_format($successfulPaymentsMinor / 100, 2) }} {{ $userRequest->currency }}</p>
-                        <p class="mb-1"><strong>المبلغ المراد إرجاعه:</strong> {{ number_format($successfulPaymentsMinor / 100, 2) }} {{ $userRequest->currency }}</p>
+                        <p class="mb-1"><strong>المبلغ المراد إرجاعه:</strong> {{ number_format($refundAmountMinor / 100, 2) }} {{ $userRequest->currency }}</p>
                     </div>
                     @if($cancellation->admin_notes)
                     <div class="col-12">

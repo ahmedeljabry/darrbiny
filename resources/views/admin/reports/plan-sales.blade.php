@@ -2,6 +2,8 @@
 @section('title', 'تقرير مبيعات الباقات')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $filterFields = [
@@ -22,14 +24,15 @@
     'tags' => [
       ['label' => 'المدفوعات المكتملة فقط', 'icon' => 'circle-check'],
       ['label' => 'فلترة بالدولة والوسيلة', 'icon' => 'world'],
+      ['label' => 'المبالغ محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.plan-sales', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'coins'],
+      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
-      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . ($payments->first()?->currency ?? 'SAR'), 'icon' => 'chart-histogram', 'tone' => 'success'],
+      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'success'],
       ['label' => 'وسائل الدفع المتاحة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
     ],
   ])
@@ -43,6 +46,10 @@
         'title' => 'فلترة مبيعات الباقات',
         'subtitle' => 'فلترة مرنة بالبحث النصي أو طريقة الدفع أو الدولة أو المدة الزمنية.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>كل مبالغ مبيعات الباقات في هذا التقرير معروضة بالـ {{ $reportCurrency }} بعد التحويل، وإجمالي المبيعات الصافي يخصم مبالغ الإلغاءات المعتمدة.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">
@@ -82,8 +89,8 @@
                     <small class="text-muted">{{ collect([$payment->userRequest?->area_level_2, $payment->userRequest?->area_level_3, $payment->userRequest?->locality])->filter()->implode(' / ') ?: 'بدون تفاصيل إضافية' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</span></td>
-                <td><span class="fw-semibold text-warning">{{ number_format($payment->app_fee_minor / 100, 2) }} {{ $payment->currency }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
+                <td><span class="fw-semibold text-warning">{{ $converter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency) }}</span></td>
                 <td>{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Admin;
 
+use App\Models\CancellationRequest;
 use App\Models\Payment;
 use App\Models\UserRequest;
 use App\Support\ReportCurrencyConverter;
@@ -33,7 +34,9 @@ final class ReportsService
             'type' => $paymentType,
         ]);
 
-        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $refundsMinor = $this->allocatedCancellationRefundsMinor($from, $to, ['type' => $paymentType], 'gross');
+        $totalMinor = $grossTotalMinor - $refundsMinor;
 
         return [
             'payments' => (clone $query)->latest()->paginate(25),
@@ -56,7 +59,14 @@ final class ReportsService
             $filters
         );
 
-        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $refundsMinor = $this->allocatedCancellationRefundsMinor(
+            $filters['from'] ?? null,
+            $filters['to'] ?? null,
+            $filters,
+            'gross'
+        );
+        $totalMinor = $grossTotalMinor - $refundsMinor;
         $count = (int) (clone $query)->count();
 
         return [
@@ -123,7 +133,9 @@ final class ReportsService
     public function planSales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
         $query = $this->planSalesQuery($from, $to, $filters);
-        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $refundsMinor = $this->allocatedCancellationRefundsMinor($from, $to, $filters, 'plan_full');
+        $totalMinor = $grossTotalMinor - $refundsMinor;
         $count = (int) (clone $query)->count();
 
         return [
@@ -348,6 +360,172 @@ final class ReportsService
                         ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like));
                 });
             });
+    }
+
+    public function allocatedCancellationRefundsMinor(
+        ?\DateTimeInterface $from = null,
+        ?\DateTimeInterface $to = null,
+        array $filters = [],
+        string $amountMode = 'gross'
+    ): int {
+        $cancellations = CancellationRequest::query()
+            ->with([
+                'userRequest.user',
+                'userRequest.trainer',
+                'userRequest.plan',
+                'userRequest.country',
+                'userRequest.payments',
+                'userRequest.payments.user',
+            ])
+            ->where('status', CancellationRequest::STATUS_APPROVED)
+            ->where('refund_amount_minor', '>', 0)
+            ->when($from, fn (Builder $query, \DateTimeInterface $date) => $query->where('processed_at', '>=', $date))
+            ->when($to, fn (Builder $query, \DateTimeInterface $date) => $query->where('processed_at', '<=', $date))
+            ->get();
+
+        return $cancellations->sum(function (CancellationRequest $cancellation) use ($filters, $amountMode): int {
+            $request = $cancellation->userRequest;
+
+            if (! $request || ! $this->cancellationMatchesFilters($cancellation, $filters)) {
+                return 0;
+            }
+
+            $successfulPayments = $request->payments
+                ->filter(fn (Payment $payment) => $payment->status === Payment::STATUS_SUCCEEDED)
+                ->values();
+
+            $totalSuccessfulMinor = (int) $successfulPayments->sum('amount_minor');
+            if ($totalSuccessfulMinor <= 0) {
+                return 0;
+            }
+
+            $relevantPayments = $successfulPayments
+                ->filter(fn (Payment $payment) => $this->paymentMatchesFilters($payment, $request, $filters))
+                ->values();
+
+            $matchingMinor = match ($amountMode) {
+                'plan_full' => (int) $relevantPayments
+                    ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
+                    ->sum('amount_minor'),
+                'plan_partial' => (int) $relevantPayments
+                    ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_PARTIAL)
+                    ->sum('amount_minor'),
+                'app_fee' => (int) $relevantPayments
+                    ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
+                    ->sum('app_fee_minor'),
+                default => (int) $relevantPayments->sum('amount_minor'),
+            };
+
+            if ($matchingMinor <= 0) {
+                return 0;
+            }
+
+            $allocatedMinor = min(
+                $matchingMinor,
+                (int) round(((int) $cancellation->refund_amount_minor) * ($matchingMinor / $totalSuccessfulMinor))
+            );
+
+            return $this->reportCurrencyConverter->convertMinor(
+                $allocatedMinor,
+                $request->currency ?? ReportCurrencyConverter::REPORT_CURRENCY
+            );
+        });
+    }
+
+    private function cancellationMatchesFilters(CancellationRequest $cancellation, array $filters = []): bool
+    {
+        $request = $cancellation->userRequest;
+        if (! $request) {
+            return false;
+        }
+
+        if (($filters['country_id'] ?? null) !== null) {
+            $countryId = (string) $filters['country_id'];
+            $requestCountryId = (string) ($request->country_id ?? $request->plan?->country_id ?? '');
+
+            if ($requestCountryId !== $countryId) {
+                return false;
+            }
+        }
+
+        if (($filters['plan_id'] ?? null) !== null && (string) $request->plan_id !== (string) $filters['plan_id']) {
+            return false;
+        }
+
+        if (($filters['search'] ?? null) !== null) {
+            $needle = mb_strtolower((string) $filters['search']);
+            $paymentHaystacks = $request->payments
+                ->map(fn (Payment $payment) => [
+                    (string) $payment->id,
+                    (string) $payment->payment_method,
+                ])
+                ->flatten()
+                ->all();
+            $haystacks = [
+                (string) $cancellation->id,
+                (string) $request->id,
+                (string) $request->user?->name,
+                (string) $request->user?->phone_with_cc,
+                (string) $request->trainer?->name,
+                (string) $request->trainer?->phone_with_cc,
+                (string) $request->plan?->title,
+                ...$paymentHaystacks,
+            ];
+
+            $matchesSearch = collect($haystacks)
+                ->filter()
+                ->contains(fn (string $value) => str_contains(mb_strtolower($value), $needle));
+
+            if (! $matchesSearch) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function paymentMatchesFilters(Payment $payment, UserRequest $request, array $filters = []): bool
+    {
+        if (($filters['type'] ?? null) !== null && $payment->type !== (string) $filters['type']) {
+            return false;
+        }
+
+        if (($filters['payment_method'] ?? null) !== null && $payment->payment_method !== (string) $filters['payment_method']) {
+            return false;
+        }
+
+        if (($filters['country_id'] ?? null) !== null) {
+            $countryId = (string) $filters['country_id'];
+            $requestCountryId = (string) ($request->country_id ?? $request->plan?->country_id ?? '');
+
+            if ($requestCountryId !== $countryId) {
+                return false;
+            }
+        }
+
+        if (($filters['plan_id'] ?? null) !== null && (string) $request->plan_id !== (string) $filters['plan_id']) {
+            return false;
+        }
+
+        if (($filters['search'] ?? null) !== null) {
+            $needle = mb_strtolower((string) $filters['search']);
+            $haystacks = [
+                (string) $payment->id,
+                (string) $payment->user_request_id,
+                (string) $payment->payment_method,
+                (string) $payment->user?->name,
+                (string) $payment->user?->phone_with_cc,
+                (string) $request->trainer?->name,
+                (string) $request->trainer?->phone_with_cc,
+                (string) $request->plan?->title,
+            ];
+
+            return collect($haystacks)
+                ->filter()
+                ->contains(fn (string $value) => str_contains(mb_strtolower($value), $needle));
+        }
+
+        return true;
     }
 
     private function normalizePaymentFilters(array|string|null $type, ?string $status = null): array

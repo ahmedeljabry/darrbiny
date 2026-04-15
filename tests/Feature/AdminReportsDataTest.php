@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\CancellationRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -225,7 +226,7 @@ class AdminReportsDataTest extends TestCase
             ->assertSee('رسوم الحجز على الباقات');
     }
 
-    public function test_sales_report_summary_is_converted_to_riyal_while_rows_keep_original_currency(): void
+    public function test_sales_report_shows_rows_in_riyal_and_deducts_approved_cancellation_refunds(): void
     {
         $admin = $this->createAdmin();
         [, $plan] = $this->createLocationPlan();
@@ -263,12 +264,69 @@ class AdminReportsDataTest extends TestCase
             'trainer_net_minor' => 9000,
         ]);
 
+        CancellationRequest::create([
+            'user_request_id' => $request->id,
+            'user_id' => $user->id,
+            'reason' => 'Cancellation after payment',
+            'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 2500,
+            'processed_at' => now(),
+        ]);
+
         $this->actingAs($admin)
             ->get(route('admin.reports.sales'))
             ->assertOk()
+            ->assertSee('6.00 SAR')
             ->assertSee('8.00 SAR')
-            ->assertSee('100.00 EGP')
-            ->assertSee('المجاميع محولة إلى SAR');
+            ->assertSee('0.80 SAR')
+            ->assertDontSee('100.00 EGP')
+            ->assertSee('كل مبالغ التقرير معروضة بالـ SAR');
+    }
+
+    public function test_payments_report_rows_are_displayed_in_riyal(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Egypt Payments User',
+            'phone_with_cc' => '+20000008034',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PAID,
+            'currency' => 'EGP',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10000,
+            'currency' => 'EGP',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1000,
+            'trainer_net_minor' => 9000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.payments'))
+            ->assertOk()
+            ->assertSee('8.00 SAR')
+            ->assertDontSee('100.00 EGP')
+            ->assertSee('كل مبالغ هذا التقرير معروضة بالـ SAR');
     }
 
     public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void

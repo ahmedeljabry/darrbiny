@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,9 +13,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $subscriptions
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -27,7 +32,7 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
             'رقم الطلب',
             'المستخدم',
             'الخطة',
-            'المبلغ',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'الحالة',
             'تاريخ البدء',
             'تاريخ الإنشاء',
@@ -47,7 +52,7 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
             $subscription->id,
             $subscription->user?->name ?? $subscription->user_id,
             $subscription->plan?->title ?? $subscription->plan_id,
-            number_format($amountMinor / 100, 2) . ' ' . ($subscription->currency ?? 'SAR'),
+            $this->reportCurrencyConverter->formatConvertedMinor($amountMinor, $subscription->currency ?? 'SAR'),
             $subscription->status,
             $subscription->start_date?->toDateString(),
             $subscription->created_at?->format('Y-m-d H:i:s'),

@@ -215,11 +215,12 @@ class BookingsController extends BaseController
             }
 
             $cancellation->status = CancellationRequest::STATUS_APPROVED;
+            $cancellation->refund_amount_minor = WalletAmount::majorToMinor($validated['refund_amount']);
             $cancellation->processed_by = $request->user()->id;
             $cancellation->processed_at = now();
             $cancellation->save();
 
-            $refundAmountMinor = WalletAmount::majorToMinor($validated['refund_amount']);
+            $refundAmountMinor = (int) $cancellation->refund_amount_minor;
             if ($refundAmountMinor > 0 && $booking->user) {
                 $booking->user->increment('points_balance', $refundAmountMinor);
 

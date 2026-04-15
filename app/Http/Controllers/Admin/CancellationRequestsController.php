@@ -104,7 +104,6 @@ class CancellationRequestsController extends BaseController
             $cancellation->admin_notes = $validated['admin_notes'] ?? null;
             $cancellation->processed_by = $request->user()->id;
             $cancellation->processed_at = now();
-            $cancellation->save();
 
             $userRequest = $cancellation->userRequest;
             $userRequest->status = UserRequest::STATUS_CANCELLED;
@@ -112,6 +111,8 @@ class CancellationRequestsController extends BaseController
 
             $totalPaid = $userRequest->totalSuccessfulPaymentsMinor();
             $packageValue = $userRequest->plan?->price_min ?? 0;
+            $cancellation->refund_amount_minor = (int) $totalPaid;
+            $cancellation->save();
             
             if ($totalPaid > 0) {
                 $refundAmountMinor = (int) $totalPaid;
@@ -195,6 +196,7 @@ class CancellationRequestsController extends BaseController
             'reason' => 'تم إلغاء الدورة من النظام',
             'status' => CancellationRequest::STATUS_APPROVED,
             'admin_notes' => 'تمت مزامنة سجل إلغاء تلقائيا لأن الحجز بحالة ملغي.',
+            'refund_amount_minor' => $userRequest->totalSuccessfulPaymentsMinor(),
         ]);
 
         $cancellation->processed_at = $timestamp;

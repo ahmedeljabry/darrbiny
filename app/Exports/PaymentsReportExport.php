@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\Payment;
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -13,9 +14,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $payments
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -28,7 +33,7 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
             'المعرف',
             'المستخدم',
             'الطلب',
-            'المبلغ',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
             'الحالة',
             'المزود',
@@ -42,7 +47,7 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
             $payment->id,
             $payment->user?->name ?? $payment->user_id,
             $payment->user_request_id,
-            number_format($payment->amount_minor / 100, 2) . ' ' . $payment->currency,
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
             Payment::typeLabelFor($payment->type),
             Payment::statusLabelFor($payment->status),
             $payment->payment_method,

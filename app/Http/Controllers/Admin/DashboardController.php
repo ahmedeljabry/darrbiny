@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\AppExpense;
 use App\Services\Admin\AppWalletAccountService;
+use App\Services\Admin\ReportsService;
 use App\Support\ReportCurrencyConverter;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class DashboardController extends BaseController
 {
     public function __construct(
         private readonly AppWalletAccountService $appWalletAccountService,
+        private readonly ReportsService $reportsService,
         private readonly ReportCurrencyConverter $reportCurrencyConverter
     ) {}
 
@@ -78,6 +80,20 @@ class DashboardController extends BaseController
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
         ])['incoming_minor'];
+        $packageReservationRefundsMinor = $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            [],
+            'plan_partial'
+        );
+        $appFeesRefundsMinor = $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            [],
+            'app_fee'
+        );
+        $packageReservationFeesMinor -= $packageReservationRefundsMinor;
+        $appFeesMinor -= $appFeesRefundsMinor;
         $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);

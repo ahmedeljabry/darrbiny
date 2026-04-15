@@ -2,6 +2,8 @@
 @section('title', 'تقارير الاشتراكات')
 
 @php
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $countryOptions = $countries->pluck('name', 'id')->all();
   $planOptions = $plans->pluck('title', 'id')->all();
   $filterFields = [
@@ -26,6 +28,7 @@
     'tags' => [
       ['label' => 'حالات الطلبات', 'icon' => 'timeline'],
       ['label' => 'فلترة بالتاريخ والباقة', 'icon' => 'calendar'],
+      ['label' => 'المبالغ محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
     'actions' => [
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.subscriptions', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
@@ -47,6 +50,10 @@
         'title' => 'فلترة الاشتراكات',
         'subtitle' => 'ابحث عن أي طلب بحسب العميل أو المدرب أو الباقة أو فترة البدء.',
       ])
+
+      <div class="report-note-box mb-4">
+        <p>كل مبالغ الاشتراكات في هذا التقرير معروضة بالـ {{ $reportCurrency }} بعد التحويل.</p>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-hover report-table">
@@ -100,7 +107,7 @@
                   </div>
                 </td>
                 <td>
-                  <span class="fw-semibold">{{ number_format($subscriptionAmountMinor / 100, 2) }} {{ $subscription->currency ?? 'SAR' }}</span>
+                  <span class="fw-semibold">{{ $converter->formatConvertedMinor($subscriptionAmountMinor, $subscription->currency ?? 'SAR') }}</span>
                 </td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $statusOptions[$subscription->status] ?? $subscription->status }}</span></td>
                 <td><small class="text-muted">{{ $subscription->start_date?->toDateString() ?? '—' }}</small></td>

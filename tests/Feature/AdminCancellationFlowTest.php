@@ -60,6 +60,7 @@ class AdminCancellationFlowTest extends TestCase
             'user_request_id' => $booking->id,
             'user_id' => $user->id,
             'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 5000,
             'processed_by' => $admin->id,
         ]);
     }
@@ -141,6 +142,7 @@ class AdminCancellationFlowTest extends TestCase
         $this->assertDatabaseHas('cancellation_requests', [
             'id' => $cancellation->id,
             'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 10000,
             'processed_by' => $admin->id,
         ]);
     }

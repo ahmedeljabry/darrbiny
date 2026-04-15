@@ -49,8 +49,8 @@ class CancellationRequestNotification extends Notification
             'user_id' => $user->id,
             'status' => $status,
             'reason' => $this->cancellationRequest->reason,
-            'refund_amount' => $status === 'approved' && $userRequest->total_paid_minor > 0
-                ? WalletAmount::minorToMajor((int) $userRequest->total_paid_minor)
+            'refund_amount' => $status === 'approved' && (int) $this->cancellationRequest->refund_amount_minor > 0
+                ? WalletAmount::minorToMajor((int) $this->cancellationRequest->refund_amount_minor)
                 : null,
         ];
     }

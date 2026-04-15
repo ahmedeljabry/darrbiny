@@ -3,6 +3,7 @@
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
   $reports = [
     'تقارير مالية' => [
       ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
@@ -96,7 +97,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>إجماليات البطاقات هنا محولة إلى {{ $reportCurrency }} حسب معدلات التحويل في الإعدادات، بينما يحتفظ الجدول أدناه بعملة كل عملية كما دُفعت فعلياً.</p>
+        <p>كل المبالغ المعروضة في هذه المعاينة محولة إلى {{ $reportCurrency }} حسب معدلات التحويل في الإعدادات.</p>
       </div>
 
       <div class="table-responsive">
@@ -124,7 +125,7 @@
               <tr>
                 <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
                 <td>{{ $payment->user?->name ?? 'غير معروف' }}</td>
-                <td>{{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}</td>
+                <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</td>
                 <td>{{ $reportTypeLabels[$payment->type] ?? $payment->typeLabel() }}</td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $payment->statusLabel() }}</span></td>
                 <td>{{ $payment->created_at?->format('Y-m-d H:i') }}</td>

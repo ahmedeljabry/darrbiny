@@ -16,6 +16,7 @@ class CancellationRequest extends BaseModel
         'reason',
         'status',
         'admin_notes',
+        'refund_amount_minor',
         'processed_by',
         'processed_at',
         'version',
@@ -23,6 +24,7 @@ class CancellationRequest extends BaseModel
 
     protected $casts = [
         'processed_at' => 'datetime',
+        'refund_amount_minor' => 'integer',
         'version' => 'integer',
     ];
 
