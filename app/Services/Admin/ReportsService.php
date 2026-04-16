@@ -22,7 +22,7 @@ final class ReportsService
     public function recentPayments(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, int $limit = 50): Collection
     {
         return $this->paymentsWithinRange($from, $to)
-            ->with('user')
+            ->with(['user', 'userRequest'])
             ->latest()
             ->limit($limit)
             ->get();
@@ -265,9 +265,11 @@ final class ReportsService
             ->when($filters['to'] ?? null, fn (Builder $query, CarbonImmutable $to) => $query->whereDate('start_date', '<=', $to->toDateString()))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $like = '%' . $search . '%';
+                $orderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
-                $query->where(function (Builder $nestedQuery) use ($like): void {
+                $query->where(function (Builder $nestedQuery) use ($like, $orderNumber): void {
                     $nestedQuery->where('id', 'like', $like)
+                        ->orWhereRaw('CAST(order_number as CHAR) like ?', [$like])
                         ->orWhereHas('user', function (Builder $userQuery) use ($like): void {
                             $userQuery->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
@@ -277,6 +279,10 @@ final class ReportsService
                                 ->orWhere('phone_with_cc', 'like', $like);
                         })
                         ->orWhereHas('plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like));
+
+                    if ($orderNumber !== null) {
+                        $nestedQuery->orWhere('order_number', $orderNumber);
+                    }
                 });
             });
     }
@@ -344,8 +350,9 @@ final class ReportsService
             })
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $like = '%' . $search . '%';
+                $orderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
-                $builder->where(function (Builder $nestedQuery) use ($like): void {
+                $builder->where(function (Builder $nestedQuery) use ($like, $orderNumber): void {
                     $nestedQuery->where('id', 'like', $like)
                         ->orWhere('user_request_id', 'like', $like)
                         ->orWhere('payment_method', 'like', $like)
@@ -357,7 +364,14 @@ final class ReportsService
                             $trainerQuery->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
                         })
-                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like));
+                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like))
+                        ->orWhereHas('userRequest', function (Builder $requestQuery) use ($like, $orderNumber): void {
+                            $requestQuery->whereRaw('CAST(order_number as CHAR) like ?', [$like]);
+
+                            if ($orderNumber !== null) {
+                                $requestQuery->orWhere('order_number', $orderNumber);
+                            }
+                        });
                 });
             });
     }
@@ -464,6 +478,8 @@ final class ReportsService
             $haystacks = [
                 (string) $cancellation->id,
                 (string) $request->id,
+                (string) $request->order_number,
+                (string) $request->formatted_order_number,
                 (string) $request->user?->name,
                 (string) $request->user?->phone_with_cc,
                 (string) $request->trainer?->name,
@@ -512,6 +528,8 @@ final class ReportsService
             $haystacks = [
                 (string) $payment->id,
                 (string) $payment->user_request_id,
+                (string) $request->order_number,
+                (string) $request->formatted_order_number,
                 (string) $payment->payment_method,
                 (string) $payment->user?->name,
                 (string) $payment->user?->phone_with_cc,

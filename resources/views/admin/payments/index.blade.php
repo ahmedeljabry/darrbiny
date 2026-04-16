@@ -61,9 +61,8 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th style="width: 120px;"><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th style="width: 130px;"><i class="icon-base ti tabler-hash me-1"></i> رقم الطلب</th>
           <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th style="width: 120px;"><i class="icon-base ti tabler-file-text me-1"></i> الطلب</th>
           <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
           <th style="width: 120px;"><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
           <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
@@ -74,7 +73,15 @@
       <tbody>
         @forelse($payments as $p)
           <tr>
-            <td><code class="text-primary">#{{ substr($p->id, 0, 8) }}</code></td>
+            <td>
+              @if($p->userRequest)
+                <a href="{{ route('admin.bookings.show', $p->user_request_id) }}" class="fw-semibold text-primary text-decoration-none">
+                  #{{ $p->userRequest->formatted_order_number ?? $p->userRequest->order_number ?? '—' }}
+                </a>
+              @else
+                <span class="text-muted">—</span>
+              @endif
+            </td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 @if($p->user?->profile_picture_url)
@@ -89,11 +96,6 @@
                   <small class="text-muted">{{ substr($p->user_id, 0, 8) }}</small>
                 </div>
               </div>
-            </td>
-            <td>
-              <a href="{{ route('admin.bookings.show', $p->user_request_id) }}" class="text-primary fw-semibold">
-                #{{ substr($p->user_request_id, 0, 8) }}
-              </a>
             </td>
             <td>
               <span class="fw-semibold">{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</span>
@@ -133,7 +135,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="8" class="text-center py-5">
+            <td colspan="7" class="text-center py-5">
               <div class="d-flex flex-column align-items-center">
                 <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                   <i class="icon-base ti tabler-credit-card" style="font-size: 32px;"></i>

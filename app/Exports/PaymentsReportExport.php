@@ -30,9 +30,8 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
-            'الطلب',
             'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
             'الحالة',
@@ -44,9 +43,8 @@ class PaymentsReportExport implements FromCollection, WithHeadings, WithMapping,
     public function map($payment): array
     {
         return [
-            $payment->id,
+            $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
-            $payment->user_request_id,
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
             Payment::typeLabelFor($payment->type),
             Payment::statusLabelFor($payment->status),

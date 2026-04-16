@@ -38,7 +38,7 @@
                 <form method="get" class="row g-3 mb-4">
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">بحث</label>
-                        <input type="text" name="q" value="{{ $q }}" class="form-control form-control-sm" placeholder="اسم المستخدم أو رقم الهاتف">
+                        <input type="text" name="q" value="{{ $q }}" class="form-control form-control-sm" placeholder="اسم المستخدم أو رقم الهاتف أو رقم الطلب">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label fw-semibold small">الحالة</label>
@@ -77,6 +77,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th style="width: 130px;"><i class="icon-base ti tabler-hash me-1"></i> رقم الطلب</th>
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
                             <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
                             <th style="width: 120px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
@@ -89,6 +90,11 @@
                     <tbody>
                         @forelse($bookings as $booking)
                             <tr>
+                                <td>
+                                    <a href="{{ route('admin.bookings.show', $booking->id) }}" class="fw-semibold text-primary text-decoration-none">
+                                        #{{ $booking->formatted_order_number ?? $booking->order_number ?? '—' }}
+                                    </a>
+                                </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         @if($booking->user?->profile_picture_url)
@@ -174,7 +180,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-calendar-event" style="font-size: 32px;"></i>

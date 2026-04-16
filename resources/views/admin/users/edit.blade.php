@@ -16,7 +16,7 @@
       <h5 class="mb-0">تعديل مستخدم</h5>
     </div>
     <div class="card-body">
-      <form method="post" action="{{ route('admin.users.update', $user->id) }}">
+      <form method="post" action="{{ route('admin.users.update', $user->id) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @include('admin.users._form')
@@ -24,4 +24,3 @@
     </div>
   </div>
 @endsection
-

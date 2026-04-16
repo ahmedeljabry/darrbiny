@@ -16,7 +16,7 @@
     ['label' => 'وارد: رسوم التطبيق على الدفع الكلي', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق فقط من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ', 'icon' => 'wallet', 'tone' => 'primary'],
-    ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الحجوزات المدفوعة بالكامل • محول للريال', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
+    ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الحجوزات المدفوعة بالكامل بعد خصم الإلغاءات المعتمدة • محول للريال', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
     ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
     ['label' => 'تنبيهات غير مقروءة', 'value' => number_format($unreadNotifications), 'desc' => $rangeLabel ?? 'مركز الإشعارات', 'icon' => 'bell', 'tone' => 'danger'],
   ];
@@ -271,6 +271,106 @@
       </div>
     </div>
   </div>
+
+  @if(($dashboardAlerts ?? collect())->isNotEmpty())
+    <div class="card report-panel mt-4">
+      <div class="card-body">
+        <div class="dashboard-section-head">
+          <div>
+            <h5 class="mb-1">تنبيهات مباشرة تحتاج متابعة</h5>
+            <p class="text-muted mb-0 small">إشعارات مرتبطة بطلبات السحب، ردود الدعم، والمكافآت المفتوحة الآن.</p>
+          </div>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.view', ['read' => 'unread']) }}">كل غير المقروء</a>
+        </div>
+
+        <div class="row g-3">
+          @foreach($dashboardAlerts as $notification)
+            @php
+              $notificationType = $notification->data['type'] ?? '';
+              $alertTone = match ($notificationType) {
+                'wallet_withdraw_request' => 'danger',
+                'prize_request' => 'info',
+                'support_ticket_user_reply' => 'warning',
+                default => 'secondary',
+              };
+              $alertIcon = match ($notificationType) {
+                'wallet_withdraw_request' => 'arrow-up-right-circle',
+                'prize_request' => 'gift',
+                'support_ticket_user_reply' => 'message-2',
+                default => 'bell',
+              };
+              $alertUrl = match ($notificationType) {
+                'wallet_withdraw_request' => !empty($notification->data['transaction_id']) ? route('admin.withdrawal-requests.show', $notification->data['transaction_id']) : route('admin.notifications.show', $notification->id),
+                'prize_request' => !empty($notification->data['redemption_id']) ? route('admin.prize-redemptions.show', $notification->data['redemption_id']) : route('admin.notifications.show', $notification->id),
+                'support_ticket_user_reply' => !empty($notification->data['ticket_id']) ? route('admin.support.show', $notification->data['ticket_id']) : route('admin.notifications.show', $notification->id),
+                default => route('admin.notifications.show', $notification->id),
+              };
+            @endphp
+            <div class="col-xl-4 col-md-6">
+              <a href="{{ $alertUrl }}" class="text-decoration-none">
+                <div class="report-stat h-100">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div>
+                      <div class="report-stat__label">{{ $notification->data['title'] ?? 'تنبيه جديد' }}</div>
+                      <p class="mb-2 fw-semibold text-dark">{{ \Illuminate\Support\Str::limit($notification->data['message'] ?? '', 70) }}</p>
+                      <small class="text-muted">{{ $notification->created_at?->diffForHumans() }}</small>
+                    </div>
+                    <span class="avatar-initial rounded bg-label-{{ $alertTone }}">
+                      <i class="icon-base ti tabler-{{ $alertIcon }}"></i>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    </div>
+  @endif
+
+  @can('manage_users')
+    <div class="card report-panel mt-4 border border-danger-subtle">
+      <div class="card-body">
+        <div class="dashboard-section-head">
+          <div>
+            <h5 class="mb-1 text-danger">إعادة تهيئة بيانات المستخدمين</h5>
+            <p class="text-muted mb-0 small">يحذف كل المستخدمين غير الإداريين حذفًا نهائيًا مع بياناتهم المرتبطة، ويُبقي الإعدادات وحسابات الإدارة فقط.</p>
+          </div>
+          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetUsersModal">
+            <i class="icon-base ti tabler-alert-triangle me-1"></i> بدء داتا جديدة
+          </button>
+        </div>
+        <div class="report-note-box mt-3">
+          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيؤدي إلى حذف الطلبات، المدفوعات، المحافظ، التذاكر، والتقييمات المرتبطة بالمستخدمين غير الإداريين.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="resetUsersModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <form method="post" action="{{ route('admin.users.reset-all') }}">
+            @csrf
+            <div class="modal-header">
+              <h5 class="modal-title text-danger">تأكيد إعادة تهيئة البيانات</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-3">سيتم حذف جميع المستخدمين غير الإداريين وكل بياناتهم التشغيلية نهائيًا. لا يمكن التراجع بعد التأكيد.</p>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="1" id="confirm_reset" name="confirm_reset" required>
+                <label class="form-check-label" for="confirm_reset">أفهم أن العملية نهائية وأريد المتابعة.</label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+              <button type="submit" class="btn btn-danger">تأكيد الحذف النهائي</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  @endcan
 
   <div class="row g-4">
     <div class="col-xl-8">

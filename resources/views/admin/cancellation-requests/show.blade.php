@@ -37,7 +37,7 @@
                     </div>
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">معلومات الدورة</h6>
-                        <p class="mb-1"><strong>رقم الدورة:</strong> #{{ $cancellation->userRequest->id }}</p>
+                        <p class="mb-1"><strong>رقم الطلب:</strong> #{{ $cancellation->userRequest?->formatted_order_number ?? $cancellation->userRequest?->order_number ?? '—' }}</p>
                         <p class="mb-1"><strong>الخطة:</strong> {{ $cancellation->userRequest->plan->title ?? '-' }}</p>
                         <p class="mb-1"><strong>تاريخ البدء:</strong> {{ $cancellation->userRequest->start_date ? $cancellation->userRequest->start_date->format('Y-m-d') : '-' }}</p>
                         <p class="mb-1"><strong>الحالة الحالية:</strong> 

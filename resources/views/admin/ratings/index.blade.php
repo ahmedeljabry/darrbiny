@@ -40,6 +40,26 @@
       <i class="icon-base ti tabler-plus me-1"></i> إضافة تقييم
     </a>
   </div>
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">الاسم</label>
+        <input type="text" name="name" value="{{ $name ?? request('name') }}" class="form-control" placeholder="اسم المستخدم أو المدرب">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">رقم الهاتف</label>
+        <input type="text" name="phone" value="{{ $phone ?? request('phone') }}" class="form-control" placeholder="رقم جوال المستخدم أو المدرب">
+      </div>
+      <div class="col-md-4 d-flex align-items-end gap-2">
+        <button class="btn btn-primary" type="submit">
+          <i class="icon-base ti tabler-filter me-1"></i> تطبيق
+        </button>
+        <a href="{{ route('admin.ratings.index') }}" class="btn btn-outline-secondary">
+          <i class="icon-base ti tabler-refresh me-1"></i> إعادة تعيين
+        </a>
+      </div>
+    </form>
+  </div>
   <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
@@ -58,18 +78,18 @@
             <td>
               <div class="d-flex flex-column">
                 <span class="fw-semibold">{{ optional($r->user)->name ?? 'غير معروف' }}</span>
-                <small class="text-muted">{{ $r->user_id }}</small>
+                <small class="text-muted">{{ $r->user?->phone_with_cc ?? $r->user_id }}</small>
               </div>
             </td>
             <td>
               <div class="d-flex flex-column">
                 <span class="fw-semibold">{{ optional($r->trainer)->name ?? 'غير معروف' }}</span>
-                <small class="text-muted">{{ $r->trainer_id }}</small>
+                <small class="text-muted">{{ $r->trainer?->phone_with_cc ?? $r->trainer_id }}</small>
               </div>
             </td>
             <td>
               <a href="{{ route('admin.bookings.show', $r->user_request_id) }}" class="text-primary">
-                #{{ substr($r->user_request_id, 0, 8) }}
+                #{{ $r->userRequest?->formatted_order_number ?? $r->userRequest?->order_number ?? '—' }}
               </a>
             </td>
             <td>
@@ -117,7 +137,7 @@
     </table>
   </div>
   @if($ratings->hasPages())
-    <div class="card-footer">{{ $ratings->links() }}</div>
+    <div class="card-footer">{{ $ratings->withQueryString()->links() }}</div>
   @endif
 </div>
 @endsection

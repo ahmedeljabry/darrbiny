@@ -45,6 +45,7 @@
                         <p class="mb-0">
                             <strong>{{ $transaction->user->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small><br>
+                            <small class="text-muted">الدولة: {{ $transaction->user?->country?->name ?? '-' }}</small><br>
                             <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($transaction->user->points_balance ?? 0, 2) }}</small>
                         </p>
                     </div>

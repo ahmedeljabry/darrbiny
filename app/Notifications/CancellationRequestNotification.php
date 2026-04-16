@@ -27,6 +27,7 @@ class CancellationRequestNotification extends Notification
         $userRequest = $this->cancellationRequest->userRequest;
         $user = $this->cancellationRequest->user;
         $status = $this->cancellationRequest->status;
+        $orderNumber = $userRequest?->formatted_order_number ?? $userRequest?->order_number ?? $userRequest?->id;
 
         $title = match ($status) {
             'approved' => 'تم قبول طلب الإلغاء',
@@ -35,9 +36,9 @@ class CancellationRequestNotification extends Notification
         };
 
         $message = match ($status) {
-            'approved' => "تم قبول طلب إلغاء الدورة رقم #{$userRequest->id} وتم إرجاع المبلغ إلى محفظتك",
-            'rejected' => "تم رفض طلب إلغاء الدورة رقم #{$userRequest->id}",
-            default => "طلب المستخدم {$user->name} إلغاء الدورة رقم #{$userRequest->id}",
+            'approved' => "تم قبول طلب إلغاء الدورة رقم #{$orderNumber} وتم إرجاع المبلغ إلى محفظتك",
+            'rejected' => "تم رفض طلب إلغاء الدورة رقم #{$orderNumber}",
+            default => "طلب المستخدم {$user->name} إلغاء الدورة رقم #{$orderNumber}",
         };
 
         return [

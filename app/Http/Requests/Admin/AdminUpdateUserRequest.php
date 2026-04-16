@@ -21,6 +21,7 @@ class AdminUpdateUserRequest extends FormRequest
             'email' => ['nullable','email','max:255','unique:users,email,'.$id],
             'phone_with_cc' => ['required','string','max:32','unique:users,phone_with_cc,'.$id],
             'password' => ['nullable','string','min:6'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'country_id' => ['nullable','uuid'],
             'whatsapp_enabled' => ['sometimes','boolean'],
             'roles' => ['sometimes','array'],

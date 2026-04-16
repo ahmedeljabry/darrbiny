@@ -51,7 +51,7 @@
               <option value="">— اختر المستخدم —</option>
               @foreach($users as $user)
                 <option value="{{ $user->id }}" @selected(old('user_id', $rating->user_id) === $user->id)>
-                  {{ $user->name }} ({{ $user->phone }})
+                  {{ $user->name }} ({{ $user->phone_with_cc }})
                 </option>
               @endforeach
             </select>
@@ -66,7 +66,7 @@
               <option value="">— اختر المدرب —</option>
               @foreach($trainers as $trainer)
                 <option value="{{ $trainer->id }}" @selected(old('trainer_id', $rating->trainer_id) === $trainer->id)>
-                  {{ $trainer->name }} ({{ $trainer->phone }})
+                  {{ $trainer->name }} ({{ $trainer->phone_with_cc }})
                 </option>
               @endforeach
             </select>
@@ -81,7 +81,7 @@
               <option value="">— اختر الطلب —</option>
               @foreach($userRequests as $request)
                 <option value="{{ $request->id }}" @selected(old('user_request_id', $rating->user_request_id) === $request->id)>
-                  #{{ substr($request->id, 0, 8) }} - {{ $request->user->name ?? 'غير معروف' }}
+                  #{{ $request->formatted_order_number ?? $request->order_number ?? '—' }} - {{ $request->user->name ?? 'غير معروف' }}
                 </option>
               @endforeach
             </select>

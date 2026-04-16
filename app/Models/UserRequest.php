@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class UserRequest extends BaseModel
 {
+    public const ORDER_NUMBER_START = 5000;
+    public const ORDER_NUMBER_LENGTH = 8;
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
     public const STATUS_AWAITING_OFFERS = 'awaiting_offers';
     public const STATUS_OFFER_SELECTED = 'offer_selected';
@@ -17,6 +20,7 @@ class UserRequest extends BaseModel
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
+        'order_number',
         'user_id',
         'trainer_id',
         'plan_id',
@@ -42,6 +46,7 @@ class UserRequest extends BaseModel
     ];
 
     protected $casts = [
+        'order_number' => 'integer',
         'start_date' => 'date',
         'has_user_car' => 'bool',
         'wants_trainer_car' => 'bool',
@@ -54,6 +59,17 @@ class UserRequest extends BaseModel
         'retry_source_request_id' => 'string',
         'version' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::creating(function (self $request): void {
+            if (empty($request->order_number)) {
+                $request->order_number = self::reserveNextOrderNumber();
+            }
+        });
+    }
 
     public function user()
     {
@@ -146,5 +162,49 @@ class UserRequest extends BaseModel
         return $this->successfulPayments()->first(
             fn (Payment $payment) => $payment->isPartialType()
         );
+    }
+
+    public function getFormattedOrderNumberAttribute(): ?string
+    {
+        return self::formatOrderNumber($this->order_number);
+    }
+
+    public static function formatOrderNumber(int|string|null $orderNumber): ?string
+    {
+        if ($orderNumber === null || $orderNumber === '') {
+            return null;
+        }
+
+        return str_pad((string) (int) $orderNumber, self::ORDER_NUMBER_LENGTH, '0', STR_PAD_LEFT);
+    }
+
+    public static function normalizeOrderNumberSearch(?string $value): ?int
+    {
+        $digits = preg_replace('/\D+/', '', (string) $value);
+
+        return $digits === null || $digits === '' ? null : (int) $digits;
+    }
+
+    private static function reserveNextOrderNumber(): int
+    {
+        return DB::transaction(function (): int {
+            $sequenceKey = 'sequences.user_requests.order_number';
+            $sequence = Setting::query()
+                ->where('key', $sequenceKey)
+                ->lockForUpdate()
+                ->first();
+
+            $currentValue = $sequence
+                ? max(self::ORDER_NUMBER_START - 1, (int) $sequence->value)
+                : self::ORDER_NUMBER_START - 1;
+            $nextValue = $currentValue + 1;
+
+            Setting::query()->updateOrCreate(
+                ['key' => $sequenceKey],
+                ['value' => (string) $nextValue]
+            );
+
+            return $nextValue;
+        });
     }
 }

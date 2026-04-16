@@ -26,6 +26,7 @@ class WalletTransactionsExport implements FromCollection, WithHeadings, WithMapp
         return [
             'المعرف',
             'المستخدم',
+            'الدولة',
             'المبلغ',
             'النوع',
             'الحالة',
@@ -54,6 +55,7 @@ class WalletTransactionsExport implements FromCollection, WithHeadings, WithMapp
         return [
             $transaction->id,
             $transaction->user?->name ?? $transaction->user_id,
+            $transaction->user?->country?->name ?? '-',
             number_format($transaction->amountMajor(), 2),
             $typeLabels[$transaction->type] ?? $transaction->type,
             $statusLabels[$transaction->status] ?? $transaction->status,

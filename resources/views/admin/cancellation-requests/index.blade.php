@@ -62,7 +62,7 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-                            <th style="width: 150px;"><i class="icon-base ti tabler-file-text me-1"></i> رقم الدورة</th>
+                            <th style="width: 150px;"><i class="icon-base ti tabler-file-text me-1"></i> رقم الطلب</th>
                             <th><i class="icon-base ti tabler-info-circle me-1"></i> سبب الإلغاء</th>
                             <th style="width: 240px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> الدفعات</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
@@ -89,7 +89,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <code class="text-primary">#{{ substr($req->userRequest->id ?? '', 0, 8) }}</code>
+                                    <code class="text-primary">#{{ $req->userRequest?->formatted_order_number ?? $req->userRequest?->order_number ?? '—' }}</code>
                                 </td>
                                 <td>
                                     <div class="text-truncate" style="max-width: 300px;" title="{{ $req->reason }}">
@@ -176,4 +176,3 @@
 </div>
 
 @endsection
-

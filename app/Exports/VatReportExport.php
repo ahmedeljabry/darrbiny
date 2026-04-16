@@ -30,7 +30,7 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
             'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
@@ -43,7 +43,7 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
     {
         $vatMinor = (int) round($payment->amount_minor * ($this->vatPercent / 100));
         return [
-            $payment->id,
+            $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
             $payment->type,

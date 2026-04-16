@@ -23,7 +23,7 @@ class WalletTransactionsController extends BaseController
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
-        $query = WalletTransaction::with(['user', 'processedBy']);
+        $query = WalletTransaction::with(['user.country', 'processedBy']);
 
         if ($status) {
             $query->where('status', $status);
@@ -49,7 +49,7 @@ class WalletTransactionsController extends BaseController
         }
 
         if ($request->query('export') === 'excel') {
-            $allTransactions = WalletTransaction::with(['user', 'processedBy'])
+            $allTransactions = WalletTransaction::with(['user.country', 'processedBy'])
                 ->when($status, fn($q) => $q->where('status', $status))
                 ->when($userId, fn($q) => $q->where('user_id', $userId))
                 ->when($search, function ($q) use ($search) {
@@ -80,7 +80,7 @@ class WalletTransactionsController extends BaseController
 
     public function show(string $id)
     {
-        $transaction = WalletTransaction::with(['user', 'processedBy'])->findOrFail($id);
+        $transaction = WalletTransaction::with(['user.country', 'processedBy'])->findOrFail($id);
         return view('admin.wallet-transactions.show', compact('transaction'));
     }
 

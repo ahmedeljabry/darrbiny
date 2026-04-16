@@ -73,8 +73,10 @@ Route::middleware(['web'])
                 Route::get('/users/{id}/edit', [AdminUsersController::class, 'edit'])->name('users.edit');
                 Route::put('/users/{id}', [AdminUsersController::class, 'update'])->name('users.update');
                 Route::post('/users/{id}/freeze', [AdminUsersController::class, 'freeze'])->name('users.freeze');
+                Route::delete('/users/{id}/force', [AdminUsersController::class, 'forceDestroy'])->name('users.force-destroy');
                 Route::post('/users/{id}/ban', [AdminUsersController::class, 'ban'])->name('users.ban');
                 Route::post('/users/{id}/unban', [AdminUsersController::class, 'unban'])->name('users.unban');
+                Route::post('/users/reset-all', [AdminUsersController::class, 'resetAll'])->name('users.reset-all');
                 Route::post('/users/bulk-action', [AdminUsersController::class, 'bulkAction'])->name('users.bulk-action');
                 Route::post('/users/{id}/trainer-profile/approve', [AdminUsersController::class, 'approveTrainerProfile'])
                     ->name('users.trainer-profile.approve')

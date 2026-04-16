@@ -9,13 +9,17 @@ use App\Http\Requests\Admin\AdminUpdateUserRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\TrainerProfile;
+use App\Models\Upload;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Notifications\TrainerProfileApprovalNotification;
+use App\Services\Admin\UserPurgeService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 class UsersController extends BaseController
@@ -128,6 +132,8 @@ class UsersController extends BaseController
         if (!empty($data['password'])) {
             $user->password = $data['password'];
         }
+
+        $this->syncProfilePicture($user, $request->file('profile_picture'));
         $user->save();
 
         $user->syncRoles($data['roles'] ?? []);
@@ -277,6 +283,8 @@ class UsersController extends BaseController
         if (!empty($data['password'])) {
             $user->password = $data['password'];
         }
+
+        $this->syncProfilePicture($user, $request->file('profile_picture'));
         $user->save();
 
         $user->syncRoles($data['roles'] ?? []);
@@ -297,6 +305,45 @@ class UsersController extends BaseController
         }
         $user->delete();
         return back()->with('status', 'تم تجميد المستخدم بنجاح');
+    }
+
+    public function forceDestroy(string $id, UserPurgeService $purgeService)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+
+        if (Auth::id() === $user->id) {
+            return back()->withErrors(['self_delete' => 'لا يمكنك حذف حسابك الحالي نهائياً من لوحة التحكم.']);
+        }
+
+        if ($user->hasRole('ADMIN')) {
+            return back()->withErrors(['force_delete' => 'لا يمكن حذف حساب إداري نهائياً.']);
+        }
+
+        $purgeService->purgeUser($user);
+
+        return redirect()->route('admin.users.index')->with('status', 'تم حذف المستخدم نهائياً وتحرير رقم الجوال لإعادة التسجيل.');
+    }
+
+    public function resetAll(Request $request, UserPurgeService $purgeService)
+    {
+        $request->validate([
+            'confirm_reset' => ['accepted'],
+        ], [], [
+            'confirm_reset' => 'تأكيد إعادة التهيئة',
+        ]);
+
+        $users = User::withTrashed()
+            ->whereKeyNot(Auth::id())
+            ->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->where('name', 'ADMIN');
+            })
+            ->get();
+
+        foreach ($users as $user) {
+            $purgeService->purgeUser($user);
+        }
+
+        return redirect()->route('admin.dashboard')->with('status', 'تم حذف جميع بيانات المستخدمين غير الإدارية والبدء بقاعدة بيانات تشغيلية جديدة.');
     }
 
     public function ban(string $id, Request $request)
@@ -513,5 +560,31 @@ class UsersController extends BaseController
         }
 
         return filled($value) ? (string) $value : '-';
+    }
+
+    private function syncProfilePicture(User $user, ?UploadedFile $profilePicture): void
+    {
+        if (! $profilePicture) {
+            return;
+        }
+
+        if ($user->profile_picture_id) {
+            $oldUpload = Upload::find($user->profile_picture_id);
+            if ($oldUpload) {
+                Storage::disk($oldUpload->disk)->delete($oldUpload->path);
+                $oldUpload->delete();
+            }
+        }
+
+        $disk = config('filesystems.default', 'public');
+        $path = $profilePicture->store('profiles', $disk);
+        $upload = Upload::create([
+            'disk' => $disk,
+            'path' => $path,
+            'mime' => $profilePicture->getMimeType(),
+            'size' => $profilePicture->getSize(),
+        ]);
+
+        $user->profile_picture_id = $upload->id;
     }
 }

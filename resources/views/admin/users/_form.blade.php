@@ -12,6 +12,27 @@
 @endif
 
 <div class="row g-4">
+  <div class="col-12">
+    <label class="form-label">صورة المستخدم</label>
+    <div class="d-flex flex-column flex-md-row align-items-start gap-3">
+      @if($editing && $user->profile_picture_url)
+        <img
+          src="{{ $user->profile_picture_url }}"
+          alt="{{ $user->name ?? 'User' }}"
+          class="rounded-circle border"
+          style="width: 72px; height: 72px; object-fit: cover;"
+        >
+      @else
+        <span class="avatar-initial rounded-circle bg-label-secondary" style="width: 72px; height: 72px; font-size: 24px;">
+          {{ mb_substr(old('name', $editing ? ($user->name ?? 'U') : 'U'), 0, 1) }}
+        </span>
+      @endif
+      <div class="w-100">
+        <input type="file" class="form-control" name="profile_picture" accept=".jpg,.jpeg,.png,.webp,image/*">
+        <small class="text-muted">الأنواع المدعومة: JPG, PNG, WEBP بحد أقصى 5MB.</small>
+      </div>
+    </div>
+  </div>
   <div class="col-md-6">
     <label class="form-label">الاسم</label>
     <input type="text" class="form-control" name="name" value="{{ old('name', $editing ? $user->name : '') }}" />

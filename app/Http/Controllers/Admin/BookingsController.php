@@ -40,9 +40,20 @@ class BookingsController extends BaseController
             'payments' => fn ($query) => $query->latest(),
         ])
             ->when($q, function ($query) use ($q) {
-                $query->whereHas('user', function ($userQuery) use ($q) {
-                    $userQuery->where('name', 'like', "%{$q}%")
-                      ->orWhere('phone_with_cc', 'like', "%{$q}%");
+                $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($q);
+
+                $query->where(function ($searchQuery) use ($q, $normalizedOrderNumber) {
+                    $searchQuery->whereHas('user', function ($userQuery) use ($q) {
+                        $userQuery->where('name', 'like', "%{$q}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$q}%");
+                    })->orWhere(function ($requestQuery) use ($q, $normalizedOrderNumber) {
+                        $requestQuery->where('id', 'like', "%{$q}%")
+                            ->orWhereRaw('CAST(order_number as CHAR) like ?', ["%{$q}%"]);
+
+                        if ($normalizedOrderNumber !== null) {
+                            $requestQuery->orWhere('order_number', $normalizedOrderNumber);
+                        }
+                    });
                 });
             })
             ->when($status, fn($query) => $query->where('status', $status))
@@ -74,9 +85,20 @@ class BookingsController extends BaseController
                 'payments' => fn ($query) => $query->latest(),
             ])
                 ->when($q, function ($query) use ($q) {
-                    $query->whereHas('user', function ($userQuery) use ($q) {
-                        $userQuery->where('name', 'like', "%{$q}%")
-                          ->orWhere('phone_with_cc', 'like', "%{$q}%");
+                    $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($q);
+
+                    $query->where(function ($searchQuery) use ($q, $normalizedOrderNumber) {
+                        $searchQuery->whereHas('user', function ($userQuery) use ($q) {
+                            $userQuery->where('name', 'like', "%{$q}%")
+                                ->orWhere('phone_with_cc', 'like', "%{$q}%");
+                        })->orWhere(function ($requestQuery) use ($q, $normalizedOrderNumber) {
+                            $requestQuery->where('id', 'like', "%{$q}%")
+                                ->orWhereRaw('CAST(order_number as CHAR) like ?', ["%{$q}%"]);
+
+                            if ($normalizedOrderNumber !== null) {
+                                $requestQuery->orWhere('order_number', $normalizedOrderNumber);
+                            }
+                        });
                     });
                 })
                 ->when($status, fn($query) => $query->where('status', $status))

@@ -114,7 +114,7 @@ class AdminReportsDataTest extends TestCase
             ->assertOk()
             ->assertSee('رقم الطلب')
             ->assertSee('المبلغ')
-            ->assertSee('#' . substr((string) $request->id, 0, 8))
+            ->assertSee('#' . $request->fresh()->formatted_order_number)
             ->assertSee('70.00 SAR')
             ->assertSee($country->name);
     }

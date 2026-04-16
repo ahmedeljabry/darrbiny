@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Admin;
 
 use App\Models\AppExpense;
+use App\Models\CancellationRequest;
 use App\Models\Payment;
+use App\Models\UserRequest;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -50,7 +52,8 @@ final class AppWalletAccountService
         }
 
         if (($filters['direction'] ?? null) !== 'in') {
-            $outgoingMinor = (int) $this->outgoingExpensesQuery($filters)->sum('amount_minor');
+            $outgoingMinor = (int) $this->outgoingExpensesQuery($filters)->sum('amount_minor')
+                + $this->approvedCancellationRefundsMinor($filters);
         }
 
         return [
@@ -91,7 +94,9 @@ final class AppWalletAccountService
                     'source_key' => $sourceKey,
                     'source_label' => $this->entrySourceLabel($sourceKey),
                     'description' => $this->incomingDescription($sourceKey),
-                    'order_reference' => $payment->user_request_id ? '#' . substr((string) $payment->user_request_id, 0, 8) : '—',
+                    'order_reference' => $payment->userRequest?->formatted_order_number
+                        ? '#' . $payment->userRequest->formatted_order_number
+                        : '—',
                     'counterparty' => $payment->user?->name ?? 'غير معروف',
                     'details' => collect([
                         $payment->userRequest?->trainer?->name ? 'المدرب: ' . $payment->userRequest->trainer->name : null,
@@ -113,7 +118,7 @@ final class AppWalletAccountService
             return collect();
         }
 
-        return $this->outgoingExpensesQuery($filters)
+        $expenseEntries = $this->outgoingExpensesQuery($filters)
             ->get()
             ->map(function (AppExpense $expense): object {
                 return (object) [
@@ -135,6 +140,40 @@ final class AppWalletAccountService
                     'occurred_at' => $expense->created_at,
                 ];
             });
+
+        $refundEntries = $this->approvedCancellationRefundsQuery($filters)
+            ->get()
+            ->map(function (CancellationRequest $cancellation): object {
+                $request = $cancellation->userRequest;
+                $currency = $request?->currency ?: 'SAR';
+
+                return (object) [
+                    'reference_id' => $cancellation->id,
+                    'reference_label' => '#' . substr((string) $cancellation->id, 0, 8),
+                    'direction' => 'out',
+                    'direction_label' => 'صادر',
+                    'source_key' => AppExpense::TYPE_PACKAGE_REFUND,
+                    'source_label' => $this->entrySourceLabel(AppExpense::TYPE_PACKAGE_REFUND),
+                    'description' => 'استرداد للعميل بعد إلغاء الدورة',
+                    'order_reference' => $request?->formatted_order_number
+                        ? '#' . $request->formatted_order_number
+                        : '—',
+                    'counterparty' => $cancellation->user?->name ?? 'غير معروف',
+                    'details' => collect([
+                        $request?->trainer?->name ? 'المدرب: ' . $request->trainer->name : null,
+                        $request?->plan?->title ? 'الباقة: ' . $request->plan->title : null,
+                        $cancellation->processedBy?->name ? 'تم التنفيذ بواسطة: ' . $cancellation->processedBy->name : null,
+                    ])->filter()->implode(' | ') ?: '—',
+                    'amount_minor' => (int) $cancellation->refund_amount_minor,
+                    'report_amount_minor' => $this->reportCurrencyConverter->convertMinor((int) $cancellation->refund_amount_minor, $currency),
+                    'currency' => $currency,
+                    'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
+                    'notes' => $cancellation->reason ?: 'استرداد إلغاء',
+                    'occurred_at' => $cancellation->processed_at ?? $cancellation->updated_at ?? $cancellation->created_at,
+                ];
+            });
+
+        return $expenseEntries->concat($refundEntries);
     }
 
     private function incomingPaymentsQuery(array $filters): Builder
@@ -169,8 +208,9 @@ final class AppWalletAccountService
             ->when($filters['to'] ?? null, fn (Builder $builder, $to) => $builder->where('created_at', '<=', $to))
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $like = '%' . $search . '%';
+                $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
-                $builder->where(function (Builder $nested) use ($like): void {
+                $builder->where(function (Builder $nested) use ($like, $normalizedOrderNumber): void {
                     $nested
                         ->where('id', 'like', $like)
                         ->orWhere('user_request_id', 'like', $like)
@@ -185,7 +225,16 @@ final class AppWalletAccountService
                                 ->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
                         })
-                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like));
+                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like))
+                        ->orWhereHas('userRequest', function (Builder $requestQuery) use ($like, $normalizedOrderNumber): void {
+                            $requestQuery
+                                ->where('id', 'like', $like)
+                                ->orWhereRaw('CAST(order_number as CHAR) like ?', [$like]);
+
+                            if ($normalizedOrderNumber !== null) {
+                                $requestQuery->orWhere('order_number', $normalizedOrderNumber);
+                            }
+                        });
                 });
             });
     }
@@ -225,6 +274,72 @@ final class AppWalletAccountService
                                 ->orWhere('phone_with_cc', 'like', $like);
                         });
                 });
+            });
+    }
+
+    private function approvedCancellationRefundsQuery(array $filters): Builder
+    {
+        $source = $filters['source'] ?? null;
+
+        $query = CancellationRequest::query()
+            ->with([
+                'user',
+                'processedBy',
+                'userRequest.trainer',
+                'userRequest.plan',
+            ])
+            ->where('status', CancellationRequest::STATUS_APPROVED)
+            ->where('refund_amount_minor', '>', 0);
+
+        if ($source !== null && $source !== AppExpense::TYPE_PACKAGE_REFUND) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->when($filters['from'] ?? null, fn (Builder $builder, $from) => $builder->where('processed_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn (Builder $builder, $to) => $builder->where('processed_at', '<=', $to))
+            ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
+                $like = '%' . $search . '%';
+                $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($search);
+
+                $builder->where(function (Builder $nested) use ($like, $normalizedOrderNumber): void {
+                    $nested
+                        ->where('id', 'like', $like)
+                        ->orWhere('reason', 'like', $like)
+                        ->orWhere('admin_notes', 'like', $like)
+                        ->orWhereHas('user', function (Builder $userQuery) use ($like): void {
+                            $userQuery
+                                ->where('name', 'like', $like)
+                                ->orWhere('phone_with_cc', 'like', $like);
+                        })
+                        ->orWhereHas('userRequest.trainer', function (Builder $trainerQuery) use ($like): void {
+                            $trainerQuery
+                                ->where('name', 'like', $like)
+                                ->orWhere('phone_with_cc', 'like', $like);
+                        })
+                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like))
+                        ->orWhereHas('userRequest', function (Builder $requestQuery) use ($like, $normalizedOrderNumber): void {
+                            $requestQuery
+                                ->where('id', 'like', $like)
+                                ->orWhereRaw('CAST(order_number as CHAR) like ?', [$like]);
+
+                            if ($normalizedOrderNumber !== null) {
+                                $requestQuery->orWhere('order_number', $normalizedOrderNumber);
+                            }
+                        });
+                });
+            });
+    }
+
+    private function approvedCancellationRefundsMinor(array $filters): int
+    {
+        return $this->approvedCancellationRefundsQuery($filters)
+            ->get()
+            ->sum(function (CancellationRequest $cancellation): int {
+                return $this->reportCurrencyConverter->convertMinor(
+                    (int) $cancellation->refund_amount_minor,
+                    $cancellation->userRequest?->currency ?: 'SAR'
+                );
             });
     }
 

@@ -348,6 +348,15 @@
                     </button>
                   </form>
                 @endif
+                @if(auth()->id() !== $u->id && !$u->hasRole('ADMIN'))
+                  <form method="post" action="{{ route('admin.users.force-destroy', $u->id) }}" class="d-inline" onsubmit="return confirm('سيتم حذف المستخدم نهائياً وكل بياناته المرتبطة وتحرير رقم الجوال. هل تريد المتابعة؟');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="حذف نهائي">
+                      <i class="icon-base ti tabler-trash-x"></i>
+                    </button>
+                  </form>
+                @endif
               </div>
             </td>
           </tr>

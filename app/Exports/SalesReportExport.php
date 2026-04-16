@@ -29,7 +29,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
             'الدولة',
             'المنطقة الأولى',
@@ -47,7 +47,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
     public function map($payment): array
     {
         return [
-            $payment->id,
+            $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
             $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '-',
             $payment->userRequest?->area_level_1 ?? '-',

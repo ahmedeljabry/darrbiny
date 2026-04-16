@@ -72,7 +72,7 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th style="width: 150px;"><i class="icon-base ti tabler-hash me-1"></i> المعرف</th>
+          <th style="width: 150px;"><i class="icon-base ti tabler-hash me-1"></i> رقم الطلب</th>
           <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
           <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
           <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
@@ -83,7 +83,7 @@
       <tbody>
         @forelse($subs as $r)
           <tr>
-            <td><code class="text-primary">#{{ substr($r->id, 0, 8) }}</code></td>
+            <td><code class="text-primary">#{{ $r->formatted_order_number ?? $r->order_number ?? '—' }}</code></td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 @if($r->user?->profile_picture_url)

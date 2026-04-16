@@ -131,7 +131,7 @@ class AdvancedReportsController extends BaseController
         $name = trim((string) $request->query('name', ''));
         $phone = trim((string) $request->query('phone', ''));
 
-        $paymentsQuery = Payment::with(['userRequest.trainer'])
+        $paymentsQuery = Payment::with(['userRequest.trainer.country'])
             ->where('type', Payment::TYPE_PLAN_FULL)
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->whereHas('userRequest', fn (Builder $query) => $query->where('status', UserRequest::STATUS_COMPLETED));
@@ -154,6 +154,7 @@ class AdvancedReportsController extends BaseController
             return [
                 $trainer?->name ?? '-',
                 $trainer?->phone_with_cc ?? '-',
+                $trainer?->country?->name ?? '-',
                 $trainer?->bank_name ?? '-',
                 $trainer?->bank_account ?? '-',
                 $trainer?->iban ?? '-',
@@ -164,7 +165,7 @@ class AdvancedReportsController extends BaseController
 
         return $this->view(
             'الكورسات المكتملة ومستحقات المدرب (يومي)',
-            ['المدرب', 'الجوال', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تاريخ الدفعة'],
+            ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تاريخ الدفعة'],
             $rows,
             $request,
             'completed-payouts',
@@ -245,7 +246,7 @@ class AdvancedReportsController extends BaseController
 
         $rows = $items->map(function (UserScheduleProgress $p) {
             return [
-                $p->userRequest?->id ? ('#' . substr((string) $p->userRequest->id, 0, 8)) : '-',
+                $p->userRequest?->formatted_order_number ? ('#' . $p->userRequest->formatted_order_number) : '-',
                 $p->userRequest?->user?->name ?? '-',
                 $p->userRequest?->user?->phone_with_cc ?? '-',
                 $p->userRequest?->trainer?->name ?? '-',

@@ -63,7 +63,7 @@
         <table class="table table-hover report-table">
           <thead>
             <tr>
-              <th>المعرف</th>
+              <th>رقم الطلب</th>
               <th>المستخدم</th>
               <th>المدرب / الطلب</th>
               <th>الباقة / الدولة</th>
@@ -85,7 +85,7 @@
                 };
               @endphp
               <tr>
-                <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
+                <td><code class="text-primary">#{{ $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '—' }}</code></td>
                 <td>
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ $payment->user?->name ?? 'غير معروف' }}</span>
@@ -95,7 +95,7 @@
                 <td>
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ $payment->userRequest?->trainer?->name ?? 'بدون مدرب' }}</span>
-                    <small class="text-muted">{{ $payment->user_request_id ? '#' . substr((string) $payment->user_request_id, 0, 8) : 'بدون طلب' }}</small>
+                    <small class="text-muted">{{ $payment->userRequest?->formatted_order_number ? '#' . $payment->userRequest->formatted_order_number : 'بدون طلب' }}</small>
                   </div>
                 </td>
                 <td>

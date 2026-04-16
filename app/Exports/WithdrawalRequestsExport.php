@@ -26,7 +26,9 @@ class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapp
     {
         return [
             'المستخدم',
+            'الاسم الحقيقي',
             'الجوال',
+            'الدولة',
             'نوع الحساب',
             'اسم البنك',
             'رقم الحساب',
@@ -50,7 +52,9 @@ class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapp
 
         return [
             $user?->name ?? '-',
+            $user?->bank_account_name ?? '-',
             $user?->phone_with_cc ?? '-',
+            $user?->country?->name ?? '-',
             $isTrainer ? 'مدرب' : 'طالب',
             $user?->bank_name ?? '-',
             $user?->bank_account ?? '-',

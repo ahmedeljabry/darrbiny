@@ -26,6 +26,7 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
         return [
             'المدرب',
             'الجوال',
+            'الدولة',
             'البنك',
             'رقم الحساب',
             'IBAN',
@@ -40,6 +41,7 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
         return [
             $trainer?->name ?? '-',
             $trainer?->phone_with_cc ?? '-',
+            $trainer?->country?->name ?? '-',
             $trainer?->bank_name ?? '-',
             $trainer?->bank_account ?? '-',
             $trainer?->iban ?? '-',

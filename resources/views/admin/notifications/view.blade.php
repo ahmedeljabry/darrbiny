@@ -30,6 +30,7 @@
                             <select name="type" class="form-select select2">
                                 <option value="">الكل</option>
                                 <option value="SupportTicketCreated" @selected(request('type') == 'SupportTicketCreated')>تذاكر الدعم</option>
+                                <option value="SupportTicketUserReplyNotification" @selected(request('type') == 'SupportTicketUserReplyNotification')>ردود تذاكر الدعم</option>
                                 <option value="PrizeRequest" @selected(request('type') == 'PrizeRequest')>طلبات الجوائز</option>
                                 <option value="WalletTopupRequest" @selected(request('type') == 'WalletTopupRequest')>طلبات المحفظة</option>
                                 <option value="WalletWithdrawRequest" @selected(request('type') == 'WalletWithdrawRequest')>طلبات السحب</option>
@@ -80,7 +81,7 @@
                                     <td>
                                         <div class="avatar">
                                             <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
-                                                <i class="icon-base ti tabler-{{ $notification->data['type'] === 'support_ticket_created' ? 'ticket' : ($notification->data['type'] === 'prize_request' ? 'gift' : ($notification->data['type'] === 'wallet_topup_request' ? 'wallet' : ($notification->data['type'] === 'wallet_withdraw_request' ? 'arrow-up-right-circle' : ($notification->data['type'] === 'cancellation_request' ? 'x' : ($notification->data['type'] === 'user_account_deleted' ? 'user' : 'bell'))))) }}"></i>
+                                                <i class="icon-base ti tabler-{{ in_array($notification->data['type'] ?? '', ['support_ticket_created', 'support_ticket_user_reply'], true) ? 'ticket' : (($notification->data['type'] ?? '') === 'prize_request' ? 'gift' : (($notification->data['type'] ?? '') === 'wallet_topup_request' ? 'wallet' : (($notification->data['type'] ?? '') === 'wallet_withdraw_request' ? 'arrow-up-right-circle' : (($notification->data['type'] ?? '') === 'cancellation_request' ? 'x' : (($notification->data['type'] ?? '') === 'user_account_deleted' ? 'user' : 'bell')))))) }}"></i>
                                             </span>
                                         </div>
                                     </td>
@@ -100,6 +101,7 @@
                                         @php
                                             $typeMap = [
                                                 'support_ticket_created' => 'تذكرة دعم',
+                                                'support_ticket_user_reply' => 'رد على تذكرة دعم',
                                                 'prize_request' => 'طلب جائزة',
                                                 'wallet_topup_request' => 'طلب محفظة',
                                                 'wallet_withdraw_request' => 'طلب سحب',

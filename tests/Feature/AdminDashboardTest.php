@@ -406,9 +406,11 @@ class AdminDashboardTest extends TestCase
             ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('14.00 SAR')
+            ->assertSee('40.00 SAR')
             ->assertSee('4.00 SAR')
             ->assertSee('10.00 SAR')
             ->assertSee('1.00 SAR')
+            ->assertSee('49.00 SAR')
             ->assertSee('13.00 SAR');
     }
 }

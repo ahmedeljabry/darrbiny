@@ -80,6 +80,7 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
+                            <th style="width: 140px;"><i class="icon-base ti tabler-world me-1"></i> الدولة</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
@@ -105,8 +106,9 @@
                                         </div>
                                     </div>
                                 </td>
+                                <td>{{ $transaction->user?->country?->name ?? '-' }}</td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($transaction->amountMajor(), 2) }} نقطة</span>
+                                    <span class="fw-semibold">{{ number_format($transaction->amountMajor(), 2) }}</span>
                                 </td>
                                 <td>
                                     @php
@@ -144,7 +146,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-wallet" style="font-size: 32px;"></i>

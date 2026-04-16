@@ -44,6 +44,8 @@
                         <p class="mb-0">
                             <strong>{{ $withdrawalRequest->user?->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $withdrawalRequest->user?->phone_with_cc ?? '' }}</small><br>
+                            <small class="text-muted">الاسم الحقيقي: {{ $withdrawalRequest->user?->bank_account_name ?? '-' }}</small><br>
+                            <small class="text-muted">الدولة: {{ $withdrawalRequest->user?->country?->name ?? '-' }}</small><br>
                             @php
                                 $isTrainer = ($withdrawalRequest->user?->user_type?->value ?? null) === 'captain';
                             @endphp
@@ -57,7 +59,7 @@
                     <div class="col-md-6">
                         <h6>بيانات الطلب</h6>
                         <p class="mb-0">
-                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amountMajor(), 2) }} نقطة<br>
+                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amountMajor(), 2) }}<br>
                             <strong>النوع:</strong> طلب سحب<br>
                             <strong>الحالة:</strong>
                             @if($withdrawalRequest->status === 'pending')

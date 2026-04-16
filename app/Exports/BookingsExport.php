@@ -25,7 +25,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
             'المدرب',
             'الخطة',
@@ -63,7 +63,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             : '-';
 
         return [
-            $booking->id,
+            $booking->formatted_order_number ?? $booking->order_number ?? $booking->id,
             $booking->user?->name ?? $booking->user_id,
             $booking->trainer?->name ?? ($booking->trainer_id ?: '-'),
             $booking->plan?->title ?? $booking->plan_id,

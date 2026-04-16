@@ -29,9 +29,9 @@ class AppFeesReportExport implements FromCollection, WithHeadings, WithMapping, 
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
-            'الطلب',
+            'مرجع الدفع',
             'رسوم التطبيق (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
             'التاريخ',
@@ -41,9 +41,9 @@ class AppFeesReportExport implements FromCollection, WithHeadings, WithMapping, 
     public function map($payment): array
     {
         return [
-            $payment->id,
+            $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
-            $payment->user_request_id,
+            $payment->id,
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency),
             $payment->type,
             $payment->created_at?->format('Y-m-d H:i:s'),

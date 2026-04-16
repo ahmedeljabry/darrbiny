@@ -10,10 +10,29 @@ use Illuminate\Routing\Controller as BaseController;
 
 class RatingsAdminController extends BaseController
 {
-    public function index()
+    public function index(Request $request)
     {
-        $ratings = Rating::with(['user', 'trainer', 'userRequest'])->latest()->paginate(20);
-        return view('admin.ratings.index', compact('ratings'));
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+
+        $ratings = Rating::with(['user', 'trainer', 'userRequest'])
+            ->when($name !== '', function ($query) use ($name) {
+                $query->where(function ($nestedQuery) use ($name) {
+                    $nestedQuery->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%' . $name . '%'))
+                        ->orWhereHas('trainer', fn ($trainerQuery) => $trainerQuery->where('name', 'like', '%' . $name . '%'));
+                });
+            })
+            ->when($phone !== '', function ($query) use ($phone) {
+                $query->where(function ($nestedQuery) use ($phone) {
+                    $nestedQuery->whereHas('user', fn ($userQuery) => $userQuery->where('phone_with_cc', 'like', '%' . $phone . '%'))
+                        ->orWhereHas('trainer', fn ($trainerQuery) => $trainerQuery->where('phone_with_cc', 'like', '%' . $phone . '%'));
+                });
+            })
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.ratings.index', compact('ratings', 'name', 'phone'));
     }
 
     public function create()

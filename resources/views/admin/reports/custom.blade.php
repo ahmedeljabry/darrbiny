@@ -5,6 +5,7 @@
   $supportsExcel = $supportsExcel ?? false;
   $filters = $filters ?? [];
   $filterFields = [];
+  $rejectionReasonColumnIndex = array_search('سبب الرفض', $headers, true);
 
   if (array_key_exists('name', $filters)) {
     $filterFields[] = ['name' => 'name', 'label' => 'الاسم', 'placeholder' => 'ابحث بالاسم', 'col' => 'col-xl-3 col-md-4'];
@@ -101,13 +102,28 @@
           <tbody>
             @forelse($rows as $row)
               <tr>
-                @foreach($row as $cell)
+                @foreach($row as $cellIndex => $cell)
                   @php
                     $displayCell = $cell instanceof \DateTimeInterface
                       ? $cell->format('Y-m-d H:i')
                       : $cell;
                   @endphp
-                  <td>{{ $displayCell }}</td>
+                  <td>
+                    @if($rejectionReasonColumnIndex !== false && $cellIndex === $rejectionReasonColumnIndex && filled($displayCell) && $displayCell !== '-')
+                      <div class="d-flex flex-column gap-2">
+                        <div class="text-truncate" style="max-width: 320px;" title="{{ $displayCell }}">{{ $displayCell }}</div>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger align-self-start js-show-rejection-reason"
+                          data-rejection-reason="{{ $displayCell }}"
+                        >
+                          عرض السبب كاملًا
+                        </button>
+                      </div>
+                    @else
+                      {{ $displayCell }}
+                    @endif
+                  </td>
                 @endforeach
               </tr>
             @empty
@@ -118,4 +134,42 @@
       </div>
     </div>
   </div>
+
+  @if($rejectionReasonColumnIndex !== false)
+    <div class="modal fade" id="rejectionReasonModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">سبب الرفض</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          </div>
+          <div class="modal-body">
+            <textarea id="rejectionReasonModalText" class="form-control" rows="10" readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @push('scripts')
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const modalElement = document.getElementById('rejectionReasonModal');
+          const modalText = document.getElementById('rejectionReasonModalText');
+
+          if (!modalElement || !modalText || typeof bootstrap === 'undefined') {
+            return;
+          }
+
+          const modal = new bootstrap.Modal(modalElement);
+
+          document.querySelectorAll('.js-show-rejection-reason').forEach(function (button) {
+            button.addEventListener('click', function () {
+              modalText.value = button.getAttribute('data-rejection-reason') || '';
+              modal.show();
+            });
+          });
+        });
+      </script>
+    @endpush
+  @endif
 @endsection

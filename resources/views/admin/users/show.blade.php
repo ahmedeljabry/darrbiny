@@ -16,6 +16,13 @@
       <h5 class="mb-0">بيانات المستخدم</h5>
       <div class="d-flex gap-2">
         <a class="btn btn-sm btn-primary" href="{{ route('admin.users.edit',$user->id) }}">تعديل</a>
+        @if(auth()->id() !== $user->id && !$user->hasRole('ADMIN'))
+          <form method="post" action="{{ route('admin.users.force-destroy', $user->id) }}" onsubmit="return confirm('سيتم حذف المستخدم نهائياً وكل بياناته المرتبطة وتحرير رقم الجوال. هل تريد المتابعة؟');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-sm btn-danger">حذف نهائي</button>
+          </form>
+        @endif
       </div>
     </div>
     <div class="card-body">
@@ -384,7 +391,7 @@
             <tbody>
               @foreach($userRequests as $request)
                 <tr>
-                  <td><code class="text-primary">#{{ substr($request->id, 0, 8) }}</code></td>
+                  <td><code class="text-primary">#{{ $request->formatted_order_number ?? $request->order_number ?? '—' }}</code></td>
                   <td>
                     <div class="d-flex flex-column">
                       <span class="fw-semibold">{{ $request->plan?->title ?? '-' }}</span>

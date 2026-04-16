@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Exports\AppWalletAccountExport;
 use App\Models\AppExpense;
+use App\Models\CancellationRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -206,6 +207,61 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertSee('رسوم التطبيق على الدفع الكلي')
             ->assertSee('30.00')
             ->assertDontSee('200.00');
+    }
+
+    public function test_app_wallet_summary_and_entries_include_approved_cancellation_refunds(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009607',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_payments');
+
+        [$user, $request] = $this->createPaidRequestContext();
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 4_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 4_000,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 9_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 900,
+            'trainer_net_minor' => 8_100,
+        ]);
+
+        CancellationRequest::create([
+            'user_request_id' => $request->id,
+            'user_id' => $user->id,
+            'reason' => 'Refund after cancellation',
+            'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 5_000,
+            'processed_by' => $admin->id,
+            'processed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.app-wallet-account.index'))
+            ->assertOk()
+            ->assertSee('استرداد باقات')
+            ->assertSee('130.00')
+            ->assertSee('50.00')
+            ->assertSee('80.00')
+            ->assertSee('Refund after cancellation')
+            ->assertSee('#' . $request->formatted_order_number);
     }
 
     /**

@@ -104,7 +104,7 @@
         <table class="table table-hover report-table">
           <thead>
             <tr>
-              <th>المعرف</th>
+              <th>رقم الطلب</th>
               <th>المستخدم</th>
               <th>المبلغ</th>
               <th>النوع</th>
@@ -123,7 +123,7 @@
                 };
               @endphp
               <tr>
-                <td><code class="text-primary">{{ substr($payment->id, 0, 8) }}</code></td>
+                <td><code class="text-primary">#{{ $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '—' }}</code></td>
                 <td>{{ $payment->user?->name ?? 'غير معروف' }}</td>
                 <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</td>
                 <td>{{ $reportTypeLabels[$payment->type] ?? $payment->typeLabel() }}</td>

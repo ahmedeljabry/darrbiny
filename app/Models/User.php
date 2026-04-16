@@ -142,6 +142,11 @@ class User extends Authenticatable
         return $this->belongsTo(Country::class, 'bank_country_id');
     }
 
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_id');
+    }
+
     public function referrer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'referred_by');

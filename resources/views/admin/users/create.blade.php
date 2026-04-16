@@ -16,11 +16,10 @@
       <h5 class="mb-0">إنشاء مستخدم</h5>
     </div>
     <div class="card-body">
-      <form method="post" action="{{ route('admin.users.store') }}">
+      <form method="post" action="{{ route('admin.users.store') }}" enctype="multipart/form-data">
         @csrf
         @include('admin.users._form')
       </form>
     </div>
   </div>
 @endsection
-

@@ -29,7 +29,7 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'المعرف',
+            'رقم الطلب',
             'المستخدم',
             'المدرب',
             'الباقة',
@@ -47,7 +47,7 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
     public function map($payment): array
     {
         return [
-            $payment->id,
+            $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
             $payment->userRequest?->trainer?->name ?? '-',
             $payment->userRequest?->plan?->title ?? '-',

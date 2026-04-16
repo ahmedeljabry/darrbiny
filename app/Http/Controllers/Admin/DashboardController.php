@@ -62,10 +62,19 @@ class DashboardController extends BaseController
         $pendingSupportTickets = \App\Models\SupportTicket::where('status', 'open')
             ->whereBetween('created_at', [$from, $to])
             ->count();
-        $unreadNotifications = auth()->user()
+        $unreadNotifications = auth()->user()->unreadNotifications()->count();
+        $dashboardAlerts = auth()->user()
             ->unreadNotifications()
-            ->whereBetween('created_at', [$from, $to])
-            ->count();
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->filter(fn ($notification) => in_array($notification->data['type'] ?? '', [
+                'wallet_withdraw_request',
+                'prize_request',
+                'support_ticket_user_reply',
+            ], true))
+            ->take(5)
+            ->values();
 
         $dashboardIncomeFilters = [
             'from' => $from,
@@ -101,6 +110,12 @@ class DashboardController extends BaseController
             $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
             'amount_minor'
         );
+        $bookingsValueMinor -= $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            [],
+            'plan_full'
+        );
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
@@ -121,6 +136,7 @@ class DashboardController extends BaseController
             'cancelledBookings',
             'pendingCancellations','pendingWalletRequests','pendingWithdrawalRequests','pendingPrizeRequests',
             'pendingSupportTickets','unreadNotifications',
+            'dashboardAlerts',
             'labels','userSeries','planSeries','bookingSeries',
             'range','salesMinor','packageReservationFeesMinor','appFeesMinor','awaitingOffers',
             'from','to','rangeLabel','usesCustomRange','trendLabel',

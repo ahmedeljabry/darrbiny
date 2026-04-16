@@ -79,6 +79,8 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 260px;">المستخدم</th>
+                            <th style="width: 180px;">الاسم الحقيقي</th>
+                            <th style="width: 140px;">الدولة</th>
                             <th style="width: 130px;">نوع الحساب</th>
                             <th style="width: 160px;">اسم البنك</th>
                             <th style="width: 170px;">رقم الحساب</th>
@@ -103,6 +105,8 @@
                                         </div>
                                     </div>
                                 </td>
+                                <td>{{ $withdrawal->user?->bank_account_name ?? '-' }}</td>
+                                <td>{{ $withdrawal->user?->country?->name ?? '-' }}</td>
                                 <td>
                                     @php
                                         $isTrainer = ($withdrawal->user?->user_type?->value ?? null) === 'captain';
@@ -115,7 +119,7 @@
                                 <td><span dir="ltr">{{ $withdrawal->user?->bank_account ?? '-' }}</span></td>
                                 <td><span dir="ltr">{{ $withdrawal->user?->iban ?? '-' }}</span></td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($withdrawal->amountMajor(), 2) }} نقطة</span>
+                                    <span class="fw-semibold">{{ number_format($withdrawal->amountMajor(), 2) }}</span>
                                 </td>
                                 <td>
                                     @if($withdrawal->status === 'pending')
@@ -140,7 +144,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-5">
+                                <td colspan="11" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-arrow-up-right-circle" style="font-size: 32px;"></i>

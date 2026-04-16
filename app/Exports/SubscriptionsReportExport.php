@@ -49,7 +49,7 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
         );
 
         return [
-            $subscription->id,
+            $subscription->formatted_order_number ?? $subscription->order_number ?? $subscription->id,
             $subscription->user?->name ?? $subscription->user_id,
             $subscription->plan?->title ?? $subscription->plan_id,
             $this->reportCurrencyConverter->formatConvertedMinor($amountMinor, $subscription->currency ?? 'SAR'),

@@ -87,7 +87,7 @@
                 };
               @endphp
               <tr>
-                <td><code class="text-primary">#{{ substr((string) $subscription->id, 0, 8) }}</code></td>
+                <td><code class="text-primary">#{{ $subscription->formatted_order_number ?? $subscription->order_number ?? '—' }}</code></td>
                 <td>
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ $subscription->user?->name ?? 'غير معروف' }}</span>

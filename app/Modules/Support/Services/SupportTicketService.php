@@ -9,6 +9,7 @@ use App\Models\SupportTicketMessage;
 use App\Models\User;
 use App\Notifications\SupportTicketCreatedNotification;
 use App\Notifications\SupportTicketReplyNotification;
+use App\Notifications\SupportTicketUserReplyNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -94,6 +95,11 @@ class SupportTicketService
                 if ($ticketOwner && $ticketOwner->id !== $actor->id) {
                     $ticketOwner->notify(new SupportTicketReplyNotification($ticket, $ticketMessage));
                 }
+            } else {
+                $admins = User::role('ADMIN')->get();
+                if ($admins->isNotEmpty()) {
+                    Notification::send($admins, new SupportTicketUserReplyNotification($ticket, $ticketMessage));
+                }
             }
 
             return $ticketMessage->load('user');
@@ -129,4 +135,3 @@ class SupportTicketService
             ->first();
     }
 }
-

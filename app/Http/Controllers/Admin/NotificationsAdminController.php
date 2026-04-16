@@ -100,17 +100,11 @@ class NotificationsAdminController extends BaseController
             $notification->markAsRead();
         }
         
-        // Redirect to trainer profile page for trainer approval related notifications
-        if (
-            isset($notification->data['type'])
-            && in_array($notification->data['type'], ['trainer_profile_update', 'trainer_registration_pending_approval'], true)
-        ) {
-            $trainerId = $notification->data['trainer_id'] ?? null;
-            if ($trainerId) {
-                return redirect()->route('admin.users.show', $trainerId)->with('notification', $notification);
-            }
+        $redirectRoute = $this->resolveNotificationRedirect($notification->data ?? []);
+        if ($redirectRoute !== null) {
+            return redirect()->to($redirectRoute)->with('notification', $notification);
         }
-        
+
         return redirect()->back()->with('notification', $notification);
     }
 
@@ -213,5 +207,32 @@ class NotificationsAdminController extends BaseController
             ])
             ->withHighestPossiblePriority()
             ->withDefaultSounds();
+    }
+
+    private function resolveNotificationRedirect(array $data): ?string
+    {
+        $type = $data['type'] ?? null;
+
+        return match ($type) {
+            'trainer_profile_update', 'trainer_registration_pending_approval' => filled($data['trainer_id'] ?? null)
+                ? route('admin.users.show', $data['trainer_id'])
+                : null,
+            'support_ticket_created', 'support_ticket_user_reply' => filled($data['ticket_id'] ?? null)
+                ? route('admin.support.show', $data['ticket_id'])
+                : null,
+            'wallet_topup_request' => filled($data['transaction_id'] ?? null)
+                ? route('admin.wallet-transactions.show', $data['transaction_id'])
+                : null,
+            'wallet_withdraw_request' => filled($data['transaction_id'] ?? null)
+                ? route('admin.withdrawal-requests.show', $data['transaction_id'])
+                : null,
+            'prize_request' => filled($data['redemption_id'] ?? null)
+                ? route('admin.prize-redemptions.show', $data['redemption_id'])
+                : null,
+            'cancellation_request' => filled($data['cancellation_request_id'] ?? null)
+                ? route('admin.cancellation-requests.show', $data['cancellation_request_id'])
+                : null,
+            default => null,
+        };
     }
 }

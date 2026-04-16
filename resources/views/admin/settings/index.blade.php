@@ -654,7 +654,55 @@
                     <label class="form-label">تواصل معنا</label>
                     <div class="input-group input-group-merge">
                       <span class="input-group-text"><i class="ti tabler-mail"></i></span>
-                      <textarea name="page_contact" class="form-control" rows="4" placeholder="بيانات التواصل، البريد، الهاتف...">{{ $settings['pages.contact'] ?? '' }}</textarea>
+                      <textarea
+                        id="page_contact"
+                        name="page_contact"
+                        class="form-control"
+                        rows="6"
+                        placeholder="بيانات التواصل، البريد، الهاتف... ويمكن إدراج روابط HTML بسيطة"
+                      >{{ $settings['pages.contact'] ?? '' }}</textarea>
+                    </div>
+                    <small class="text-muted d-block mt-2">يمكنك إدراج روابط قابلة للنقر مثل البريد الإلكتروني أو واتساب داخل النص نفسه.</small>
+                  </div>
+                  <div class="card border border-primary-subtle bg-label-primary mb-3">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="avatar-initial rounded bg-label-primary">
+                          <i class="icon-base ti tabler-link"></i>
+                        </span>
+                        <div>
+                          <h6 class="mb-0">أداة إدراج رابط داخل النص</h6>
+                          <small class="text-body-secondary">اختر نوع الرابط، اكتب النص الظاهر، ثم أدرجه داخل مربع "تواصل معنا".</small>
+                        </div>
+                      </div>
+                      <div class="row g-3">
+                        <div class="col-lg-3">
+                          <label class="form-label">نوع الرابط</label>
+                          <select id="contact-link-type" class="form-select">
+                            <option value="email">إيميل</option>
+                            <option value="whatsapp">واتساب</option>
+                            <option value="custom">رابط مخصص</option>
+                          </select>
+                        </div>
+                        <div class="col-lg-3">
+                          <label class="form-label">النص الظاهر</label>
+                          <input type="text" id="contact-link-text" class="form-control" placeholder="اكتب النص الذي سيضغط عليه المستخدم">
+                        </div>
+                        <div class="col-lg-4">
+                          <label class="form-label">الرابط أو القيمة</label>
+                          <input type="text" id="contact-link-value" class="form-control" placeholder="example@mail.com أو 9665XXXXXXXX أو https://example.com">
+                        </div>
+                        <div class="col-lg-2 d-grid">
+                          <label class="form-label">&nbsp;</label>
+                          <button type="button" class="btn btn-primary js-insert-contact-link">
+                            <i class="icon-base ti tabler-plus me-1"></i> إدراج
+                          </button>
+                        </div>
+                      </div>
+                      <div class="mt-3">
+                        <label class="form-label">معاينة</label>
+                        <div id="contact-preview" class="border rounded p-3 bg-white text-break"></div>
+                      </div>
                     </div>
                   </div>
                   <div class="mt-3">
@@ -958,6 +1006,65 @@
     }
   }
 </style>
+@endpush
+
+@push('scripts')
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const textarea = document.getElementById('page_contact');
+    const typeInput = document.getElementById('contact-link-type');
+    const textInput = document.getElementById('contact-link-text');
+    const valueInput = document.getElementById('contact-link-value');
+    const preview = document.getElementById('contact-preview');
+    const insertButton = document.querySelector('.js-insert-contact-link');
+
+    if (!textarea || !typeInput || !textInput || !valueInput || !preview || !insertButton) {
+      return;
+    }
+
+    function updateContactPreview() {
+      preview.innerHTML = textarea.value || '<span class="text-muted">لا توجد معاينة بعد.</span>';
+    }
+
+    function buildContactLink(type, text, value) {
+      const safeText = text.trim();
+      const safeValue = value.trim();
+
+      if (!safeText || !safeValue) {
+        return '';
+      }
+
+      if (type === 'email') {
+        return `<a href="mailto:${safeValue}">${safeText}</a>`;
+      }
+
+      if (type === 'whatsapp') {
+        const normalizedNumber = safeValue.replace(/[^0-9]/g, '');
+        return `<a href="https://wa.me/${normalizedNumber}">${safeText}</a>`;
+      }
+
+      return `<a href="${safeValue}" target="_blank" rel="noopener noreferrer">${safeText}</a>`;
+    }
+
+    insertButton.addEventListener('click', function () {
+      const anchor = buildContactLink(typeInput.value, textInput.value, valueInput.value);
+      if (!anchor) {
+        return;
+      }
+
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      const currentValue = textarea.value;
+      textarea.value = currentValue.slice(0, start) + anchor + currentValue.slice(end);
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + anchor.length;
+      updateContactPreview();
+    });
+
+    textarea.addEventListener('input', updateContactPreview);
+    updateContactPreview();
+  });
+  </script>
 @endpush
 
 @push('scripts')
