@@ -352,10 +352,14 @@ class AdminReportsDataTest extends TestCase
             'is_active' => true,
         ]);
 
-        Setting::query()->updateOrCreate(
-            ['key' => ReportCurrencyConverter::SETTINGS_KEY],
-            ['value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE)]
-        );
+        $this->actingAs($admin)
+            ->from(route('admin.settings.index'))
+            ->post(route('admin.settings.update'), [
+                'report_exchange_rates' => [
+                    ['currency' => 'JOD', 'rate' => '5.29'],
+                ],
+            ])
+            ->assertRedirect(route('admin.settings.index'));
 
         $user = User::factory()->create([
             'name' => 'Jordan Reports User',

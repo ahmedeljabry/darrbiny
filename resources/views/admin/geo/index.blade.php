@@ -34,7 +34,7 @@
       </span>
       <div>
         <h5 class="mb-0">الدول</h5>
-        <small class="text-body-secondary">إدارة الدول</small>
+        <small class="text-body-secondary">إدارة الدول. أسعار الصرف المستخدمة في النظام تُدار من صفحة الإعدادات.</small>
       </div>
     </div>
     <div class="d-flex align-items-end gap-2 flex-wrap">
@@ -72,9 +72,15 @@
               @if($c->currency === \App\Support\ReportCurrencyConverter::REPORT_CURRENCY)
                 <span class="badge bg-label-success">1.000000</span>
               @elseif(isset($exchangeRates[$c->currency]))
-                <span class="fw-semibold">{{ number_format((float) $exchangeRates[$c->currency], 6, '.', '') }}</span>
+                <div class="d-flex flex-column">
+                  <span class="fw-semibold">{{ number_format((float) $exchangeRates[$c->currency], 6, '.', '') }}</span>
+                  <small class="text-muted">من الإعدادات</small>
+                </div>
               @else
-                <span class="badge bg-label-warning">غير محدد</span>
+                <div class="d-flex flex-column">
+                  <span class="badge bg-label-warning">غير محدد</span>
+                  <small class="text-muted">أضفه من الإعدادات</small>
+                </div>
               @endif
             </td>
             <td>

@@ -84,18 +84,23 @@ class AdminFinanceCurrencyDisplayTest extends TestCase
         ]);
     }
 
-    public function test_adding_country_exchange_rate_converts_jordanian_dinar_across_admin_bookings_and_payments(): void
+    public function test_settings_exchange_rate_converts_jordanian_dinar_across_admin_bookings_and_payments(): void
     {
         $admin = $this->createAdmin();
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
 
         $this->actingAs($admin)
-            ->post(route('admin.geo.countries.store'), [
-                'name' => 'Jordan',
-                'iso2' => 'JO',
-                'currency' => 'JOD',
-                'exchange_rate_to_sar' => '5.29',
+            ->from(route('admin.settings.index'))
+            ->post(route('admin.settings.update'), [
+                'report_exchange_rates' => [
+                    ['currency' => 'JOD', 'rate' => '5.29'],
+                ],
             ])
-            ->assertRedirect(route('admin.geo.index'));
+            ->assertRedirect(route('admin.settings.index'));
 
         $storedRates = json_decode((string) Setting::query()
             ->where('key', ReportCurrencyConverter::SETTINGS_KEY)
@@ -104,7 +109,6 @@ class AdminFinanceCurrencyDisplayTest extends TestCase
         $this->assertIsArray($storedRates);
         $this->assertSame(5.29, (float) ($storedRates['JOD'] ?? 0));
 
-        $country = Country::query()->where('iso2', 'JO')->firstOrFail();
         $plan = Plan::create([
             'title' => 'Jordan Finance Plan',
             'description' => 'Plan for Jordanian finance conversion test',

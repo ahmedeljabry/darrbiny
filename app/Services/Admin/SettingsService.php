@@ -57,7 +57,7 @@ final class SettingsService
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
         if (array_key_exists('report_exchange_rates', $data)) {
             $this->save(
-                'reports.exchange_rates_to_sar',
+                ReportCurrencyConverter::SETTINGS_KEY,
                 json_encode($this->normalizeReportExchangeRates($data['report_exchange_rates'] ?? []), JSON_UNESCAPED_UNICODE)
             );
         }

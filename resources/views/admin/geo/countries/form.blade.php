@@ -1,6 +1,6 @@
 @php($isEdit = isset($country) && $country)
 @php($action = $isEdit ? route('admin.geo.countries.update', $country->id) : route('admin.geo.countries.store'))
-@php($currentExchangeRate = old('exchange_rate_to_sar', $currentExchangeRate ?? null))
+@php($currentExchangeRate = $currentExchangeRate ?? null)
 
 @if (session('status'))
   <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -80,28 +80,27 @@
               @enderror
               <small class="text-muted d-block mt-1">اسم الدولة بالكامل</small>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">سعر 1 من العملة بالـ SAR</label>
-              <div class="input-group input-group-merge">
-                <span class="input-group-text"><i class="ti tabler-exchange"></i></span>
-                <input
-                  type="number"
-                  name="exchange_rate_to_sar"
-                  class="form-control @error('exchange_rate_to_sar') is-invalid @enderror"
-                  step="0.000001"
-                  min="0.000001"
-                  placeholder="مثال: 5.290000"
-                  value="{{ $currentExchangeRate }}"
-                >
-              </div>
-              @error('exchange_rate_to_sar')
-                <div class="text-danger small mt-1">{{ $message }}</div>
-              @enderror
-              <small class="text-muted d-block mt-1">مثال: إذا كان 1 JOD = 5.29 SAR فاكتب 5.29. هذا السعر يستخدم في الحجوزات والمالية والتقارير.</small>
-            </div>
-            <div class="col-md-6 d-flex align-items-end">
-              <div class="alert alert-info mb-0 w-100">
-                إذا كانت العملة هي <strong>{{ \App\Support\ReportCurrencyConverter::REPORT_CURRENCY }}</strong> فالقيمة تكون ثابتة <strong>1.000000</strong> ولا تحتاج إدخالها.
+            <div class="col-12">
+              <div class="alert alert-info mb-0">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                  <div>
+                    <div class="fw-semibold mb-1">إدارة سعر الصرف من الإعدادات</div>
+                    <div class="small">
+                      يتم أخذ كل معدلات التحويل المستخدمة في النظام من صفحة
+                      <a href="{{ route('admin.settings.index') }}#financial-rates" class="fw-semibold">الإعدادات &gt; التحويل</a>.
+                      @if($isEdit)
+                        @if($currentExchangeRate)
+                          السعر الحالي لهذه العملة: <strong>{{ $currentExchangeRate }} {{ \App\Support\ReportCurrencyConverter::REPORT_CURRENCY }}</strong>.
+                        @else
+                          لا يوجد سعر صرف محفوظ لهذه العملة حتى الآن.
+                        @endif
+                      @endif
+                    </div>
+                  </div>
+                  <a href="{{ route('admin.settings.index') }}#financial-rates" class="btn btn-outline-info">
+                    <i class="icon-base ti tabler-exchange me-1"></i> فتح إعدادات التحويل
+                  </a>
+                </div>
               </div>
             </div>
           </div>
