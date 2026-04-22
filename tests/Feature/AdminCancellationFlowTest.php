@@ -8,6 +8,7 @@ use App\Models\CancellationRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -147,6 +148,42 @@ class AdminCancellationFlowTest extends TestCase
         ]);
     }
 
+    public function test_admin_cancelling_booking_interprets_refund_input_as_riyal_and_converts_back_to_booking_currency(): void
+    {
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $admin = $this->createAdmin();
+        [$plan, $user] = $this->createPlanAndUser('Egypt', 'EG', 'EGP');
+
+        $booking = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->addDay()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'EGP',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 10_000,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.bookings.cancel', $booking->id), [
+                'refund_amount' => 8,
+                'reason' => 'تحويل من SAR إلى EGP',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('cancellation_requests', [
+            'user_request_id' => $booking->id,
+            'refund_amount_minor' => 10_000,
+        ]);
+    }
+
     public function test_cancelled_booking_without_cancellation_record_is_backfilled_in_requests_index(): void
     {
         $admin = $this->createAdmin();
@@ -191,12 +228,16 @@ class AdminCancellationFlowTest extends TestCase
     /**
      * @return array{0: Plan, 1: User}
      */
-    private function createPlanAndUser(): array
+    private function createPlanAndUser(
+        string $countryName = 'Saudi Arabia',
+        string $iso2 = 'SA',
+        string $currency = 'SAR'
+    ): array
     {
         $country = Country::create([
-            'name' => 'Saudi Arabia',
-            'iso2' => 'SA',
-            'currency' => 'SAR',
+            'name' => $countryName,
+            'iso2' => $iso2,
+            'currency' => $currency,
         ]);
 
         $plan = Plan::create([
@@ -212,7 +253,7 @@ class AdminCancellationFlowTest extends TestCase
 
         $user = User::factory()->create([
             'phone_with_cc' => '+10000009001',
-            'currency' => 'SAR',
+            'currency' => $currency,
             'points_balance' => 0,
         ]);
 

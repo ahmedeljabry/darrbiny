@@ -12,6 +12,8 @@ class UserRequestResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'order_number' => $this->order_number,
+            'formatted_order_number' => $this->formatted_order_number,
             'user_id' => $this->user_id,
             'trainer_id' => $this->trainer_id,
             'plan_id' => $this->plan_id,

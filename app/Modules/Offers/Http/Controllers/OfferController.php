@@ -30,7 +30,7 @@ class OfferController extends BaseController
                 'trainer:id,name,profile_picture_id',
                 'trainer.profilePicture',
                 'trainer.trainerProfile:id,user_id,bio,pending_approval,pending_changes,car_available,car_type,car_model_year,rating_avg,rating_count',
-                'userRequest:id,user_id,plan_id,country_id,area_level_1,area_level_2,area_level_3,locality,start_date,start_time,needs_pickup,description,currency,has_user_car,wants_trainer_car',
+                'userRequest:id,order_number,user_id,plan_id,country_id,area_level_1,area_level_2,area_level_3,locality,start_date,start_time,needs_pickup,description,currency,has_user_car,wants_trainer_car',
                 'userRequest.country:id,name',
                 'userRequest.plan:id,title,duration_days,hours_count,country_id',
                 'userRequest.plan.country:id,name',

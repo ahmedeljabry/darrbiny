@@ -1,5 +1,9 @@
 @extends('admin.layouts.app')
 @section('title', 'طلبات الإلغاء')
+@php
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+@endphp
 @section('content')
 
 <!-- Breadcrumbs -->
@@ -99,7 +103,6 @@
                                 <td>
                                     @php
                                         $userRequest = $req->userRequest;
-                                        $currency = $userRequest?->currency ?? 'SAR';
                                     @endphp
                                     @if($userRequest && $userRequest->payments->isNotEmpty())
                                         <div class="d-flex flex-column gap-1">
@@ -107,7 +110,7 @@
                                                 <div class="d-flex flex-column">
                                                     <small class="text-muted d-block">{{ $payment->typeLabel() }}:</small>
                                                     <span class="fw-semibold {{ $payment->status === \App\Models\Payment::STATUS_SUCCEEDED ? 'text-success' : 'text-body' }}">
-                                                        {{ number_format($payment->amount_minor / 100, 2) }} {{ $payment->currency }}
+                                                        {{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}
                                                         ({{ $payment->statusLabel() }})
                                                     </span>
                                                 </div>
@@ -115,7 +118,7 @@
                                             <div class="mt-1">
                                                 <small class="text-muted d-block">إجمالي الدفعات الناجحة:</small>
                                                 <span class="badge bg-label-success">
-                                                    {{ number_format($userRequest->totalSuccessfulPaymentsMinor() / 100, 2) }} {{ $currency }}
+                                                    {{ $converter->formatConvertedMinor($userRequest->totalSuccessfulPaymentsMinor(), $userRequest->currency ?? $reportCurrency) }}
                                                 </span>
                                             </div>
                                         </div>

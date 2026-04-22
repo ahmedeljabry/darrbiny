@@ -57,6 +57,8 @@ class SubscriptionResource extends JsonResource
         return [
 
             'id' => $this->id,
+            'order_number' => $this->order_number,
+            'formatted_order_number' => $this->formatted_order_number,
             'course_id' => $courseId,
             'status' => $this->status,
             'status_category' => $statusCategory,
@@ -93,6 +95,8 @@ class SubscriptionResource extends JsonResource
             ],
             'course_details' => [
                 'course_id' => '#' . $courseId,
+                'order_number' => $this->order_number,
+                'formatted_order_number' => $this->formatted_order_number,
                 'start_date' => $this->start_date?->format('d M Y'),
                 'start_date_ar' => $this->start_date,
                 'has_user_car' => $this->has_user_car,

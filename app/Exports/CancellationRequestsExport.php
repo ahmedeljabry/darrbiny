@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,9 +13,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class CancellationRequestsExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $requests
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -55,8 +60,8 @@ class CancellationRequestsExport implements FromCollection, WithHeadings, WithMa
             $request->id,
             $request->user?->name ?? $request->user_id,
             $userRequest?->plan?->title ?? ($userRequest?->plan_id ?? '-'),
-            number_format($packageValue / 100, 2) . ' ' . ($userRequest?->currency ?? 'USD'),
-            number_format($totalPaid / 100, 2) . ' ' . ($userRequest?->currency ?? 'USD'),
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $packageValue, $userRequest?->currency ?? ReportCurrencyConverter::REPORT_CURRENCY),
+            $this->reportCurrencyConverter->formatConvertedMinor((int) $totalPaid, $userRequest?->currency ?? ReportCurrencyConverter::REPORT_CURRENCY),
             $request->reason ?? '-',
             $statuses[$request->status] ?? $request->status,
             $request->admin_notes ?? '-',

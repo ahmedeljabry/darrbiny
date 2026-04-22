@@ -81,7 +81,7 @@ class WalletController extends BaseController
                 'calculated_balance' => WalletAmount::minorToMajor($calculatedBalanceMinor), // Balance calculated from transactions
                 'calculated_balance_minor' => $calculatedBalanceMinor,
                 'balance_verified' => $balanceMatches, // True if stored balance matches calculated
-                'currency' => $user->currency ?? 'USD',
+                'currency' => \App\Support\ReportCurrencyConverter::REPORT_CURRENCY,
                 'statistics' => [
                     'total_transactions' => $totalTransactions,
                     'pending_transactions' => $pendingTransactions,

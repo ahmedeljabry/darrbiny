@@ -38,6 +38,7 @@ class UserRequestOffersEndpointTest extends TestCase
         $trainer = User::factory()->create(['phone_with_cc' => '+10000002002']);
 
         $userRequest = UserRequest::create([
+            'order_number' => 8456,
             'user_id' => $requestUser->id,
             'trainer_id' => null,
             'plan_id' => $plan->id,
@@ -65,6 +66,8 @@ class UserRequestOffersEndpointTest extends TestCase
             ->getJson('/api/v1/user-requests/offers?user_request_id=' . $userRequest->id)
             ->assertOk()
             ->assertJsonPath('success', true)
+            ->assertJsonPath('data.0.request.order_number', $userRequest->order_number)
+            ->assertJsonPath('data.0.request.formatted_order_number', $userRequest->formatted_order_number)
             ->assertJsonPath('data.0.request.has_user_car', true)
             ->assertJsonPath('data.0.request.wants_trainer_car', false);
     }

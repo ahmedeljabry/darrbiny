@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\Payment;
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -13,9 +14,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    private readonly ReportCurrencyConverter $reportCurrencyConverter;
+
     public function __construct(
         private readonly \Illuminate\Support\Collection $bookings
-    ) {}
+    ) {
+        $this->reportCurrencyConverter = app(ReportCurrencyConverter::class);
+    }
 
     public function collection()
     {
@@ -53,10 +58,9 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         $paymentsSummary = $payments->isNotEmpty()
             ? $payments->map(function (Payment $payment): string {
                 return sprintf(
-                    '%s: %s %s (%s)',
+                    '%s: %s (%s)',
                     $payment->typeLabel(),
-                    number_format($payment->amount_minor / 100, 2),
-                    $payment->currency,
+                    $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
                     $payment->statusLabel()
                 );
             })->implode(' | ')
@@ -70,7 +74,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $statuses[$booking->status] ?? $booking->status,
             $booking->start_date?->toDateString(),
             $paymentsSummary,
-            $booking->currency ?? 'USD',
+            ReportCurrencyConverter::REPORT_CURRENCY,
             $booking->created_at?->format('Y-m-d H:i:s'),
         ];
     }

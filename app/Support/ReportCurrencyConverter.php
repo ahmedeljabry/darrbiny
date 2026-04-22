@@ -61,6 +61,18 @@ final class ReportCurrencyConverter
         return (int) round($amountMinor * $this->rateFor($currency));
     }
 
+    public function convertReportMinorToOriginal(int $amountMinor, ?string $currency): int
+    {
+        $currency = strtoupper(trim((string) $currency));
+        $rate = $this->rateFor($currency);
+
+        if ($currency === '' || $currency === self::REPORT_CURRENCY || $rate <= 0) {
+            return $amountMinor;
+        }
+
+        return (int) round($amountMinor / $rate);
+    }
+
     public function formatReportMinor(int $amountMinor): string
     {
         return number_format($amountMinor / 100, 2) . ' ' . self::REPORT_CURRENCY;

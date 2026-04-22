@@ -69,6 +69,16 @@ class TrainerLocationMatchingTest extends TestCase
         $this->withToken($token)
             ->getJson('/api/v1/trainers/' . $trainer->id . '/bookings')
             ->assertOk()
+            ->assertJsonFragment([
+                'id' => $matchingRequest->id,
+                'order_number' => $matchingRequest->order_number,
+                'formatted_order_number' => $matchingRequest->formatted_order_number,
+            ])
+            ->assertJsonFragment([
+                'id' => $assignedRequest->id,
+                'order_number' => $assignedRequest->order_number,
+                'formatted_order_number' => $assignedRequest->formatted_order_number,
+            ])
             ->assertJsonFragment(['id' => $matchingRequest->id])
             ->assertJsonFragment(['id' => $assignedRequest->id])
             ->assertJsonMissing(['id' => $differentAreaThreeRequest->id])

@@ -308,7 +308,7 @@ class AuthController extends BaseController
     private function deriveCurrencyFromPhone(?string $phone): string
     {
         if (! $phone) {
-            return 'USD';
+            return 'SAR';
         }
 
         // crude derivation based on CC; real impl should parse using libphonenumber
@@ -321,6 +321,6 @@ class AuthController extends BaseController
             }
         }
 
-        return 'USD';
+        return 'SAR';
     }
 }

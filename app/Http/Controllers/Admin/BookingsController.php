@@ -12,6 +12,7 @@ use App\Models\WalletTransaction;
 use App\Modules\Requests\Services\RequestService;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\WalletBalanceAddedNotification;
+use App\Support\ReportCurrencyConverter;
 use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -237,7 +238,10 @@ class BookingsController extends BaseController
             }
 
             $cancellation->status = CancellationRequest::STATUS_APPROVED;
-            $cancellation->refund_amount_minor = WalletAmount::majorToMinor($validated['refund_amount']);
+            $cancellation->refund_amount_minor = app(ReportCurrencyConverter::class)->convertReportMinorToOriginal(
+                WalletAmount::majorToMinor($validated['refund_amount']),
+                $booking->currency
+            );
             $cancellation->processed_by = $request->user()->id;
             $cancellation->processed_at = now();
             $cancellation->save();
@@ -303,7 +307,7 @@ class BookingsController extends BaseController
                 'wants_trainer_car' => $validated['wants_trainer_car'] ?? false,
                 'needs_pickup' => $validated['needs_pickup'] ?? false,
                 'status' => UserRequest::STATUS_PENDING_PAYMENT,
-                'currency' => $user->currency ?? 'USD',
+                'currency' => $user->currency ?? ReportCurrencyConverter::REPORT_CURRENCY,
                 'app_fee_reserved_minor' => \App\Support\Fees::reservationFeeMinor($plan->country_id),
                 'total_paid_minor' => 0,
             ]);

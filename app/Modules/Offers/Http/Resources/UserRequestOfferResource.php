@@ -38,6 +38,8 @@ class UserRequestOfferResource extends JsonResource
             ],
             'request' => $userRequest ? [
                 'id' => $userRequest->id,
+                'order_number' => $userRequest->order_number,
+                'formatted_order_number' => $userRequest->formatted_order_number,
                 'start_date' => $userRequest->start_date?->format('Y-m-d'),
                 'start_time' => $userRequest->start_time,
                 'end_date' => $endDate?->format('Y-m-d'),

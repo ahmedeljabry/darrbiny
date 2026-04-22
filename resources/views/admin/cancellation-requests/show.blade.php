@@ -1,5 +1,9 @@
 @extends('admin.layouts.app')
 @section('title', 'تفاصيل طلب الإلغاء')
+@php
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+@endphp
 @section('content')
 
 <!-- Breadcrumbs -->
@@ -76,15 +80,16 @@
                             $successfulPaymentsMinor = $userRequest->totalSuccessfulPaymentsMinor();
                             $refundAmountMinor = (int) ($cancellation->refund_amount_minor ?? $successfulPaymentsMinor);
                         @endphp
+                        <p class="mb-1"><strong>العملة المعتمدة:</strong> {{ $reportCurrency }}</p>
                         @if($fullPayment)
-                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ number_format($fullPayment->amount_minor / 100, 2) }} {{ $userRequest->currency }}</p>
-                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ number_format($fullPayment->app_fee_minor / 100, 2) }} {{ $userRequest->currency }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $userRequest->currency ?? $reportCurrency) }}</p>
+                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $userRequest->currency ?? $reportCurrency) }}</p>
                         @endif
                         @if($partialPayment)
-                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ number_format($partialPayment->amount_minor / 100, 2) }} {{ $userRequest->currency }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $userRequest->currency ?? $reportCurrency) }}</p>
                         @endif
-                        <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ number_format($successfulPaymentsMinor / 100, 2) }} {{ $userRequest->currency }}</p>
-                        <p class="mb-1"><strong>المبلغ المراد إرجاعه:</strong> {{ number_format($refundAmountMinor / 100, 2) }} {{ $userRequest->currency }}</p>
+                        <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ $converter->formatConvertedMinor((int) $successfulPaymentsMinor, $userRequest->currency ?? $reportCurrency) }}</p>
+                        <p class="mb-1"><strong>المبلغ المراد إرجاعه:</strong> {{ $converter->formatConvertedMinor((int) $refundAmountMinor, $userRequest->currency ?? $reportCurrency) }}</p>
                     </div>
                     @if($cancellation->admin_notes)
                     <div class="col-12">

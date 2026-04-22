@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Support\Fees;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
 use App\Notifications\WalletBalanceAddedNotification;
@@ -32,7 +33,7 @@ class RequestService
 
             $req = new UserRequest($data);
             $req->user_id = $userId;
-            $req->currency = auth()->user()?->currency ?? 'USD';
+            $req->currency = auth()->user()?->currency ?? ReportCurrencyConverter::REPORT_CURRENCY;
             $req->status = $freeRetrySource ? UserRequest::STATUS_IN_TRAINING : UserRequest::STATUS_PENDING_PAYMENT;
             $req->app_fee_reserved_minor = $freeRetrySource ? 0 : \App\Support\Fees::reservationFeeMinor();
             $req->total_paid_minor = $freeRetrySource ? 0 : (int) $req->total_paid_minor;

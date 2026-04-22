@@ -132,7 +132,7 @@ class AdminAppWalletAccountTest extends TestCase
         );
     }
 
-    public function test_app_wallet_summary_is_converted_to_riyal_while_entries_keep_original_currency(): void
+    public function test_app_wallet_summary_and_entries_are_converted_to_riyal(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009605',
@@ -173,7 +173,7 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertSee('8.00 SAR')
             ->assertSee('5.00 SAR')
             ->assertSee('3.00 SAR')
-            ->assertSee('100.00 EGP');
+            ->assertDontSee('100.00 EGP');
     }
 
     public function test_admin_can_filter_app_wallet_by_app_fee_analysis(): void

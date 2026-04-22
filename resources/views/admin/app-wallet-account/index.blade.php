@@ -130,7 +130,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>الوارد يشمل رسوم الحجز الثابتة ورسوم الحجز على الباقات والدفع الكلي بالكامل، مع بقاء فلتر مستقل لتحليل رسوم التطبيق فقط عند الحاجة. أما الصادر فيعكس مصروفات التطبيق المسجلة بالإضافة إلى مبالغ الاسترداد المعتمدة الناتجة عن الإلغاءات. بطاقات الملخص والتقسيمات أدناه محولة إلى {{ $reportCurrency }}، بينما يعرض الجدول العملة الأصلية لكل حركة.</p>
+        <p>الوارد يشمل رسوم الحجز الثابتة ورسوم الحجز على الباقات والدفع الكلي بالكامل، مع بقاء فلتر مستقل لتحليل رسوم التطبيق فقط عند الحاجة. أما الصادر فيعكس مصروفات التطبيق المسجلة بالإضافة إلى مبالغ الاسترداد المعتمدة الناتجة عن الإلغاءات. كل القيم في هذه الشاشة معروضة بالـ {{ $reportCurrency }}.</p>
       </div>
 
       @if($sourceBreakdowns->isNotEmpty())
@@ -176,7 +176,7 @@
                 <td>
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ $entry->source_label }}</span>
-                    <small class="text-muted">{{ $entry->currency }}</small>
+                    <small class="text-muted">{{ $reportCurrency }}</small>
                   </div>
                 </td>
                 <td>
@@ -194,7 +194,7 @@
                 </td>
                 <td>
                   <span class="fw-semibold text-{{ $directionTone }}">
-                    {{ number_format($entry->amount_minor / 100, 2) }} {{ $entry->currency }}
+                    {{ number_format($entry->report_amount_minor / 100, 2) }} {{ $entry->report_currency }}
                   </span>
                 </td>
                 <td><small class="text-muted">{{ $entry->occurred_at?->format('Y-m-d H:i') }}</small></td>

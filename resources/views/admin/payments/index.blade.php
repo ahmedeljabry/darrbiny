@@ -1,5 +1,9 @@
 @extends('admin.layouts.app')
 @section('title','المدفوعات')
+@php
+  $converter = app(\App\Support\ReportCurrencyConverter::class);
+  $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+@endphp
 @section('content')
 
 <!-- Breadcrumbs -->
@@ -18,7 +22,7 @@
       </span>
       <div>
         <h5 class="mb-0 fw-bold">المدفوعات</h5>
-        <small class="text-muted">جميع المعاملات المالية</small>
+        <small class="text-muted">جميع المعاملات المالية بالريال السعودي</small>
       </div>
     </div>
     <a href="{{ route('admin.payments.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">
@@ -98,7 +102,7 @@
               </div>
             </td>
             <td>
-              <span class="fw-semibold">{{ number_format($p->amount_minor/100,2) }} {{ $p->currency }}</span>
+              <span class="fw-semibold">{{ $converter->formatConvertedMinor((int) $p->amount_minor, $p->currency) }}</span>
             </td>
             <td>
               <span class="badge bg-label-info">

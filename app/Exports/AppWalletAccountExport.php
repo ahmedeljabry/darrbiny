@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -32,7 +33,7 @@ class AppWalletAccountExport implements FromCollection, WithHeadings, WithMappin
             'رقم الطلب',
             'الطرف',
             'التفاصيل',
-            'المبلغ',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'العملة',
             'الملاحظات',
             'التاريخ',
@@ -49,8 +50,8 @@ class AppWalletAccountExport implements FromCollection, WithHeadings, WithMappin
             data_get($entry, 'order_reference'),
             data_get($entry, 'counterparty'),
             data_get($entry, 'details'),
-            number_format(((int) data_get($entry, 'amount_minor', 0)) / 100, 2),
-            data_get($entry, 'currency', 'SAR'),
+            number_format(((int) data_get($entry, 'report_amount_minor', 0)) / 100, 2),
+            data_get($entry, 'report_currency', ReportCurrencyConverter::REPORT_CURRENCY),
             data_get($entry, 'notes'),
             data_get($entry, 'occurred_at')?->format('Y-m-d H:i:s'),
         ];
