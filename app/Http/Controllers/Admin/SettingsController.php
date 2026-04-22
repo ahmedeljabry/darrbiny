@@ -29,7 +29,12 @@ class SettingsController extends BaseController
             ->orderBy('currency')
             ->pluck('currency')
             ->map(fn ($currency) => strtoupper(trim((string) $currency)))
+            ->merge(
+                $countries->pluck('currency')->map(fn ($currency) => strtoupper(trim((string) $currency)))
+            )
             ->filter(fn ($currency) => $currency !== '' && $currency !== $reportCurrency)
+            ->unique()
+            ->sort()
             ->values()
             ->all();
         $reportExchangeRates = old('report_exchange_rates');

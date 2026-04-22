@@ -1,5 +1,6 @@
 @php($isEdit = isset($country) && $country)
 @php($action = $isEdit ? route('admin.geo.countries.update', $country->id) : route('admin.geo.countries.store'))
+@php($currentExchangeRate = old('exchange_rate_to_sar', $currentExchangeRate ?? null))
 
 @if (session('status'))
   <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -78,6 +79,30 @@
                 <div class="text-danger small mt-1">{{ $message }}</div>
               @enderror
               <small class="text-muted d-block mt-1">اسم الدولة بالكامل</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">سعر 1 من العملة بالـ SAR</label>
+              <div class="input-group input-group-merge">
+                <span class="input-group-text"><i class="ti tabler-exchange"></i></span>
+                <input
+                  type="number"
+                  name="exchange_rate_to_sar"
+                  class="form-control @error('exchange_rate_to_sar') is-invalid @enderror"
+                  step="0.000001"
+                  min="0.000001"
+                  placeholder="مثال: 5.290000"
+                  value="{{ $currentExchangeRate }}"
+                >
+              </div>
+              @error('exchange_rate_to_sar')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+              @enderror
+              <small class="text-muted d-block mt-1">مثال: إذا كان 1 JOD = 5.29 SAR فاكتب 5.29. هذا السعر يستخدم في الحجوزات والمالية والتقارير.</small>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="alert alert-info mb-0 w-100">
+                إذا كانت العملة هي <strong>{{ \App\Support\ReportCurrencyConverter::REPORT_CURRENCY }}</strong> فالقيمة تكون ثابتة <strong>1.000000</strong> ولا تحتاج إدخالها.
+              </div>
             </div>
           </div>
         </div>

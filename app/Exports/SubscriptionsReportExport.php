@@ -41,18 +41,23 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
 
     public function map($subscription): array
     {
-        $amountMinor = max(
-            (int) ($subscription->total_paid_minor ?? 0),
-            method_exists($subscription, 'totalSuccessfulPaymentsMinor')
-                ? $subscription->totalSuccessfulPaymentsMinor()
-                : 0
-        );
+        $successfulPayments = collect($subscription->payments ?? [])
+            ->filter(fn ($payment) => $payment->status === \App\Models\Payment::STATUS_SUCCEEDED)
+            ->values();
+        $amountDisplay = $successfulPayments->isNotEmpty()
+            ? $this->reportCurrencyConverter->formatReportMinor(
+                $this->reportCurrencyConverter->sumCollectionMinorToReportCurrency($successfulPayments)
+            )
+            : $this->reportCurrencyConverter->formatConvertedMinor(
+                (int) ($subscription->total_paid_minor ?? 0),
+                $subscription->currency ?? ReportCurrencyConverter::REPORT_CURRENCY
+            );
 
         return [
             $subscription->formatted_order_number ?? $subscription->order_number ?? $subscription->id,
             $subscription->user?->name ?? $subscription->user_id,
             $subscription->plan?->title ?? $subscription->plan_id,
-            $this->reportCurrencyConverter->formatConvertedMinor($amountMinor, $subscription->currency ?? 'SAR'),
+            $amountDisplay,
             $subscription->status,
             $subscription->start_date?->toDateString(),
             $subscription->created_at?->format('Y-m-d H:i:s'),

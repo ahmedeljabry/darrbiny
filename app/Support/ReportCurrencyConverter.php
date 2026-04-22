@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 final class ReportCurrencyConverter
 {
     public const REPORT_CURRENCY = 'SAR';
-    private const SETTINGS_KEY = 'reports.exchange_rates_to_sar';
+    public const SETTINGS_KEY = 'reports.exchange_rates_to_sar';
 
     private ?array $rates = null;
 

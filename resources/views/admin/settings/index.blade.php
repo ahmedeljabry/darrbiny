@@ -358,7 +358,7 @@
                               </span>
                               <div>
                                 <h6 class="mb-0">معدلات تحويل التقارير إلى {{ $reportCurrency }}</h6>
-                                <small class="text-muted">تستخدم في إجماليات التقارير والداشبورد المالي ومحفظة التطبيق</small>
+                                <small class="text-muted">تستخدم في الحجوزات والمالية والتقارير والداشبورد المالي ومحفظة التطبيق</small>
                               </div>
                             </div>
 
@@ -371,15 +371,15 @@
                               <div class="d-flex align-items-start gap-2">
                                 <i class="icon-base ti tabler-info-circle mt-1"></i>
                                 <div>
-                                  <strong>مهم:</strong> صفوف التقارير ستبقى بعملة العملية الأصلية، لكن الإجماليات والمتوسطات وصافي المحافظ ستُعرض بالـ {{ $reportCurrency }}.
-                                  الريال السعودي ثابت بقيمة <strong>1.000000</strong> ولا يحتاج إلى إضافته هنا.
+                                  <strong>مهم:</strong> الصفوف والمجاميع المالية في الإدارة والتقارير ستُعرض بالـ {{ $reportCurrency }} بعد التحويل حسب السعر المحفوظ لكل عملة.
+                                  الريال السعودي ثابت بقيمة <strong>1.000000</strong> ولا يحتاج إلى إضافته هنا. ويمكنك أيضًا ضبط سعر الصرف من شاشة الدول عند إضافة أي عملة جديدة.
                                 </div>
                               </div>
                             </div>
 
                             @if(!empty($paymentCurrencies))
                               <div class="mb-3">
-                                <div class="small text-muted mb-2">عملات موجودة حالياً في المدفوعات</div>
+                                <div class="small text-muted mb-2">عملات مكتشفة حاليًا من الدول والمدفوعات</div>
                                 <div class="d-flex flex-wrap gap-2">
                                   @foreach($paymentCurrencies as $currency)
                                     <span class="badge bg-label-secondary">{{ $currency }}</span>

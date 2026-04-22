@@ -71,10 +71,15 @@
           <tbody>
             @forelse($subs as $subscription)
               @php
-                $subscriptionAmountMinor = max(
-                  (int) ($subscription->total_paid_minor ?? 0),
-                  $subscription->totalSuccessfulPaymentsMinor()
-                );
+                $successfulPayments = $subscription->payments
+                  ->filter(fn ($payment) => $payment->status === \App\Models\Payment::STATUS_SUCCEEDED)
+                  ->values();
+                $subscriptionAmountDisplay = $successfulPayments->isNotEmpty()
+                  ? $converter->formatReportMinor($converter->sumCollectionMinorToReportCurrency($successfulPayments))
+                  : $converter->formatConvertedMinor(
+                      (int) ($subscription->total_paid_minor ?? 0),
+                      $subscription->currency ?? \App\Support\ReportCurrencyConverter::REPORT_CURRENCY
+                  );
                 $statusTone = match ($subscription->status) {
                   \App\Models\UserRequest::STATUS_COMPLETED => 'success',
                   \App\Models\UserRequest::STATUS_CANCELLED => 'danger',
@@ -107,7 +112,7 @@
                   </div>
                 </td>
                 <td>
-                  <span class="fw-semibold">{{ $converter->formatConvertedMinor($subscriptionAmountMinor, $subscription->currency ?? 'SAR') }}</span>
+                  <span class="fw-semibold">{{ $subscriptionAmountDisplay }}</span>
                 </td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $statusOptions[$subscription->status] ?? $subscription->status }}</span></td>
                 <td><small class="text-muted">{{ $subscription->start_date?->toDateString() ?? '—' }}</small></td>

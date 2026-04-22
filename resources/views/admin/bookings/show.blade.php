@@ -3,7 +3,10 @@
 @php
   $converter = app(\App\Support\ReportCurrencyConverter::class);
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
-  $refundableAmountReportMinor = $converter->convertMinor((int) $refundableAmountMinor, $booking->currency);
+  $successfulPayments = $payments->filter(fn ($payment) => $payment->status === \App\Models\Payment::STATUS_SUCCEEDED);
+  $refundableAmountReportMinor = $successfulPayments->isNotEmpty()
+    ? $converter->sumCollectionMinorToReportCurrency($successfulPayments)
+    : $converter->convertMinor((int) $refundableAmountMinor, $booking->currency);
 @endphp
 @section('content')
 
@@ -93,15 +96,15 @@
                         <p class="mb-1"><strong>العملة:</strong> {{ $reportCurrency }}</p>
                         @if($fullPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $fullPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $booking->currency) }}</p>
-                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $booking->currency) }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $fullPayment->currency) }}</p>
+                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $fullPayment->currency) }}</p>
                         @elseif($partialPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $partialPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $booking->currency) }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $partialPayment->currency) }}</p>
                         @else
                             <p class="mb-1"><strong>نوع الدفع:</strong> -</p>
                         @endif
-                        <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ $converter->formatConvertedMinor((int) $refundableAmountMinor, $booking->currency) }}</p>
+                        <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ $converter->formatReportMinor($refundableAmountReportMinor) }}</p>
                     </div>
                 </div>
 

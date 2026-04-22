@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
+use App\Support\ReportCurrencyConverter;
 use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -327,6 +328,102 @@ class AdminReportsDataTest extends TestCase
             ->assertSee('8.00 SAR')
             ->assertDontSee('100.00 EGP')
             ->assertSee('كل مبالغ هذا التقرير معروضة بالـ SAR');
+    }
+
+    public function test_reports_convert_jordanian_dinar_amounts_using_saved_exchange_rate_including_vat(): void
+    {
+        config()->set('app.vat_percent', 15.0);
+
+        $admin = $this->createAdmin();
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Jordan Reports Plan',
+            'description' => 'Plan for Jordanian reports conversion test',
+            'price_min' => 150,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        Setting::query()->updateOrCreate(
+            ['key' => ReportCurrencyConverter::SETTINGS_KEY],
+            ['value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE)]
+        );
+
+        $user = User::factory()->create([
+            'name' => 'Jordan Reports User',
+            'phone_with_cc' => '+962790000222',
+        ]);
+
+        $trainer = User::factory()->create([
+            'name' => 'Jordan Reports Trainer',
+            'phone_with_cc' => '+962790000223',
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Amman Governorate',
+            'area_level_2' => 'Amman',
+            'area_level_3' => 'Abdali',
+            'locality' => 'Shmeisani',
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'JOD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 18_903,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_890,
+            'trainer_net_minor' => 17_013,
+        ]);
+
+        $convertedAmount = app(ReportCurrencyConverter::class)->formatConvertedMinor(18_903, 'JOD');
+        $convertedVat = app(ReportCurrencyConverter::class)->formatConvertedMinor((int) round(18_903 * 0.15), 'JOD');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.sales'))
+            ->assertOk()
+            ->assertSee($convertedAmount)
+            ->assertDontSee('189.03 JOD');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.payments'))
+            ->assertOk()
+            ->assertSee($convertedAmount)
+            ->assertDontSee('189.03 JOD');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.subscriptions'))
+            ->assertOk()
+            ->assertSee($convertedAmount)
+            ->assertDontSee('189.03 JOD');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.vat'))
+            ->assertOk()
+            ->assertSee($convertedVat)
+            ->assertDontSee('189.03 JOD');
     }
 
     public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void
