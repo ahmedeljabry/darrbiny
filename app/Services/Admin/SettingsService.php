@@ -58,7 +58,10 @@ final class SettingsService
         if (array_key_exists('report_exchange_rates', $data)) {
             $this->save(
                 ReportCurrencyConverter::SETTINGS_KEY,
-                json_encode($this->normalizeReportExchangeRates($data['report_exchange_rates'] ?? []), JSON_UNESCAPED_UNICODE)
+                json_encode(
+                    $this->normalizeReportExchangeRates($data['report_exchange_rates'] ?? []),
+                    JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
+                )
             );
         }
         

@@ -11,6 +11,7 @@ class GeoSeeder extends Seeder
     {
         $data = [
             ['name' => 'Egypt', 'iso2' => 'EG', 'currency' => 'EGP'],
+            ['name' => 'Jordan', 'iso2' => 'JO', 'currency' => 'JOD'],
             ['name' => 'Saudi Arabia', 'iso2' => 'SA', 'currency' => 'SAR'],
             ['name' => 'United Arab Emirates', 'iso2' => 'AE', 'currency' => 'AED'],
         ];

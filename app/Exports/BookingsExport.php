@@ -36,8 +36,8 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             'الخطة',
             'الحالة',
             'تاريخ البدء',
-            'الدفعات',
-            'العملة',
+            'الدفعات (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'العملة المعروضة',
             'تاريخ الإنشاء',
         ];
     }
@@ -56,11 +56,14 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
 
         $payments = $booking->payments ?? collect();
         $paymentsSummary = $payments->isNotEmpty()
-            ? $payments->map(function (Payment $payment): string {
+            ? $payments->map(function (Payment $payment) use ($booking): string {
                 return sprintf(
                     '%s: %s (%s)',
                     $payment->typeLabel(),
-                    $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
+                    $this->reportCurrencyConverter->formatConvertedMinor(
+                        (int) $payment->amount_minor,
+                        $payment->currency ?: $booking->currency
+                    ),
                     $payment->statusLabel()
                 );
             })->implode(' | ')
@@ -86,6 +89,5 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         ];
     }
 }
-
 
 

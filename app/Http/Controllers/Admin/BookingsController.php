@@ -296,9 +296,11 @@ class BookingsController extends BaseController
         ]);
 
         $user = \App\Models\User::findOrFail($validated['user_id']);
-        $plan = Plan::findOrFail($validated['plan_id']);
+        $plan = Plan::with('country')->findOrFail($validated['plan_id']);
 
         $booking = DB::transaction(function () use ($validated, $user, $plan) {
+            $currency = strtoupper(trim((string) ($plan->country?->currency ?? $user->currency ?? '')));
+
             $booking = new UserRequest([
                 'user_id' => $validated['user_id'],
                 'plan_id' => $validated['plan_id'],
@@ -307,7 +309,7 @@ class BookingsController extends BaseController
                 'wants_trainer_car' => $validated['wants_trainer_car'] ?? false,
                 'needs_pickup' => $validated['needs_pickup'] ?? false,
                 'status' => UserRequest::STATUS_PENDING_PAYMENT,
-                'currency' => $user->currency ?? ReportCurrencyConverter::REPORT_CURRENCY,
+                'currency' => $currency !== '' ? $currency : ReportCurrencyConverter::REPORT_CURRENCY,
                 'app_fee_reserved_minor' => \App\Support\Fees::reservationFeeMinor($plan->country_id),
                 'total_paid_minor' => 0,
             ]);

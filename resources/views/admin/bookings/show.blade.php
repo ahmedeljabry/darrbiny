@@ -93,14 +93,14 @@
                     </div>
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">المعلومات المالية</h6>
-                        <p class="mb-1"><strong>العملة:</strong> {{ $reportCurrency }}</p>
+                        <p class="mb-1"><strong>العملة المعروضة:</strong> {{ $reportCurrency }}</p>
                         @if($fullPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $fullPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $fullPayment->currency) }}</p>
-                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $fullPayment->currency) }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $fullPayment->currency ?: $booking->currency) }}</p>
+                            <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $fullPayment->currency ?: $booking->currency) }}</p>
                         @elseif($partialPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $partialPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $partialPayment->currency) }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $partialPayment->currency ?: $booking->currency) }}</p>
                         @else
                             <p class="mb-1"><strong>نوع الدفع:</strong> -</p>
                         @endif
@@ -205,7 +205,7 @@
                     <tbody>
                         @foreach($payments as $payment)
                             <tr>
-                                <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</td>
+                                <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency ?: $booking->currency) }}</td>
                                 <td>{{ $payment->typeLabel() }}</td>
                                 <td>
                                     <span class="badge bg-label-{{ $payment->status === 'succeeded' ? 'success' : ($payment->status === 'pending' ? 'warning' : 'danger') }}">

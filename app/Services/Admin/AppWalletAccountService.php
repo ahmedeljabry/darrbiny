@@ -145,7 +145,7 @@ final class AppWalletAccountService
             ->get()
             ->map(function (CancellationRequest $cancellation): object {
                 $request = $cancellation->userRequest;
-                $currency = $request?->currency ?: 'SAR';
+                $currency = $this->currencyForCancellationRefund($cancellation);
 
                 return (object) [
                     'reference_id' => $cancellation->id,
@@ -287,6 +287,7 @@ final class AppWalletAccountService
                 'processedBy',
                 'userRequest.trainer',
                 'userRequest.plan',
+                'userRequest.payments',
             ])
             ->where('status', CancellationRequest::STATUS_APPROVED)
             ->where('refund_amount_minor', '>', 0);
@@ -338,9 +339,28 @@ final class AppWalletAccountService
             ->sum(function (CancellationRequest $cancellation): int {
                 return $this->reportCurrencyConverter->convertMinor(
                     (int) $cancellation->refund_amount_minor,
-                    $cancellation->userRequest?->currency ?: 'SAR'
+                    $this->currencyForCancellationRefund($cancellation)
                 );
             });
+    }
+
+    private function currencyForCancellationRefund(CancellationRequest $cancellation): string
+    {
+        $payments = $cancellation->userRequest?->payments;
+        $paymentCurrency = $payments
+            ? $payments
+                ->pluck('currency')
+                ->map(fn ($value) => strtoupper(trim((string) $value)))
+                ->first(fn (string $value) => $value !== '')
+            : null;
+
+        if ($paymentCurrency !== null) {
+            return $paymentCurrency;
+        }
+
+        $requestCurrency = strtoupper(trim((string) ($cancellation->userRequest?->currency ?? '')));
+
+        return $requestCurrency !== '' ? $requestCurrency : ReportCurrencyConverter::REPORT_CURRENCY;
     }
 
     private function entrySourceLabel(string $sourceKey): string

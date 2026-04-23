@@ -67,7 +67,7 @@
         <tr>
           <th style="width: 130px;"><i class="icon-base ti tabler-hash me-1"></i> رقم الطلب</th>
           <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
-          <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ</th>
+          <th style="width: 130px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> المبلغ ({{ $reportCurrency }})</th>
           <th style="width: 120px;"><i class="icon-base ti tabler-tag me-1"></i> النوع</th>
           <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
           <th style="width: 120px;"><i class="icon-base ti tabler-building me-1"></i> المزود</th>

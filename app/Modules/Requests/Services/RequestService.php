@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Support\Fees;
-use App\Support\ReportCurrencyConverter;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
 use App\Notifications\WalletBalanceAddedNotification;
@@ -22,7 +21,7 @@ class RequestService
 {
     public function create(array $data, string $userId): UserRequest
     {
-        $plan = Plan::findOrFail($data['plan_id']);
+        $plan = Plan::with('country')->findOrFail($data['plan_id']);
 
         return DB::transaction(function () use ($data, $userId, $plan) {
             $freeRetrySource = $this->findEligibleFreeRetrySource(
@@ -33,9 +32,9 @@ class RequestService
 
             $req = new UserRequest($data);
             $req->user_id = $userId;
-            $req->currency = auth()->user()?->currency ?? ReportCurrencyConverter::REPORT_CURRENCY;
+            $req->currency = $this->currencyForRequest($plan);
             $req->status = $freeRetrySource ? UserRequest::STATUS_IN_TRAINING : UserRequest::STATUS_PENDING_PAYMENT;
-            $req->app_fee_reserved_minor = $freeRetrySource ? 0 : \App\Support\Fees::reservationFeeMinor();
+            $req->app_fee_reserved_minor = $freeRetrySource ? 0 : \App\Support\Fees::reservationFeeMinor($plan->country_id);
             $req->total_paid_minor = $freeRetrySource ? 0 : (int) $req->total_paid_minor;
             $req->retry_source_request_id = $freeRetrySource?->id;
             $req->save();
@@ -256,5 +255,18 @@ class RequestService
         $appFeeMinor = min($appFeeMinor, $amountMinor);
 
         return [$appFeeMinor, $amountMinor - $appFeeMinor];
+    }
+
+    private function currencyForRequest(Plan $plan): string
+    {
+        $currency = strtoupper(trim((string) ($plan->country?->currency ?? '')));
+
+        if ($currency !== '') {
+            return $currency;
+        }
+
+        $userCurrency = strtoupper(trim((string) (auth()->user()?->currency ?? '')));
+
+        return $userCurrency !== '' ? $userCurrency : 'USD';
     }
 }

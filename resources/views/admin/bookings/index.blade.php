@@ -86,7 +86,7 @@
                             <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
                             <th style="width: 120px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ البدء</th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
-                            <th style="width: 240px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> الدفعات</th>
+                            <th style="width: 240px;"><i class="icon-base ti tabler-currency-dollar me-1"></i> الدفعات ({{ $reportCurrency }})</th>
                             <th style="width: 150px;"><i class="icon-base ti tabler-calendar me-1"></i> تاريخ الإنشاء</th>
                             <th style="width: 100px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
                         </tr>
@@ -160,7 +160,7 @@
                                                 <div class="d-flex flex-column">
                                                     <span class="fw-semibold">{{ $payment->typeLabel() }}</span>
                                                     <small class="text-muted">
-                                                        {{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}
+                                                        {{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency ?: $booking->currency) }}
                                                         ({{ $payment->statusLabel() }})
                                                     </small>
                                                 </div>

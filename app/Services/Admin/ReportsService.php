@@ -441,9 +441,26 @@ final class ReportsService
 
             return $this->reportCurrencyConverter->convertMinor(
                 $allocatedMinor,
-                $request->currency ?? ReportCurrencyConverter::REPORT_CURRENCY
+                $this->currencyForCancellationRefund($relevantPayments, $successfulPayments, $request)
             );
         });
+    }
+
+    private function currencyForCancellationRefund(Collection $relevantPayments, Collection $successfulPayments, ?UserRequest $request): string
+    {
+        $currency = $relevantPayments
+            ->pluck('currency')
+            ->merge($successfulPayments->pluck('currency'))
+            ->map(fn ($value) => strtoupper(trim((string) $value)))
+            ->first(fn (string $value) => $value !== '');
+
+        if ($currency !== null) {
+            return $currency;
+        }
+
+        $requestCurrency = strtoupper(trim((string) ($request?->currency ?? '')));
+
+        return $requestCurrency !== '' ? $requestCurrency : ReportCurrencyConverter::REPORT_CURRENCY;
     }
 
     private function cancellationMatchesFilters(CancellationRequest $cancellation, array $filters = []): bool

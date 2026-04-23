@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\Country;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -14,6 +15,26 @@ use Tests\TestCase;
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_register_derives_jordanian_dinar_from_jordan_phone(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Jordan User',
+            'phone_with_cc' => '+962790000001',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'type' => 'user',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.user.currency', 'JOD');
+
+        $this->assertDatabaseHas('users', [
+            'phone_with_cc' => '+962790000001',
+            'currency' => 'JOD',
+        ]);
+    }
 
     public function test_change_password_without_auth_by_mobile(): void
     {

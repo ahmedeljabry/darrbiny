@@ -86,7 +86,7 @@ class SettingsController extends BaseController
         $rows = collect($decoded)
             ->map(function ($rate, $currency): ?array {
                 $currency = strtoupper(trim((string) $currency));
-                $rate = is_numeric($rate) ? (string) $rate : '';
+                $rate = is_numeric($rate) ? number_format((float) $rate, 6, '.', '') : '';
 
                 if ($currency === '' || $currency === ReportCurrencyConverter::REPORT_CURRENCY) {
                     return null;

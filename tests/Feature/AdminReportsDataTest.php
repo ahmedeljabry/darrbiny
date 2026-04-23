@@ -430,6 +430,203 @@ class AdminReportsDataTest extends TestCase
             ->assertDontSee('189.03 JOD');
     }
 
+    public function test_booking_and_finance_payment_pages_convert_jordanian_dinar_to_riyal(): void
+    {
+        $admin = $this->createAdmin();
+
+        Setting::create([
+            'key' => ReportCurrencyConverter::SETTINGS_KEY,
+            'value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Jordan Admin Currency Plan',
+            'description' => 'Plan for admin currency conversion tests',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'name' => 'Jordan Admin Currency User',
+            'phone_with_cc' => '+962790000012',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'JOD',
+            'total_paid_minor' => 18_903,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 18_903,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 18_903,
+        ]);
+
+        foreach ([
+            route('admin.bookings.index'),
+            route('admin.bookings.show', $request->id),
+            route('admin.payments.index'),
+        ] as $url) {
+            $this->actingAs($admin)
+                ->get($url)
+                ->assertOk()
+                ->assertSee('999.97 SAR')
+                ->assertDontSee('189.03 JOD');
+        }
+    }
+
+    public function test_subscriptions_report_uses_payment_currency_when_request_currency_is_stale(): void
+    {
+        $admin = $this->createAdmin();
+
+        Setting::create([
+            'key' => ReportCurrencyConverter::SETTINGS_KEY,
+            'value' => json_encode(['JOD' => 5.0], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Jordan Subscription Currency Plan',
+            'description' => 'Plan for stale subscription currency tests',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'name' => 'Jordan Subscription User',
+            'phone_with_cc' => '+962790000010',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'USD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10_000,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.subscriptions'))
+            ->assertOk()
+            ->assertSee('500.00 SAR')
+            ->assertDontSee('100.00 SAR');
+    }
+
+    public function test_sales_refunds_use_payment_currency_when_request_currency_is_stale(): void
+    {
+        $admin = $this->createAdmin();
+
+        Setting::create([
+            'key' => ReportCurrencyConverter::SETTINGS_KEY,
+            'value' => json_encode(['JOD' => 5.0], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Jordan Refund Currency Plan',
+            'description' => 'Plan for stale refund currency tests',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'name' => 'Jordan Refund User',
+            'phone_with_cc' => '+962790000011',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_CANCELLED,
+            'currency' => 'USD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 10_000,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        CancellationRequest::create([
+            'user_request_id' => $request->id,
+            'user_id' => $user->id,
+            'reason' => 'Jordan refund',
+            'status' => CancellationRequest::STATUS_APPROVED,
+            'refund_amount_minor' => 2_000,
+            'processed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.sales'))
+            ->assertOk()
+            ->assertSee('400.00 SAR')
+            ->assertSee('500.00 SAR')
+            ->assertDontSee('480.00 SAR');
+    }
+
     public function test_completed_payouts_report_filters_by_name_phone_and_date_range_and_hides_identifier_column(): void
     {
         $admin = $this->createAdmin();

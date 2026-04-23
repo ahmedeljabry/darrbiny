@@ -313,7 +313,13 @@ class AuthController extends BaseController
 
         // crude derivation based on CC; real impl should parse using libphonenumber
         $map = [
-            '+20' => 'EGP', '+966' => 'SAR', '+971' => 'AED', '+1' => 'USD', '+44' => 'GBP', '+49' => 'EUR',
+            '+20' => 'EGP',
+            '+962' => 'JOD',
+            '+966' => 'SAR',
+            '+971' => 'AED',
+            '+1' => 'USD',
+            '+44' => 'GBP',
+            '+49' => 'EUR',
         ];
         foreach ($map as $cc => $cur) {
             if (str_starts_with($phone, $cc)) {

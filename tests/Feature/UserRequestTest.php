@@ -58,4 +58,54 @@ class UserRequestTest extends TestCase
             ->postJson('/api/v1/user-requests', $payload);
         $res->assertStatus(201)->assertJsonPath('success', true);
     }
+
+    public function test_request_currency_uses_plan_country_currency_before_user_currency(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Jordan Plan',
+            'description' => 'Plan priced in Jordanian dinar',
+            'price_min' => 100,
+            'duration_days' => '3',
+            'hours_count' => 6,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001000',
+            'currency' => 'USD',
+        ]);
+        $user->assignRole('USER');
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests', [
+                'plan_id' => $plan->id,
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+                'start_date' => now()->addDay()->toDateString(),
+                'start_time' => '09:00',
+                'has_user_car' => false,
+                'wants_trainer_car' => true,
+                'needs_pickup' => false,
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('data.currency', 'JOD');
+
+        $this->assertDatabaseHas('user_requests', [
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'currency' => 'JOD',
+        ]);
+    }
 }
