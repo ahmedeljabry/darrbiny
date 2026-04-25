@@ -27,6 +27,7 @@ class Plan extends BaseModel
         'country_id',
         'is_active',
         'show_on_home',
+        'position',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class Plan extends BaseModel
         'session_count' => 'integer',
         'is_active' => 'bool',
         'show_on_home' => 'bool',
+        'position' => 'integer',
     ];
 
     public function country()
@@ -66,6 +68,7 @@ class Plan extends BaseModel
 
     public function scopeActive($q){ return $q->where('is_active', true); }
     public function scopeHome($q){ return $q->where('show_on_home' , true); }
+    public function scopeOrdered($q){ return $q->orderBy('position')->orderBy('created_at')->orderBy('title'); }
     public function scopeByCountry($q, ?string $countryId)
     {
         return $q->when($countryId, fn ($qq) => $qq->where('country_id', $countryId));

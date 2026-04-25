@@ -35,7 +35,7 @@ class Payment extends BaseModel
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function userRequest()
@@ -55,7 +55,7 @@ class Payment extends BaseModel
     {
         return [
             self::TYPE_RESERVATION_FEE => 'رسوم الحجز',
-            self::TYPE_PLAN_PARTIAL => 'رسوم الجدية',
+            self::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
             self::TYPE_PLAN_FULL => 'دفع كلي',
         ];
     }
@@ -64,7 +64,7 @@ class Payment extends BaseModel
     {
         return [
             self::TYPE_RESERVATION_FEE => 'رسوم الحجز الثابتة',
-            self::TYPE_PLAN_PARTIAL => 'رسوم الحجز على الباقات',
+            self::TYPE_PLAN_PARTIAL => 'رسوم الحجز',
             self::TYPE_PLAN_FULL => 'دفع كلي',
         ];
     }

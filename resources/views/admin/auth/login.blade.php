@@ -5,7 +5,7 @@
   dir="{{ app()->getLocale() == 'en' ? 'ltr' : 'rtl' }}"
   data-skin="default"
   data-bs-theme="light"
-  data-assets-path="{{ asset('admin/assets/') }}"
+  data-assets-path="{{ asset('admin/assets') }}/"
   data-template="vertical-menu-template-no-customizer">
   <head>
     <meta charset="utf-8" />

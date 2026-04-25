@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-@section('title', 'تقرير مبيعات الباقات')
+@section('title', 'تقرير إيرادات الباقات')
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
@@ -17,7 +17,7 @@
 
 @section('content')
   @include('admin.reports.partials.page-header', [
-    'title' => 'تقرير مبيعات الباقات',
+    'title' => 'تقرير إيرادات الباقات',
     'subtitle' => 'قراءة مركزة لعمليات الدفع الكلي الخاصة بالباقات مع معلومات الموقع والمدرب والرسوم في نفس الجدول.',
     'icon' => 'package',
     'tone' => 'info',
@@ -30,7 +30,7 @@
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.plan-sales', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
+      ['label' => 'إجمالي الإيرادات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
       ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'success'],
       ['label' => 'وسائل الدفع المتاحة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
@@ -43,12 +43,12 @@
         'fields' => $filterFields,
         'values' => $filters,
         'resetUrl' => route('admin.reports.plan-sales'),
-        'title' => 'فلترة مبيعات الباقات',
+        'title' => 'فلترة إيرادات الباقات',
         'subtitle' => 'فلترة مرنة بالبحث النصي أو طريقة الدفع أو الدولة أو المدة الزمنية.',
       ])
 
       <div class="report-note-box mb-4">
-        <p>كل مبالغ مبيعات الباقات في هذا التقرير معروضة بالـ {{ $reportCurrency }} بعد التحويل، وإجمالي المبيعات الصافي يخصم مبالغ الإلغاءات المعتمدة.</p>
+        <p>كل مبالغ إيرادات الباقات في هذا التقرير معروضة بالـ {{ $reportCurrency }} بعد التحويل، وإجمالي الإيرادات الصافي يخصم مبالغ الإلغاءات المعتمدة.</p>
       </div>
 
       <div class="table-responsive">
@@ -95,7 +95,7 @@
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>
             @empty
-              @include('admin.reports.partials.empty-state', ['colspan' => 9, 'icon' => 'package', 'message' => 'لا توجد مبيعات باقات ضمن هذه الفلاتر'])
+              @include('admin.reports.partials.empty-state', ['colspan' => 9, 'icon' => 'package', 'message' => 'لا توجد إيرادات باقات ضمن هذه الفلاتر'])
             @endforelse
           </tbody>
         </table>

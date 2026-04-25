@@ -42,6 +42,9 @@ window.config = {
 };
 
 window.assetsPath = document.documentElement.getAttribute('data-assets-path');
+if (window.assetsPath && !window.assetsPath.endsWith('/')) {
+  window.assetsPath += '/';
+}
 window.templateName = document.documentElement.getAttribute('data-template');
 
 /**

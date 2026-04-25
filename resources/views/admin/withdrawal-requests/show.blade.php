@@ -45,7 +45,7 @@
                             <strong>{{ $withdrawalRequest->user?->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $withdrawalRequest->user?->phone_with_cc ?? '' }}</small><br>
                             <small class="text-muted">الاسم الحقيقي: {{ $withdrawalRequest->user?->bank_account_name ?? '-' }}</small><br>
-                            <small class="text-muted">الدولة: {{ $withdrawalRequest->user?->country?->name ?? '-' }}</small><br>
+                            <small class="text-muted">الدولة: {{ $withdrawalRequest->user?->country?->name ?? $withdrawalRequest->user?->bankCountry?->name ?? '-' }}</small><br>
                             @php
                                 $isTrainer = ($withdrawalRequest->user?->user_type?->value ?? null) === 'captain';
                             @endphp

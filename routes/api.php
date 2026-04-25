@@ -10,16 +10,22 @@ RateLimiter::for('default', fn ($request) => [Limit::perMinute(60)->by($request-
 Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->group(function () {
 
     // Auth
+    Route::prefix('auth')->group(function () {
+        Route::post('/login', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'login']);
+    });
+
     Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('/register', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'register']);
-        Route::post('/login', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'login']);
+    });
+
+    Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'me']);
     });
 
     Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('/change-password', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'changePassword']);
 
         Route::middleware('auth:sanctum')->group(function () {
-            Route::get('/me', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'me']);
             Route::post('/logout', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'logout']);
             Route::post('/profile', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'updateProfile']);
             Route::get('/bank-account', [\App\Modules\Auth\Http\Controllers\AuthController::class, 'getBankAccount']);

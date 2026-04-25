@@ -73,14 +73,14 @@ class UserRequest extends BaseModel
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
 
 
     public function trainer()
     {
-        return $this->belongsTo(User::class, 'trainer_id');
+        return $this->belongsTo(User::class, 'trainer_id')->withTrashed();
     }
 
     public function plan()

@@ -48,6 +48,8 @@ Route::middleware(['web'])
                 Route::delete('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'destroy'])->name('bookings.destroy');
 
                 Route::resource('plans' , PlansController::class)->names('plans');
+                Route::post('/plans/{id}/move-up', [PlansController::class, 'moveUp'])->name('plans.move-up');
+                Route::post('/plans/{id}/move-down', [PlansController::class, 'moveDown'])->name('plans.move-down');
                 Route::put('/plans/{planId}/requests/{requestId}/status', [PlansController::class, 'updateRequestStatus'])->name('plans.requests.update-status');
                 Route::get('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'index'])->name('plans.schedule.index');
                 Route::post('/plans/{planId}/schedule', [\App\Http\Controllers\Admin\PlanScheduleController::class, 'store'])->name('plans.schedule.store');
@@ -98,6 +100,7 @@ Route::middleware(['web'])
                 Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionsController::class, 'index'])->name('subscriptions.index');
                 Route::get('/payments', [\App\Http\Controllers\Admin\PaymentsAdminController::class, 'index'])->name('payments.index');
                 Route::get('/app-wallet-account', [\App\Http\Controllers\Admin\AppWalletAccountController::class, 'index'])->name('app-wallet-account.index');
+                Route::post('/app-wallet-account/transactions', [\App\Http\Controllers\Admin\AppWalletAccountController::class, 'store'])->name('app-wallet-account.transactions.store');
                 Route::get('/app-expenses', [\App\Http\Controllers\Admin\AppExpensesController::class, 'index'])->name('app-expenses.index');
                 Route::post('/app-expenses', [\App\Http\Controllers\Admin\AppExpensesController::class, 'store'])->name('app-expenses.store');
                 Route::put('/app-expenses/{id}', [\App\Http\Controllers\Admin\AppExpensesController::class, 'update'])->name('app-expenses.update');

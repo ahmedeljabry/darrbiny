@@ -35,6 +35,13 @@ class AppExpense extends BaseModel
         ];
     }
 
+    public static function formTypeLabels(): array
+    {
+        return [
+            self::TYPE_OPERATING_EXPENSE => self::typeLabels()[self::TYPE_OPERATING_EXPENSE],
+        ];
+    }
+
     public static function typeLabelFor(?string $type): string
     {
         return self::typeLabels()[$type] ?? (string) $type;

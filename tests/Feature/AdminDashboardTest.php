@@ -128,22 +128,22 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('إجمالي المبيعات')
-            ->assertSee('وارد: رسوم الحجز على الباقات')
-            ->assertSee('وارد: رسوم التطبيق على الدفع الكلي')
+            ->assertSee('إجمالي الإيرادات')
+            ->assertSee('رسوم الحجز')
+            ->assertSee('رسوم الباقات')
             ->assertSee('المصروفات')
             ->assertSee('رصيد محفظة التطبيق')
-            ->assertSee('قيمة الحجوزات')
+            ->assertSee('مستحقات المدربين')
             ->assertSee('صافي الربح')
             ->assertSee('قيد التدريب')
             ->assertSee('الكورسات الملغاة')
-            ->assertSee('269.12')
-            ->assertSee('234.56')
+            ->assertSee('703.68')
+            ->assertSee('358.01')
             ->assertSee('34.56')
             ->assertSee('80.00')
             ->assertSee($walletBalance)
-            ->assertSee('345.67')
-            ->assertSee('189.12')
+            ->assertSee('0.00')
+            ->assertSee('623.68')
             ->assertSee('الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ');
     }
 
@@ -250,9 +250,9 @@ class AdminDashboardTest extends TestCase
             ->assertSee('name="from"', false)
             ->assertSee('name="to"', false)
             ->assertSee('فلترة مخصصة مفعلة')
-            ->assertSee('11.11')
+            ->assertSee('111.11')
             ->assertSee('10.00')
-            ->assertSee('1.11')
+            ->assertSee('11.11')
             ->assertSee($walletBalance)
             ->assertDontSee('333.33');
     }
@@ -321,7 +321,7 @@ class AdminDashboardTest extends TestCase
             ->assertSee('محول للريال');
     }
 
-    public function test_dashboard_sales_and_profit_deduct_approved_cancellation_refunds(): void
+    public function test_dashboard_revenue_and_app_wallet_do_not_deduct_cancellation_refunds(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009031',
@@ -405,12 +405,10 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('14.00 SAR')
-            ->assertSee('40.00 SAR')
-            ->assertSee('4.00 SAR')
-            ->assertSee('10.00 SAR')
+            ->assertSee('100.00 SAR')
+            ->assertSee('20.00 SAR')
+            ->assertSee('8.00 SAR')
             ->assertSee('1.00 SAR')
-            ->assertSee('49.00 SAR')
-            ->assertSee('13.00 SAR');
+            ->assertSee('99.00 SAR');
     }
 }

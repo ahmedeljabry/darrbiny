@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Exports\AppWalletAccountExport;
 use App\Models\AppExpense;
+use App\Models\AppWalletTransaction;
 use App\Models\CancellationRequest;
 use App\Models\Country;
 use App\Models\Payment;
@@ -87,8 +88,8 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertOk()
             ->assertSee('حساب محفظة التطبيق')
             ->assertSee('رسوم الحجز الثابتة')
-            ->assertSee('رسوم الحجز على الباقات')
-            ->assertSee('الدفع الكلي')
+            ->assertSee('رسوم الحجز')
+            ->assertSee('قيمة الباقات')
             ->assertSee('مصروفات تشغيل')
             ->assertSee('350.00')
             ->assertSee('60.00')
@@ -204,12 +205,65 @@ class AdminAppWalletAccountTest extends TestCase
                 'source' => 'app_fee',
             ]))
             ->assertOk()
-            ->assertSee('رسوم التطبيق على الدفع الكلي')
+            ->assertSee('رسوم الباقات')
             ->assertSee('30.00')
             ->assertDontSee('200.00');
     }
 
-    public function test_app_wallet_summary_and_entries_include_approved_cancellation_refunds(): void
+    public function test_admin_can_record_manual_app_wallet_deposit_and_withdrawal(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009608',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_payments');
+
+        $this->actingAs($admin)
+            ->post(route('admin.app-wallet-account.transactions.store'), [
+                'direction' => AppWalletTransaction::DIRECTION_IN,
+                'amount' => 120,
+                'notes' => 'Manual deposit note',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم تسجيل إيداع محفظة التطبيق بنجاح');
+
+        $this->actingAs($admin)
+            ->post(route('admin.app-wallet-account.transactions.store'), [
+                'direction' => AppWalletTransaction::DIRECTION_OUT,
+                'source' => AppWalletTransaction::SOURCE_TRAINER_DUES_WITHDRAWAL,
+                'amount' => 45,
+                'notes' => 'Trainer dues withdrawal note',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم تسجيل سحب محفظة التطبيق بنجاح');
+
+        $this->assertDatabaseHas('app_wallet_transactions', [
+            'direction' => AppWalletTransaction::DIRECTION_IN,
+            'source' => AppWalletTransaction::SOURCE_MANUAL_DEPOSIT,
+            'amount_minor' => 12_000,
+            'notes' => 'Manual deposit note',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->assertDatabaseHas('app_wallet_transactions', [
+            'direction' => AppWalletTransaction::DIRECTION_OUT,
+            'source' => AppWalletTransaction::SOURCE_TRAINER_DUES_WITHDRAWAL,
+            'amount_minor' => 4_500,
+            'notes' => 'Trainer dues withdrawal note',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.app-wallet-account.index'))
+            ->assertOk()
+            ->assertSee('Manual deposit note')
+            ->assertSee('Trainer dues withdrawal note')
+            ->assertSee('120.00')
+            ->assertSee('45.00')
+            ->assertSee('75.00');
+    }
+
+    public function test_app_wallet_summary_uses_manual_package_refund_withdrawals_not_cancellation_refunds(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009607',
@@ -253,15 +307,23 @@ class AdminAppWalletAccountTest extends TestCase
             'processed_at' => now(),
         ]);
 
+        AppWalletTransaction::create([
+            'direction' => AppWalletTransaction::DIRECTION_OUT,
+            'source' => AppWalletTransaction::SOURCE_PACKAGE_REFUND_WITHDRAWAL,
+            'amount_minor' => 5_000,
+            'notes' => 'Manual package refund withdrawal',
+            'created_by' => $admin->id,
+        ]);
+
         $this->actingAs($admin)
             ->get(route('admin.app-wallet-account.index'))
             ->assertOk()
-            ->assertSee('استرداد باقات')
+            ->assertSee('سحب استرداد باقة ملغية')
             ->assertSee('130.00')
             ->assertSee('50.00')
             ->assertSee('80.00')
-            ->assertSee('Refund after cancellation')
-            ->assertSee('#' . $request->formatted_order_number);
+            ->assertSee('Manual package refund withdrawal')
+            ->assertDontSee('Refund after cancellation');
     }
 
     /**

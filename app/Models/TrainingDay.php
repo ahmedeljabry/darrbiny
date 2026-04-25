@@ -25,7 +25,6 @@ class TrainingDay extends BaseModel
 
     public function trainer()
     {
-        return $this->belongsTo(User::class, 'trainer_id');
+        return $this->belongsTo(User::class, 'trainer_id')->withTrashed();
     }
 }
-

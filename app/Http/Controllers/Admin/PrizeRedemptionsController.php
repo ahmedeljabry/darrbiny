@@ -18,6 +18,8 @@ class PrizeRedemptionsController extends BaseController
     {
         $status = $request->query('status');
         $search = $request->query('q');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
         
         $query = RewardRedemption::with(['user', 'reward']);
         
@@ -31,6 +33,14 @@ class PrizeRedemptionsController extends BaseController
                   ->orWhere('phone_with_cc', 'like', "%{$search}%");
             });
         }
+
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
         
         $redemptions = $query->latest()->paginate(20)->withQueryString();
 
@@ -43,6 +53,8 @@ class PrizeRedemptionsController extends BaseController
                           ->orWhere('phone_with_cc', 'like', "%{$search}%");
                     });
                 })
+                ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->whereDate('created_at', '<=', $dateTo))
                 ->latest()
                 ->get();
 
@@ -52,7 +64,7 @@ class PrizeRedemptionsController extends BaseController
             );
         }
         
-        return view('admin.prize-redemptions.index', compact('redemptions', 'status', 'search'));
+        return view('admin.prize-redemptions.index', compact('redemptions', 'status', 'search', 'dateFrom', 'dateTo'));
     }
 
     public function show(string $id)

@@ -28,7 +28,10 @@ class DashboardController extends BaseController
 
         $planCount = \App\Models\Plan::whereBetween('created_at', [$from, $to])->count();
         $countriesCount = \App\Models\Country::whereBetween('created_at', [$from, $to])->count();
-        $usersCount = \App\Models\User::whereBetween('created_at', [$from, $to])->count();
+        $usersCount = \App\Models\User::where('user_type', \App\Enums\UserType::USER->value)
+            ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['ADMIN', 'TRAINER']))
+            ->whereBetween('created_at', [$from, $to])
+            ->count();
         $trainersCount = \App\Models\User::role('TRAINER')
             ->whereBetween('users.created_at', [$from, $to])
             ->count();
@@ -70,8 +73,6 @@ class DashboardController extends BaseController
             ->get()
             ->filter(fn ($notification) => in_array($notification->data['type'] ?? '', [
                 'wallet_withdraw_request',
-                'prize_request',
-                'support_ticket_user_reply',
             ], true))
             ->take(5)
             ->values();
@@ -81,41 +82,38 @@ class DashboardController extends BaseController
             'to' => $to,
             'direction' => 'in',
         ];
-        $packageReservationFeesMinor = $this->appWalletAccountService->summary([
+        $reservationFeesMinor = $this->appWalletAccountService->summary([
+            ...$dashboardIncomeFilters,
+            'source' => \App\Models\Payment::TYPE_RESERVATION_FEE,
+        ])['incoming_minor'];
+        $packageReservationFeesMinor = $reservationFeesMinor + $this->appWalletAccountService->summary([
             ...$dashboardIncomeFilters,
             'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
+        ])['incoming_minor'];
+        $packageRevenueMinor = $this->appWalletAccountService->summary([
+            ...$dashboardIncomeFilters,
+            'source' => \App\Models\Payment::TYPE_PLAN_FULL,
         ])['incoming_minor'];
         $appFeesMinor = $this->appWalletAccountService->summary([
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
         ])['incoming_minor'];
-        $packageReservationRefundsMinor = $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            [],
-            'plan_partial'
-        );
-        $appFeesRefundsMinor = $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            [],
-            'app_fee'
-        );
-        $packageReservationFeesMinor -= $packageReservationRefundsMinor;
-        $appFeesMinor -= $appFeesRefundsMinor;
-        $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
+        $salesMinor = $packageReservationFeesMinor + $packageRevenueMinor;
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
-            $succeededPayments->clone()->where('type', \App\Models\Payment::TYPE_PLAN_FULL),
-            'amount_minor'
+            $succeededPayments->clone()
+                ->where('type', \App\Models\Payment::TYPE_PLAN_FULL)
+                ->whereHas('userRequest', fn ($query) => $query->where('status', \App\Models\UserRequest::STATUS_COMPLETED)),
+            'trainer_net_minor'
         );
-        $bookingsValueMinor -= $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            [],
-            'plan_full'
-        );
+        $trainerWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
+            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
+            ->whereBetween('processed_at', [$from, $to])
+            ->whereHas('user', fn ($query) => $query->where('user_type', \App\Enums\UserType::CAPTAIN->value))
+            ->sum('amount');
+        $bookingsValueMinor = max(0, $bookingsValueMinor - $trainerWithdrawalsMinor);
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
@@ -146,7 +144,7 @@ class DashboardController extends BaseController
 
     public function courseDetails()
     {
-        $plans = \App\Models\Plan::with(['country'])->active()->orderBy('title')->get();
+        $plans = \App\Models\Plan::with(['country'])->active()->ordered()->get();
         $recentBookings = \App\Models\UserRequest::with(['user', 'plan'])
             ->latest()
             ->limit(10)
@@ -265,7 +263,10 @@ class DashboardController extends BaseController
             $labels[] = $useDailyGranularity
                 ? $point->format('Y-m-d')
                 : $point->translatedFormat('M Y');
-            $userSeries[] = \App\Models\User::whereBetween('created_at', [$bucketStart, $bucketEnd])->count();
+            $userSeries[] = \App\Models\User::where('user_type', \App\Enums\UserType::USER->value)
+                ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['ADMIN', 'TRAINER']))
+                ->whereBetween('created_at', [$bucketStart, $bucketEnd])
+                ->count();
             $planSeries[] = \App\Models\Plan::whereBetween('created_at', [$bucketStart, $bucketEnd])->count();
             $bookingSeries[] = \App\Models\UserRequest::whereBetween('created_at', [$bucketStart, $bucketEnd])->count();
         }

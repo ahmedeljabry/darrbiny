@@ -25,7 +25,7 @@ class PlansController extends BaseController
             ->when($status === 'active', fn($qq)=>$qq->where('is_active', true))
             ->when($status === 'inactive', fn($qq)=>$qq->where('is_active', false))
             ->when($countryId, fn($qq)=>$qq->where('country_id',$countryId))
-            ->latest()
+            ->ordered()
             ->paginate(20)
             ->withQueryString();
 
@@ -62,6 +62,20 @@ class PlansController extends BaseController
     {
         app(PlansService::class)->delete($id);
         return back()->with('status', 'تم حذف الخطة');
+    }
+
+    public function moveUp(string $id)
+    {
+        $this->move($id, 'up');
+
+        return back()->with('status', 'تم رفع ترتيب الخطة');
+    }
+
+    public function moveDown(string $id)
+    {
+        $this->move($id, 'down');
+
+        return back()->with('status', 'تم خفض ترتيب الخطة');
     }
 
     public function show(string $id)
@@ -120,5 +134,35 @@ class PlansController extends BaseController
         $userRequest->save();
 
         return back()->with('status', "تم تحديث حالة الطلب من {$oldStatus} إلى {$validated['status']}");
+    }
+
+    private function move(string $id, string $direction): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($id, $direction): void {
+            $plan = \App\Models\Plan::query()->lockForUpdate()->findOrFail($id);
+
+            if ((int) $plan->position <= 0) {
+                $plan->position = ((int) \App\Models\Plan::query()->max('position')) + 1;
+                $plan->save();
+            }
+
+            $swapQuery = \App\Models\Plan::query()->lockForUpdate();
+            if ($direction === 'up') {
+                $swapQuery->where('position', '<', (int) $plan->position)->orderByDesc('position');
+            } else {
+                $swapQuery->where('position', '>', (int) $plan->position)->orderBy('position');
+            }
+
+            $swap = $swapQuery->first();
+            if (! $swap) {
+                return;
+            }
+
+            [$planPosition, $swapPosition] = [(int) $plan->position, (int) $swap->position];
+            $plan->position = $swapPosition;
+            $swap->position = $planPosition;
+            $plan->save();
+            $swap->save();
+        });
     }
 }

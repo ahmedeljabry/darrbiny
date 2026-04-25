@@ -65,7 +65,7 @@ class BookingsController extends BaseController
             ->paginate(20)
             ->withQueryString();
 
-        $plans = Plan::active()->orderBy('title')->get();
+        $plans = Plan::active()->ordered()->get();
         $statuses = [
             UserRequest::STATUS_PENDING_PAYMENT => 'قيد الدفع',
             UserRequest::STATUS_AWAITING_OFFERS => 'في انتظار العروض',

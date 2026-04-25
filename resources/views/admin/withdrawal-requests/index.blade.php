@@ -106,7 +106,7 @@
                                     </div>
                                 </td>
                                 <td>{{ $withdrawal->user?->bank_account_name ?? '-' }}</td>
-                                <td>{{ $withdrawal->user?->country?->name ?? '-' }}</td>
+                                <td>{{ $withdrawal->user?->country?->name ?? $withdrawal->user?->bankCountry?->name ?? '-' }}</td>
                                 <td>
                                     @php
                                         $isTrainer = ($withdrawal->user?->user_type?->value ?? null) === 'captain';

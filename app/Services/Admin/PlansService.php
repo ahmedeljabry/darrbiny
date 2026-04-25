@@ -15,7 +15,7 @@ final class PlansService
 {
     public function list(): LengthAwarePaginator
     {
-        return Plan::latest()->paginate(20);
+        return Plan::ordered()->paginate(20);
     }
 
     public function create(array $data, ?UploadedFile $image = null): Plan
@@ -35,6 +35,8 @@ final class PlansService
             ]);
             $data['image'] = $path;
         }
+
+        $data['position'] = ((int) Plan::query()->max('position')) + 1;
 
         $plan = Plan::create($data);
 

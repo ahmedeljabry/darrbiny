@@ -338,7 +338,7 @@ class ReportsController extends BaseController
     private function planOptions(): Collection
     {
         return Plan::query()
-            ->orderBy('title')
+            ->ordered()
             ->get(['id', 'title']);
     }
 

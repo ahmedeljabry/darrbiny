@@ -12,8 +12,10 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
+use App\Notifications\CourseCompletedNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CompleteCourseTrainerPayoutTest extends TestCase
@@ -94,6 +96,19 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'status' => Payout::STATUS_PENDING_REVIEW,
         ]);
 
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $student->id,
+            'type' => CourseCompletedNotification::class,
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $trainer->id,
+            'type' => CourseCompletedNotification::class,
+        ]);
+        $this->assertSame(2, DB::table('notifications')
+            ->where('type', CourseCompletedNotification::class)
+            ->whereIn('notifiable_id', [$student->id, $trainer->id])
+            ->count());
+
         $this->withToken($token)
             ->postJson("/api/v1/user-requests/{$booking->id}/complete")
             ->assertOk();
@@ -105,6 +120,10 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             ->count());
         $this->assertSame(1, Payout::query()
             ->where('user_request_id', $booking->id)
+            ->count());
+        $this->assertSame(2, DB::table('notifications')
+            ->where('type', CourseCompletedNotification::class)
+            ->whereIn('notifiable_id', [$student->id, $trainer->id])
             ->count());
     }
 

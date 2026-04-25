@@ -15,12 +15,12 @@ class Rating extends BaseModel
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function trainer()
     {
-        return $this->belongsTo(User::class, 'trainer_id');
+        return $this->belongsTo(User::class, 'trainer_id')->withTrashed();
     }
 
     public function userRequest()
@@ -28,4 +28,3 @@ class Rating extends BaseModel
         return $this->belongsTo(UserRequest::class);
     }
 }
-

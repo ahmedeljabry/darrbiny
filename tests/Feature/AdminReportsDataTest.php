@@ -170,7 +170,7 @@ class AdminReportsDataTest extends TestCase
             ->assertOk();
 
         $response
-            ->assertSee('رسوم الحجز على الباقات')
+            ->assertSee('رسوم الحجز')
             ->assertSee('25.00 SAR')
             ->assertDontSee('80.00 SAR');
     }
@@ -224,7 +224,7 @@ class AdminReportsDataTest extends TestCase
             ->get(route('admin.reports.payments'))
             ->assertOk()
             ->assertSee('رسوم الحجز الثابتة')
-            ->assertSee('رسوم الحجز على الباقات');
+            ->assertSee('رسوم الحجز');
     }
 
     public function test_sales_report_shows_rows_in_riyal_and_deducts_approved_cancellation_refunds(): void

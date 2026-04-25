@@ -14,7 +14,7 @@ class RewardRedemption extends BaseModel
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function reward()
@@ -22,4 +22,3 @@ class RewardRedemption extends BaseModel
         return $this->belongsTo(Reward::class);
     }
 }
-

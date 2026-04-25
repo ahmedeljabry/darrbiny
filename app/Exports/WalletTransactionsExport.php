@@ -41,6 +41,7 @@ class WalletTransactionsExport implements FromCollection, WithHeadings, WithMapp
     {
         $typeLabels = [
             \App\Models\WalletTransaction::TYPE_TOPUP_REQUEST => 'طلب إضافة رصيد',
+            \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST => 'طلب سحب',
             \App\Models\WalletTransaction::TYPE_REFUND => 'استرداد',
             \App\Models\WalletTransaction::TYPE_PAYMENT => 'دفع',
             \App\Models\WalletTransaction::TYPE_ADJUSTMENT => 'تعديل إداري',
@@ -55,7 +56,7 @@ class WalletTransactionsExport implements FromCollection, WithHeadings, WithMapp
         return [
             $transaction->id,
             $transaction->user?->name ?? $transaction->user_id,
-            $transaction->user?->country?->name ?? '-',
+            $transaction->user?->country?->name ?? $transaction->user?->bankCountry?->name ?? '-',
             number_format($transaction->amountMajor(), 2),
             $typeLabels[$transaction->type] ?? $transaction->type,
             $statusLabels[$transaction->status] ?? $transaction->status,
@@ -73,5 +74,4 @@ class WalletTransactionsExport implements FromCollection, WithHeadings, WithMapp
         ];
     }
 }
-
 

@@ -198,16 +198,11 @@ class UsersController extends BaseController
             ->latest()
             ->get();
 
-        $userDescription = $userRequests
-            ->first(fn (UserRequest $request): bool => filled($request->description))
-            ?->description;
-
         $trainerProfileView = $this->buildTrainerProfileView($user->trainerProfile);
 
         return view('admin.users.show', compact(
             'user',
             'userRequests',
-            'userDescription',
             'trainerProfileView',
             'referredUsers'
         ));
@@ -321,7 +316,7 @@ class UsersController extends BaseController
 
         $purgeService->purgeUser($user);
 
-        return redirect()->route('admin.users.index')->with('status', 'تم حذف المستخدم نهائياً وتحرير رقم الجوال لإعادة التسجيل.');
+        return redirect()->route('admin.users.index')->with('status', 'تم حذف المستخدم وتحرير رقم الجوال مع الحفاظ على السجلات المالية السابقة.');
     }
 
     public function resetAll(Request $request, UserPurgeService $purgeService)
@@ -343,7 +338,9 @@ class UsersController extends BaseController
             $purgeService->purgeUser($user);
         }
 
-        return redirect()->route('admin.dashboard')->with('status', 'تم حذف جميع بيانات المستخدمين غير الإدارية والبدء بقاعدة بيانات تشغيلية جديدة.');
+        $purgeService->purgeStandaloneSupportData();
+
+        return redirect()->route('admin.dashboard')->with('status', 'تم حذف بيانات المستخدمين غير الإدارية وتحرير أرقام الجوال، مع تنظيف تذاكر الدعم غير المرتبطة.');
     }
 
     public function ban(string $id, Request $request)
@@ -421,7 +418,7 @@ class UsersController extends BaseController
                 $count++;
             } elseif ($action === 'delete') {
                 if ($user->id !== Auth::id()) {
-                    $user->delete();
+                    app(UserPurgeService::class)->purgeUser($user);
                     $count++;
                 }
             } elseif ($action === 'approve_trainers' && $this->approveTrainer($user)) {

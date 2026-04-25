@@ -10,11 +10,8 @@ use App\Notifications\WalletBalanceAddedNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Kreait\Firebase\Contract\Messaging;
-use Kreait\Firebase\Messaging\MessageTarget;
-use Kreait\Firebase\Messaging\MulticastSendReport;
-use Kreait\Firebase\Messaging\SendReport;
+use Kreait\Firebase\Messaging\CloudMessage;
 use Mockery;
-use RuntimeException;
 use Tests\TestCase;
 
 class FcmChannelTest extends TestCase
@@ -27,7 +24,7 @@ class FcmChannelTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_notification_sends_to_fcm_and_removes_invalid_tokens(): void
+    public function test_notification_sends_to_user_topic_without_reading_device_tokens(): void
     {
         $user = User::factory()->create([
             'phone_with_cc' => '+10000005003',
@@ -49,15 +46,16 @@ class FcmChannelTest extends TestCase
         ]);
 
         $messaging = Mockery::mock(Messaging::class);
-        $messaging->shouldReceive('sendMulticast')
+        $messaging->shouldReceive('send')
             ->once()
-            ->andReturn(MulticastSendReport::withItems([
-                SendReport::success(MessageTarget::with(MessageTarget::TOKEN, 'valid-token'), ['name' => 'projects/test/messages/1']),
-                SendReport::failure(
-                    MessageTarget::with(MessageTarget::TOKEN, 'invalid-token'),
-                    new RuntimeException('invalid token')
-                ),
-            ]));
+            ->withArgs(function (CloudMessage $message) use ($user): bool {
+                $payload = $message->jsonSerialize();
+
+                return ($payload['topic'] ?? null) === 'user_'.$user->id
+                    && ($payload['notification']['title'] ?? null) === 'تم إضافة رصيد إلى محفظتك'
+                    && ($payload['data']['notification_type'] ?? null) === 'wallet_balance_added';
+            })
+            ->andReturn(['name' => 'projects/test/messages/1']);
 
         $this->app->instance(Messaging::class, $messaging);
 
@@ -71,8 +69,7 @@ class FcmChannelTest extends TestCase
         $this->assertDatabaseHas('user_device_tokens', [
             'token' => 'valid-token',
         ]);
-
-        $this->assertDatabaseMissing('user_device_tokens', [
+        $this->assertDatabaseHas('user_device_tokens', [
             'token' => 'invalid-token',
         ]);
     }

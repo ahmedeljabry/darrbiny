@@ -46,7 +46,7 @@
             <div>
               <div class="text-muted small">إجمالي الأرباح الخام</div>
               <h4 class="mb-1">{{ number_format($grossProfitMinor / 100, 2) }}</h4>
-              <small class="text-muted">رسوم الحجز الثابتة + رسوم الحجز على الباقات + رسوم التطبيق على الدفع الكلي</small>
+              <small class="text-muted">رسوم الحجز الثابتة + رسوم الحجز + رسوم الباقات</small>
             </div>
           </div>
         </div>
@@ -91,7 +91,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-header border-0">
           <h5 class="mb-1">إضافة مصروف جديد</h5>
-          <small class="text-muted">اختر النوع ثم أدخل المبلغ والملاحظات إن وجدت</small>
+          <small class="text-muted">مصروفات التطبيق تسجل كمصروفات تشغيل فقط</small>
         </div>
         <div class="card-body">
           <form method="post" action="{{ route('admin.app-expenses.store') }}">
@@ -101,7 +101,7 @@
               <select name="type" class="form-select" required>
                 <option value="">اختر النوع</option>
                 @foreach($typeOptions as $value => $label)
-                  <option value="{{ $value }}">{{ $label }}</option>
+                  <option value="{{ $value }}" @selected($value === \App\Models\AppExpense::TYPE_OPERATING_EXPENSE)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
@@ -155,7 +155,7 @@
         <div class="card-body border-top pt-3">
           <div class="row g-2 mb-3">
             @foreach($typeOptions as $value => $label)
-              <div class="col-md-6 col-xl-3">
+              <div class="col-md-6 col-xl-4">
                 <div class="border rounded-3 p-3 bg-body-tertiary h-100">
                   <div class="small text-muted mb-1">{{ $label }}</div>
                   <div class="fw-semibold">{{ number_format(((int) ($categoryTotalsMinor[$value] ?? 0)) / 100, 2) }}</div>

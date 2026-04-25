@@ -4,6 +4,7 @@
 @php
   $supportsExcel = $supportsExcel ?? false;
   $filters = $filters ?? [];
+  $stats = $stats ?? [];
   $filterFields = [];
   $rejectionReasonColumnIndex = array_search('سبب الرفض', $headers, true);
 
@@ -70,7 +71,7 @@
     'icon' => $icon,
     'tone' => $tone,
     'actions' => $actions,
-    'stats' => [
+    'stats' => $stats ?: [
       ['label' => 'عدد النتائج', 'value' => number_format(count($rows)), 'icon' => 'list-details'],
       ['label' => 'عدد الأعمدة', 'value' => number_format(count($headers)), 'icon' => 'table', 'tone' => 'info'],
       ['label' => 'الفلاتر النشطة', 'value' => number_format(collect($filters)->filter(fn ($value) => filled($value))->count()), 'icon' => 'adjustments-horizontal', 'tone' => 'warning'],

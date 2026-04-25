@@ -18,17 +18,17 @@ class AdminNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_send_notification_to_trainers_uses_topic_even_without_registered_devices(): void
+    public function test_admin_send_notification_to_trainers_uses_each_trainers_user_topic(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         Notification::fake();
         $messaging = Mockery::mock(Messaging::class);
         $messaging->shouldReceive('send')
             ->once()
-            ->withArgs(function (CloudMessage $message): bool {
+            ->withArgs(function (CloudMessage $message) use (&$trainer): bool {
                 $payload = $message->jsonSerialize();
 
-                return ($payload['topic'] ?? null) === 'trainers'
+                return ($payload['topic'] ?? null) === 'user_'.$trainer->id
                     && ($payload['notification']['title'] ?? null) === 'تنبيه'
                     && ($payload['notification']['body'] ?? null) === 'رسالة اختبار';
             })
@@ -41,9 +41,10 @@ class AdminNotificationsTest extends TestCase
         $admin->assignRole('ADMIN');
         $admin->givePermissionTo('manage_notifications');
 
-        User::factory()->create([
+        $trainer = User::factory()->create([
             'phone_with_cc' => '+10000008002',
-        ])->assignRole('TRAINER');
+        ]);
+        $trainer->assignRole('TRAINER');
 
         $this->actingAs($admin)
             ->post(route('admin.notifications.send'), [

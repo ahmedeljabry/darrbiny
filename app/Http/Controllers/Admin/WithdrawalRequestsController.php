@@ -24,7 +24,7 @@ class WithdrawalRequestsController extends BaseController
         $dateTo = $request->query('date_to');
 
         $query = WalletTransaction::query()
-            ->with(['user.country', 'processedBy'])
+            ->with(['user.country', 'user.bankCountry', 'processedBy'])
             ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST);
 
         if ($status) {
@@ -73,7 +73,7 @@ class WithdrawalRequestsController extends BaseController
     public function show(string $id)
     {
         $request = WalletTransaction::query()
-            ->with(['user.country', 'processedBy'])
+            ->with(['user.country', 'user.bankCountry', 'processedBy'])
             ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->findOrFail($id);
 

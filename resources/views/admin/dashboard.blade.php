@@ -11,14 +11,14 @@
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 
   $financeCards = [
-    ['label' => 'إجمالي المبيعات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'وارد رسوم الحجز على الباقات + وارد رسوم التطبيق ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
-    ['label' => 'وارد: رسوم الحجز على الباقات', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'مطابق لحركات الوارد في شاشة المحفظة • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
-    ['label' => 'وارد: رسوم التطبيق على الدفع الكلي', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق فقط من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
+    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + قيمة الباقات الكاملة ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'رسوم الحجز', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز الثابتة ورسوم حجز الباقات • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
+    ['label' => 'رسوم الباقات', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ', 'icon' => 'wallet', 'tone' => 'primary'],
-    ['label' => 'قيمة الحجوزات', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الحجوزات المدفوعة بالكامل بعد خصم الإلغاءات المعتمدة • محول للريال', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
-    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
-    ['label' => 'تنبيهات غير مقروءة', 'value' => number_format($unreadNotifications), 'desc' => $rangeLabel ?? 'مركز الإشعارات', 'icon' => 'bell', 'tone' => 'danger'],
+    ['label' => 'مستحقات المدربين', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'صافي المدرب للكورسات المكتملة بعد خصم سحوبات المدربين المنفذة', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
+    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي الإيرادات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
+    ['label' => 'السحوبات', 'value' => number_format($pendingWithdrawalRequests), 'desc' => 'طلبات السحب المعلقة ضمن ' . ($rangeLabel ?? 'الفترة الحالية'), 'icon' => 'arrow-up-right-circle', 'tone' => 'danger'],
   ];
 
   $stateCards = [
@@ -47,7 +47,7 @@
     ['label' => 'طلبات السحب', 'desc' => 'طلبات سحب من محافظ الطلاب والمدربين', 'value' => $pendingWithdrawalRequests, 'route' => route('admin.withdrawal-requests.index'), 'tone' => 'danger', 'icon' => 'arrow-up-right-circle'],
     ['label' => 'طلبات الجوائز', 'desc' => 'استبدال النقاط بالمكافآت', 'value' => $pendingPrizeRequests, 'route' => route('admin.prize-redemptions.index'), 'tone' => 'info', 'icon' => 'gift'],
     ['label' => 'تذاكر الدعم', 'desc' => 'حالات تحتاج رد أو تصعيد', 'value' => $pendingSupportTickets, 'route' => route('admin.support.index'), 'tone' => 'secondary', 'icon' => 'message-2'],
-    ['label' => 'تنبيهات النظام', 'desc' => 'تنبيهات غير مقروءة تحتاج مراجعة', 'value' => $unreadNotifications, 'route' => route('admin.notifications.index'), 'tone' => 'danger', 'icon' => 'bell-ringing'],
+    ['label' => 'إشعارات السحوبات', 'desc' => 'طلبات سحب غير مقروءة تحتاج مراجعة', 'value' => ($dashboardAlerts ?? collect())->count(), 'route' => route('admin.notifications.view', ['read' => 'unread', 'type' => 'WalletWithdrawRequest']), 'tone' => 'danger', 'icon' => 'bell-ringing'],
   ];
 
 @endphp
@@ -62,7 +62,7 @@
         </span>
         <div class="report-hero__text">
           <h2>لوحة التحكم الرئيسية</h2>
-          <p>واجهة موحدة لمراقبة المبيعات، حالة التشغيل، والتنبيهات اليومية باستخدام نفس مكونات التقارير وبترتيب أوضح للأولويات.</p>
+          <p>واجهة موحدة لمراقبة الإيرادات، حالة التشغيل، والتنبيهات اليومية باستخدام نفس مكونات التقارير وبترتيب أوضح للأولويات.</p>
           <div class="report-hero__tags">
             <span class="report-tag"><i class="icon-base ti tabler-calendar"></i>{{ $today->translatedFormat('l d M Y') }}</span>
             <span class="report-tag"><i class="icon-base ti tabler-clock-hour-4"></i>{{ $rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم') }}</span>
@@ -278,9 +278,9 @@
         <div class="dashboard-section-head">
           <div>
             <h5 class="mb-1">تنبيهات مباشرة تحتاج متابعة</h5>
-            <p class="text-muted mb-0 small">إشعارات مرتبطة بطلبات السحب، ردود الدعم، والمكافآت المفتوحة الآن.</p>
+            <p class="text-muted mb-0 small">إشعارات مرتبطة بطلبات السحب المفتوحة الآن.</p>
           </div>
-          <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.view', ['read' => 'unread']) }}">كل غير المقروء</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.view', ['read' => 'unread', 'type' => 'WalletWithdrawRequest']) }}">كل السحوبات</a>
         </div>
 
         <div class="row g-3">
@@ -334,14 +334,14 @@
         <div class="dashboard-section-head">
           <div>
             <h5 class="mb-1 text-danger">إعادة تهيئة بيانات المستخدمين</h5>
-            <p class="text-muted mb-0 small">يحذف كل المستخدمين غير الإداريين حذفًا نهائيًا مع بياناتهم المرتبطة، ويُبقي الإعدادات وحسابات الإدارة فقط.</p>
+            <p class="text-muted mb-0 small">يحذف حسابات المستخدمين غير الإداريين ويحرر أرقام الجوال مع الحفاظ على الحجوزات والمدفوعات والسجلات المالية السابقة.</p>
           </div>
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetUsersModal">
             <i class="icon-base ti tabler-alert-triangle me-1"></i> بدء داتا جديدة
           </button>
         </div>
         <div class="report-note-box mt-3">
-          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيؤدي إلى حذف الطلبات، المدفوعات، المحافظ، التذاكر، والتقييمات المرتبطة بالمستخدمين غير الإداريين.</p>
+          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيتم تحرير أرقام الجوال وإخفاء بيانات الحسابات الشخصية، مع تنظيف تذاكر الدعم وبقاء الحجوزات والمدفوعات والمحافظ والسجلات المالية محفوظة.</p>
         </div>
       </div>
     </div>
@@ -356,7 +356,7 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
-              <p class="mb-3">سيتم حذف جميع المستخدمين غير الإداريين وكل بياناتهم التشغيلية نهائيًا. لا يمكن التراجع بعد التأكيد.</p>
+              <p class="mb-3">سيتم حذف حسابات المستخدمين غير الإداريين وتحرير أرقام الجوال، مع الحفاظ على السجلات المالية والتشغيلية السابقة. لا يمكن التراجع بعد التأكيد.</p>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" value="1" id="confirm_reset" name="confirm_reset" required>
                 <label class="form-check-label" for="confirm_reset">أفهم أن العملية نهائية وأريد المتابعة.</label>
@@ -364,7 +364,7 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-              <button type="submit" class="btn btn-danger">تأكيد الحذف النهائي</button>
+              <button type="submit" class="btn btn-danger">تأكيد حذف الحسابات</button>
             </div>
           </form>
         </div>

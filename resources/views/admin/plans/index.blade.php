@@ -58,6 +58,7 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
+                            <th><i class="icon-base ti tabler-arrows-sort me-1"></i> الترتيب</th>
                             <th><i class="icon-base ti tabler-file-text me-1"></i> العنوان</th>
                             <th><i class="icon-base ti tabler-clock me-1"></i> الساعات</th>
                             <th><i class="icon-base ti tabler-calendar me-1"></i> الجلسات</th>
@@ -71,6 +72,23 @@
                     <tbody>
                         @foreach($plans as $plan)
                             <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="badge bg-label-secondary">{{ $plan->position ?: '-' }}</span>
+                                        <form method="post" action="{{ route('admin.plans.move-up', $plan->id) }}">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-icon btn-outline-secondary" title="رفع">
+                                                <i class="icon-base ti tabler-arrow-up"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{{ route('admin.plans.move-down', $plan->id) }}">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-icon btn-outline-secondary" title="خفض">
+                                                <i class="icon-base ti tabler-arrow-down"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
                                 <td>{{ $plan->title }}</td>
                                 <td>{{ $plan->hours_count }}</td>
                                 <td>{{ $plan->session_count }}</td>

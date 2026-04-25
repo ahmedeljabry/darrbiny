@@ -123,7 +123,7 @@ class HomeService
             ->home()
             ->byCountry($this->countryId)
             ->with('features:id,label')
-            ->latest()
+            ->ordered()
             ->select('id', 'title', 'price_min', 'price_max', 'badge_discount', 'duration_days', 'hours_count', 'session_count')
             ->get()
             ->map(fn(Plan $p) => [

@@ -26,6 +26,7 @@ class PrizeRedemptionsExport implements FromCollection, WithHeadings, WithMappin
         return [
             'المعرف',
             'المستخدم',
+            'رقم الجوال',
             'الجائزة',
             'النقاط المستخدمة',
             'الحالة',
@@ -45,6 +46,7 @@ class PrizeRedemptionsExport implements FromCollection, WithHeadings, WithMappin
         return [
             $redemption->id,
             $redemption->user?->name ?? $redemption->user_id,
+            $redemption->user?->phone_with_cc ?? '-',
             $redemption->reward?->title ?? $redemption->reward_id,
             $redemption->points_spent,
             $statuses[$redemption->status] ?? $redemption->status,
@@ -60,6 +62,5 @@ class PrizeRedemptionsExport implements FromCollection, WithHeadings, WithMappin
         ];
     }
 }
-
 
 

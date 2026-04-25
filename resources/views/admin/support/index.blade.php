@@ -34,14 +34,14 @@
   </div>
   <div class="card-body">
     <form method="get" class="row g-3 mb-4">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label">بحث</label>
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="icon-base ti tabler-search"></i></span>
           <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="الموضوع أو اسم المستخدم">
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-2">
         <label class="form-label">الحالة</label>
         <select name="status" class="form-select select2">
           <option value="">جميع الحالات</option>
@@ -50,7 +50,15 @@
           <option value="closed" @selected($status==='closed')>مغلقة</option>
         </select>
       </div>
-      <div class="col-md-4 d-flex align-items-end gap-2">
+      <div class="col-md-2">
+        <label class="form-label">من تاريخ</label>
+        <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">إلى تاريخ</label>
+        <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
+      </div>
+      <div class="col-md-3 d-flex align-items-end gap-2">
         <button class="btn btn-primary flex-grow-1">
           <i class="icon-base ti tabler-filter me-1"></i> تصفية
         </button>

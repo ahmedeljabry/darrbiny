@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\AppWalletAccountExport;
+use App\Models\AppWalletTransaction;
 use App\Services\Admin\AppWalletAccountService;
+use App\Support\WalletAmount;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controller as BaseController;
@@ -47,6 +49,7 @@ class AppWalletAccountController extends BaseController
 
         $entries = $this->paginate($entriesCollection, $request);
         $sourceOptions = $this->service->sourceOptions();
+        $manualWithdrawalOptions = AppWalletTransaction::withdrawalSourceLabels();
         $directionOptions = [
             'in' => 'وارد',
             'out' => 'صادر',
@@ -60,8 +63,53 @@ class AppWalletAccountController extends BaseController
             'netMinor',
             'sourceTotalsMinor',
             'sourceOptions',
+            'manualWithdrawalOptions',
             'directionOptions'
         ));
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'direction' => ['required', 'string', 'in:' . implode(',', [
+                AppWalletTransaction::DIRECTION_IN,
+                AppWalletTransaction::DIRECTION_OUT,
+            ])],
+            'source' => ['nullable', 'string', 'in:' . implode(',', array_keys(AppWalletTransaction::sourceLabels()))],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $direction = (string) $data['direction'];
+        $source = $direction === AppWalletTransaction::DIRECTION_IN
+            ? AppWalletTransaction::SOURCE_MANUAL_DEPOSIT
+            : (string) ($data['source'] ?? '');
+
+        abort_unless(
+            array_key_exists($source, AppWalletTransaction::sourceLabels()),
+            422,
+            'نوع الحركة غير صحيح'
+        );
+
+        abort_if(
+            $direction === AppWalletTransaction::DIRECTION_OUT
+            && ! array_key_exists($source, AppWalletTransaction::withdrawalSourceLabels()),
+            422,
+            'نوع السحب غير صحيح'
+        );
+
+        AppWalletTransaction::query()->create([
+            'direction' => $direction,
+            'source' => $source,
+            'amount_minor' => WalletAmount::majorToMinor($data['amount']),
+            'notes' => $data['notes'] ?? null,
+            'created_by' => $request->user()?->id,
+        ]);
+
+        return back()->with('status', $direction === AppWalletTransaction::DIRECTION_IN
+            ? 'تم تسجيل إيداع محفظة التطبيق بنجاح'
+            : 'تم تسجيل سحب محفظة التطبيق بنجاح'
+        );
     }
 
     private function paginate(Collection $items, Request $request, int $perPage = 20): LengthAwarePaginator

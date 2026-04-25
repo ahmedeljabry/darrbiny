@@ -93,9 +93,6 @@ class AdminAppExpensesTest extends TestCase
             ->assertOk()
             ->assertSee('مصروفات التطبيق')
             ->assertSee('مصروفات تشغيل')
-            ->assertSee('مستحقات مدربين')
-            ->assertSee('استرداد باقات')
-            ->assertSee('سحب أرباح')
             ->assertSee('180.00')
             ->assertSee('60.00')
             ->assertSee('120.00');
@@ -110,16 +107,16 @@ class AdminAppExpensesTest extends TestCase
         $admin->givePermissionTo('manage_payments');
 
         $expense = AppExpense::query()->create([
-            'type' => AppExpense::TYPE_PACKAGE_REFUND,
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
             'amount_minor' => 4_500,
-            'notes' => 'Initial refund',
+            'notes' => 'Initial operating expense',
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);
 
         $this->actingAs($admin)
             ->put(route('admin.app-expenses.update', $expense->id), [
-                'type' => AppExpense::TYPE_PROFIT_WITHDRAWAL,
+                'type' => AppExpense::TYPE_OPERATING_EXPENSE,
                 'amount' => 75,
                 'notes' => 'Updated note',
             ])
@@ -128,7 +125,7 @@ class AdminAppExpensesTest extends TestCase
 
         $this->assertDatabaseHas('app_expenses', [
             'id' => $expense->id,
-            'type' => AppExpense::TYPE_PROFIT_WITHDRAWAL,
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
             'amount_minor' => 7_500,
             'notes' => 'Updated note',
             'updated_by' => $admin->id,
@@ -155,16 +152,16 @@ class AdminAppExpensesTest extends TestCase
         $admin->givePermissionTo('manage_payments');
 
         AppExpense::query()->create([
-            'type' => AppExpense::TYPE_TRAINER_DUES,
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
             'amount_minor' => 12_500,
-            'notes' => 'Trainer dues export',
+            'notes' => 'Operating expense export',
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);
 
         $this->actingAs($admin)
             ->get(route('admin.app-expenses.index', [
-                'type' => AppExpense::TYPE_TRAINER_DUES,
+                'type' => AppExpense::TYPE_OPERATING_EXPENSE,
                 'export' => 'excel',
             ]))
             ->assertOk();

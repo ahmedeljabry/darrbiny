@@ -132,8 +132,6 @@ class NotificationsAdminController extends BaseController
             'message' => ['required','string','max:1000'],
         ]);
 
-        $notification = new AdminMessageNotification($data['title'], $data['message']);
-
         if ($data['audience'] === 'user') {
             $user = User::findOrFail($data['user_id']);
             $recipientCount = 1;
@@ -150,7 +148,6 @@ class NotificationsAdminController extends BaseController
                 $this->topics->userTopic($user),
             ));
         } else {
-            $topic = $this->resolveAudienceTopic($data['audience']);
             $query = $this->resolveAudienceQuery($data['audience']);
             $recipientCount = (clone $query)->count();
             $deviceTokenCount = null;
@@ -161,9 +158,15 @@ class NotificationsAdminController extends BaseController
                     $data['message'],
                     databaseOnly: true,
                 ));
-            });
 
-            $this->messaging->send($this->buildTopicMessage($data['title'], $data['message'], $topic));
+                $chunk->each(function (User $user) use ($data): void {
+                    $this->messaging->send($this->buildTopicMessage(
+                        $data['title'],
+                        $data['message'],
+                        $this->topics->userTopic($user),
+                    ));
+                });
+            });
         }
 
         $response = back()->with('status', $this->buildStatusMessage($recipientCount, $deviceTokenCount));
@@ -185,13 +188,6 @@ class NotificationsAdminController extends BaseController
         return $audience === 'trainers'
             ? User::role('TRAINER')
             : User::role('USER');
-    }
-
-    private function resolveAudienceTopic(string $audience): string
-    {
-        return $audience === 'trainers'
-            ? (string) config('services.firebase.topics.trainers', 'trainers')
-            : (string) config('services.firebase.topics.trainees', 'trainees');
     }
 
     private function buildTopicMessage(string $title, string $message, string $topic): CloudMessage

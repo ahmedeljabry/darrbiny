@@ -8,6 +8,7 @@ use App\Models\Upload;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 final class UserPurgeService
 {
@@ -16,63 +17,18 @@ final class UserPurgeService
         $user = User::withTrashed()->findOrFail($user->id);
         $profileUpload = $user->profile_picture_id ? Upload::find($user->profile_picture_id) : null;
         $timestamp = now();
+        $originalPhone = (string) $user->phone_with_cc;
+        $originalEmail = (string) $user->email;
 
-        DB::transaction(function () use ($user, $timestamp): void {
-            $ownedRequestIds = DB::table('user_requests')
-                ->where('user_id', $user->id)
-                ->pluck('id')
-                ->all();
-
-            $trainerRequestIds = DB::table('user_requests')
-                ->where('trainer_id', $user->id)
-                ->pluck('id')
-                ->all();
-
-            if ($ownedRequestIds !== []) {
-                DB::table('trainer_offers')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('training_days')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('user_schedule_progress')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('payments')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('cancellation_requests')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('payouts')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('ratings')->whereIn('user_request_id', $ownedRequestIds)->delete();
-                DB::table('user_requests')->whereIn('id', $ownedRequestIds)->delete();
-            }
-
-            if ($trainerRequestIds !== []) {
-                DB::table('user_requests')
-                    ->whereIn('id', $trainerRequestIds)
-                    ->update([
-                        'trainer_id' => null,
-                        'updated_at' => $timestamp,
-                    ]);
-            }
-
-            DB::table('trainer_offers')->where('trainer_id', $user->id)->delete();
-            DB::table('training_days')->where('trainer_id', $user->id)->delete();
-            DB::table('payouts')->where('trainer_id', $user->id)->delete();
-            DB::table('ratings')->where('user_id', $user->id)->orWhere('trainer_id', $user->id)->delete();
-            DB::table('reward_redemptions')->where('user_id', $user->id)->delete();
-            DB::table('wallet_transactions')->where('user_id', $user->id)->delete();
+        DB::transaction(function () use ($user, $timestamp, $originalPhone, $originalEmail): void {
             DB::table('wallet_transactions')->where('processed_by', $user->id)->update(['processed_by' => null]);
-            DB::table('cancellation_requests')->where('user_id', $user->id)->delete();
             DB::table('cancellation_requests')->where('processed_by', $user->id)->update(['processed_by' => null]);
+            DB::table('app_wallet_transactions')->where('created_by', $user->id)->update(['created_by' => null]);
             DB::table('trainer_profiles')->where('user_id', $user->id)->delete();
             DB::table('favorites')->where('user_id', $user->id)->orWhere('trainer_id', $user->id)->delete();
-            DB::table('referrals')->where('owner_user_id', $user->id)->delete();
             DB::table('users')->where('referred_by', $user->id)->update(['referred_by' => null, 'updated_at' => $timestamp]);
 
-            $supportTicketIds = DB::table('support_tickets')
-                ->where('user_id', $user->id)
-                ->pluck('id')
-                ->all();
-
-            if ($supportTicketIds !== []) {
-                DB::table('support_ticket_messages')->whereIn('ticket_id', $supportTicketIds)->delete();
-                DB::table('support_tickets')->whereIn('id', $supportTicketIds)->delete();
-            }
-
-            DB::table('support_ticket_messages')->where('user_id', $user->id)->delete();
+            $this->deleteSupportDataForUser($user, $originalPhone, $originalEmail);
 
             $conversationIds = DB::table('conversations')
                 ->where('user_one_id', $user->id)
@@ -119,11 +75,59 @@ final class UserPurgeService
                 DB::table('uploads')->where('id', $user->profile_picture_id)->delete();
             }
 
-            DB::table('users')->where('id', $user->id)->delete();
+            $user->forceFill([
+                'name' => 'مستخدم محذوف',
+                'email' => null,
+                'phone_with_cc' => $this->releasedPhoneValue($user->id, $timestamp),
+                'password' => Str::random(64),
+                'whatsapp_enabled' => false,
+                'profile_picture_id' => null,
+                'bank_account' => null,
+                'bank_account_name' => null,
+                'iban' => null,
+                'bank_name' => null,
+                'bank_country_id' => null,
+                'banned_until' => $timestamp->copy()->addYears(100),
+                'banned_reason' => 'تم حذف الحساب وتحرير رقم الجوال',
+            ])->save();
+
+            if (! $user->trashed()) {
+                $user->delete();
+            }
         });
 
         if ($profileUpload) {
             Storage::disk($profileUpload->disk)->delete($profileUpload->path);
         }
+    }
+
+    public function purgeStandaloneSupportData(): void
+    {
+        DB::transaction(function (): void {
+            DB::table('support_ticket_messages')->delete();
+            DB::table('support_tickets')->delete();
+        });
+    }
+
+    private function deleteSupportDataForUser(User $user, string $phone, string $email): void
+    {
+        $supportTicketIds = DB::table('support_tickets')
+            ->where('user_id', $user->id)
+            ->when($phone !== '', fn ($query) => $query->orWhere('phone_with_cc', $phone))
+            ->when($email !== '', fn ($query) => $query->orWhere('email', $email))
+            ->pluck('id')
+            ->all();
+
+        if ($supportTicketIds !== []) {
+            DB::table('support_ticket_messages')->whereIn('ticket_id', $supportTicketIds)->delete();
+            DB::table('support_tickets')->whereIn('id', $supportTicketIds)->delete();
+        }
+
+        DB::table('support_ticket_messages')->where('user_id', $user->id)->delete();
+    }
+
+    private function releasedPhoneValue(string $userId, \DateTimeInterface $timestamp): string
+    {
+        return 'deleted:' . $timestamp->format('YmdHis') . ':' . substr($userId, 0, 8);
     }
 }

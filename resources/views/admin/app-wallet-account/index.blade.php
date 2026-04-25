@@ -20,7 +20,7 @@
       return [
         'label' => $label,
         'amount_minor' => $amountMinor,
-        'tone' => str_starts_with($label, 'وارد') ? 'success' : 'danger',
+        'tone' => str_starts_with($label, 'صادر') ? 'danger' : 'success',
       ];
     })
     ->filter(fn ($item) => $item['amount_minor'] > 0)
@@ -34,6 +34,23 @@
       <li class="breadcrumb-item active" aria-current="page">حساب محفظة التطبيق</li>
     </ol>
   </nav>
+
+  @if (session('status'))
+    <div class="alert alert-success alert-dismissible" role="alert">
+      {{ session('status') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+    </div>
+  @endif
+
+  @if ($errors->any())
+    <div class="alert alert-danger" role="alert">
+      <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
 
   <div class="report-hero report-hero--primary mb-4">
     <div class="report-hero__body">
@@ -121,6 +138,66 @@
 
   <div class="card report-panel">
     <div class="card-body">
+      <div class="dashboard-section-head">
+        <div>
+          <h5 class="mb-1">حركات محفظة التطبيق</h5>
+          <p class="text-muted mb-0 small">سجل إيداع مباشر أو أحد أوامر السحب المعتمدة للمحفظة.</p>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <form method="post" action="{{ route('admin.app-wallet-account.transactions.store') }}" class="border rounded-3 p-3 h-100">
+            @csrf
+            <input type="hidden" name="direction" value="{{ \App\Models\AppWalletTransaction::DIRECTION_IN }}">
+            <h6 class="mb-3">إيداع في المحفظة</h6>
+            <div class="mb-3">
+              <label class="form-label">المبلغ</label>
+              <input type="number" name="amount" class="form-control" min="0.01" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ملاحظات</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="سبب الإيداع أو مرجعه"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">
+              <i class="icon-base ti tabler-arrow-down-left me-1"></i>
+              تسجيل الإيداع
+            </button>
+          </form>
+        </div>
+        <div class="col-lg-6">
+          <form method="post" action="{{ route('admin.app-wallet-account.transactions.store') }}" class="border rounded-3 p-3 h-100">
+            @csrf
+            <input type="hidden" name="direction" value="{{ \App\Models\AppWalletTransaction::DIRECTION_OUT }}">
+            <h6 class="mb-3">سحب من المحفظة</h6>
+            <div class="mb-3">
+              <label class="form-label">نوع السحب</label>
+              <select name="source" class="form-select" required>
+                <option value="">اختر نوع السحب</option>
+                @foreach($manualWithdrawalOptions as $value => $label)
+                  <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">المبلغ</label>
+              <input type="number" name="amount" class="form-control" min="0.01" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ملاحظات</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="تفاصيل السحب"></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger">
+              <i class="icon-base ti tabler-arrow-up-right me-1"></i>
+              تسجيل السحب
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card report-panel">
+    <div class="card-body">
       @include('admin.reports.partials.filter-fields', [
         'fields' => $filterFields,
         'values' => $filters,
@@ -130,7 +207,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>الوارد يشمل رسوم الحجز الثابتة ورسوم الحجز على الباقات والدفع الكلي بالكامل، مع بقاء فلتر مستقل لتحليل رسوم التطبيق فقط عند الحاجة. أما الصادر فيعكس مصروفات التطبيق المسجلة بالإضافة إلى مبالغ الاسترداد المعتمدة الناتجة عن الإلغاءات. كل القيم في هذه الشاشة معروضة بالـ {{ $reportCurrency }}.</p>
+        <p>الوارد يشمل رسوم الحجز وقيمة الباقات والإيداعات اليدوية. الصادر يشمل مصروفات التشغيل وأوامر السحب اليدوية وطلبات السحب المنفذة من قسم العمليات، ولا يتم خصم إلغاء الكورس تلقائيًا من محفظة التطبيق. كل القيم في هذه الشاشة معروضة بالـ {{ $reportCurrency }}.</p>
       </div>
 
       @if($sourceBreakdowns->isNotEmpty())

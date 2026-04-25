@@ -32,7 +32,7 @@
                                 <option value="SupportTicketCreated" @selected(request('type') == 'SupportTicketCreated')>تذاكر الدعم</option>
                                 <option value="SupportTicketUserReplyNotification" @selected(request('type') == 'SupportTicketUserReplyNotification')>ردود تذاكر الدعم</option>
                                 <option value="PrizeRequest" @selected(request('type') == 'PrizeRequest')>طلبات الجوائز</option>
-                                <option value="WalletTopupRequest" @selected(request('type') == 'WalletTopupRequest')>طلبات المحفظة</option>
+                                <option value="WalletTopupRequest" @selected(request('type') == 'WalletTopupRequest')>طلبات المحافظ</option>
                                 <option value="WalletWithdrawRequest" @selected(request('type') == 'WalletWithdrawRequest')>طلبات السحب</option>
                                 <option value="CancellationRequest" @selected(request('type') == 'CancellationRequest')>طلبات الإلغاء</option>
                                 <option value="TrainerProfileUpdate" @selected(request('type') == 'TrainerProfileUpdate')>تعديلات ملفات المدربين</option>

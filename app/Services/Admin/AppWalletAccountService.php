@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Admin;
 
 use App\Models\AppExpense;
-use App\Models\CancellationRequest;
+use App\Models\AppWalletTransaction;
 use App\Models\Payment;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -22,13 +23,15 @@ final class AppWalletAccountService
     {
         return [
             Payment::TYPE_RESERVATION_FEE => 'وارد: رسوم الحجز الثابتة',
-            Payment::TYPE_PLAN_PARTIAL => 'وارد: رسوم الحجز على الباقات',
-            Payment::TYPE_PLAN_FULL => 'وارد: الدفع الكلي',
-            'app_fee' => 'وارد: رسوم التطبيق على الدفع الكلي',
+            Payment::TYPE_PLAN_PARTIAL => 'وارد: رسوم الحجز',
+            Payment::TYPE_PLAN_FULL => 'وارد: قيمة الباقات',
+            'app_fee' => 'تحليل: رسوم الباقات',
+            AppWalletTransaction::SOURCE_MANUAL_DEPOSIT => 'وارد: إيداع محفظة التطبيق',
             AppExpense::TYPE_OPERATING_EXPENSE => 'صادر: مصروفات تشغيل',
-            AppExpense::TYPE_TRAINER_DUES => 'صادر: مستحقات مدربين',
-            AppExpense::TYPE_PACKAGE_REFUND => 'صادر: استرداد باقات',
-            AppExpense::TYPE_PROFIT_WITHDRAWAL => 'صادر: سحب أرباح',
+            AppWalletTransaction::SOURCE_TRAINER_DUES_WITHDRAWAL => 'صادر: سحب مستحقات مدرب',
+            AppWalletTransaction::SOURCE_PACKAGE_REFUND_WITHDRAWAL => 'صادر: سحب استرداد باقة ملغية',
+            AppWalletTransaction::SOURCE_PROFIT_WITHDRAWAL => 'صادر: سحب أرباح',
+            WalletTransaction::TYPE_WITHDRAW_REQUEST => 'صادر: طلبات السحب المنفذة',
         ];
     }
 
@@ -49,11 +52,14 @@ final class AppWalletAccountService
             } else {
                 $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'amount_minor');
             }
+
+            $incomingMinor += (int) $this->incomingManualTransactionsQuery($filters)->sum('amount_minor');
         }
 
         if (($filters['direction'] ?? null) !== 'in') {
             $outgoingMinor = (int) $this->outgoingExpensesQuery($filters)->sum('amount_minor')
-                + $this->approvedCancellationRefundsMinor($filters);
+                + (int) $this->outgoingManualTransactionsQuery($filters)->sum('amount_minor')
+                + (int) $this->approvedWalletWithdrawalsQuery($filters)->sum('amount');
         }
 
         return [
@@ -66,7 +72,9 @@ final class AppWalletAccountService
     public function ledgerEntries(array $filters = []): Collection
     {
         return $this->incomingEntries($filters)
+            ->concat($this->manualAppWalletEntries($filters))
             ->concat($this->outgoingEntries($filters))
+            ->concat($this->approvedWalletWithdrawalEntries($filters))
             ->sortByDesc(fn (object $entry) => $entry->occurred_at?->getTimestamp() ?? 0)
             ->values();
     }
@@ -112,6 +120,40 @@ final class AppWalletAccountService
             });
     }
 
+    private function manualAppWalletEntries(array $filters): Collection
+    {
+        $sourceFilter = $filters['source'] ?? null;
+
+        if ($sourceFilter !== null && ! array_key_exists($sourceFilter, AppWalletTransaction::sourceLabels())) {
+            return collect();
+        }
+
+        return $this->manualTransactionsQuery($filters)
+            ->get()
+            ->map(function (AppWalletTransaction $transaction): object {
+                $isIncoming = $transaction->direction === AppWalletTransaction::DIRECTION_IN;
+
+                return (object) [
+                    'reference_id' => $transaction->id,
+                    'reference_label' => '#' . substr((string) $transaction->id, 0, 8),
+                    'direction' => $transaction->direction,
+                    'direction_label' => $isIncoming ? 'وارد' : 'صادر',
+                    'source_key' => (string) $transaction->source,
+                    'source_label' => $this->entrySourceLabel((string) $transaction->source),
+                    'description' => AppWalletTransaction::sourceLabelFor($transaction->source),
+                    'order_reference' => '—',
+                    'counterparty' => $transaction->creator?->name ?? 'الإدارة',
+                    'details' => 'حركة يدوية على محفظة التطبيق',
+                    'amount_minor' => (int) $transaction->amount_minor,
+                    'report_amount_minor' => (int) $transaction->amount_minor,
+                    'currency' => ReportCurrencyConverter::REPORT_CURRENCY,
+                    'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
+                    'notes' => $transaction->notes ?: '—',
+                    'occurred_at' => $transaction->created_at,
+                ];
+            });
+    }
+
     private function outgoingEntries(array $filters): Collection
     {
         if (($filters['direction'] ?? null) === 'in') {
@@ -141,39 +183,44 @@ final class AppWalletAccountService
                 ];
             });
 
-        $refundEntries = $this->approvedCancellationRefundsQuery($filters)
+        return $expenseEntries;
+    }
+
+    private function approvedWalletWithdrawalEntries(array $filters): Collection
+    {
+        if (($filters['direction'] ?? null) === 'in') {
+            return collect();
+        }
+
+        return $this->approvedWalletWithdrawalsQuery($filters)
             ->get()
-            ->map(function (CancellationRequest $cancellation): object {
-                $request = $cancellation->userRequest;
-                $currency = $this->currencyForCancellationRefund($cancellation);
+            ->map(function (WalletTransaction $transaction): object {
+                $user = $transaction->user;
+                $isTrainer = ($user?->user_type?->value ?? null) === 'captain';
 
                 return (object) [
-                    'reference_id' => $cancellation->id,
-                    'reference_label' => '#' . substr((string) $cancellation->id, 0, 8),
+                    'reference_id' => $transaction->id,
+                    'reference_label' => '#' . substr((string) $transaction->id, 0, 8),
                     'direction' => 'out',
                     'direction_label' => 'صادر',
-                    'source_key' => AppExpense::TYPE_PACKAGE_REFUND,
-                    'source_label' => $this->entrySourceLabel(AppExpense::TYPE_PACKAGE_REFUND),
-                    'description' => 'استرداد للعميل بعد إلغاء الدورة',
-                    'order_reference' => $request?->formatted_order_number
-                        ? '#' . $request->formatted_order_number
-                        : '—',
-                    'counterparty' => $cancellation->user?->name ?? 'غير معروف',
+                    'source_key' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+                    'source_label' => $this->entrySourceLabel(WalletTransaction::TYPE_WITHDRAW_REQUEST),
+                    'description' => 'تنفيذ طلب سحب من قسم العمليات',
+                    'order_reference' => '—',
+                    'counterparty' => $user?->name ?? 'غير معروف',
                     'details' => collect([
-                        $request?->trainer?->name ? 'المدرب: ' . $request->trainer->name : null,
-                        $request?->plan?->title ? 'الباقة: ' . $request->plan->title : null,
-                        $cancellation->processedBy?->name ? 'تم التنفيذ بواسطة: ' . $cancellation->processedBy->name : null,
+                        $user?->phone_with_cc ? 'الجوال: ' . $user->phone_with_cc : null,
+                        'نوع الحساب: ' . ($isTrainer ? 'مدرب' : 'طالب'),
+                        $transaction->processedBy?->name ? 'تم التنفيذ بواسطة: ' . $transaction->processedBy->name : null,
                     ])->filter()->implode(' | ') ?: '—',
-                    'amount_minor' => (int) $cancellation->refund_amount_minor,
-                    'report_amount_minor' => $this->reportCurrencyConverter->convertMinor((int) $cancellation->refund_amount_minor, $currency),
-                    'currency' => $currency,
+                    'amount_minor' => $transaction->amountMinor(),
+                    'report_amount_minor' => $transaction->amountMinor(),
+                    'currency' => ReportCurrencyConverter::REPORT_CURRENCY,
                     'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
-                    'notes' => $cancellation->reason ?: 'استرداد إلغاء',
-                    'occurred_at' => $cancellation->processed_at ?? $cancellation->updated_at ?? $cancellation->created_at,
+                    'notes' => $transaction->notes ?: '—',
+                    'occurred_at' => $transaction->processed_at ?? $transaction->updated_at ?? $transaction->created_at,
                 ];
             });
-
-        return $expenseEntries->concat($refundEntries);
     }
 
     private function incomingPaymentsQuery(array $filters): Builder
@@ -199,7 +246,7 @@ final class AppWalletAccountService
             Payment::TYPE_PLAN_FULL,
         ], true)) {
             $query->where('type', $source);
-        } elseif ($source !== null && ! $this->isIncomingSource($source)) {
+        } elseif ($source !== null) {
             $query->whereRaw('1 = 0');
         }
 
@@ -248,7 +295,7 @@ final class AppWalletAccountService
         if ($source !== null) {
             if (array_key_exists($source, AppExpense::typeLabels())) {
                 $query->where('type', $source);
-            } elseif ($this->isIncomingSource($source)) {
+            } else {
                 $query->whereRaw('1 = 0');
             }
         }
@@ -277,23 +324,64 @@ final class AppWalletAccountService
             });
     }
 
-    private function approvedCancellationRefundsQuery(array $filters): Builder
+    private function manualTransactionsQuery(array $filters): Builder
     {
         $source = $filters['source'] ?? null;
 
-        $query = CancellationRequest::query()
-            ->with([
-                'user',
-                'processedBy',
-                'userRequest.trainer',
-                'userRequest.plan',
-                'userRequest.payments',
-            ])
-            ->where('status', CancellationRequest::STATUS_APPROVED)
-            ->where('refund_amount_minor', '>', 0);
+        $query = AppWalletTransaction::query()->with('creator');
 
-        if ($source !== null && $source !== AppExpense::TYPE_PACKAGE_REFUND) {
-            return $query->whereRaw('1 = 0');
+        if ($source !== null) {
+            if (array_key_exists($source, AppWalletTransaction::sourceLabels())) {
+                $query->where('source', $source);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
+
+        return $query
+            ->when($filters['direction'] ?? null, fn (Builder $builder, string $direction) => $builder->where('direction', $direction))
+            ->when($filters['from'] ?? null, fn (Builder $builder, $from) => $builder->where('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn (Builder $builder, $to) => $builder->where('created_at', '<=', $to))
+            ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
+                $like = '%' . $search . '%';
+
+                $builder->where(function (Builder $nested) use ($like): void {
+                    $nested
+                        ->where('id', 'like', $like)
+                        ->orWhere('notes', 'like', $like)
+                        ->orWhereHas('creator', function (Builder $creatorQuery) use ($like): void {
+                            $creatorQuery
+                                ->where('name', 'like', $like)
+                                ->orWhere('phone_with_cc', 'like', $like);
+                        })
+                        ->orWhere('source', 'like', $like);
+                });
+            });
+    }
+
+    private function incomingManualTransactionsQuery(array $filters): Builder
+    {
+        return $this->manualTransactionsQuery($filters)
+            ->where('direction', AppWalletTransaction::DIRECTION_IN);
+    }
+
+    private function outgoingManualTransactionsQuery(array $filters): Builder
+    {
+        return $this->manualTransactionsQuery($filters)
+            ->where('direction', AppWalletTransaction::DIRECTION_OUT);
+    }
+
+    private function approvedWalletWithdrawalsQuery(array $filters): Builder
+    {
+        $source = $filters['source'] ?? null;
+
+        $query = WalletTransaction::query()
+            ->with(['user', 'processedBy'])
+            ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->where('status', WalletTransaction::STATUS_APPROVED);
+
+        if ($source !== null && $source !== WalletTransaction::TYPE_WITHDRAW_REQUEST) {
+            $query->whereRaw('1 = 0');
         }
 
         return $query
@@ -301,66 +389,23 @@ final class AppWalletAccountService
             ->when($filters['to'] ?? null, fn (Builder $builder, $to) => $builder->where('processed_at', '<=', $to))
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $like = '%' . $search . '%';
-                $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
-                $builder->where(function (Builder $nested) use ($like, $normalizedOrderNumber): void {
+                $builder->where(function (Builder $nested) use ($like): void {
                     $nested
                         ->where('id', 'like', $like)
-                        ->orWhere('reason', 'like', $like)
-                        ->orWhere('admin_notes', 'like', $like)
+                        ->orWhere('notes', 'like', $like)
                         ->orWhereHas('user', function (Builder $userQuery) use ($like): void {
                             $userQuery
                                 ->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
                         })
-                        ->orWhereHas('userRequest.trainer', function (Builder $trainerQuery) use ($like): void {
-                            $trainerQuery
+                        ->orWhereHas('processedBy', function (Builder $processorQuery) use ($like): void {
+                            $processorQuery
                                 ->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
-                        })
-                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like))
-                        ->orWhereHas('userRequest', function (Builder $requestQuery) use ($like, $normalizedOrderNumber): void {
-                            $requestQuery
-                                ->where('id', 'like', $like)
-                                ->orWhereRaw('CAST(order_number as CHAR) like ?', [$like]);
-
-                            if ($normalizedOrderNumber !== null) {
-                                $requestQuery->orWhere('order_number', $normalizedOrderNumber);
-                            }
                         });
                 });
             });
-    }
-
-    private function approvedCancellationRefundsMinor(array $filters): int
-    {
-        return $this->approvedCancellationRefundsQuery($filters)
-            ->get()
-            ->sum(function (CancellationRequest $cancellation): int {
-                return $this->reportCurrencyConverter->convertMinor(
-                    (int) $cancellation->refund_amount_minor,
-                    $this->currencyForCancellationRefund($cancellation)
-                );
-            });
-    }
-
-    private function currencyForCancellationRefund(CancellationRequest $cancellation): string
-    {
-        $payments = $cancellation->userRequest?->payments;
-        $paymentCurrency = $payments
-            ? $payments
-                ->pluck('currency')
-                ->map(fn ($value) => strtoupper(trim((string) $value)))
-                ->first(fn (string $value) => $value !== '')
-            : null;
-
-        if ($paymentCurrency !== null) {
-            return $paymentCurrency;
-        }
-
-        $requestCurrency = strtoupper(trim((string) ($cancellation->userRequest?->currency ?? '')));
-
-        return $requestCurrency !== '' ? $requestCurrency : ReportCurrencyConverter::REPORT_CURRENCY;
     }
 
     private function entrySourceLabel(string $sourceKey): string
@@ -372,20 +417,10 @@ final class AppWalletAccountService
     {
         return match ($sourceKey) {
             Payment::TYPE_RESERVATION_FEE => 'تحصيل رسوم الحجز الثابتة',
-            Payment::TYPE_PLAN_PARTIAL => 'تحصيل رسوم الحجز على الباقات',
-            Payment::TYPE_PLAN_FULL => 'تحصيل دفعة كلية من العميل',
-            'app_fee' => 'تحصيل رسوم التطبيق من دفعة كلية',
+            Payment::TYPE_PLAN_PARTIAL => 'تحصيل رسوم الحجز',
+            Payment::TYPE_PLAN_FULL => 'تحصيل قيمة الباقة من العميل',
+            'app_fee' => 'تحليل رسوم الباقات من الدفعات الكلية',
             default => 'حركة واردة على محفظة التطبيق',
         };
-    }
-
-    private function isIncomingSource(string $source): bool
-    {
-        return in_array($source, [
-            Payment::TYPE_RESERVATION_FEE,
-            Payment::TYPE_PLAN_PARTIAL,
-            Payment::TYPE_PLAN_FULL,
-            'app_fee',
-        ], true);
     }
 }

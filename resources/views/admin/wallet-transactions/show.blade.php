@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.wallet-transactions.index') }}">طلبات المحفظة</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.wallet-transactions.index') }}">طلبات المحافظ</a></li>
     <li class="breadcrumb-item active" aria-current="page">تفاصيل طلب المحفظة</li>
   </ol>
 </nav>
@@ -45,7 +45,7 @@
                         <p class="mb-0">
                             <strong>{{ $transaction->user->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $transaction->user->phone_with_cc ?? '' }}</small><br>
-                            <small class="text-muted">الدولة: {{ $transaction->user?->country?->name ?? '-' }}</small><br>
+                            <small class="text-muted">الدولة: {{ $transaction->user?->country?->name ?? $transaction->user?->bankCountry?->name ?? '-' }}</small><br>
                             <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($transaction->user->points_balance ?? 0, 2) }}</small>
                         </p>
                     </div>
@@ -146,4 +146,3 @@
 </div>
 
 @endsection
-

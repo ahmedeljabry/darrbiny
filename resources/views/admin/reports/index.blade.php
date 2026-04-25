@@ -6,7 +6,7 @@
   $converter = app(\App\Support\ReportCurrencyConverter::class);
   $reports = [
     'تقارير مالية' => [
-      ['title' => 'المبيعات', 'desc' => 'المدفوعات الناجحة وإجمالي المبيعات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
+      ['title' => 'الإيرادات', 'desc' => 'المدفوعات الناجحة وإجمالي الإيرادات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
       ['title' => 'المدفوعات', 'desc' => 'كل المدفوعات مع فلاتر متعددة تشمل الحالة والباقة وطريقة الدفع.', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
       ['title' => 'ضريبة القيمة المضافة', 'desc' => 'تتبع الضريبة المحتسبة على المعاملات المكتملة والقابلة للتصفية.', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
     ],

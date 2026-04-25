@@ -18,5 +18,14 @@ class Payout extends BaseModel
         'processed_at' => 'datetime',
         'version' => 'integer',
     ];
-}
 
+    public function trainer()
+    {
+        return $this->belongsTo(User::class, 'trainer_id')->withTrashed();
+    }
+
+    public function userRequest()
+    {
+        return $this->belongsTo(UserRequest::class);
+    }
+}

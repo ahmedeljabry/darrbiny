@@ -17,7 +17,7 @@
       <div class="d-flex gap-2">
         <a class="btn btn-sm btn-primary" href="{{ route('admin.users.edit',$user->id) }}">تعديل</a>
         @if(auth()->id() !== $user->id && !$user->hasRole('ADMIN'))
-          <form method="post" action="{{ route('admin.users.force-destroy', $user->id) }}" onsubmit="return confirm('سيتم حذف المستخدم نهائياً وكل بياناته المرتبطة وتحرير رقم الجوال. هل تريد المتابعة؟');">
+          <form method="post" action="{{ route('admin.users.force-destroy', $user->id) }}" onsubmit="return confirm('سيتم حذف المستخدم وتحرير رقم الجوال مع الحفاظ على الحجوزات والمدفوعات والسجلات المالية السابقة. هل تريد المتابعة؟');">
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-sm btn-danger">حذف نهائي</button>
@@ -84,16 +84,6 @@
             <div class="col-md-6">
           <div class="fw-medium text-body-secondary">سبب الحظر</div>
           <div class="text-heading">{{ $user->banned_reason ?: '-' }}</div>
-        </div>
-            <div class="col-12">
-          <div class="fw-medium text-body-secondary">وصف الطالبة</div>
-          <div class="text-heading">
-            @if(filled($userDescription ?? null))
-              {!! nl2br(e($userDescription)) !!}
-            @else
-              -
-            @endif
-          </div>
         </div>
             <div class="col-md-6">
           <div class="fw-medium text-body-secondary">النقاط</div>

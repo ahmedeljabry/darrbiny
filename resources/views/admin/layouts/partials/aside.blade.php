@@ -145,7 +145,7 @@
               <a href="{{ route('admin.wallets.index') }}" class="menu-link">المحافظ</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">طلبات المحفظة</a>
+              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">طلبات المحافظ</a>
             </li>
           @endif
         </ul>
@@ -207,7 +207,7 @@
               <a href="{{ route('admin.reports.index') }}" class="menu-link">كل التقارير</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.sales') ? 'active' : '' }}">
-              <a href="{{ route('admin.reports.sales') }}" class="menu-link">مبيعات</a>
+              <a href="{{ route('admin.reports.sales') }}" class="menu-link">الإيرادات</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.payments') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.payments') }}" class="menu-link">المدفوعات</a>

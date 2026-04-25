@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\ActiveCoursesExport;
+use App\Exports\ArrayRowsExport;
 use App\Exports\CompletedPayoutsExport;
 use App\Exports\PointsBalancesExport;
+use App\Exports\PrizeRedemptionsExport;
 use App\Exports\WalletBalancesExport;
 use App\Exports\WalletPaymentsExport;
 use App\Models\Payment;
@@ -46,7 +48,8 @@ class AdvancedReportsController extends BaseController
         Request $request,
         string $filename,
         bool $supportsExcel = false,
-        array $filters = []
+        array $filters = [],
+        array $stats = []
     ) {
         if ($export = $this->maybeExportCsv($request, $filename, $headers, $rows)) {
             return $export;
@@ -57,7 +60,8 @@ class AdvancedReportsController extends BaseController
             'headers',
             'rows',
             'supportsExcel',
-            'filters'
+            'filters',
+            'stats'
         ));
     }
 
@@ -131,7 +135,12 @@ class AdvancedReportsController extends BaseController
         $name = trim((string) $request->query('name', ''));
         $phone = trim((string) $request->query('phone', ''));
 
-        $paymentsQuery = Payment::with(['userRequest.trainer.country'])
+        $paymentsQuery = Payment::with([
+                'userRequest.country',
+                'userRequest.plan.country',
+                'userRequest.trainer.country',
+                'userRequest.trainer.trainerProfile.country',
+            ])
             ->where('type', Payment::TYPE_PLAN_FULL)
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->whereHas('userRequest', fn (Builder $query) => $query->where('status', UserRequest::STATUS_COMPLETED));
@@ -154,7 +163,11 @@ class AdvancedReportsController extends BaseController
             return [
                 $trainer?->name ?? '-',
                 $trainer?->phone_with_cc ?? '-',
-                $trainer?->country?->name ?? '-',
+                $trainer?->country?->name
+                    ?? $trainer?->trainerProfile?->country?->name
+                    ?? $p->userRequest?->country?->name
+                    ?? $p->userRequest?->plan?->country?->name
+                    ?? '-',
                 $trainer?->bank_name ?? '-',
                 $trainer?->bank_account ?? '-',
                 $trainer?->iban ?? '-',
@@ -163,6 +176,8 @@ class AdvancedReportsController extends BaseController
             ];
         })->all();
 
+        $totalPayoutsMinor = (int) $payments->sum('trainer_net_minor');
+
         return $this->view(
             'الكورسات المكتملة ومستحقات المدرب (يومي)',
             ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تاريخ الدفعة'],
@@ -170,7 +185,13 @@ class AdvancedReportsController extends BaseController
             $request,
             'completed-payouts',
             true,
-            $this->buildDailyFilters($request, $dateFrom, $dateTo)
+            $this->buildDailyFilters($request, $dateFrom, $dateTo),
+            [
+                ['label' => 'عدد النتائج', 'value' => number_format(count($rows)), 'icon' => 'list-details'],
+                ['label' => 'إجمالي مستحقات المدربين', 'value' => number_format($totalPayoutsMinor / 100, 2), 'icon' => 'wallet', 'tone' => 'success'],
+                ['label' => 'الفلاتر النشطة', 'value' => number_format(collect($this->buildDailyFilters($request, $dateFrom, $dateTo))->filter(fn ($value) => filled($value))->count()), 'icon' => 'adjustments-horizontal', 'tone' => 'warning'],
+                ['label' => 'التصدير المتاح', 'value' => 'Excel + CSV', 'icon' => 'download', 'tone' => 'secondary'],
+            ]
         );
     }
 
@@ -257,13 +278,22 @@ class AdvancedReportsController extends BaseController
             ];
         })->all();
 
+        $headers = ['الطلب', 'الطالبة', 'جوال الطالبة', 'المدرب', 'جوال المدرب', 'اليوم', 'سبب الرفض', 'التاريخ'];
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new ArrayRowsExport($headers, $rows),
+                'rejected-progress-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
         return $this->view(
             'الكورسات مع رفض في الإنجاز اليومي',
-            ['الطلب', 'الطالبة', 'جوال الطالبة', 'المدرب', 'جوال المدرب', 'اليوم', 'سبب الرفض', 'التاريخ'],
+            $headers,
             $rows,
             $request,
             'rejected-progress',
-            false,
+            true,
             $this->buildDailyFilters($request, $dateFrom, $dateTo)
         );
     }
@@ -344,7 +374,24 @@ class AdvancedReportsController extends BaseController
 
     public function rewardRedemptions(Request $request)
     {
-        $items = RewardRedemption::with(['user', 'reward'])->latest()->get();
+        $dateFrom = filled($request->query('date_from')) ? (string) $request->query('date_from') : null;
+        $dateTo = filled($request->query('date_to')) ? (string) $request->query('date_to') : null;
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+
+        $itemsQuery = RewardRedemption::with(['user', 'reward']);
+
+        $this->applyDateRange($itemsQuery, $dateFrom, $dateTo);
+        $this->applyNamePhoneFilters($itemsQuery, ['user'], $name, $phone);
+
+        $items = $itemsQuery->latest()->get();
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new PrizeRedemptionsExport($items),
+                'reward-redemptions-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
 
         $rows = $items->map(fn(RewardRedemption $r) => [
             $r->id,
@@ -361,7 +408,9 @@ class AdvancedReportsController extends BaseController
             ['المعرف', 'المستخدم/المدرب', 'الجوال', 'المكافأة', 'النقاط', 'الحالة', 'التاريخ'],
             $rows,
             $request,
-            'reward-redemptions'
+            'reward-redemptions',
+            true,
+            $this->buildDailyFilters($request, $dateFrom, $dateTo)
         );
     }
 

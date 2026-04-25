@@ -17,7 +17,7 @@ class AdminUsersShowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_show_page_displays_latest_student_description(): void
+    public function test_booking_show_page_displays_request_description(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -25,7 +25,7 @@ class AdminUsersShowTest extends TestCase
             'phone_with_cc' => '+10000006001',
         ]);
         $admin->assignRole('ADMIN');
-        $admin->givePermissionTo('manage_users');
+        $admin->givePermissionTo('manage_plans');
 
         $country = Country::create([
             'name' => 'Saudi Arabia',
@@ -50,7 +50,7 @@ class AdminUsersShowTest extends TestCase
         ]);
         $student->assignRole('USER');
 
-        UserRequest::create([
+        $booking = UserRequest::create([
             'user_id' => $student->id,
             'plan_id' => $plan->id,
             'start_date' => now()->toDateString(),
@@ -63,9 +63,9 @@ class AdminUsersShowTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.users.show', $student->id))
+            ->get(route('admin.bookings.show', $booking->id))
             ->assertOk()
-            ->assertSee('وصف الطالبة')
+            ->assertSee('وصف الطلب')
             ->assertSee('طالبة تحتاج تدريب مسائي فقط');
     }
 

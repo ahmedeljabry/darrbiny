@@ -349,7 +349,7 @@
                   </form>
                 @endif
                 @if(auth()->id() !== $u->id && !$u->hasRole('ADMIN'))
-                  <form method="post" action="{{ route('admin.users.force-destroy', $u->id) }}" class="d-inline" onsubmit="return confirm('سيتم حذف المستخدم نهائياً وكل بياناته المرتبطة وتحرير رقم الجوال. هل تريد المتابعة؟');">
+                  <form method="post" action="{{ route('admin.users.force-destroy', $u->id) }}" class="d-inline" onsubmit="return confirm('سيتم حذف المستخدم وتحرير رقم الجوال مع الحفاظ على الحجوزات والمدفوعات والسجلات المالية السابقة. هل تريد المتابعة؟');">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="حذف نهائي">
@@ -494,7 +494,7 @@ function bulkAction(action) {
       actionText = 'قبول المدربين';
       break;
     case 'delete':
-      confirmMessage = `هل أنت متأكد من حذف ${checked.length} مستخدم؟ هذا الإجراء لا يمكن التراجع عنه!`;
+      confirmMessage = `هل أنت متأكد من حذف ${checked.length} مستخدم؟ سيتم تحرير أرقام الجوال مع الحفاظ على السجلات المالية.`;
       actionText = 'حذف';
       break;
   }

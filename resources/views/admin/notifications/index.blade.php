@@ -103,9 +103,15 @@ document.addEventListener('DOMContentLoaded', function(){
   if (window.jQuery && $.fn.select2) {
     const dir = @json(app()->getLocale() === 'en' ? 'ltr' : 'rtl');
     const $userPicker = $('.js-user-picker');
+
+    if ($userPicker.data('select2')) {
+      $userPicker.select2('destroy');
+    }
+
     $userPicker.select2({
       dir: dir,
       width: '100%',
+      dropdownParent: $userPicker.closest('.js-user-select'),
       ajax: {
         url: $userPicker.data('search-url'),
         dataType: 'json',
@@ -118,10 +124,13 @@ document.addEventListener('DOMContentLoaded', function(){
         },
         processResults: function(data, params) {
           params.page = params.page || 1;
+          const payload = data.data || data;
+          const results = payload.results || [];
+          const pagination = payload.pagination || { more: false };
 
           return {
-            results: data.results || [],
-            pagination: data.pagination || { more: false }
+            results: results,
+            pagination: pagination
           };
         }
       },

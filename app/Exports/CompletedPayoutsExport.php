@@ -41,7 +41,11 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
         return [
             $trainer?->name ?? '-',
             $trainer?->phone_with_cc ?? '-',
-            $trainer?->country?->name ?? '-',
+            $trainer?->country?->name
+                ?? $trainer?->trainerProfile?->country?->name
+                ?? $payment->userRequest?->country?->name
+                ?? $payment->userRequest?->plan?->country?->name
+                ?? '-',
             $trainer?->bank_name ?? '-',
             $trainer?->bank_account ?? '-',
             $trainer?->iban ?? '-',
@@ -57,6 +61,5 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
         ];
     }
 }
-
 
 

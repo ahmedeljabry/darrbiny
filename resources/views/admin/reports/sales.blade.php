@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-@section('title', 'تقارير المبيعات')
+@section('title', 'تقارير الإيرادات')
 
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
@@ -19,8 +19,8 @@
 
 @section('content')
   @include('admin.reports.partials.page-header', [
-    'title' => 'تقارير المبيعات',
-    'subtitle' => 'لوحة مبيعات أنظف مع فلترة حسب الدولة، نوع الدفع، الوسيلة، والبحث النصي.',
+    'title' => 'تقارير الإيرادات',
+    'subtitle' => 'لوحة إيرادات أنظف مع فلترة حسب الدولة، نوع الدفع، الوسيلة، والبحث النصي.',
     'icon' => 'chart-line',
     'tone' => 'success',
     'tags' => [
@@ -32,7 +32,7 @@
       ['label' => 'تصدير Excel', 'url' => route('admin.reports.sales', array_merge(request()->query(), ['export' => 'excel'])), 'class' => 'btn btn-success', 'icon' => 'file-excel'],
     ],
     'stats' => [
-      ['label' => 'إجمالي المبيعات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
+      ['label' => 'إجمالي الإيرادات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
       ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'info'],
       ['label' => 'وسائل الدفع النشطة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
@@ -45,12 +45,12 @@
         'fields' => $filterFields,
         'values' => $filters,
         'resetUrl' => route('admin.reports.sales'),
-        'title' => 'فلترة المبيعات',
+        'title' => 'فلترة الإيرادات',
         'subtitle' => 'امزج بين التاريخ والدولة والوسيلة والبحث للوصول لأي دفعة بسرعة.',
       ])
 
       <div class="report-note-box mb-4">
-        <p>كل مبالغ التقرير معروضة بالـ {{ $reportCurrency }} بعد تطبيق معدل التحويل، كما يتم خصم مبالغ الإلغاءات المعتمدة من إجمالي المبيعات.</p>
+        <p>كل مبالغ التقرير معروضة بالـ {{ $reportCurrency }} بعد تطبيق معدل التحويل، كما يتم خصم مبالغ الإلغاءات المعتمدة من إجمالي الإيرادات.</p>
       </div>
 
       <div class="table-responsive">

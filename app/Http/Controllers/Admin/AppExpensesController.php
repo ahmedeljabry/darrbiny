@@ -41,7 +41,7 @@ class AppExpensesController extends BaseController
             ->selectRaw('type, COALESCE(SUM(amount_minor), 0) as total_minor')
             ->groupBy('type')
             ->pluck('total_minor', 'type');
-        $typeOptions = AppExpense::typeLabels();
+        $typeOptions = AppExpense::formTypeLabels();
 
         return view('admin.app-expenses.index', compact(
             'expenses',
@@ -95,7 +95,7 @@ class AppExpensesController extends BaseController
     private function validatedPayload(Request $request): array
     {
         return $request->validate([
-            'type' => ['required', 'string', 'in:' . implode(',', array_keys(AppExpense::typeLabels()))],
+            'type' => ['required', 'string', 'in:' . AppExpense::TYPE_OPERATING_EXPENSE],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -109,7 +109,7 @@ class AppExpensesController extends BaseController
 
         $value = trim($value);
 
-        return array_key_exists($value, AppExpense::typeLabels()) ? $value : null;
+        return $value === AppExpense::TYPE_OPERATING_EXPENSE ? $value : null;
     }
 
     private function grossProfitMinor(): int

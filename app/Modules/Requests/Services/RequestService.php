@@ -14,6 +14,7 @@ use App\Models\WalletTransaction;
 use App\Support\Fees;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
+use App\Notifications\CourseCompletedNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Services\ConversationService;
 
@@ -87,11 +88,13 @@ class RequestService
 
     public function complete(UserRequest $req, ?User $completedBy = null): void
     {
-        DB::transaction(function () use ($req, $completedBy): void {
+        $completedRequest = DB::transaction(function () use ($req, $completedBy): ?UserRequest {
             $req = UserRequest::query()
-                ->with(['payments', 'trainer'])
+                ->with(['payments', 'trainer', 'user', 'plan'])
                 ->lockForUpdate()
                 ->findOrFail($req->id);
+
+            $wasCompletedNow = $req->status !== UserRequest::STATUS_COMPLETED;
 
             if ($req->status !== UserRequest::STATUS_COMPLETED) {
                 $req->status = UserRequest::STATUS_COMPLETED;
@@ -99,12 +102,28 @@ class RequestService
             }
 
             $payment = $req->latestSuccessfulFullPayment();
-            if (!$payment || !$req->trainer_id) {
-                return;
+            if ($payment && $req->trainer_id) {
+                $this->syncTrainerPayout($req, $payment, $completedBy);
             }
 
-            $this->syncTrainerPayout($req, $payment, $completedBy);
+            return $wasCompletedNow ? $req : null;
         });
+
+        if ($completedRequest) {
+            $this->sendCourseCompletedNotifications($completedRequest);
+        }
+    }
+
+    private function sendCourseCompletedNotifications(UserRequest $req): void
+    {
+        $req->loadMissing(['user', 'trainer', 'plan']);
+
+        collect([$req->user, $req->trainer])
+            ->filter(static fn (mixed $user): bool => $user instanceof User)
+            ->unique(static fn (User $user): string => (string) $user->getKey())
+            ->each(static function (User $user) use ($req): void {
+                $user->notify(new CourseCompletedNotification($req));
+            });
     }
 
     private function findEligibleFreeRetrySource(string $userId, string $planId, ?string $trainerId): ?UserRequest

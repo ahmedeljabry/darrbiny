@@ -90,6 +90,14 @@
                         <p class="mb-1"><strong>لديه سيارة:</strong> {{ $booking->has_user_car ? 'نعم' : 'لا' }}</p>
                         <p class="mb-1"><strong>يريد سيارة المدرب:</strong> {{ $booking->wants_trainer_car ? 'نعم' : 'لا' }}</p>
                         <p class="mb-1"><strong>يحتاج استقبال:</strong> {{ $booking->needs_pickup ? 'نعم' : 'لا' }}</p>
+                        <p class="mb-1"><strong>وصف الطلب:</strong></p>
+                        <div class="border rounded p-3 bg-body-tertiary">
+                            @if(filled($booking->description))
+                                {!! nl2br(e($booking->description)) !!}
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">المعلومات المالية</h6>

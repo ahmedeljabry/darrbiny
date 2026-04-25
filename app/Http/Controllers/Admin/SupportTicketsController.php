@@ -19,6 +19,8 @@ class SupportTicketsController extends BaseController
     {
         $status = $request->query('status');
         $search = $request->query('q');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
         $q = SupportTicket::with('user')->withCount('messages')->latest();
         if ($status) $q->where('status', $status);
         if ($search) {
@@ -28,6 +30,12 @@ class SupportTicketsController extends BaseController
                   ->orWhere('email','like',"%$search%")
                   ->orWhere('phone_with_cc','like',"%$search%");
             });
+        }
+        if ($dateFrom) {
+            $q->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $q->whereDate('created_at', '<=', $dateTo);
         }
         
         if ($request->query('export') === 'excel') {
@@ -42,6 +50,8 @@ class SupportTicketsController extends BaseController
         return view('admin.support.index', [
             'tickets' => $tickets,
             'status' => $status,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
         ]);
     }
 

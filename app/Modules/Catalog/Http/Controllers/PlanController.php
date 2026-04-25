@@ -16,7 +16,7 @@ class PlanController extends BaseController
         if ($countryId = $request->query('country_id')) {
             $q->where('country_id', $countryId);
         }
-        return response()->json(['data' => $q->paginate(20)]);
+        return response()->json(['data' => $q->ordered()->paginate(20)]);
     }
 
     public function show(Plan $plan)
