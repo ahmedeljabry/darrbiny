@@ -5,22 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
-use App\Modules\Notifications\Services\NotificationTopicService;
+use App\Models\UserDeviceToken;
 use App\Notifications\AdminMessageNotification;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Kreait\Firebase\Contract\Messaging;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
+use Illuminate\Support\Facades\Notification;
 
 class NotificationsAdminController extends BaseController
 {
-    public function __construct(
-        private readonly Messaging $messaging,
-        private readonly NotificationTopicService $topics,
-    ) {}
-
     public function index()
     {
         $users = User::query()
@@ -74,32 +66,32 @@ class NotificationsAdminController extends BaseController
         $user = auth()->user();
         $type = $request->query('type');
         $read = $request->query('read');
-        
+
         $query = $user->notifications();
-        
+
         if ($type) {
             $query->where('type', 'like', "%{$type}%");
         }
-        
+
         if ($read === 'read') {
             $query->whereNotNull('read_at');
         } elseif ($read === 'unread') {
             $query->whereNull('read_at');
         }
-        
+
         $notifications = $query->latest()->paginate(20)->withQueryString();
-        
+
         return view('admin.notifications.view', compact('notifications', 'type', 'read'));
     }
 
     public function show(string $id)
     {
         $notification = auth()->user()->notifications()->findOrFail($id);
-        
-        if (!$notification->read_at) {
+
+        if (! $notification->read_at) {
             $notification->markAsRead();
         }
-        
+
         $redirectRoute = $this->resolveNotificationRedirect($notification->data ?? []);
         if ($redirectRoute !== null) {
             return redirect()->to($redirectRoute)->with('notification', $notification);
@@ -112,60 +104,40 @@ class NotificationsAdminController extends BaseController
     {
         $notification = auth()->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
-        
+
         return response()->json(['success' => true]);
     }
 
     public function markAllRead()
     {
         auth()->user()->unreadNotifications->markAsRead();
-        
+
         return back()->with('status', 'تم تحديد جميع الإشعارات كمقروءة');
     }
 
     public function send(Request $request)
     {
         $data = $request->validate([
-            'audience' => ['required','in:user,trainers,trainees'],
-            'user_id' => ['required_if:audience,user','nullable','uuid'],
-            'title' => ['required','string','max:120'],
-            'message' => ['required','string','max:1000'],
+            'audience' => ['required', 'in:user,trainers,trainees'],
+            'user_id' => ['required_if:audience,user', 'nullable', 'uuid'],
+            'title' => ['required', 'string', 'max:120'],
+            'message' => ['required', 'string', 'max:1000'],
         ]);
+
+        $notification = new AdminMessageNotification($data['title'], $data['message']);
 
         if ($data['audience'] === 'user') {
             $user = User::findOrFail($data['user_id']);
             $recipientCount = 1;
-            $deviceTokenCount = null;
-            $user->notify(new AdminMessageNotification(
-                $data['title'],
-                $data['message'],
-                databaseOnly: true,
-            ));
-
-            $this->messaging->send($this->buildTopicMessage(
-                $data['title'],
-                $data['message'],
-                $this->topics->userTopic($user),
-            ));
+            $deviceTokenCount = $user->deviceTokens()->count();
+            $user->notify($notification);
         } else {
             $query = $this->resolveAudienceQuery($data['audience']);
             $recipientCount = (clone $query)->count();
-            $deviceTokenCount = null;
+            $deviceTokenCount = $this->countDeviceTokensForAudience($query);
 
-            $query->select('id')->chunk(200, function ($chunk) use ($data): void {
-                Notification::send($chunk, new AdminMessageNotification(
-                    $data['title'],
-                    $data['message'],
-                    databaseOnly: true,
-                ));
-
-                $chunk->each(function (User $user) use ($data): void {
-                    $this->messaging->send($this->buildTopicMessage(
-                        $data['title'],
-                        $data['message'],
-                        $this->topics->userTopic($user),
-                    ));
-                });
+            $query->with('deviceTokens:id,user_id,token')->chunkById(200, function ($chunk) use ($notification): void {
+                Notification::send($chunk, $notification);
             });
         }
 
@@ -174,12 +146,8 @@ class NotificationsAdminController extends BaseController
         return $response;
     }
 
-    private function buildStatusMessage(int $recipientCount, ?int $deviceTokenCount = null): string
+    private function buildStatusMessage(int $recipientCount, int $deviceTokenCount): string
     {
-        if ($deviceTokenCount === null) {
-            return "تم إرسال الإشعار إلى {$recipientCount} مستخدمين عبر Topic";
-        }
-
         return "تم إرسال الإشعار إلى {$recipientCount} مستخدمين. الأجهزة المستهدفة: {$deviceTokenCount}";
     }
 
@@ -190,19 +158,11 @@ class NotificationsAdminController extends BaseController
             : User::role('USER');
     }
 
-    private function buildTopicMessage(string $title, string $message, string $topic): CloudMessage
+    private function countDeviceTokensForAudience($query): int
     {
-        return CloudMessage::new()
-            ->toTopic($topic)
-            ->withNotification(FirebaseNotification::create($title, $message))
-            ->withData([
-                'title' => $title,
-                'message' => $message,
-                'notification_type' => 'admin_message',
-                'topic' => $topic,
-            ])
-            ->withHighestPossiblePriority()
-            ->withDefaultSounds();
+        return UserDeviceToken::query()
+            ->whereIn('user_id', (clone $query)->select('users.id'))
+            ->count();
     }
 
     private function resolveNotificationRedirect(array $data): ?string

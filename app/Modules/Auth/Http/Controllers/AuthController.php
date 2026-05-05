@@ -15,6 +15,7 @@ use App\Modules\Auth\Http\Requests\UpdateBankAccountRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
+use App\Modules\Notifications\Services\DeviceTokenService;
 use App\Modules\Referrals\Services\ReferralService;
 use App\Notifications\UserAccountDeletedNotification;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class AuthController extends BaseController
     public function __construct(
         private readonly AuthService $auth,
         private readonly ReferralService $referrals,
+        private readonly DeviceTokenService $deviceTokens,
     ) {}
 
     public function register(RegisterRequest $request)
@@ -101,6 +103,8 @@ class AuthController extends BaseController
                 ],
             ], 403);
         }
+
+        $this->deviceTokens->store($user, $request->input('fcm_token'));
 
         $tokens = $this->auth->issueTokens($user);
 
@@ -237,6 +241,8 @@ class AuthController extends BaseController
         // Handle profile picture upload
         $profileFile = $request->file('profile_picture') ?: $request->file('image');
         if ($profileFile) {
+            abort_unless((bool) ($user->can_change_picture ?? true), 422, 'لا يمكنك تغيير صورة الملف الشخصي مرة أخرى');
+
             // Delete old profile picture if exists
             if ($user->profile_picture_id) {
                 $oldUpload = Upload::find($user->profile_picture_id);
@@ -258,6 +264,7 @@ class AuthController extends BaseController
             ]);
 
             $user->profile_picture_id = $upload->id;
+            $user->can_change_picture = false;
         }
 
         $user->save();

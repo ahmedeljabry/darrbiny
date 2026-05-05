@@ -41,6 +41,7 @@ class User extends Authenticatable
         'whatsapp_enabled',
         'country_id',
         'profile_picture_id',
+        'can_change_picture',
         'currency',
         'referral_code',
         'referred_by',
@@ -77,6 +78,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'user_type' => UserType::class,
             'whatsapp_enabled' => 'bool',
+            'can_change_picture' => 'bool',
             'version' => 'integer',
             'banned_until' => 'datetime',
         ];
@@ -213,8 +215,11 @@ class User extends Authenticatable
 
     public function routeNotificationForFcm(?Notification $notification = null): array
     {
-        return $this->deviceTokens()
-            ->pluck('token')
+        $tokens = $this->relationLoaded('deviceTokens')
+            ? $this->deviceTokens->pluck('token')
+            : $this->deviceTokens()->pluck('token');
+
+        return $tokens
             ->filter(static fn (mixed $token): bool => is_string($token) && $token !== '')
             ->values()
             ->all();

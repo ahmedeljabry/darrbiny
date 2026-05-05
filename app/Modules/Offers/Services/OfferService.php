@@ -8,6 +8,8 @@ use App\Models\TrainerOffer;
 use App\Models\TrainerProfile;
 use App\Models\UserRequest;
 use App\Modules\Requests\Services\RequestService;
+use App\Notifications\TrainerOfferAcceptedNotification;
+use App\Notifications\TrainerOfferSentNotification;
 use Illuminate\Support\Facades\DB;
 
 class OfferService
@@ -32,7 +34,7 @@ class OfferService
             abort(422, 'Trainer not eligible for this location');
         }
 
-        return DB::transaction(function () use ($trainerId, $data) {
+        $offer = DB::transaction(function () use ($trainerId, $data) {
             $offer = TrainerOffer::create([
                 'user_request_id' => $data['user_request_id'],
                 'trainer_id' => $trainerId,
@@ -40,14 +42,31 @@ class OfferService
                 'message' => $data['message'] ?? null,
                 'status' => TrainerOffer::STATUS_SENT,
             ]);
+
             return $offer;
         });
+
+        $notificationOffer = $offer->fresh(['trainer', 'userRequest']);
+        if ($notificationOffer) {
+            $req->user?->notify(new TrainerOfferSentNotification($notificationOffer));
+        }
+
+        return $offer;
     }
 
     public function accept(UserRequest $req, TrainerOffer $offer): void
     {
         abort_unless($req->id === $offer->user_request_id, 422, 'Offer does not belong to request');
+        $wasAccepted = $offer->status === TrainerOffer::STATUS_ACCEPTED;
+
         $this->requests->selectOffer($req, $offer);
+
+        if (! $wasAccepted) {
+            $acceptedOffer = $offer->fresh(['trainer', 'userRequest.user']);
+            if ($acceptedOffer) {
+                $acceptedOffer->trainer?->notify(new TrainerOfferAcceptedNotification($acceptedOffer));
+            }
+        }
     }
 
     public function update(TrainerOffer $offer, array $data): TrainerOffer
@@ -62,6 +81,7 @@ class OfferService
         }
 
         $offer->save();
+
         return $offer->fresh();
     }
 }

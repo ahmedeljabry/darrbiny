@@ -35,12 +35,4 @@ return [
         ],
     ],
 
-    'firebase' => [
-        'topics' => [
-            'trainers' => env('FCM_TOPIC_TRAINERS', 'trainers'),
-            'trainees' => env('FCM_TOPIC_TRAINEES', 'trainees'),
-            'user_prefix' => env('FCM_TOPIC_USER_PREFIX', 'user_'),
-        ],
-    ],
-
 ];

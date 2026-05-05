@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'currency' => $this->currency,
             'country_id' => $this->country_id,
             'profile_picture_url' => $this->profile_picture_url,
+            'canChangePic' => (bool) ($this->can_change_picture ?? true),
             'points_balance' => $this->points_balance,
             'referral_code' => $this->referral_code,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')),

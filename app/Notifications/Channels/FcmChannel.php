@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Notifications\Channels;
 
-use App\Models\User;
-use App\Modules\Notifications\Services\NotificationTopicService;
+use App\Models\UserDeviceToken;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -17,55 +17,56 @@ class FcmChannel
 {
     public function send(object $notifiable, Notification $notification): void
     {
-        $topic = $this->resolveTopic($notifiable);
+        $tokens = $notifiable->routeNotificationFor('fcm', $notification);
 
-        if ($topic === null) {
+        if ($tokens instanceof Collection) {
+            $tokens = $tokens->all();
+        }
+
+        $tokens = collect($tokens ?? [])
+            ->filter(static fn (mixed $token): bool => is_string($token) && $token !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($tokens === []) {
             return;
         }
 
         try {
-            app(Messaging::class)->send(
-                $this->withTopic(
-                    $this->resolveMessage($notifiable, $notification),
-                    $topic
-                )
+            $report = app(Messaging::class)->sendMulticast(
+                $this->resolveMessage($notifiable, $notification),
+                $tokens
             );
+
+            $staleTokens = array_values(array_unique(array_merge(
+                $report->unknownTokens(),
+                $report->invalidTokens(),
+            )));
+
+            if ($staleTokens !== []) {
+                UserDeviceToken::query()
+                    ->whereIn('token', $staleTokens)
+                    ->delete();
+            }
+
+            if ($report->hasFailures()) {
+                Log::warning('FCM notification delivery completed with failures.', [
+                    'notification' => $notification::class,
+                    'notifiable_type' => $notifiable::class,
+                    'notifiable_id' => $notifiable->id ?? null,
+                    'attempted_tokens' => count($tokens),
+                    'stale_tokens' => $staleTokens,
+                ]);
+            }
         } catch (Throwable $exception) {
             Log::warning('FCM notification delivery failed.', [
                 'notification' => $notification::class,
                 'notifiable_type' => $notifiable::class,
                 'notifiable_id' => $notifiable->id ?? null,
-                'topic' => $topic,
                 'message' => $exception->getMessage(),
             ]);
         }
-    }
-
-    private function resolveTopic(object $notifiable): ?string
-    {
-        if (method_exists($notifiable, 'routeNotificationForFcmTopic')) {
-            $topic = $notifiable->routeNotificationForFcmTopic();
-
-            return is_string($topic) && $topic !== '' ? $topic : null;
-        }
-
-        if ($notifiable instanceof User) {
-            return app(NotificationTopicService::class)->userTopic($notifiable);
-        }
-
-        return null;
-    }
-
-    private function withTopic(CloudMessage|array $message, string $topic): CloudMessage|array
-    {
-        if ($message instanceof CloudMessage) {
-            return $message->toTopic($topic);
-        }
-
-        unset($message['token'], $message['tokens'], $message['condition']);
-        $message['topic'] = $topic;
-
-        return $message;
     }
 
     private function resolveMessage(object $notifiable, Notification $notification): CloudMessage|array

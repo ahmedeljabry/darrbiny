@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Http\Controllers;
 
-use App\Models\UserDeviceToken;
 use App\Modules\Notifications\Http\Requests\DeleteDeviceTokenRequest;
 use App\Modules\Notifications\Http\Requests\StoreDeviceTokenRequest;
-use App\Modules\Notifications\Services\NotificationTopicService;
+use App\Modules\Notifications\Services\DeviceTokenService;
 use Illuminate\Routing\Controller as BaseController;
 
 class NotificationDeviceController extends BaseController
 {
     public function __construct(
-        private readonly NotificationTopicService $topics,
+        private readonly DeviceTokenService $deviceTokens,
     ) {}
 
     public function store(StoreDeviceTokenRequest $request)
@@ -21,17 +20,12 @@ class NotificationDeviceController extends BaseController
         $user = $request->user();
         $validated = $request->validated();
 
-        $deviceToken = UserDeviceToken::query()->updateOrCreate(
-            ['token' => $validated['token']],
-            [
-                'user_id' => $user->id,
-                'platform' => $validated['platform'] ?? null,
-                'device_name' => $validated['device_name'] ?? null,
-                'last_used_at' => now(),
-            ]
+        $deviceToken = $this->deviceTokens->store(
+            $user,
+            $validated['token'],
+            $validated['platform'] ?? null,
+            $validated['device_name'] ?? null,
         );
-
-        $this->topics->subscribeUserToken($user, $deviceToken->token);
 
         return response()->json([
             'message' => 'تم حفظ جهاز الإشعارات بنجاح',
@@ -47,27 +41,14 @@ class NotificationDeviceController extends BaseController
 
     public function destroy(DeleteDeviceTokenRequest $request)
     {
-        $user = $request->user();
         $validated = $request->validated();
 
-        $token = UserDeviceToken::query()
-            ->where('user_id', $user->id)
-            ->where('token', $validated['token'])
-            ->first();
-
-        if ($token) {
-            $this->topics->unsubscribeUserToken($user, $token->token);
-        }
-
-        $deleted = UserDeviceToken::query()
-            ->where('user_id', $user->id)
-            ->where('token', $validated['token'])
-            ->delete();
+        $deleted = $this->deviceTokens->delete($request->user(), $validated['token']);
 
         return response()->json([
             'message' => 'تم حذف جهاز الإشعارات بنجاح',
             'data' => [
-                'deleted' => $deleted > 0,
+                'deleted' => $deleted,
             ],
         ]);
     }

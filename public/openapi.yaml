@@ -11,6 +11,24 @@ paths:
       responses:
         '200':
           description: OK
+  /auth/login:
+    post:
+      summary: Login and optionally register an FCM device token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_with_cc: { type: string }
+                password: { type: string }
+                fcm_token: { type: string, nullable: true, maxLength: 512 }
+              required:
+                - phone_with_cc
+                - password
+      responses:
+        '200': { description: OK }
   /plans:
     get:
       summary: List active plans

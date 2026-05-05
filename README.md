@@ -39,15 +39,13 @@ Production-grade, secure, multi-tenant-ready API implementing auth, plans, reque
    - `FIREBASE_CREDENTIALS=storage/app/firebase/service-account.json`
    - `FIREBASE_STORAGE_DEFAULT_BUCKET=<your-project-id>.firebasestorage.app` (optional unless you use Firebase Storage)
    - `FIREBASE_DATABASE_URL=https://<your-project-id>-default-rtdb.firebaseio.com` (optional unless you use Realtime Database)
-   - `FCM_TOPIC_TRAINERS=trainers`
-   - `FCM_TOPIC_TRAINEES=trainees`
-   - `FCM_TOPIC_USER_PREFIX=user_`
 5) Run `php artisan migrate`.
-6) From the mobile app, call `POST /api/v1/notifications/devices` after login and whenever the FCM token changes.
-7) On logout, call `DELETE /api/v1/notifications/devices` to remove the device token.
+6) From the mobile app, send `fcm_token` in `POST /api/v1/auth/login` when available. It is nullable for platforms that do not always have a token ready.
+7) Call `POST /api/v1/notifications/devices` whenever the FCM token changes after login.
+8) On logout, call `DELETE /api/v1/notifications/devices` to remove the device token.
 
 The backend now stores FCM registration tokens in `user_device_tokens` and sends existing Laravel notifications to both the database and Firebase Cloud Messaging.
-Admin notifications use Firebase topics for grouped audiences and per-user topics. When a device token is saved through `/api/v1/notifications/devices`, the backend subscribes it automatically to the configured topics for that user.
+Admin notifications send through stored device tokens for grouped audiences and individual users.
 
 ## Example Requests (curl)
 
@@ -55,7 +53,7 @@ Auth
 - Register:
   - `curl -X POST http://localhost/api/v1/auth/register -H 'Content-Type: application/json' -d '{"name":"John Doe","phone_with_cc":"+201111111111","password":"password123","password_confirmation":"password123","type":"user"}'`
 - Login:
-  - `curl -X POST http://localhost/api/v1/auth/login -H 'Content-Type: application/json' -d '{"phone_with_cc":"+201111111111","password":"password123"}'`
+  - `curl -X POST http://localhost/api/v1/auth/login -H 'Content-Type: application/json' -d '{"phone_with_cc":"+201111111111","password":"password123","fcm_token":"<FCM_TOKEN>"}'`
 
 Catalog
 - `curl http://localhost/api/v1/countries`

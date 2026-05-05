@@ -6,34 +6,21 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\UserDeviceToken;
+use App\Notifications\AdminMessageNotification;
+use App\Notifications\Channels\FcmChannel;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Kreait\Firebase\Contract\Messaging;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Mockery;
 use Tests\TestCase;
 
 class AdminNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_send_notification_to_trainers_uses_each_trainers_user_topic(): void
+    public function test_admin_send_notification_to_trainers_uses_token_channel_even_without_registered_devices(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         Notification::fake();
-        $messaging = Mockery::mock(Messaging::class);
-        $messaging->shouldReceive('send')
-            ->once()
-            ->withArgs(function (CloudMessage $message) use (&$trainer): bool {
-                $payload = $message->jsonSerialize();
-
-                return ($payload['topic'] ?? null) === 'user_'.$trainer->id
-                    && ($payload['notification']['title'] ?? null) === 'تنبيه'
-                    && ($payload['notification']['body'] ?? null) === 'رسالة اختبار';
-            })
-            ->andReturn(['name' => 'projects/test/messages/1']);
-        $this->app->instance(Messaging::class, $messaging);
 
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000008001',
@@ -53,26 +40,23 @@ class AdminNotificationsTest extends TestCase
                 'message' => 'رسالة اختبار',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين عبر Topic')
+            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين. الأجهزة المستهدفة: 0')
             ->assertSessionMissing('warning');
+
+        Notification::assertSentTo(
+            $trainer,
+            AdminMessageNotification::class,
+            fn (AdminMessageNotification $notification, array $channels): bool => $notification->title === 'تنبيه'
+                && $notification->message === 'رسالة اختبار'
+                && in_array('database', $channels, true)
+                && in_array(FcmChannel::class, $channels, true)
+        );
     }
 
     public function test_admin_send_notification_reports_registered_devices_for_single_user(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         Notification::fake();
-        $messaging = Mockery::mock(Messaging::class);
-        $messaging->shouldReceive('send')
-            ->once()
-            ->withArgs(function (CloudMessage $message) use (&$user): bool {
-                $payload = $message->jsonSerialize();
-
-                return ($payload['topic'] ?? null) === 'user_'.$user->id
-                    && ($payload['notification']['title'] ?? null) === 'تنبيه'
-                    && ($payload['notification']['body'] ?? null) === 'رسالة اختبار';
-            })
-            ->andReturn(['name' => 'projects/test/messages/2']);
-        $this->app->instance(Messaging::class, $messaging);
 
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000008003',
@@ -100,7 +84,16 @@ class AdminNotificationsTest extends TestCase
                 'message' => 'رسالة اختبار',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين عبر Topic');
+            ->assertSessionHas('status', 'تم إرسال الإشعار إلى 1 مستخدمين. الأجهزة المستهدفة: 1');
+
+        Notification::assertSentTo(
+            $user,
+            AdminMessageNotification::class,
+            fn (AdminMessageNotification $notification, array $channels): bool => $notification->title === 'تنبيه'
+                && $notification->message === 'رسالة اختبار'
+                && in_array('database', $channels, true)
+                && in_array(FcmChannel::class, $channels, true)
+        );
     }
 
     public function test_admin_can_search_notification_users(): void

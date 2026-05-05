@@ -8,14 +8,17 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
             'phone_with_cc' => ['required', 'string', 'min:6', 'max:20'],
             'password' => ['required', 'string', 'min:6'],
+            'fcm_token' => ['nullable', 'string', 'max:512'],
         ];
     }
 }
-

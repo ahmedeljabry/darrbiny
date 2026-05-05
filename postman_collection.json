@@ -289,7 +289,7 @@
             "description": "Action: App\\Modules\\Auth\\Http\\Controllers\\AuthController@login\nAuth required: no",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \n}",
+              "raw": "{\n  \"phone_with_cc\": \"\",\n  \"password\": \"\",\n  \"fcm_token\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

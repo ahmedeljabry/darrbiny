@@ -10,11 +10,14 @@ use App\Modules\Offers\Http\Requests\StoreOfferRequest;
 use App\Modules\Offers\Http\Requests\UpdateOfferRequest;
 use App\Modules\Offers\Http\Resources\UserRequestOfferResource;
 use App\Modules\Offers\Services\OfferService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
 class OfferController extends BaseController
 {
+    use AuthorizesRequests;
+
     public function __construct(private readonly OfferService $service) {}
 
     public function listForUserRequests(Request $request)
@@ -88,6 +91,8 @@ class OfferController extends BaseController
         if (!$req) {
             abort(404, 'Course not found');
         }
+        $this->authorize('acceptOffer', $req);
+
         $this->service->accept($req, $offer);
         return response()->json(['data' => $req->fresh()]);
     }
