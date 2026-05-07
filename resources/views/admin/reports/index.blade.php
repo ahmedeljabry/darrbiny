@@ -9,10 +9,12 @@
       ['title' => 'الإيرادات', 'desc' => 'المدفوعات الناجحة وإجمالي الإيرادات مع فلترة بالنوع والوسيلة والدولة.', 'route' => 'admin.reports.sales', 'icon' => 'chart-line', 'color' => 'success'],
       ['title' => 'المدفوعات', 'desc' => 'كل المدفوعات مع فلاتر متعددة تشمل الحالة والباقة وطريقة الدفع.', 'route' => 'admin.reports.payments', 'icon' => 'credit-card', 'color' => 'primary'],
       ['title' => 'ضريبة القيمة المضافة', 'desc' => 'تتبع الضريبة المحتسبة على المعاملات المكتملة والقابلة للتصفية.', 'route' => 'admin.reports.vat', 'icon' => 'receipt-tax', 'color' => 'danger'],
+      ['title' => 'أرباح التطبيق', 'desc' => 'رسوم الحجز ورسوم الباقات حسب الطلب والعميل والدولة والحالة.', 'route' => 'admin.reports.app-profits', 'icon' => 'coins', 'color' => 'success'],
     ],
     'تقارير تشغيلية' => [
       ['title' => 'الاشتراكات', 'desc' => 'حالات الطلبات والاشتراكات مع فلترة بالباقة والدولة والتاريخ.', 'route' => 'admin.reports.subscriptions', 'icon' => 'calendar-event', 'color' => 'info'],
       ['title' => 'مستحقات المدربين', 'desc' => 'صافي مستحقات الكورسات المكتملة مع فلترة بالاسم والجوال والتاريخ.', 'route' => 'admin.reports.completed-payouts', 'icon' => 'wallet', 'color' => 'success'],
+      ['title' => 'طلبات الإلغاء', 'desc' => 'طلبات الإلغاء مع إجمالي المبالغ وعدد العمليات وفلاتر البحث.', 'route' => 'admin.cancellation-requests.index', 'icon' => 'x-circle', 'color' => 'danger'],
       ['title' => 'رفض الإنجاز اليومي', 'desc' => 'الإنجازات اليومية المرفوضة مع فلترة بالاسم والجوال والنطاق الزمني.', 'route' => 'admin.reports.rejected-progress', 'icon' => 'alert-circle', 'color' => 'danger'],
     ],
     'تقارير المحافظ' => [

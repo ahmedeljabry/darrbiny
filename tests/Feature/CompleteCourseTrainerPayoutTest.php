@@ -84,7 +84,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'amount' => 8100,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
             'processed_by' => $student->id,
         ]);
 
@@ -116,7 +116,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
         $this->assertSame(101, (int) $trainer->fresh()->points_balance);
         $this->assertSame(1, WalletTransaction::query()
             ->where('user_id', $trainer->id)
-            ->where('notes', 'إضافة مستحقات كورس رقم ' . $booking->id)
+            ->where('notes', 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number)
             ->count());
         $this->assertSame(1, Payout::query()
             ->where('user_request_id', $booking->id)
@@ -191,7 +191,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'amount' => 9000,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
             'processed_by' => $student->id,
         ]);
 
@@ -266,7 +266,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'amount' => 9400,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
             'processed_by' => $admin->id,
         ]);
 
@@ -342,7 +342,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'amount' => 9000,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
             'processed_by' => $student->id,
         ]);
     }
@@ -410,7 +410,7 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'amount' => 90,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
             'processed_by' => $student->id,
         ]);
     }

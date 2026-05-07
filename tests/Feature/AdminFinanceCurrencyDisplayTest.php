@@ -51,7 +51,7 @@ class AdminFinanceCurrencyDisplayTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.bookings.show', $request->id))
             ->assertOk()
-            ->assertSee('العملة:</strong> SAR', false)
+            ->assertSee('العملة المعروضة:</strong> SAR', false)
             ->assertSee('8.00 SAR')
             ->assertDontSee('100.00 EGP');
     }
@@ -165,7 +165,7 @@ class AdminFinanceCurrencyDisplayTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.bookings.show', $request->id))
             ->assertOk()
-            ->assertSee('العملة:</strong> SAR', false)
+            ->assertSee('العملة المعروضة:</strong> SAR', false)
             ->assertSee($convertedAmount)
             ->assertDontSee('189.03 JOD');
 

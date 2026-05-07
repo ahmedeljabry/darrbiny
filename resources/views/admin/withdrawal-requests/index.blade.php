@@ -34,6 +34,35 @@
                 </a>
             </div>
             <div class="card-body pt-0">
+                <div class="row g-3 mb-4">
+                    @foreach([
+                        ['label' => 'إجمالي قيمة الطلبات', 'value' => $totalAmountMinor ?? 0, 'tone' => 'primary', 'icon' => 'coins'],
+                        ['label' => 'قيمة طلبات منفذة', 'value' => $approvedAmountMinor ?? 0, 'tone' => 'success', 'icon' => 'circle-check'],
+                        ['label' => 'قيمة طلبات غير منفذة', 'value' => $unapprovedAmountMinor ?? 0, 'tone' => 'warning', 'icon' => 'clock-hour-4'],
+                        ['label' => 'عدد الحركات', 'count' => $movementsCount ?? 0, 'tone' => 'secondary', 'icon' => 'list-details'],
+                    ] as $stat)
+                        <div class="col-xl-3 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div>
+                                        <small class="text-muted d-block">{{ $stat['label'] }}</small>
+                                        <strong class="fs-5">
+                                            @if(array_key_exists('count', $stat))
+                                                {{ number_format($stat['count']) }}
+                                            @else
+                                                {{ number_format(($stat['value'] ?? 0) / 100, 2) }}
+                                            @endif
+                                        </strong>
+                                    </div>
+                                    <span class="avatar-initial rounded bg-label-{{ $stat['tone'] }}">
+                                        <i class="icon-base ti tabler-{{ $stat['icon'] }}"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
                 <form method="get" class="row g-3 mb-4">
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">بحث</label>

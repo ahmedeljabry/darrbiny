@@ -22,6 +22,12 @@ class NotifyEligibleTrainers implements ShouldQueue
 
     public function handle(): void
     {
+        $this->request->refresh();
+
+        if ($this->request->status !== UserRequest::STATUS_AWAITING_OFFERS) {
+            return;
+        }
+
         $this->request->loadMissing(['plan', 'user']);
 
         $query = TrainerProfile::query()

@@ -11,7 +11,11 @@ final class HomeController
     public function __invoke(Request $request): JsonResponse
     {
         return response()->json(
-            $this->homeService->getHomeData($request->input('country_id'), (string) $request->input('q', ''))
+            $this->homeService->getHomeData(
+                $request->input('country_id'),
+                (string) $request->input('q', ''),
+                (string) $request->input('trainer_month', '')
+            )
         );
     }
 }

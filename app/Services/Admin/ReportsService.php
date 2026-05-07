@@ -154,7 +154,9 @@ final class ReportsService
     public function appFees(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
         $query = $this->appFeesQuery($from, $to, $filters);
-        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'app_fee_minor');
+        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'app_fee_minor');
+        $refundsMinor = $this->allocatedCancellationRefundsMinor($from, $to, $filters, 'app_fee');
+        $totalMinor = $grossTotalMinor - $refundsMinor;
         $count = (int) (clone $query)->count();
 
         return [
@@ -348,6 +350,9 @@ final class ReportsService
             ->when($filters['plan_id'] ?? null, function (Builder $builder, string $planId): void {
                 $builder->whereHas('userRequest', fn (Builder $requestQuery) => $requestQuery->where('plan_id', $planId));
             })
+            ->when($filters['request_status'] ?? null, function (Builder $builder, string $requestStatus): void {
+                $builder->whereHas('userRequest', fn (Builder $requestQuery) => $requestQuery->where('status', $requestStatus));
+            })
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $like = '%' . $search . '%';
                 $orderNumber = UserRequest::normalizeOrderNumberSearch($search);
@@ -424,6 +429,9 @@ final class ReportsService
                 'plan_partial' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_PARTIAL)
                     ->sum('amount_minor'),
+                'booking_fees' => (int) $relevantPayments
+                    ->filter(fn (Payment $payment) => in_array($payment->type, Payment::partialTypes(), true))
+                    ->sum('amount_minor'),
                 'app_fee' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
                     ->sum('app_fee_minor'),
@@ -483,6 +491,10 @@ final class ReportsService
             return false;
         }
 
+        if (($filters['request_status'] ?? null) !== null && $request->status !== (string) $filters['request_status']) {
+            return false;
+        }
+
         if (($filters['search'] ?? null) !== null) {
             $needle = mb_strtolower((string) $filters['search']);
             $paymentHaystacks = $request->payments
@@ -537,6 +549,10 @@ final class ReportsService
         }
 
         if (($filters['plan_id'] ?? null) !== null && (string) $request->plan_id !== (string) $filters['plan_id']) {
+            return false;
+        }
+
+        if (($filters['request_status'] ?? null) !== null && $request->status !== (string) $filters['request_status']) {
             return false;
         }
 

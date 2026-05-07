@@ -35,6 +35,7 @@ class AdminReportsPagesTest extends TestCase
             'admin.reports.payments',
             'admin.reports.subscriptions',
             'admin.reports.vat',
+            'admin.reports.app-profits',
             'admin.reports.completed-payouts',
             'admin.reports.rejected-progress',
             'admin.reports.wallet-balances',
@@ -62,7 +63,7 @@ class AdminReportsPagesTest extends TestCase
 
         $this->get(route('admin.rewards.redemptions-report'))
             ->assertOk()
-            ->assertDontSee('تصدير Excel');
+            ->assertSee('تصدير Excel');
     }
 
     public function test_daily_reports_expose_name_phone_and_date_range_filters(): void

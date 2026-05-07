@@ -31,6 +31,7 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
             'رقم الحساب',
             'IBAN',
             'صافي المدرب',
+            'الحالة',
             'تاريخ الدفعة',
         ];
     }
@@ -38,6 +39,15 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
     public function map($payment): array
     {
         $trainer = $payment->userRequest?->trainer;
+        $payoutStatus = $payment->userRequest?->payout?->status;
+        $payoutStatusLabel = match ($payoutStatus) {
+            \App\Models\Payout::STATUS_SENT => 'منفذة',
+            \App\Models\Payout::STATUS_APPROVED => 'معتمدة',
+            \App\Models\Payout::STATUS_FAILED => 'فشلت',
+            \App\Models\Payout::STATUS_PENDING_REVIEW => 'غير منفذة',
+            default => 'غير منفذة',
+        };
+
         return [
             $trainer?->name ?? '-',
             $trainer?->phone_with_cc ?? '-',
@@ -50,6 +60,7 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
             $trainer?->bank_account ?? '-',
             $trainer?->iban ?? '-',
             number_format($payment->trainer_net_minor / 100, 2),
+            $payoutStatusLabel,
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
     }
@@ -61,5 +72,4 @@ class CompletedPayoutsExport implements FromCollection, WithHeadings, WithMappin
         ];
     }
 }
-
 

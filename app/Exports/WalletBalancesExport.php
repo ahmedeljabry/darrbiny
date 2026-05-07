@@ -27,6 +27,7 @@ class WalletBalancesExport implements FromCollection, WithHeadings, WithMapping,
             'المعرف',
             'الاسم',
             'الجوال',
+            'الدولة',
             'الرصيد',
         ];
     }
@@ -37,6 +38,7 @@ class WalletBalancesExport implements FromCollection, WithHeadings, WithMapping,
             $user->id,
             $user->name ?? '-',
             $user->phone_with_cc ?? '-',
+            $user->country?->name ?? $user->bankCountry?->name ?? '-',
             $user->points_balance,
         ];
     }

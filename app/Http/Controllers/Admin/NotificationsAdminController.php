@@ -40,10 +40,13 @@ class NotificationsAdminController extends BaseController
             ->orderByDesc('created_at');
 
         if ($search !== '') {
-            $query->where(function ($userQuery) use ($search): void {
+            $digits = preg_replace('/\D+/', '', $search) ?: $search;
+
+            $query->where(function ($userQuery) use ($search, $digits): void {
                 $userQuery->where('id', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%")
                     ->orWhere('phone_with_cc', 'like', "%{$search}%")
+                    ->orWhereRaw("REPLACE(REPLACE(REPLACE(phone_with_cc, '+', ''), ' ', ''), '-', '') like ?", ["%{$digits}%"])
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }

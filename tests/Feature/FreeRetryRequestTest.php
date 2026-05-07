@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Jobs\NotifyEligibleTrainers;
 use App\Models\Country;
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\UserRequest;
@@ -69,7 +70,10 @@ class FreeRetryRequestTest extends TestCase
         Bus::fake();
 
         $plan = $this->createPlan();
-        $user = User::factory()->create(['phone_with_cc' => '+10000008001']);
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000008001',
+            'points_balance' => 100,
+        ]);
         $trainer = User::factory()->create(['phone_with_cc' => '+10000008002']);
 
         $this->createCancelledRequest($user->id, $trainer->id, $plan->id);
@@ -113,6 +117,15 @@ class FreeRetryRequestTest extends TestCase
             ->assertJsonPath('data.status', UserRequest::STATUS_PENDING_PAYMENT)
             ->assertJsonPath('data.is_free_retry', false)
             ->assertJsonPath('data.retry_source_request_id', null);
+
+        Bus::assertNotDispatched(NotifyEligibleTrainers::class);
+
+        $this->postJson('/api/v1/payments/plan', [
+            'user_request_id' => $second->json('data.id'),
+            'payment_method' => 'wallet',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'price' => 1000,
+        ])->assertCreated();
 
         Bus::assertDispatched(NotifyEligibleTrainers::class);
     }

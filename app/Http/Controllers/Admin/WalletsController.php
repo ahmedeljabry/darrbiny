@@ -63,7 +63,9 @@ class WalletsController extends BaseController
     {
         $courseReference = trim((string) ($data['course_reference'] ?? ''));
         if ($courseReference !== '') {
-            return 'إضافة مستحقات كورس رقم ' . $courseReference;
+            $booking = $this->resolveCourseBooking($data);
+
+            return 'إضافة مستحقات كورس رقم ' . ($booking->formatted_order_number ?? $booking->order_number ?? $booking->id);
         }
 
         return $data['notes'] ?? null;
@@ -130,9 +132,12 @@ class WalletsController extends BaseController
     {
         $courseReference = trim((string) ($data['course_reference'] ?? ''));
         $courseReference = ltrim($courseReference, '#');
+        $orderNumber = UserRequest::normalizeOrderNumberSearch($courseReference);
 
         return UserRequest::query()
             ->with('payments')
-            ->findOrFail($courseReference);
+            ->where('id', $courseReference)
+            ->when($orderNumber !== null, fn ($query) => $query->orWhere('order_number', $orderNumber))
+            ->firstOrFail();
     }
 }

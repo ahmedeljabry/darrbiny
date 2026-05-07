@@ -59,6 +59,10 @@ class DashboardController extends BaseController
             ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->whereBetween('created_at', [$from, $to])
             ->count();
+        $withdrawalRequestsValueMinor = (int) \App\Models\WalletTransaction::query()
+            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->whereBetween('created_at', [$from, $to])
+            ->sum('amount');
         $pendingPrizeRequests = \App\Models\RewardRedemption::where('status', 'pending')
             ->whereBetween('created_at', [$from, $to])
             ->count();
@@ -90,15 +94,27 @@ class DashboardController extends BaseController
             ...$dashboardIncomeFilters,
             'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
         ])['incoming_minor'];
-        $packageRevenueMinor = $this->appWalletAccountService->summary([
-            ...$dashboardIncomeFilters,
-            'source' => \App\Models\Payment::TYPE_PLAN_FULL,
-        ])['incoming_minor'];
         $appFeesMinor = $this->appWalletAccountService->summary([
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
         ])['incoming_minor'];
-        $salesMinor = $packageReservationFeesMinor + $packageRevenueMinor;
+        $cancellationFilters = [
+            'from' => $from,
+            'to' => $to,
+        ];
+        $packageReservationFeesMinor = max(0, $packageReservationFeesMinor - $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            $cancellationFilters,
+            'booking_fees'
+        ));
+        $appFeesMinor = max(0, $appFeesMinor - $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            $cancellationFilters,
+            'app_fee'
+        ));
+        $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
@@ -117,7 +133,7 @@ class DashboardController extends BaseController
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
-        $netProfitMinor = $salesMinor - $expensesMinor;
+        $netProfitMinor = $packageReservationFeesMinor + $appFeesMinor - $expensesMinor;
         $appWalletBalanceMinor = $this->appWalletAccountService->summary()['net_minor'];
 
         [
@@ -138,7 +154,7 @@ class DashboardController extends BaseController
             'labels','userSeries','planSeries','bookingSeries',
             'range','salesMinor','packageReservationFeesMinor','appFeesMinor','awaitingOffers',
             'from','to','rangeLabel','usesCustomRange','trendLabel',
-            'bookingsValueMinor','expensesMinor','netProfitMinor','appWalletBalanceMinor'
+            'bookingsValueMinor','expensesMinor','netProfitMinor','appWalletBalanceMinor','withdrawalRequestsValueMinor'
         ));
     }
 

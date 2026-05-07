@@ -113,6 +113,11 @@ class UserRequest extends BaseModel
         return $this->hasOne(CancellationRequest::class);
     }
 
+    public function payout()
+    {
+        return $this->hasOne(Payout::class);
+    }
+
     public function scheduleProgress()
     {
         return $this->hasMany(UserScheduleProgress::class);

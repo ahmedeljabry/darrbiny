@@ -61,13 +61,35 @@ class WithdrawalRequestsController extends BaseController
             );
         }
 
+        $statsQuery = clone $query;
+        $totalAmountMinor = (int) (clone $statsQuery)->sum('amount');
+        $approvedAmountMinor = (int) (clone $statsQuery)
+            ->where('status', WalletTransaction::STATUS_APPROVED)
+            ->sum('amount');
+        $unapprovedAmountMinor = (int) (clone $statsQuery)
+            ->where('status', '<>', WalletTransaction::STATUS_APPROVED)
+            ->sum('amount');
+        $movementsCount = (int) (clone $statsQuery)->count();
+
         $requests = $query->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
 
         $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc', 'user_type']);
 
-        return view('admin.withdrawal-requests.index', compact('requests', 'users', 'status', 'userId', 'search', 'dateFrom', 'dateTo'));
+        return view('admin.withdrawal-requests.index', compact(
+            'requests',
+            'users',
+            'status',
+            'userId',
+            'search',
+            'dateFrom',
+            'dateTo',
+            'totalAmountMinor',
+            'approvedAmountMinor',
+            'unapprovedAmountMinor',
+            'movementsCount'
+        ));
     }
 
     public function show(string $id)

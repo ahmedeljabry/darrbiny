@@ -48,6 +48,7 @@ class ReportsController extends BaseController
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
         $typeOptions = $this->reportTypeOptions();
+        $requestStatusOptions = $this->salesRequestStatusOptions();
 
         return view('admin.reports.sales', compact(
             'payments',
@@ -57,7 +58,8 @@ class ReportsController extends BaseController
             'filters',
             'paymentMethods',
             'countries',
-            'typeOptions'
+            'typeOptions',
+            'requestStatusOptions'
         ));
     }
 
@@ -235,6 +237,7 @@ class ReportsController extends BaseController
         }
 
         return in_array($value, [
+            \App\Models\Payment::TYPE_RESERVATION_FEE,
             \App\Models\Payment::TYPE_PLAN_PARTIAL,
             \App\Models\Payment::TYPE_PLAN_FULL,
         ], true)
@@ -277,6 +280,7 @@ class ReportsController extends BaseController
     {
         $filters = $this->paymentFilters($request, allowStatus: false, allowPlan: false);
         $filters['type'] = $this->parseSalesPaymentType($request->query('type'));
+        $filters['request_status'] = $this->parseOption($request->query('request_status'), array_keys($this->salesRequestStatusOptions()));
 
         return $filters;
     }
@@ -358,5 +362,15 @@ class ReportsController extends BaseController
     private function reportTypeOptions(): array
     {
         return Payment::reportTypeLabels();
+    }
+
+    private function salesRequestStatusOptions(): array
+    {
+        return [
+            UserRequest::STATUS_AWAITING_OFFERS => 'انتظار العروض',
+            UserRequest::STATUS_CANCELLED => 'ملغي',
+            UserRequest::STATUS_IN_TRAINING => 'قيد التدريب',
+            UserRequest::STATUS_COMPLETED => 'مكتمل',
+        ];
     }
 }

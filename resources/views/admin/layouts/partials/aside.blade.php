@@ -26,12 +26,12 @@
   <div class="menu-inner-shadow"></div>
 
   @php
-    $opsOpen = request()->routeIs('admin.bookings.*','admin.cancellation-requests.*','admin.course.details','admin.plans.*','admin.subscriptions.*','admin.withdrawal-requests.*');
+    $opsOpen = request()->routeIs('admin.bookings.*','admin.course.details','admin.plans.*','admin.withdrawal-requests.*');
     $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
     $financeOpen = request()->routeIs('admin.payments.*','admin.app-wallet-account.*','admin.app-expenses.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
     $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*','admin.rewards.*');
     $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
-    $reportsOpen = request()->routeIs('admin.reports.*');
+    $reportsOpen = request()->routeIs('admin.reports.*','admin.cancellation-requests.*');
     $geoOpen = request()->routeIs('admin.geo.*');
     $systemOpen = request()->routeIs('admin.roles.*','admin.permissions.*','admin.settings.*');
 
@@ -47,12 +47,12 @@
     $canManagePayouts = auth()->user()?->can('manage_payouts') ?? false;
     $canManageGeo = auth()->user()?->can('manage_geo') ?? false;
 
-    $showOperations = $canManagePlans || $canManagePayments || $canManageWallets;
+    $showOperations = $canManagePlans || $canManageWallets;
     $showUsers = $canManageUsers || $canManageRatings;
     $showFinance = $canManagePayments || $canManageWallets;
     $showRewards = $canManageRewards;
     $showComms = $canManageNotifications;
-    $showReports = $canManageReports || $canManagePayouts;
+    $showReports = $canManageReports || $canManagePayouts || $canManagePlans;
     $showGeo = $canManageGeo;
   @endphp
 
@@ -77,19 +77,11 @@
             <li class="menu-item {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
               <a href="{{ route('admin.bookings.index') }}" class="menu-link">الحجوزات</a>
             </li>
-            <li class="menu-item {{ request()->routeIs('admin.cancellation-requests.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.cancellation-requests.index') }}" class="menu-link">طلبات الإلغاء</a>
-            </li>
             <li class="menu-item {{ request()->routeIs('admin.course.details') ? 'active' : '' }}">
               <a href="{{ route('admin.course.details') }}" class="menu-link">تفاصيل الدورات</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.plans.*') ? 'active' : '' }}">
               <a href="{{ route('admin.plans.index') }}" class="menu-link">الخطط</a>
-            </li>
-          @endif
-          @if($canManagePayments)
-            <li class="menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.subscriptions.index') }}" class="menu-link">الاشتراكات</a>
             </li>
           @endif
           @if($canManageWallets)
@@ -130,9 +122,6 @@
         </a>
         <ul class="menu-sub">
           @if($canManagePayments)
-            <li class="menu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.payments.index') }}" class="menu-link">المدفوعات</a>
-            </li>
             <li class="menu-item {{ request()->routeIs('admin.app-wallet-account.*') ? 'active' : '' }}">
               <a href="{{ route('admin.app-wallet-account.index') }}" class="menu-link">حساب محفظة التطبيق</a>
             </li>
@@ -218,11 +207,19 @@
             <li class="menu-item {{ request()->routeIs('admin.reports.vat') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.vat') }}" class="menu-link">ضريبة القيمة المضافة</a>
             </li>
+            <li class="menu-item {{ request()->routeIs('admin.reports.app-profits') ? 'active' : '' }}">
+              <a href="{{ route('admin.reports.app-profits') }}" class="menu-link">أرباح التطبيق</a>
+            </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.rejected-progress') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.rejected-progress') }}" class="menu-link">رفض الإنجاز اليومي</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.reports.wallet-balances') ? 'active' : '' }}">
               <a href="{{ route('admin.reports.wallet-balances') }}" class="menu-link">أرصدة المحافظ</a>
+            </li>
+          @endif
+          @if($canManagePlans)
+            <li class="menu-item {{ request()->routeIs('admin.cancellation-requests.*') ? 'active' : '' }}">
+              <a href="{{ route('admin.cancellation-requests.index') }}" class="menu-link">طلبات الإلغاء</a>
             </li>
           @endif
           @if($canManagePayouts)

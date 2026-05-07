@@ -7,9 +7,11 @@
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
+  $requestStatusLabelFor = fn ($status) => $requestStatusOptions[$status] ?? (\App\Models\UserRequest::STATUS_PAID === $status ? 'مدفوع' : (string) $status);
   $filterFields = [
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم المستخدم أو المدرب أو رقم الطلب', 'col' => 'col-xl-4 col-md-6'],
     ['name' => 'type', 'label' => 'نوع الدفع', 'type' => 'select', 'options' => $typeOptions, 'placeholder' => 'كل الأنواع', 'col' => 'col-xl-2 col-md-3'],
+    ['name' => 'request_status', 'label' => 'حالة الطلب', 'type' => 'select', 'options' => $requestStatusOptions, 'placeholder' => 'كل الحالات', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'payment_method', 'label' => 'طريقة الدفع', 'type' => 'select', 'options' => $paymentMethodOptions, 'placeholder' => 'كل الوسائل', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'country_id', 'label' => 'الدولة', 'type' => 'select', 'options' => $countryOptions, 'placeholder' => 'كل الدول', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'from', 'label' => 'من تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
@@ -65,6 +67,7 @@
               <th>المبلغ</th>
               <th>رسوم التطبيق</th>
               <th>النوع / الوسيلة</th>
+              <th>حالة الطلب</th>
               <th>التاريخ</th>
             </tr>
           </thead>
@@ -101,10 +104,11 @@
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>
+                <td><span class="badge bg-label-secondary">{{ $requestStatusLabelFor($payment->userRequest?->status) }}</span></td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>
             @empty
-              @include('admin.reports.partials.empty-state', ['colspan' => 9, 'icon' => 'chart-line', 'message' => 'لا توجد نتائج مطابقة للفلاتر الحالية'])
+              @include('admin.reports.partials.empty-state', ['colspan' => 10, 'icon' => 'chart-line', 'message' => 'لا توجد نتائج مطابقة للفلاتر الحالية'])
             @endforelse
           </tbody>
         </table>

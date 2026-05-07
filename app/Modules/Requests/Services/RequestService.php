@@ -44,8 +44,6 @@ class RequestService
 
             if ($freeRetrySource) {
                 $this->ensureConversationExists($req);
-            } else {
-                NotifyEligibleTrainers::dispatch($req);
             }
 
             return $req;
@@ -223,7 +221,7 @@ class RequestService
 
     private function buildTrainerPayoutWalletNote(UserRequest $req): string
     {
-        return 'إضافة مستحقات كورس رقم ' . $req->id;
+        return 'إضافة مستحقات كورس رقم ' . ($req->formatted_order_number ?? $req->order_number ?? $req->id);
     }
 
     /**

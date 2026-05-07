@@ -11,11 +11,14 @@ use App\Exports\PointsBalancesExport;
 use App\Exports\PrizeRedemptionsExport;
 use App\Exports\WalletBalancesExport;
 use App\Exports\WalletPaymentsExport;
+use App\Models\Country;
 use App\Models\Payment;
+use App\Models\Payout;
 use App\Models\RewardRedemption;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
+use App\Support\ReportCurrencyConverter;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -74,6 +77,11 @@ class AdvancedReportsController extends BaseController
         $dateTo = $request->query('date_to');
 
         if (blank($dateFrom) && blank($dateTo)) {
+            $hasSearchFilter = filled($request->query('name')) || filled($request->query('phone'));
+            if ($hasSearchFilter) {
+                return [null, null];
+            }
+
             $today = Carbon::today()->toDateString();
 
             return [$today, $today];
@@ -107,26 +115,29 @@ class AdvancedReportsController extends BaseController
                 $method = $index === 0 ? 'whereHas' : 'orWhereHas';
 
                 $nestedQuery->{$method}($relation, function (Builder $personQuery) use ($name, $phone): void {
-                    if ($name !== '') {
-                        $personQuery->where('name', 'like', '%' . $name . '%');
-                    }
+                    $personQuery->where(function (Builder $matchQuery) use ($name, $phone): void {
+                        if ($name !== '') {
+                            $matchQuery->where('name', 'like', '%' . $name . '%');
+                        }
 
-                    if ($phone !== '') {
-                        $personQuery->where('phone_with_cc', 'like', '%' . $phone . '%');
-                    }
+                        if ($phone !== '') {
+                            $method = $name === '' ? 'where' : 'orWhere';
+                            $matchQuery->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                        }
+                    });
                 });
             }
         });
     }
 
-    private function buildDailyFilters(Request $request, ?string $dateFrom, ?string $dateTo): array
+    private function buildDailyFilters(Request $request, ?string $dateFrom, ?string $dateTo, array $extra = []): array
     {
         return [
             'name' => trim((string) $request->query('name', '')),
             'phone' => trim((string) $request->query('phone', '')),
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
-        ];
+        ] + $extra;
     }
 
     public function completedPayouts(Request $request)
@@ -138,6 +149,7 @@ class AdvancedReportsController extends BaseController
         $paymentsQuery = Payment::with([
                 'userRequest.country',
                 'userRequest.plan.country',
+                'userRequest.payout',
                 'userRequest.trainer.country',
                 'userRequest.trainer.trainerProfile.country',
             ])
@@ -159,6 +171,14 @@ class AdvancedReportsController extends BaseController
 
         $rows = $payments->map(function (Payment $p) {
             $trainer = $p->userRequest?->trainer;
+            $payoutStatus = $p->userRequest?->payout?->status;
+            $payoutStatusLabel = match ($payoutStatus) {
+                Payout::STATUS_SENT => 'منفذة',
+                Payout::STATUS_APPROVED => 'معتمدة',
+                Payout::STATUS_FAILED => 'فشلت',
+                Payout::STATUS_PENDING_REVIEW => 'غير منفذة',
+                default => 'غير منفذة',
+            };
 
             return [
                 $trainer?->name ?? '-',
@@ -172,25 +192,30 @@ class AdvancedReportsController extends BaseController
                 $trainer?->bank_account ?? '-',
                 $trainer?->iban ?? '-',
                 number_format($p->trainer_net_minor / 100, 2),
+                $payoutStatusLabel,
                 $p->created_at?->format('Y-m-d H:i') ?? '-',
             ];
         })->all();
 
         $totalPayoutsMinor = (int) $payments->sum('trainer_net_minor');
+        $executedPayoutsMinor = (int) $payments
+            ->filter(fn (Payment $payment): bool => $payment->userRequest?->payout?->status === Payout::STATUS_SENT)
+            ->sum('trainer_net_minor');
+        $unexecutedPayoutsMinor = max(0, $totalPayoutsMinor - $executedPayoutsMinor);
 
         return $this->view(
             'الكورسات المكتملة ومستحقات المدرب (يومي)',
-            ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تاريخ الدفعة'],
+            ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'الحالة', 'تاريخ الدفعة'],
             $rows,
             $request,
             'completed-payouts',
             true,
             $this->buildDailyFilters($request, $dateFrom, $dateTo),
             [
-                ['label' => 'عدد النتائج', 'value' => number_format(count($rows)), 'icon' => 'list-details'],
-                ['label' => 'إجمالي مستحقات المدربين', 'value' => number_format($totalPayoutsMinor / 100, 2), 'icon' => 'wallet', 'tone' => 'success'],
-                ['label' => 'الفلاتر النشطة', 'value' => number_format(collect($this->buildDailyFilters($request, $dateFrom, $dateTo))->filter(fn ($value) => filled($value))->count()), 'icon' => 'adjustments-horizontal', 'tone' => 'warning'],
-                ['label' => 'التصدير المتاح', 'value' => 'Excel + CSV', 'icon' => 'download', 'tone' => 'secondary'],
+                ['label' => 'إجمالي المستحقات', 'value' => number_format($totalPayoutsMinor / 100, 2), 'icon' => 'wallet', 'tone' => 'success'],
+                ['label' => 'مستحقات منفذة', 'value' => number_format($executedPayoutsMinor / 100, 2), 'icon' => 'circle-check', 'tone' => 'primary'],
+                ['label' => 'مستحقات غير منفذة', 'value' => number_format($unexecutedPayoutsMinor / 100, 2), 'icon' => 'clock-hour-4', 'tone' => 'warning'],
+                ['label' => 'عدد الحركات', 'value' => number_format(count($rows)), 'icon' => 'list-details', 'tone' => 'secondary'],
             ]
         );
     }
@@ -300,7 +325,39 @@ class AdvancedReportsController extends BaseController
 
     public function walletBalances(Request $request)
     {
-        $users = User::where('points_balance', '>', 0)->get();
+        $dateFrom = filled($request->query('date_from')) ? (string) $request->query('date_from') : null;
+        $dateTo = filled($request->query('date_to')) ? (string) $request->query('date_to') : null;
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+        $countryId = filled($request->query('country_id')) ? (string) $request->query('country_id') : null;
+
+        $usersQuery = User::query()
+            ->with(['country', 'bankCountry'])
+            ->where('points_balance', '>', 0);
+
+        $this->applyDateRange($usersQuery, $dateFrom, $dateTo);
+
+        if ($name !== '' || $phone !== '') {
+            $usersQuery->where(function (Builder $query) use ($name, $phone): void {
+                if ($name !== '') {
+                    $query->where('name', 'like', '%' . $name . '%');
+                }
+
+                if ($phone !== '') {
+                    $method = $name === '' ? 'where' : 'orWhere';
+                    $query->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                }
+            });
+        }
+
+        if ($countryId !== null) {
+            $usersQuery->where(function (Builder $query) use ($countryId): void {
+                $query->where('country_id', $countryId)
+                    ->orWhere('bank_country_id', $countryId);
+            });
+        }
+
+        $users = $usersQuery->orderByDesc('points_balance')->orderBy('name')->get();
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
@@ -313,22 +370,41 @@ class AdvancedReportsController extends BaseController
             $u->id,
             $u->name ?? '-',
             $u->phone_with_cc ?? '-',
+            $u->country?->name ?? $u->bankCountry?->name ?? '-',
             $u->points_balance,
         ])->all();
 
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
+        $filters = $this->buildDailyFilters($request, $dateFrom, $dateTo, [
+            'country_id' => $countryId,
+            'country_options' => $countries->pluck('name', 'id')->all(),
+        ]);
+
         return $this->view(
             'المحافظ التي تحتوي مبالغ',
-            ['المعرف', 'الاسم', 'الجوال', 'الرصيد'],
+            ['المعرف', 'الاسم', 'الجوال', 'الدولة', 'الرصيد'],
             $rows,
             $request,
             'wallet-balances',
-            true
+            true,
+            $filters,
+            [
+                ['label' => 'إجمالي قيمة المحفظة', 'value' => number_format((float) $users->sum('points_balance'), 2), 'icon' => 'wallet', 'tone' => 'success'],
+                ['label' => 'عدد الحركات', 'value' => number_format($users->count()), 'icon' => 'list-details', 'tone' => 'primary'],
+                ['label' => 'عدد الأعمدة', 'value' => number_format(5), 'icon' => 'table', 'tone' => 'info'],
+                ['label' => 'الفلاتر النشطة', 'value' => number_format(collect($filters)->except('country_options')->filter(fn ($value) => filled($value))->count()), 'icon' => 'adjustments-horizontal', 'tone' => 'warning'],
+            ]
         );
     }
 
     public function pointsBalances(Request $request)
     {
-        $users = User::query()
+        $dateFrom = filled($request->query('date_from')) ? (string) $request->query('date_from') : null;
+        $dateTo = filled($request->query('date_to')) ? (string) $request->query('date_to') : null;
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+
+        $usersQuery = User::query()
             ->with('roles')
             ->select('users.*')
             ->selectSub(function ($query): void {
@@ -343,6 +419,22 @@ class AdvancedReportsController extends BaseController
                             ->where('payments.status', Payment::STATUS_SUCCEEDED);
                     });
             }, 'referral_points_earned')
+            ->when($name !== '' || $phone !== '', function (Builder $query) use ($name, $phone): void {
+                $query->where(function (Builder $nested) use ($name, $phone): void {
+                    if ($name !== '') {
+                        $nested->where('name', 'like', '%' . $name . '%');
+                    }
+
+                    if ($phone !== '') {
+                        $method = $name === '' ? 'where' : 'orWhere';
+                        $nested->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                    }
+                });
+            });
+
+        $this->applyDateRange($usersQuery, $dateFrom, $dateTo);
+
+        $users = $usersQuery
             ->orderByDesc('referral_points_earned')
             ->orderBy('name')
             ->get();
@@ -368,7 +460,8 @@ class AdvancedReportsController extends BaseController
             $rows,
             $request,
             'points-balances',
-            true
+            true,
+            $this->buildDailyFilters($request, $dateFrom, $dateTo)
         );
     }
 
@@ -411,6 +504,106 @@ class AdvancedReportsController extends BaseController
             'reward-redemptions',
             true,
             $this->buildDailyFilters($request, $dateFrom, $dateTo)
+        );
+    }
+
+    public function appProfits(Request $request)
+    {
+        $dateFrom = filled($request->query('date_from')) ? (string) $request->query('date_from') : null;
+        $dateTo = filled($request->query('date_to')) ? (string) $request->query('date_to') : null;
+        $name = trim((string) $request->query('name', ''));
+        $phone = trim((string) $request->query('phone', ''));
+        $countryId = filled($request->query('country_id')) ? (string) $request->query('country_id') : null;
+        $status = filled($request->query('status')) ? (string) $request->query('status') : null;
+        $statusOptions = [
+            UserRequest::STATUS_AWAITING_OFFERS => 'انتظار العروض',
+            UserRequest::STATUS_CANCELLED => 'ملغي',
+            UserRequest::STATUS_IN_TRAINING => 'قيد التدريب',
+            UserRequest::STATUS_COMPLETED => 'مكتمل',
+        ];
+        $status = array_key_exists((string) $status, $statusOptions) ? $status : null;
+
+        $requestsQuery = UserRequest::query()
+            ->with([
+                'user',
+                'country',
+                'plan.country',
+                'payments' => fn ($query) => $query->where('status', Payment::STATUS_SUCCEEDED),
+            ])
+            ->whereHas('payments', fn (Builder $query) => $query->where('status', Payment::STATUS_SUCCEEDED));
+
+        $this->applyDateRange($requestsQuery, $dateFrom, $dateTo);
+        $this->applyNamePhoneFilters($requestsQuery, ['user'], $name, $phone);
+
+        if ($countryId !== null) {
+            $requestsQuery->where(function (Builder $query) use ($countryId): void {
+                $query->where('country_id', $countryId)
+                    ->orWhereHas('plan', fn (Builder $planQuery) => $planQuery->where('country_id', $countryId));
+            });
+        }
+
+        if ($status !== null) {
+            $requestsQuery->where('status', $status);
+        }
+
+        $converter = app(ReportCurrencyConverter::class);
+        $requests = $requestsQuery->latest()->get();
+        $totalBookingFeesMinor = 0;
+        $totalPackageFeesMinor = 0;
+
+        $rows = $requests->map(function (UserRequest $userRequest) use ($converter, $statusOptions, &$totalBookingFeesMinor, &$totalPackageFeesMinor): array {
+            $bookingFeesMinor = (int) $userRequest->payments
+                ->filter(fn (Payment $payment) => in_array($payment->type, Payment::partialTypes(), true))
+                ->sum(fn (Payment $payment) => $converter->convertMinor((int) $payment->amount_minor, $payment->currency));
+
+            $packageFeesMinor = (int) $userRequest->payments
+                ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
+                ->sum(fn (Payment $payment) => $converter->convertMinor((int) $payment->app_fee_minor, $payment->currency));
+
+            $totalBookingFeesMinor += $bookingFeesMinor;
+            $totalPackageFeesMinor += $packageFeesMinor;
+
+            return [
+                $userRequest->formatted_order_number ? ('#' . $userRequest->formatted_order_number) : '-',
+                $userRequest->user?->name ?? '-',
+                $userRequest->country?->name ?? $userRequest->plan?->country?->name ?? '-',
+                number_format($bookingFeesMinor / 100, 2),
+                number_format($packageFeesMinor / 100, 2),
+                $statusOptions[$userRequest->status] ?? $userRequest->status,
+                $userRequest->created_at?->format('Y-m-d H:i') ?? '-',
+            ];
+        })->all();
+
+        $headers = ['رقم الطلب', 'المستخدم', 'الدولة', 'رسوم الحجز', 'رسوم الباقات', 'الحالة', 'التاريخ'];
+
+        if ($request->query('export') === 'excel') {
+            return Excel::download(
+                new ArrayRowsExport($headers, $rows),
+                'app-profits-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
+
+        return $this->view(
+            'أرباح التطبيق',
+            $headers,
+            $rows,
+            $request,
+            'app-profits',
+            true,
+            $this->buildDailyFilters($request, $dateFrom, $dateTo, [
+                'country_id' => $countryId,
+                'country_options' => $countries->pluck('name', 'id')->all(),
+                'status' => $status,
+                'status_options' => $statusOptions,
+            ]),
+            [
+                ['label' => 'إجمالي رسوم الحجز', 'value' => number_format($totalBookingFeesMinor / 100, 2), 'icon' => 'receipt-2', 'tone' => 'info'],
+                ['label' => 'إجمالي رسوم الباقات', 'value' => number_format($totalPackageFeesMinor / 100, 2), 'icon' => 'stack-3', 'tone' => 'success'],
+                ['label' => 'إجمالي القيمة', 'value' => number_format(($totalBookingFeesMinor + $totalPackageFeesMinor) / 100, 2), 'icon' => 'coins', 'tone' => 'primary'],
+                ['label' => 'عدد العمليات', 'value' => number_format(count($rows)), 'icon' => 'list-details', 'tone' => 'secondary'],
+            ]
         );
     }
 

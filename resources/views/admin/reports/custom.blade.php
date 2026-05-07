@@ -24,6 +24,28 @@
     $filterFields[] = ['name' => 'date_to', 'label' => 'إلى تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-4'];
   }
 
+  if (array_key_exists('country_id', $filters)) {
+    $filterFields[] = [
+      'name' => 'country_id',
+      'label' => 'الدولة',
+      'type' => 'select',
+      'options' => $filters['country_options'] ?? [],
+      'placeholder' => 'كل الدول',
+      'col' => 'col-xl-2 col-md-4',
+    ];
+  }
+
+  if (array_key_exists('status', $filters)) {
+    $filterFields[] = [
+      'name' => 'status',
+      'label' => 'الحالة',
+      'type' => 'select',
+      'options' => $filters['status_options'] ?? [],
+      'placeholder' => 'كل الحالات',
+      'col' => 'col-xl-2 col-md-4',
+    ];
+  }
+
   $subtitle = match (true) {
     str_contains($title, 'المكتملة') => 'تقرير تشغيلي يومي يركز على المبالغ المستحقة وحركة إغلاق الدورات المكتملة.',
     str_contains($title, 'النشطة') => 'متابعة سريعة للطلبات الجارية وقيمها وتواريخ بدايتها.',

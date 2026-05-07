@@ -30,7 +30,9 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
     {
         return [
             'رقم الطلب',
-            'المستخدم',
+            'معرف العميل',
+            'اسم العميل',
+            'جوال العميل',
             'الدولة',
             'المنطقة الأولى',
             'المنطقة الثانية',
@@ -39,16 +41,30 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
             'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'رسوم التطبيق (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
             'النوع',
-            'الحالة',
+            'حالة الطلب',
+            'حالة الدفع',
+            'نوع الكوبون',
             'التاريخ',
         ];
     }
 
     public function map($payment): array
     {
+        $requestStatusLabels = [
+            \App\Models\UserRequest::STATUS_AWAITING_OFFERS => 'انتظار العروض',
+            \App\Models\UserRequest::STATUS_CANCELLED => 'ملغي',
+            \App\Models\UserRequest::STATUS_IN_TRAINING => 'قيد التدريب',
+            \App\Models\UserRequest::STATUS_COMPLETED => 'مكتمل',
+            \App\Models\UserRequest::STATUS_PENDING_PAYMENT => 'قيد الدفع',
+            \App\Models\UserRequest::STATUS_OFFER_SELECTED => 'تم اختيار العرض',
+            \App\Models\UserRequest::STATUS_PAID => 'مدفوع',
+        ];
+
         return [
             $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
-            $payment->user?->name ?? $payment->user_id,
+            $payment->user_id ?? '-',
+            $payment->user?->name ?? '-',
+            $payment->user?->phone_with_cc ?? '-',
             $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '-',
             $payment->userRequest?->area_level_1 ?? '-',
             $payment->userRequest?->area_level_2 ?? '-',
@@ -56,10 +72,25 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
             $payment->userRequest?->locality ?? '-',
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency),
-            $payment->type,
-            $payment->status,
+            \App\Models\Payment::reportTypeLabels()[$payment->type] ?? $payment->type,
+            $requestStatusLabels[$payment->userRequest?->status] ?? ($payment->userRequest?->status ?? '-'),
+            \App\Models\Payment::statusLabelFor($payment->status),
+            $this->couponType($payment),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    private function couponType($payment): string
+    {
+        $value = $payment->coupon_type
+            ?? $payment->coupon?->type
+            ?? $payment->userRequest?->coupon_type
+            ?? $payment->userRequest?->coupon?->type
+            ?? null;
+
+        $value = trim((string) $value);
+
+        return $value === '' ? '-' : $value;
     }
 
     public function styles(Worksheet $sheet)

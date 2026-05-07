@@ -12,6 +12,7 @@ use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
 use App\Services\Admin\AppWalletAccountService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -123,6 +124,14 @@ class AdminDashboardTest extends TestCase
             'updated_by' => $admin->id,
         ]);
 
+        WalletTransaction::create([
+            'user_id' => $user->id,
+            'amount' => 12500,
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+            'notes' => 'Dashboard withdrawal request',
+        ]);
+
         $walletBalance = number_format(app(AppWalletAccountService::class)->summary()['net_minor'] / 100, 2);
 
         $this->actingAs($admin)
@@ -137,13 +146,14 @@ class AdminDashboardTest extends TestCase
             ->assertSee('صافي الربح')
             ->assertSee('قيد التدريب')
             ->assertSee('الكورسات الملغاة')
-            ->assertSee('703.68')
+            ->assertSee('392.57')
             ->assertSee('358.01')
             ->assertSee('34.56')
             ->assertSee('80.00')
+            ->assertSee('125.00')
             ->assertSee($walletBalance)
             ->assertSee('0.00')
-            ->assertSee('623.68')
+            ->assertSee('312.57')
             ->assertSee('الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ');
     }
 
@@ -250,9 +260,9 @@ class AdminDashboardTest extends TestCase
             ->assertSee('name="from"', false)
             ->assertSee('name="to"', false)
             ->assertSee('فلترة مخصصة مفعلة')
-            ->assertSee('111.11')
             ->assertSee('10.00')
             ->assertSee('11.11')
+            ->assertSee('1.11')
             ->assertSee($walletBalance)
             ->assertDontSee('333.33');
     }
@@ -321,7 +331,7 @@ class AdminDashboardTest extends TestCase
             ->assertSee('محول للريال');
     }
 
-    public function test_dashboard_revenue_and_app_wallet_do_not_deduct_cancellation_refunds(): void
+    public function test_dashboard_revenue_deducts_cancellation_refunds_and_keeps_app_wallet_balance_separate(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009031',
@@ -405,10 +415,11 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('100.00 SAR')
-            ->assertSee('20.00 SAR')
-            ->assertSee('8.00 SAR')
+            ->assertSee('14.00 SAR')
+            ->assertSee('10.00 SAR')
+            ->assertSee('4.00 SAR')
             ->assertSee('1.00 SAR')
-            ->assertSee('99.00 SAR');
+            ->assertSee('99.00 SAR')
+            ->assertSee('13.00 SAR');
     }
 }

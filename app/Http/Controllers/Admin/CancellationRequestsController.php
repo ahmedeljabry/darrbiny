@@ -10,6 +10,7 @@ use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Notifications\CancellationRequestNotification;
 use App\Notifications\WalletBalanceAddedNotification;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ class CancellationRequestsController extends BaseController
         $this->syncMissingCancellationRequests();
 
         $status = $request->query('status');
+        $search = trim((string) $request->query('q', ''));
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
         
         $q = CancellationRequest::with([
             'userRequest',
@@ -42,20 +46,43 @@ class CancellationRequestsController extends BaseController
             );
         }
 
-        $requests = $q->latest()->paginate(20)->withQueryString();
+        if ($search !== '') {
+            $q->where(function ($query) use ($search): void {
+                $query->whereHas('user', function ($userQuery) use ($search): void {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                })->orWhereHas('userRequest', function ($requestQuery) use ($search): void {
+                    $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($search);
+
+                    $requestQuery->whereRaw('CAST(order_number as CHAR) like ?', ["%{$search}%"]);
+
+                    if ($normalizedOrderNumber !== null) {
+                        $requestQuery->orWhere('order_number', $normalizedOrderNumber);
+                    }
+                });
+            });
+        }
+
+        if ($dateFrom) {
+            $q->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $q->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $statsRequests = (clone $q)->get();
+        $converter = app(ReportCurrencyConverter::class);
+        $totalRefundMinor = (int) $statsRequests->sum(function (CancellationRequest $cancellation) use ($converter): int {
+            return $converter->convertMinor(
+                (int) $cancellation->refund_amount_minor,
+                $cancellation->userRequest?->currency ?? ReportCurrencyConverter::REPORT_CURRENCY
+            );
+        });
+        $movementsCount = $statsRequests->count();
 
         if ($request->query('export') === 'excel') {
-            $allRequests = CancellationRequest::with([
-                'userRequest',
-                'userRequest.user',
-                'userRequest.plan',
-                'userRequest.payments' => fn ($query) => $query->latest(),
-                'user',
-                'processedBy'
-            ])
-            ->when($status, fn($query) => $query->where('status', $status))
-            ->latest()
-            ->get();
+            $allRequests = (clone $q)->latest()->get();
 
             return Excel::download(
                 new CancellationRequestsExport($allRequests),
@@ -63,7 +90,17 @@ class CancellationRequestsController extends BaseController
             );
         }
 
-        return view('admin.cancellation-requests.index', compact('requests', 'status'));
+        $requests = $q->latest()->paginate(20)->withQueryString();
+
+        return view('admin.cancellation-requests.index', compact(
+            'requests',
+            'status',
+            'search',
+            'dateFrom',
+            'dateTo',
+            'totalRefundMinor',
+            'movementsCount'
+        ));
     }
 
     public function show(string $id)

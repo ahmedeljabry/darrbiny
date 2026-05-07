@@ -113,6 +113,7 @@ Route::middleware(['web'])
                 Route::get('/reports/payments', [\App\Http\Controllers\Admin\ReportsController::class, 'payments'])->name('reports.payments');
                 Route::get('/reports/subscriptions', [\App\Http\Controllers\Admin\ReportsController::class, 'subscriptions'])->name('reports.subscriptions');
                 Route::get('/reports/vat', [\App\Http\Controllers\Admin\ReportsController::class, 'vat'])->name('reports.vat');
+                Route::get('/reports/app-profits', [AdvancedReportsController::class, 'appProfits'])->name('reports.app-profits');
                 Route::get('/reports/rejected-progress', [AdvancedReportsController::class, 'rejectedProgress'])->name('reports.rejected-progress');
                 Route::get('/reports/wallet-balances', [AdvancedReportsController::class, 'walletBalances'])->name('reports.wallet-balances');
             });

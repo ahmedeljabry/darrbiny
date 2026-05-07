@@ -165,10 +165,10 @@
                 name="course_reference"
                 class="form-control js-course-reference"
                 maxlength="100"
-                placeholder="مثال: #12345 أو 7f21b0c4"
+                placeholder="مثال: #00005001"
                 data-preview-target="walletPreview{{ $u->id }}"
               >
-              <small class="text-muted d-block mt-1">عند إدخاله سيتم سحب صافي المدرب من الكورس المكتمل كما يظهر في تقرير مستحقات المدربين، وسيتم حفظ الملاحظة تلقائيًا.</small>
+              <small class="text-muted d-block mt-1">استخدم رقم الطلب الظاهر في صفحة الحجوزات. عند إدخاله سيتم سحب صافي المدرب من الكورس المكتمل كما يظهر في تقرير مستحقات المدربين، وسيتم حفظ الملاحظة تلقائيًا.</small>
             </div>
             <div class="alert alert-info d-none" id="walletPreview{{ $u->id }}">
               <div class="d-flex justify-content-between">

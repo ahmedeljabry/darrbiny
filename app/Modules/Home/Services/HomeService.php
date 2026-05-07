@@ -6,24 +6,25 @@ namespace App\Modules\Home\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\{Cache, DB, Auth};
-use App\Models\{Setting, TrainerProfile, Plan, Favorite, HowItWorksSection};
+use App\Models\{Setting, TrainerProfile, Plan, Favorite, HowItWorksSection, User};
 use App\Support\StorageUrl;
 
 class HomeService
 {
     protected array $defaultIncludes = ['video', 'banner', 'plans', 'trainers', 'how_it_works', 'search'];
     private const LIMIT_TRAINERS = 5;
-    private const CACHE_PREFIX   = 'home_data:v7';
+    private const CACHE_PREFIX   = 'home_data:v8';
     private const CACHE_MINUTES  = 5;
 
     protected ?string $countryId = null;
 
-    public function getHomeData(?string $countryId = null, string $q = ''): array
+    public function getHomeData(?string $countryId = null, string $q = '', string $trainerMonth = ''): array
     {
         $user = Auth::guard('sanctum')->user();
         $authUserId = $user?->id;
         $this->countryId = $countryId ?: ($user->country_id ?? null);
         $favoritesStamp = $this->favoritesStamp($authUserId);
+        $trainerMonth = $this->normalizeTrainerMonth($trainerMonth);
 
         $cacheKey = $this->cacheKey(
             $this->defaultIncludes,
@@ -31,15 +32,20 @@ class HomeService
             (string) $this->countryId,
             $q,
             $authUserId,
-            $favoritesStamp
+            $favoritesStamp,
+            $trainerMonth
         );
 
-        return Cache::remember($cacheKey, now()->addMinutes(self::CACHE_MINUTES), function () use ($q, $authUserId) {
+        return Cache::remember($cacheKey, now()->addMinutes(self::CACHE_MINUTES), function () use ($q, $authUserId, $trainerMonth) {
             $sections = [
                 'video'        => fn() => $this->getVideo(),
                 'banner'       => fn() => $this->getBanner(),
                 'plans'        => fn() => $this->getPlans(),
-                'trainers'     => fn() => ['top_rated_trainers' => $this->getTrainers($authUserId)],
+                'trainers'     => fn() => [
+                    'top_rated_trainers' => $this->getTrainers($authUserId),
+                    'new_trainers_month' => $trainerMonth,
+                    'new_trainers' => $this->getNewTrainers($authUserId, $trainerMonth),
+                ],
                 'how_it_works' => fn() => $this->getHowItWorks(),
                 'search'       => fn() => ['trainers' => $this->getTrainers($authUserId, $q, 20)],
             ];
@@ -60,20 +66,33 @@ class HomeService
         ?string $countryId,
         string $q,
         ?string $uid,
-        string $favoritesStamp
+        string $favoritesStamp,
+        string $trainerMonth
     ): string
     {
         $includesKey = implode(',', Arr::sort($includes));
         return sprintf(
-            '%s:inc=%s:lt=%d:location=%s:q=%s:favs=%s:u=%s',
+            '%s:inc=%s:lt=%d:location=%s:q=%s:favs=%s:u=%s:trainer_month=%s',
             self::CACHE_PREFIX,
             $includesKey,
             $limitTrainers,
             $countryId ?? 'null',
             md5($q),
             $favoritesStamp,
-            $uid ?? 'guest'
+            $uid ?? 'guest',
+            $trainerMonth
         );
+    }
+
+    private function normalizeTrainerMonth(string $trainerMonth): string
+    {
+        $trainerMonth = trim($trainerMonth);
+
+        if (preg_match('/^\d{4}-\d{2}$/', $trainerMonth) === 1) {
+            return $trainerMonth;
+        }
+
+        return now()->format('Y-m');
     }
 
     protected function favoritesStamp(?string $authUserId): string
@@ -165,6 +184,36 @@ class HomeService
             ->orderByDesc('rating_avg')
             ->orderByDesc('rating_count')
             ->limit($limit)
+            ->get();
+
+        return $this->decorateTrainers($profiles, $authUserId);
+    }
+
+    protected function getNewTrainers(?string $authUserId, string $trainerMonth): array
+    {
+        [$year, $month] = array_map('intval', explode('-', $trainerMonth));
+
+        $profiles = TrainerProfile::query()
+            ->where('pending_approval', false)
+            ->when($this->countryId, fn($q) => $q->where('country_id', $this->countryId))
+            ->whereHas('user', function ($uq) use ($year, $month) {
+                $uq->whereNull('deleted_at')
+                    ->where(function ($w) {
+                        $w->whereNull('banned_until')
+                            ->orWhere('banned_until', '<=', now());
+                    })
+                    ->whereYear('created_at', $year)
+                    ->whereMonth('created_at', $month)
+                    ->role('TRAINER');
+            })
+            ->with('user:id,name,deleted_at,profile_picture_id,created_at', 'user.profilePicture')
+            ->orderByDesc(
+                User::query()
+                    ->select('created_at')
+                    ->whereColumn('users.id', 'trainer_profiles.user_id')
+                    ->limit(1)
+            )
+            ->limit(self::LIMIT_TRAINERS)
             ->get();
 
         return $this->decorateTrainers($profiles, $authUserId);

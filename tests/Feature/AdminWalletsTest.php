@@ -121,7 +121,7 @@ class AdminWalletsTest extends TestCase
             ->post(route('admin.wallets.store'), [
                 'user_id' => $trainer->id,
                 'amount' => 999,
-                'course_reference' => $booking->id,
+                'course_reference' => '#' . $booking->formatted_order_number,
                 'notes' => 'كورسات',
             ])
             ->assertRedirect()
@@ -134,7 +134,7 @@ class AdminWalletsTest extends TestCase
             'amount' => 6300,
             'type' => 'adjustment',
             'status' => 'approved',
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->id,
+            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->formatted_order_number,
         ]);
     }
 

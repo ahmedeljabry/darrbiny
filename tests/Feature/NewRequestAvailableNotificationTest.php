@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Country;
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\UserRequest;
@@ -27,10 +28,11 @@ class NewRequestAvailableNotificationTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_matching_area_trainers_receive_database_and_fcm_notification_when_student_creates_request(): void
+    public function test_matching_area_trainers_receive_database_and_fcm_notification_when_student_pays_request_fee(): void
     {
         [$country, $plan] = $this->createCountryAndPlan();
         $student = $this->createStudent();
+        $student->update(['points_balance' => 500]);
         $matchingTrainer = $this->createTrainer($country->id, [
             'area_level_1' => 'Cairo Governorate',
             'area_level_2' => 'Cairo',
@@ -44,7 +46,9 @@ class NewRequestAvailableNotificationTest extends TestCase
             'locality' => 'Nasr City',
         ]);
 
-        $this->withToken($student->createToken('student')->plainTextToken)
+        $token = $student->createToken('student')->plainTextToken;
+
+        $response = $this->withToken($token)
             ->postJson('/api/v1/user-requests', [
                 'plan_id' => $plan->id,
                 'country_id' => $country->id,
@@ -57,6 +61,15 @@ class NewRequestAvailableNotificationTest extends TestCase
                 'has_user_car' => false,
                 'wants_trainer_car' => true,
                 'needs_pickup' => false,
+            ])
+            ->assertCreated();
+
+        $this->withToken($token)
+            ->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $response->json('data.id'),
+                'payment_method' => 'wallet',
+                'type' => Payment::TYPE_PLAN_PARTIAL,
+                'price' => 1000,
             ])
             ->assertCreated();
 

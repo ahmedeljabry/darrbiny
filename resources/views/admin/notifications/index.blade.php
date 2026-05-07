@@ -33,7 +33,7 @@
     </span>
     <div>
       <h5 class="mb-0">إرسال إشعار</h5>
-      <small class="text-body-secondary">جميع الإشعارات من هذه الصفحة يتم إرسال Push لها عبر Firebase Topics مع حفظ نسخة في قاعدة البيانات</small>
+      <small class="text-body-secondary">جميع الإشعارات من هذه الصفحة يتم إرسال Push عبر Firebase للأجهزة المسجلة مع حفظ نسخة في قاعدة البيانات</small>
     </div>
   </div>
   <div class="card-body">

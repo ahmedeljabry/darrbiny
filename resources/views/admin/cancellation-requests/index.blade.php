@@ -39,8 +39,37 @@
                 </a>
             </div>
             <div class="card-body pt-0">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div>
+                                    <small class="text-muted d-block">الإجمالي</small>
+                                    <strong class="fs-5">{{ number_format(($totalRefundMinor ?? 0) / 100, 2) }} {{ $reportCurrency }}</strong>
+                                </div>
+                                <span class="avatar-initial rounded bg-label-danger"><i class="icon-base ti tabler-coins"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div>
+                                    <small class="text-muted d-block">عدد العمليات</small>
+                                    <strong class="fs-5">{{ number_format($movementsCount ?? 0) }}</strong>
+                                </div>
+                                <span class="avatar-initial rounded bg-label-secondary"><i class="icon-base ti tabler-list-details"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form method="get" class="row g-3 mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">بحث</label>
+                        <input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="الاسم أو الجوال أو رقم الطلب">
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label fw-semibold small">الحالة</label>
                         <select name="status" class="form-select form-select-sm">
                             <option value="">الكل</option>
@@ -49,12 +78,20 @@
                             <option value="rejected" @selected($status === 'rejected')>مرفوضة</option>
                         </select>
                     </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">من تاريخ</label>
+                        <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">إلى تاريخ</label>
+                        <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control form-control-sm">
+                    </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button class="btn btn-primary btn-sm w-100" type="submit">
                             <i class="icon-base ti tabler-filter me-1"></i> تصفية
                         </button>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
+                    <div class="col-md-1 d-flex align-items-end">
                         <a href="{{ route('admin.cancellation-requests.index') }}" class="btn btn-outline-secondary btn-sm w-100">
                             <i class="icon-base ti tabler-refresh me-1"></i> إعادة تعيين
                         </a>
