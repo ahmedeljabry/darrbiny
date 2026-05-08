@@ -7,16 +7,12 @@ namespace App\Jobs;
 use App\Models\TrainerProfile;
 use App\Models\UserRequest;
 use App\Notifications\NewRequestAvailable;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Notification;
 
-class NotifyEligibleTrainers implements ShouldQueue
+class NotifyEligibleTrainers
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
 
     public function __construct(private readonly UserRequest $request) {}
 

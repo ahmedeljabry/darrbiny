@@ -24,7 +24,7 @@ class NewRequestAvailable extends Notification implements ShouldQueue
     {
         return [
             'database' => 'sync',
-            \App\Notifications\Channels\FcmChannel::class => config('queue.default'),
+            \App\Notifications\Channels\FcmChannel::class => 'sync',
         ];
     }
 

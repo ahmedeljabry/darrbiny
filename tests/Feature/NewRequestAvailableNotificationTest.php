@@ -99,7 +99,7 @@ class NewRequestAvailableNotificationTest extends TestCase
         $this->assertContains('database', $channels);
         $this->assertContains(FcmChannel::class, $channels);
         $this->assertSame('sync', $notification->viaConnections()['database']);
-        $this->assertSame(config('queue.default'), $notification->viaConnections()[FcmChannel::class]);
+        $this->assertSame('sync', $notification->viaConnections()[FcmChannel::class]);
     }
 
     private function createCountryAndPlan(): array

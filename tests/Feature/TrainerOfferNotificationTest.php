@@ -66,7 +66,7 @@ class TrainerOfferNotificationTest extends TestCase
         $this->assertContains('database', $channels);
         $this->assertContains(FcmChannel::class, $channels);
         $this->assertSame('sync', $notification->viaConnections()['database']);
-        $this->assertSame(config('queue.default'), $notification->viaConnections()[FcmChannel::class]);
+        $this->assertSame('sync', $notification->viaConnections()[FcmChannel::class]);
     }
 
     public function test_trainer_receives_database_and_fcm_notification_when_student_accepts_offer(): void
@@ -109,7 +109,7 @@ class TrainerOfferNotificationTest extends TestCase
         $this->assertContains('database', $channels);
         $this->assertContains(FcmChannel::class, $channels);
         $this->assertSame('sync', $notification->viaConnections()['database']);
-        $this->assertSame(config('queue.default'), $notification->viaConnections()[FcmChannel::class]);
+        $this->assertSame('sync', $notification->viaConnections()[FcmChannel::class]);
     }
 
     public function test_only_request_owner_can_accept_offer(): void
