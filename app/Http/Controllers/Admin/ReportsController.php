@@ -36,15 +36,20 @@ class ReportsController extends BaseController
     public function sales(Request $request, ReportsService $service)
     {
         $filters = $this->salesFilters($request);
-        ['payments' => $payments, 'totalMinor' => $total, 'count' => $count, 'averageMinor' => $averageMinor] = $service->salesReport($filters);
-        
+        [
+            'payments' => $payments,
+            'totalMinor' => $total,
+            'appFeeTotalMinor' => $appFeeTotalMinor,
+            'count' => $count,
+        ] = $service->salesReport($filters);
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new SalesReportExport($service->salesReportCollection($filters)),
-                'sales-report-' . now()->format('Y-m-d') . '.xlsx'
+                'sales-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
-        
+
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
         $typeOptions = $this->reportTypeOptions();
@@ -53,8 +58,8 @@ class ReportsController extends BaseController
         return view('admin.reports.sales', compact(
             'payments',
             'total',
+            'appFeeTotalMinor',
             'count',
-            'averageMinor',
             'filters',
             'paymentMethods',
             'countries',
@@ -67,11 +72,11 @@ class ReportsController extends BaseController
     {
         $filters = $this->paymentFilters($request, allowStatus: true, allowPlan: true);
         ['payments' => $payments, 'totalMinor' => $totalMinor, 'count' => $count] = $service->paymentsReport($filters);
-        
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new PaymentsReportExport($service->paymentsCollection($filters)),
-                'payments-report-' . now()->format('Y-m-d') . '.xlsx'
+                'payments-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -80,7 +85,7 @@ class ReportsController extends BaseController
         $plans = $this->planOptions();
         $statusOptions = Payment::statusLabels();
         $typeOptions = $this->reportTypeOptions();
-        
+
         return view('admin.reports.payments', compact(
             'payments',
             'totalMinor',
@@ -98,18 +103,18 @@ class ReportsController extends BaseController
     {
         $filters = $this->subscriptionFilters($request);
         ['subscriptions' => $subs, 'count' => $count] = $service->subscriptionsReport($filters);
-        
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new SubscriptionsReportExport($service->subscriptionsCollection($filters)),
-                'subscriptions-report-' . now()->format('Y-m-d') . '.xlsx'
+                'subscriptions-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
         $countries = $this->countryOptions();
         $plans = $this->planOptions();
         $statusOptions = $this->subscriptionStatusOptions();
-        
+
         return view('admin.reports.subscriptions', compact(
             'subs',
             'count',
@@ -128,17 +133,17 @@ class ReportsController extends BaseController
             $filters['to'] ?? null,
             $filters
         );
-        
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new PlanSalesReportExport($service->planSalesCollection($filters['from'] ?? null, $filters['to'] ?? null, $filters)),
-                'plan-sales-report-' . now()->format('Y-m-d') . '.xlsx'
+                'plan-sales-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
-        
+
         return view('admin.reports.plan-sales', compact(
             'payments',
             'total',
@@ -158,17 +163,17 @@ class ReportsController extends BaseController
             $filters['to'] ?? null,
             $filters
         );
-        
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new AppFeesReportExport($service->appFeesCollection($filters['from'] ?? null, $filters['to'] ?? null, $filters)),
-                'app-fees-report-' . now()->format('Y-m-d') . '.xlsx'
+                'app-fees-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
-        
+
         return view('admin.reports.app-fees', compact(
             'payments',
             'total',
@@ -188,18 +193,18 @@ class ReportsController extends BaseController
             $filters['to'] ?? null,
             $filters
         );
-        
+
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new VatReportExport($service->vatCollection($filters['from'] ?? null, $filters['to'] ?? null, $filters), $vatPercent),
-                'vat-report-' . now()->format('Y-m-d') . '.xlsx'
+                'vat-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
         $paymentMethods = $this->paymentMethodOptions();
         $countries = $this->countryOptions();
         $typeOptions = $this->reportTypeOptions();
-        
+
         return view('admin.reports.vat', compact(
             'payments',
             'vatPercent',

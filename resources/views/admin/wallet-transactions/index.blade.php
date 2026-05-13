@@ -52,6 +52,15 @@
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label fw-semibold small">الدولة</label>
+                        <select name="country_id" class="form-select form-select-sm">
+                            <option value="">كل الدول</option>
+                            @foreach($countries as $country)
+                                <option value="{{ $country->id }}" @selected(request('country_id') == $country->id)>{{ $country->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label fw-semibold small">الحالة</label>
                         <select name="status" class="form-select form-select-sm">
                             <option value="">الكل</option>
@@ -60,11 +69,11 @@
                             <option value="rejected" @selected(request('status') == 'rejected')>مرفوض</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label class="form-label fw-semibold small">من تاريخ</label>
                         <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control form-control-sm">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label class="form-label fw-semibold small">إلى تاريخ</label>
                         <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control form-control-sm">
                     </div>

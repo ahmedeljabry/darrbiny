@@ -24,15 +24,26 @@ class MessagesController extends BaseController
         }]);
 
         if ($search) {
-            $query->whereHas('messages', function ($q) use ($search) {
-                $q->where('message', 'like', "%{$search}%");
+            $query->where(function ($conversationQuery) use ($search): void {
+                $conversationQuery
+                    ->whereHas('userOne', function ($q) use ($search): void {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('userTwo', function ($q) use ($search): void {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('messages', function ($q) use ($search): void {
+                        $q->where('message', 'like', "%{$search}%");
+                    });
             });
         }
 
         if ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->where('user_one_id', $userId)
-                  ->orWhere('user_two_id', $userId);
+                    ->orWhere('user_two_id', $userId);
             });
         }
 
@@ -54,9 +65,7 @@ class MessagesController extends BaseController
             ->paginate(20)
             ->withQueryString();
 
-        $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc']);
-
-        return view('admin.messages.index', compact('conversations', 'users', 'search', 'userId', 'unread', 'dateFrom', 'dateTo'));
+        return view('admin.messages.index', compact('conversations', 'search', 'userId', 'unread', 'dateFrom', 'dateTo'));
     }
 
     public function show(string $id)
@@ -84,13 +93,28 @@ class MessagesController extends BaseController
         $query = Message::with(['conversation.userOne', 'conversation.userTwo', 'sender']);
 
         if ($search) {
-            $query->where('message', 'like', "%{$search}%");
+            $query->where(function ($messageQuery) use ($search): void {
+                $messageQuery
+                    ->where('message', 'like', "%{$search}%")
+                    ->orWhereHas('sender', function ($q) use ($search): void {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('conversation.userOne', function ($q) use ($search): void {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('conversation.userTwo', function ($q) use ($search): void {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    });
+            });
         }
 
         if ($userId) {
             $query->whereHas('conversation', function ($q) use ($userId) {
                 $q->where('user_one_id', $userId)
-                  ->orWhere('user_two_id', $userId);
+                    ->orWhere('user_two_id', $userId);
             });
         }
 
@@ -113,9 +137,6 @@ class MessagesController extends BaseController
             ->paginate(50)
             ->withQueryString();
 
-        $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc']);
-
-        return view('admin.messages.messages', compact('messages', 'users', 'search', 'userId', 'senderId', 'unread', 'dateFrom', 'dateTo'));
+        return view('admin.messages.messages', compact('messages', 'search', 'userId', 'senderId', 'unread', 'dateFrom', 'dateTo'));
     }
 }
-

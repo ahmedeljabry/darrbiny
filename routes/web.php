@@ -1,19 +1,19 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UsersController as AdminUsersController;
-use App\Http\Controllers\Admin\PlansController;
-use App\Http\Controllers\Admin\MediaController as AdminMediaController;
-use App\Http\Controllers\Admin\ContentController as AdminContentController;
-use App\Http\Controllers\Admin\Auth\LoginController as AdminLoginController;
-use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\AdvancedReportsController;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\Auth\LoginController as AdminLoginController;
+use App\Http\Controllers\Admin\ContentController as AdminContentController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\MediaController as AdminMediaController;
+use App\Http\Controllers\Admin\PlansController;
+use App\Http\Controllers\Admin\UsersController as AdminUsersController;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->file(public_path('landing/index.html'));
 });
 
 Route::get('/login', function () {
@@ -47,7 +47,7 @@ Route::middleware(['web'])
                     ->middleware('can:cancel_courses');
                 Route::delete('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'destroy'])->name('bookings.destroy');
 
-                Route::resource('plans' , PlansController::class)->names('plans');
+                Route::resource('plans', PlansController::class)->names('plans');
                 Route::post('/plans/{id}/move-up', [PlansController::class, 'moveUp'])->name('plans.move-up');
                 Route::post('/plans/{id}/move-down', [PlansController::class, 'moveDown'])->name('plans.move-down');
                 Route::put('/plans/{planId}/requests/{requestId}/status', [PlansController::class, 'updateRequestStatus'])->name('plans.requests.update-status');
@@ -168,8 +168,8 @@ Route::middleware(['web'])
 
                 // Messages
                 Route::get('/messages', [\App\Http\Controllers\Admin\MessagesController::class, 'index'])->name('messages.index');
-                Route::get('/messages/{id}', [\App\Http\Controllers\Admin\MessagesController::class, 'show'])->name('messages.show');
                 Route::get('/messages/all', [\App\Http\Controllers\Admin\MessagesController::class, 'messages'])->name('messages.messages');
+                Route::get('/messages/{id}', [\App\Http\Controllers\Admin\MessagesController::class, 'show'])->name('messages.show');
 
                 // Support tickets
                 Route::get('/support', [\App\Http\Controllers\Admin\SupportTicketsController::class, 'index'])->name('support.index');
@@ -220,10 +220,11 @@ Route::match(['get', 'post'], '/admin/impersonation/stop', [ImpersonationControl
 if (app()->environment('local')) {
     Route::get('/admin/dev-login', function () {
         $admin = User::role('ADMIN')->first();
-        if (!$admin) {
+        if (! $admin) {
             abort(404, 'No admin user');
         }
         Auth::login($admin);
+
         return redirect()->route('admin.dashboard');
     });
 }

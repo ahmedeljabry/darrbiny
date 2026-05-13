@@ -70,16 +70,21 @@ class DashboardController extends BaseController
             ->whereBetween('created_at', [$from, $to])
             ->count();
         $unreadNotifications = auth()->user()->unreadNotifications()->count();
-        $dashboardAlerts = auth()->user()
+        $unreadDashboardNotifications = auth()->user()
             ->unreadNotifications()
             ->latest()
-            ->limit(20)
-            ->get()
+            ->get();
+        $dashboardAlerts = $unreadDashboardNotifications
             ->filter(fn ($notification) => in_array($notification->data['type'] ?? '', [
                 'wallet_withdraw_request',
             ], true))
-            ->take(5)
             ->values();
+        $supportTicketAlertsCount = $unreadDashboardNotifications
+            ->filter(fn ($notification) => in_array($notification->data['type'] ?? '', [
+                'support_ticket_created',
+                'support_ticket_user_reply',
+            ], true))
+            ->count();
 
         $dashboardIncomeFilters = [
             'from' => $from,
@@ -94,6 +99,18 @@ class DashboardController extends BaseController
             ...$dashboardIncomeFilters,
             'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
         ])['incoming_minor'];
+        $packageRevenueMinor = \App\Models\Payment::query()
+            ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
+            ->where('type', \App\Models\Payment::TYPE_PLAN_FULL)
+            ->whereBetween('created_at', [$from, $to])
+            ->get(['amount_minor', 'app_fee_minor', 'trainer_net_minor', 'currency'])
+            ->sum(fn (\App\Models\Payment $payment): int => $this->reportCurrencyConverter->convertMinor(
+                max(
+                    (int) $payment->amount_minor,
+                    (int) $payment->trainer_net_minor + (int) $payment->app_fee_minor
+                ),
+                $payment->currency
+            ));
         $appFeesMinor = $this->appWalletAccountService->summary([
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
@@ -114,7 +131,18 @@ class DashboardController extends BaseController
             $cancellationFilters,
             'app_fee'
         ));
-        $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
+        $packageRevenueMinor = max(0, $packageRevenueMinor - $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            $cancellationFilters,
+            'plan_full'
+        ));
+        $salesMinor = $packageReservationFeesMinor + $packageRevenueMinor;
+        $executedWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
+            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
+            ->whereBetween('processed_at', [$from, $to])
+            ->sum('amount');
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
@@ -133,7 +161,7 @@ class DashboardController extends BaseController
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
-        $netProfitMinor = $packageReservationFeesMinor + $appFeesMinor - $expensesMinor;
+        $netProfitMinor = $salesMinor - $expensesMinor;
         $appWalletBalanceMinor = $this->appWalletAccountService->summary()['net_minor'];
 
         [
@@ -145,16 +173,17 @@ class DashboardController extends BaseController
         ] = $this->buildTrendSeries($from, $to);
 
         return view('admin.dashboard', compact(
-            'planCount','countriesCount','usersCount','trainersCount',
-            'bookingsCount','activeBookings','completedBookings',
+            'planCount', 'countriesCount', 'usersCount', 'trainersCount',
+            'bookingsCount', 'activeBookings', 'completedBookings',
             'cancelledBookings',
-            'pendingCancellations','pendingWalletRequests','pendingWithdrawalRequests','pendingPrizeRequests',
-            'pendingSupportTickets','unreadNotifications',
-            'dashboardAlerts',
-            'labels','userSeries','planSeries','bookingSeries',
-            'range','salesMinor','packageReservationFeesMinor','appFeesMinor','awaitingOffers',
-            'from','to','rangeLabel','usesCustomRange','trendLabel',
-            'bookingsValueMinor','expensesMinor','netProfitMinor','appWalletBalanceMinor','withdrawalRequestsValueMinor'
+            'pendingCancellations', 'pendingWalletRequests', 'pendingWithdrawalRequests', 'pendingPrizeRequests',
+            'pendingSupportTickets', 'unreadNotifications',
+            'dashboardAlerts', 'supportTicketAlertsCount',
+            'labels', 'userSeries', 'planSeries', 'bookingSeries',
+            'range', 'salesMinor', 'packageReservationFeesMinor', 'appFeesMinor', 'awaitingOffers',
+            'from', 'to', 'rangeLabel', 'usesCustomRange', 'trendLabel',
+            'bookingsValueMinor', 'expensesMinor', 'netProfitMinor', 'appWalletBalanceMinor',
+            'withdrawalRequestsValueMinor', 'executedWithdrawalsMinor'
         ));
     }
 
@@ -165,7 +194,7 @@ class DashboardController extends BaseController
             ->latest()
             ->limit(10)
             ->get();
-        
+
         $bookingStats = [
             'total' => \App\Models\UserRequest::count(),
             'pending' => \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_PENDING_PAYMENT)->count(),
@@ -201,7 +230,7 @@ class DashboardController extends BaseController
                 $range,
                 $from,
                 $to,
-                'من ' . $from->translatedFormat('d M Y') . ' إلى ' . $to->translatedFormat('d M Y'),
+                'من '.$from->translatedFormat('d M Y').' إلى '.$to->translatedFormat('d M Y'),
                 true,
             ];
         }
@@ -295,5 +324,4 @@ class DashboardController extends BaseController
             'trendLabel' => $useDailyGranularity ? 'يومي' : 'شهري',
         ];
     }
-
 }

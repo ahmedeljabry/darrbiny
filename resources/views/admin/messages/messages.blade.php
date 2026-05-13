@@ -19,29 +19,7 @@
                     <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
                         <div>
                             <label class="form-label">بحث</label>
-                            <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="ابحث في محتوى الرسائل">
-                        </div>
-                        <div>
-                            <label class="form-label">المستخدم (مشارك)</label>
-                            <select name="user_id" class="form-select select2" style="min-width:180px">
-                                <option value="">الكل</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>
-                                        {{ $user->name }} ({{ $user->phone_with_cc }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label">المرسل</label>
-                            <select name="sender_id" class="form-select select2" style="min-width:180px">
-                                <option value="">الكل</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}" @selected(request('sender_id') == $user->id)>
-                                        {{ $user->name }} ({{ $user->phone_with_cc }})
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="اسم المستخدم أو رقم الجوال">
                         </div>
                         <div>
                             <label class="form-label">غير مقروءة</label>
@@ -141,4 +119,3 @@
 @endpush
 
 @endsection
-

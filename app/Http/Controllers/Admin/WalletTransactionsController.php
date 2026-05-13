@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\WalletTransactionsExport;
+use App\Models\Country;
 use App\Models\WalletTransaction;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class WalletTransactionsController extends BaseController
         $status = $request->query('status');
         $userId = $request->query('user_id');
         $search = $request->query('q');
+        $countryId = $request->query('country_id');
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
@@ -36,7 +38,14 @@ class WalletTransactionsController extends BaseController
         if ($search) {
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                    ->orWhere('phone_with_cc', 'like', "%{$search}%");
+            });
+        }
+
+        if ($countryId) {
+            $query->whereHas('user', function ($q) use ($countryId) {
+                $q->where('country_id', $countryId)
+                    ->orWhere('bank_country_id', $countryId);
             });
         }
 
@@ -49,23 +58,13 @@ class WalletTransactionsController extends BaseController
         }
 
         if ($request->query('export') === 'excel') {
-            $allTransactions = WalletTransaction::with(['user.country', 'user.bankCountry', 'processedBy'])
-                ->when($status, fn($q) => $q->where('status', $status))
-                ->when($userId, fn($q) => $q->where('user_id', $userId))
-                ->when($search, function ($q) use ($search) {
-                    $q->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                          ->orWhere('phone_with_cc', 'like', "%{$search}%");
-                    });
-                })
-                ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
-                ->when($dateTo, fn($q) => $q->whereDate('created_at', '<=', $dateTo))
+            $allTransactions = (clone $query)
                 ->orderBy('created_at', 'desc')
                 ->get();
 
             return Excel::download(
                 new WalletTransactionsExport($allTransactions),
-                'wallet-transactions-' . now()->format('Y-m-d') . '.xlsx'
+                'wallet-transactions-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -74,31 +73,35 @@ class WalletTransactionsController extends BaseController
             ->withQueryString();
 
         $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc']);
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.wallet-transactions.index', compact('transactions', 'users', 'status', 'userId', 'search', 'dateFrom', 'dateTo'));
+        return view('admin.wallet-transactions.index', compact('transactions', 'users', 'countries', 'status', 'userId', 'search', 'countryId', 'dateFrom', 'dateTo'));
     }
 
     public function show(string $id)
     {
         $transaction = WalletTransaction::with(['user.country', 'user.bankCountry', 'processedBy'])->findOrFail($id);
+
         return view('admin.wallet-transactions.show', compact('transaction'));
     }
 
     public function approve(Request $request, string $id)
     {
         $transaction = WalletTransaction::findOrFail($id);
-        
+
         if ($transaction->status !== WalletTransaction::STATUS_PENDING) {
             return back()->withErrors(['error' => 'لا يمكن الموافقة على معاملة غير معلقة']);
         }
 
         if ($transaction->type === WalletTransaction::TYPE_TOPUP_REQUEST) {
             $this->service->approveTopup($transaction, $request->user());
+
             return back()->with('status', 'تمت الموافقة على طلب الإضافة وإيداع المبلغ في المحفظة');
         }
 
         if ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
             $this->service->approveWithdrawal($transaction, $request->user());
+
             return back()->with('status', 'تم تنفيذ طلب السحب وخصم المبلغ من المحفظة');
         }
 
@@ -112,18 +115,20 @@ class WalletTransactionsController extends BaseController
         ]);
 
         $transaction = WalletTransaction::findOrFail($id);
-        
+
         if ($transaction->status !== WalletTransaction::STATUS_PENDING) {
             return back()->withErrors(['error' => 'لا يمكن رفض معاملة غير معلقة']);
         }
 
         if ($transaction->type === WalletTransaction::TYPE_TOPUP_REQUEST) {
             $this->service->rejectTopup($transaction, $request->user(), $request->input('rejection_reason'));
+
             return back()->with('status', 'تم رفض طلب الإضافة');
         }
 
         if ($transaction->type === WalletTransaction::TYPE_WITHDRAW_REQUEST) {
             $this->service->rejectWithdrawal($transaction, $request->user(), $request->input('rejection_reason'));
+
             return back()->with('status', 'تم رفض طلب السحب');
         }
 

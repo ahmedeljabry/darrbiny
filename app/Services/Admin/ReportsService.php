@@ -9,8 +9,8 @@ use App\Models\Payment;
 use App\Models\UserRequest;
 use App\Support\ReportCurrencyConverter;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final class ReportsService
@@ -67,11 +67,13 @@ final class ReportsService
             'gross'
         );
         $totalMinor = $grossTotalMinor - $refundsMinor;
+        $appFeeTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'app_fee_minor');
         $count = (int) (clone $query)->count();
 
         return [
             'payments' => (clone $query)->latest()->paginate(25),
             'totalMinor' => $totalMinor,
+            'appFeeTotalMinor' => $appFeeTotalMinor,
             'count' => $count,
             'averageMinor' => $count > 0 ? (int) round($totalMinor / $count) : 0,
         ];
@@ -266,7 +268,7 @@ final class ReportsService
             ->when($filters['from'] ?? null, fn (Builder $query, CarbonImmutable $from) => $query->whereDate('start_date', '>=', $from->toDateString()))
             ->when($filters['to'] ?? null, fn (Builder $query, CarbonImmutable $to) => $query->whereDate('start_date', '<=', $to->toDateString()))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
-                $like = '%' . $search . '%';
+                $like = '%'.$search.'%';
                 $orderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
                 $query->where(function (Builder $nestedQuery) use ($like, $orderNumber): void {
@@ -354,7 +356,7 @@ final class ReportsService
                 $builder->whereHas('userRequest', fn (Builder $requestQuery) => $requestQuery->where('status', $requestStatus));
             })
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
-                $like = '%' . $search . '%';
+                $like = '%'.$search.'%';
                 $orderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
                 $builder->where(function (Builder $nestedQuery) use ($like, $orderNumber): void {

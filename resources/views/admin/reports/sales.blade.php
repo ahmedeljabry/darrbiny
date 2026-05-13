@@ -36,7 +36,7 @@
     'stats' => [
       ['label' => 'إجمالي الإيرادات', 'value' => number_format(($total ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'coins'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
-      ['label' => 'متوسط العملية', 'value' => number_format(($averageMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'chart-histogram', 'tone' => 'info'],
+      ['label' => 'رسوم التطبيق', 'value' => number_format(($appFeeTotalMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'stack-3', 'tone' => 'info'],
       ['label' => 'وسائل الدفع النشطة', 'value' => number_format(count($paymentMethodOptions)), 'icon' => 'credit-card', 'tone' => 'warning'],
     ],
   ])
@@ -73,6 +73,19 @@
           </thead>
           <tbody>
             @forelse($payments as $payment)
+              @php
+                $requestStatus = $payment->userRequest?->status;
+                $statusTone = match ($requestStatus) {
+                  \App\Models\UserRequest::STATUS_COMPLETED => 'success',
+                  \App\Models\UserRequest::STATUS_CANCELLED => 'danger',
+                  \App\Models\UserRequest::STATUS_IN_TRAINING => 'primary',
+                  \App\Models\UserRequest::STATUS_PENDING_PAYMENT,
+                  \App\Models\UserRequest::STATUS_AWAITING_OFFERS,
+                  \App\Models\UserRequest::STATUS_OFFER_SELECTED,
+                  \App\Models\UserRequest::STATUS_PAID => 'warning',
+                  default => 'secondary',
+                };
+              @endphp
               <tr>
                 <td><code class="text-primary">#{{ $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '—' }}</code></td>
                 <td>
@@ -104,7 +117,7 @@
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>
-                <td><span class="badge bg-label-secondary">{{ $requestStatusLabelFor($payment->userRequest?->status) }}</span></td>
+                <td><span class="report-status report-status--{{ $statusTone }}">{{ $requestStatusLabelFor($requestStatus) }}</span></td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>
             @empty

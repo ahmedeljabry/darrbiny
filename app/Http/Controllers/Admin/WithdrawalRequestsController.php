@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\WithdrawalRequestsExport;
+use App\Models\Country;
 use App\Models\WalletTransaction;
 use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class WithdrawalRequestsController extends BaseController
         $status = $request->query('status');
         $userId = $request->query('user_id');
         $search = $request->query('q');
+        $countryId = $request->query('country_id');
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
@@ -42,6 +44,13 @@ class WithdrawalRequestsController extends BaseController
             });
         }
 
+        if ($countryId) {
+            $query->whereHas('user', function ($q) use ($countryId) {
+                $q->where('country_id', $countryId)
+                    ->orWhere('bank_country_id', $countryId);
+            });
+        }
+
         if ($dateFrom) {
             $query->whereDate('created_at', '>=', $dateFrom);
         }
@@ -57,7 +66,7 @@ class WithdrawalRequestsController extends BaseController
 
             return Excel::download(
                 new WithdrawalRequestsExport($allRequests),
-                'withdrawal-requests-' . now()->format('Y-m-d') . '.xlsx'
+                'withdrawal-requests-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -76,13 +85,16 @@ class WithdrawalRequestsController extends BaseController
             ->withQueryString();
 
         $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc', 'user_type']);
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
 
         return view('admin.withdrawal-requests.index', compact(
             'requests',
             'users',
+            'countries',
             'status',
             'userId',
             'search',
+            'countryId',
             'dateFrom',
             'dateTo',
             'totalAmountMinor',

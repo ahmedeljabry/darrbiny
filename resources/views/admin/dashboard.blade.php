@@ -11,14 +11,14 @@
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 
   $financeCards = [
-    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + قيمة الباقات الكاملة + نسبة الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
     ['label' => 'رسوم الحجز', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز الثابتة ورسوم حجز الباقات • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
     ['label' => 'رسوم الباقات', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ', 'icon' => 'wallet', 'tone' => 'primary'],
     ['label' => 'مستحقات المدربين', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'صافي المدرب للكورسات المكتملة بعد خصم سحوبات المدربين المنفذة', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
-    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
-    ['label' => 'السحوبات', 'value' => number_format(($withdrawalRequestsValueMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي قيمة طلبات السحب ضمن ' . ($rangeLabel ?? 'الفترة الحالية'), 'icon' => 'arrow-up-right-circle', 'tone' => 'danger'],
+    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي الإيرادات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
+    ['label' => 'السحوبات', 'value' => number_format(($executedWithdrawalsMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي قيمة طلبات السحب المنفذة ضمن ' . ($rangeLabel ?? 'الفترة الحالية'), 'icon' => 'arrow-up-right-circle', 'tone' => 'danger'],
   ];
 
   $stateCards = [
@@ -46,7 +46,7 @@
     ['label' => 'طلبات الإيداع', 'desc' => 'طلبات إضافة رصيد للمحفظة', 'value' => $pendingWalletRequests, 'route' => route('admin.wallet-transactions.index'), 'tone' => 'primary', 'icon' => 'wallet'],
     ['label' => 'طلبات السحب', 'desc' => 'طلبات سحب من محافظ الطلاب والمدربين', 'value' => $pendingWithdrawalRequests, 'route' => route('admin.withdrawal-requests.index'), 'tone' => 'danger', 'icon' => 'arrow-up-right-circle'],
     ['label' => 'طلبات الجوائز', 'desc' => 'استبدال النقاط بالمكافآت', 'value' => $pendingPrizeRequests, 'route' => route('admin.prize-redemptions.index'), 'tone' => 'info', 'icon' => 'gift'],
-    ['label' => 'تذاكر الدعم', 'desc' => 'حالات تحتاج رد أو تصعيد', 'value' => $pendingSupportTickets, 'route' => route('admin.support.index'), 'tone' => 'secondary', 'icon' => 'message-2'],
+    ['label' => 'تذاكر الدعم', 'desc' => 'تذاكر جديدة أو ردود من المستخدمين', 'value' => $pendingSupportTickets, 'alert' => $supportTicketAlertsCount ?? 0, 'route' => route('admin.support.index'), 'tone' => 'secondary', 'icon' => 'message-2'],
     ['label' => 'إشعارات السحوبات', 'desc' => 'طلبات سحب غير مقروءة تحتاج مراجعة', 'value' => ($dashboardAlerts ?? collect())->count(), 'route' => route('admin.notifications.view', ['read' => 'unread', 'type' => 'WalletWithdrawRequest']), 'tone' => 'danger', 'icon' => 'bell-ringing'],
   ];
 
@@ -263,7 +263,14 @@
                     <small class="text-muted">{{ $item['desc'] }}</small>
                   </div>
                 </div>
-                <a href="{{ $item['route'] }}" class="badge bg-label-{{ $item['tone'] }} rounded-pill text-decoration-none">{{ $item['value'] }}</a>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                  @if(($item['alert'] ?? 0) > 0)
+                    <span class="badge bg-label-warning rounded-pill">
+                      <i class="icon-base ti tabler-bell-ringing me-1"></i>{{ $item['alert'] }}
+                    </span>
+                  @endif
+                  <a href="{{ $item['route'] }}" class="badge bg-label-{{ $item['tone'] }} rounded-pill text-decoration-none">{{ $item['value'] }}</a>
+                </div>
               </li>
             @endforeach
           </ul>
@@ -271,62 +278,6 @@
       </div>
     </div>
   </div>
-
-  @if(($dashboardAlerts ?? collect())->isNotEmpty())
-    <div class="card report-panel mt-4">
-      <div class="card-body">
-        <div class="dashboard-section-head">
-          <div>
-            <h5 class="mb-1">تنبيهات مباشرة تحتاج متابعة</h5>
-            <p class="text-muted mb-0 small">إشعارات مرتبطة بطلبات السحب المفتوحة الآن.</p>
-          </div>
-          <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.notifications.view', ['read' => 'unread', 'type' => 'WalletWithdrawRequest']) }}">كل السحوبات</a>
-        </div>
-
-        <div class="row g-3">
-          @foreach($dashboardAlerts as $notification)
-            @php
-              $notificationType = $notification->data['type'] ?? '';
-              $alertTone = match ($notificationType) {
-                'wallet_withdraw_request' => 'danger',
-                'prize_request' => 'info',
-                'support_ticket_user_reply' => 'warning',
-                default => 'secondary',
-              };
-              $alertIcon = match ($notificationType) {
-                'wallet_withdraw_request' => 'arrow-up-right-circle',
-                'prize_request' => 'gift',
-                'support_ticket_user_reply' => 'message-2',
-                default => 'bell',
-              };
-              $alertUrl = match ($notificationType) {
-                'wallet_withdraw_request' => !empty($notification->data['transaction_id']) ? route('admin.withdrawal-requests.show', $notification->data['transaction_id']) : route('admin.notifications.show', $notification->id),
-                'prize_request' => !empty($notification->data['redemption_id']) ? route('admin.prize-redemptions.show', $notification->data['redemption_id']) : route('admin.notifications.show', $notification->id),
-                'support_ticket_user_reply' => !empty($notification->data['ticket_id']) ? route('admin.support.show', $notification->data['ticket_id']) : route('admin.notifications.show', $notification->id),
-                default => route('admin.notifications.show', $notification->id),
-              };
-            @endphp
-            <div class="col-xl-4 col-md-6">
-              <a href="{{ $alertUrl }}" class="text-decoration-none">
-                <div class="report-stat h-100">
-                  <div class="d-flex align-items-start justify-content-between gap-3">
-                    <div>
-                      <div class="report-stat__label">{{ $notification->data['title'] ?? 'تنبيه جديد' }}</div>
-                      <p class="mb-2 fw-semibold text-dark">{{ \Illuminate\Support\Str::limit($notification->data['message'] ?? '', 70) }}</p>
-                      <small class="text-muted">{{ $notification->created_at?->diffForHumans() }}</small>
-                    </div>
-                    <span class="avatar-initial rounded bg-label-{{ $alertTone }}">
-                      <i class="icon-base ti tabler-{{ $alertIcon }}"></i>
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </div>
-          @endforeach
-        </div>
-      </div>
-    </div>
-  @endif
 
   @can('manage_users')
     <div class="card report-panel mt-4 border border-danger-subtle">

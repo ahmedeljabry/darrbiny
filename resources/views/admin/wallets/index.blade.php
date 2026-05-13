@@ -38,12 +38,38 @@
       </div>
     </div>
   </div>
+  <div class="card-body pt-0">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label fw-semibold small">بحث</label>
+        <input type="text" name="q" value="{{ $search ?? request('q') }}" class="form-control form-control-sm" placeholder="اسم المستخدم أو رقم الجوال">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">الدولة</label>
+        <select name="country_id" class="form-select form-select-sm">
+          <option value="">كل الدول</option>
+          @foreach($countries as $country)
+            <option value="{{ $country->id }}" @selected(($countryId ?? request('country_id')) == $country->id)>{{ $country->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="col-md-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm flex-fill" type="submit">
+            <i class="icon-base ti tabler-filter me-1"></i> تصفية
+          </button>
+          <a href="{{ route('admin.wallets.index') }}" class="btn btn-outline-secondary btn-sm">إعادة</a>
+        </div>
+      </div>
+    </form>
+  </div>
   <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
         <tr>
           <th><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
           <th><i class="icon-base ti tabler-phone me-1"></i> رقم الجوال</th>
+          <th><i class="icon-base ti tabler-world me-1"></i> الدولة</th>
           <th><i class="icon-base ti tabler-coins me-1"></i> الرصيد</th>
           <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
@@ -53,6 +79,7 @@
           <tr>
             <td>{{ $u->name ?? $u->id }}</td>
             <td>{{ $u->phone_with_cc }}</td>
+            <td>{{ $u->country?->name ?? $u->bankCountry?->name ?? '-' }}</td>
             <td><strong>{{ number_format($u->points_balance, 2) }}</strong></td>
             <td>
               <div class="d-flex gap-2 justify-content-center">

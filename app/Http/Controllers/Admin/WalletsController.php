@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Country;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Modules\Wallet\Services\WalletService;
 use App\Support\Fees;
 use App\Support\WalletAmount;
-use App\Modules\Wallet\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -17,12 +18,32 @@ class WalletsController extends BaseController
 {
     public function __construct(private readonly WalletService $wallets) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::orderBy('name')->paginate(20);
+        $search = trim((string) $request->query('q', ''));
+        $countryId = trim((string) $request->query('country_id', ''));
+
+        $users = User::query()
+            ->with(['country', 'bankCountry'])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($userQuery) use ($search): void {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone_with_cc', 'like', "%{$search}%");
+                });
+            })
+            ->when($countryId !== '', function ($query) use ($countryId): void {
+                $query->where(function ($userQuery) use ($countryId): void {
+                    $userQuery->where('country_id', $countryId)
+                        ->orWhere('bank_country_id', $countryId);
+                });
+            })
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
         $appFeePercent = Fees::appFeePercent();
 
-        return view('admin.wallets.index', compact('users', 'appFeePercent'));
+        return view('admin.wallets.index', compact('users', 'countries', 'appFeePercent', 'search', 'countryId'));
     }
 
     public function store(Request $request)
@@ -65,7 +86,7 @@ class WalletsController extends BaseController
         if ($courseReference !== '') {
             $booking = $this->resolveCourseBooking($data);
 
-            return 'إضافة مستحقات كورس رقم ' . ($booking->formatted_order_number ?? $booking->order_number ?? $booking->id);
+            return 'إضافة مستحقات كورس رقم '.($booking->formatted_order_number ?? $booking->order_number ?? $booking->id);
         }
 
         return $data['notes'] ?? null;

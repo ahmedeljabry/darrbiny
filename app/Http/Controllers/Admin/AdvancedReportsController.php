@@ -18,8 +18,8 @@ use App\Models\RewardRedemption;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
+use App\Models\WalletTransaction;
 use App\Support\ReportCurrencyConverter;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -41,7 +41,7 @@ class AdvancedReportsController extends BaseController
                 fputcsv($out, $row);
             }
             fclose($out);
-        }, $filename . '.csv', ['Content-Type' => 'text/csv']);
+        }, $filename.'.csv', ['Content-Type' => 'text/csv']);
     }
 
     private function view(
@@ -77,14 +77,7 @@ class AdvancedReportsController extends BaseController
         $dateTo = $request->query('date_to');
 
         if (blank($dateFrom) && blank($dateTo)) {
-            $hasSearchFilter = filled($request->query('name')) || filled($request->query('phone'));
-            if ($hasSearchFilter) {
-                return [null, null];
-            }
-
-            $today = Carbon::today()->toDateString();
-
-            return [$today, $today];
+            return [null, null];
         }
 
         return [
@@ -117,12 +110,12 @@ class AdvancedReportsController extends BaseController
                 $nestedQuery->{$method}($relation, function (Builder $personQuery) use ($name, $phone): void {
                     $personQuery->where(function (Builder $matchQuery) use ($name, $phone): void {
                         if ($name !== '') {
-                            $matchQuery->where('name', 'like', '%' . $name . '%');
+                            $matchQuery->where('name', 'like', '%'.$name.'%');
                         }
 
                         if ($phone !== '') {
                             $method = $name === '' ? 'where' : 'orWhere';
-                            $matchQuery->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                            $matchQuery->{$method}('phone_with_cc', 'like', '%'.$phone.'%');
                         }
                     });
                 });
@@ -147,12 +140,12 @@ class AdvancedReportsController extends BaseController
         $phone = trim((string) $request->query('phone', ''));
 
         $paymentsQuery = Payment::with([
-                'userRequest.country',
-                'userRequest.plan.country',
-                'userRequest.payout',
-                'userRequest.trainer.country',
-                'userRequest.trainer.trainerProfile.country',
-            ])
+            'userRequest.country',
+            'userRequest.plan.country',
+            'userRequest.payout',
+            'userRequest.trainer.country',
+            'userRequest.trainer.trainerProfile.country',
+        ])
             ->where('type', Payment::TYPE_PLAN_FULL)
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->whereHas('userRequest', fn (Builder $query) => $query->where('status', UserRequest::STATUS_COMPLETED));
@@ -160,12 +153,14 @@ class AdvancedReportsController extends BaseController
         $this->applyDateRange($paymentsQuery, $dateFrom, $dateTo);
         $this->applyNamePhoneFilters($paymentsQuery, ['userRequest.trainer'], $name, $phone);
 
-        $payments = $paymentsQuery->orderByDesc('created_at')->get();
+        $payments = $this->attachTrainerWithdrawalExecution(
+            $paymentsQuery->orderByDesc('created_at')->get()
+        );
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new CompletedPayoutsExport($payments),
-                'completed-payouts-' . now()->format('Y-m-d') . '.xlsx'
+                'completed-payouts-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -179,6 +174,7 @@ class AdvancedReportsController extends BaseController
                 Payout::STATUS_PENDING_REVIEW => 'غير منفذة',
                 default => 'غير منفذة',
             };
+            $executionStatus = (string) ($p->payout_execution_status ?? $payoutStatusLabel);
 
             return [
                 $trainer?->name ?? '-',
@@ -192,32 +188,84 @@ class AdvancedReportsController extends BaseController
                 $trainer?->bank_account ?? '-',
                 $trainer?->iban ?? '-',
                 number_format($p->trainer_net_minor / 100, 2),
-                $payoutStatusLabel,
+                number_format(((int) ($p->executed_withdrawal_minor ?? 0)) / 100, 2),
+                number_format(((int) ($p->remaining_trainer_net_minor ?? $p->trainer_net_minor)) / 100, 2),
+                $executionStatus,
                 $p->created_at?->format('Y-m-d H:i') ?? '-',
             ];
         })->all();
 
         $totalPayoutsMinor = (int) $payments->sum('trainer_net_minor');
-        $executedPayoutsMinor = (int) $payments
-            ->filter(fn (Payment $payment): bool => $payment->userRequest?->payout?->status === Payout::STATUS_SENT)
-            ->sum('trainer_net_minor');
-        $unexecutedPayoutsMinor = max(0, $totalPayoutsMinor - $executedPayoutsMinor);
+        $executedPayoutsMinor = (int) $payments->sum(fn (Payment $payment): int => (int) ($payment->executed_withdrawal_minor ?? 0));
+        $remainingPayoutsMinor = (int) $payments->sum(fn (Payment $payment): int => (int) ($payment->remaining_trainer_net_minor ?? $payment->trainer_net_minor));
+        $filters = $this->buildDailyFilters($request, $dateFrom, $dateTo);
 
         return $this->view(
-            'الكورسات المكتملة ومستحقات المدرب (يومي)',
-            ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'الحالة', 'تاريخ الدفعة'],
+            'الكورسات المكتملة ومستحقات المدرب',
+            ['المدرب', 'الجوال', 'الدولة', 'البنك', 'رقم الحساب', 'IBAN', 'صافي المدرب', 'تم سحبه', 'المتبقي', 'حالة السحب', 'تاريخ الدفعة'],
             $rows,
             $request,
             'completed-payouts',
             true,
-            $this->buildDailyFilters($request, $dateFrom, $dateTo),
+            $filters,
             [
-                ['label' => 'إجمالي المستحقات', 'value' => number_format($totalPayoutsMinor / 100, 2), 'icon' => 'wallet', 'tone' => 'success'],
-                ['label' => 'مستحقات منفذة', 'value' => number_format($executedPayoutsMinor / 100, 2), 'icon' => 'circle-check', 'tone' => 'primary'],
-                ['label' => 'مستحقات غير منفذة', 'value' => number_format($unexecutedPayoutsMinor / 100, 2), 'icon' => 'clock-hour-4', 'tone' => 'warning'],
-                ['label' => 'عدد الحركات', 'value' => number_format(count($rows)), 'icon' => 'list-details', 'tone' => 'secondary'],
+                ['label' => 'عدد النتائج', 'value' => number_format(count($rows)), 'icon' => 'list-details'],
+                ['label' => 'إجمالي مستحقات المدربين', 'value' => number_format($totalPayoutsMinor / 100, 2), 'icon' => 'wallet', 'tone' => 'success'],
+                ['label' => 'تم سحبه', 'value' => number_format($executedPayoutsMinor / 100, 2), 'icon' => 'circle-check', 'tone' => 'primary'],
+                ['label' => 'المتبقي غير المنفذ', 'value' => number_format($remainingPayoutsMinor / 100, 2), 'icon' => 'cash-off', 'tone' => 'warning'],
+                ['label' => 'الفلاتر النشطة', 'value' => number_format(collect($filters)->filter(fn ($value) => filled($value))->count()), 'icon' => 'adjustments-horizontal', 'tone' => 'secondary'],
             ]
         );
+    }
+
+    private function attachTrainerWithdrawalExecution(\Illuminate\Support\Collection $payments): \Illuminate\Support\Collection
+    {
+        $trainerIds = $payments
+            ->map(fn (Payment $payment): ?string => $payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($trainerIds->isEmpty()) {
+            return $payments;
+        }
+
+        $withdrawalsByTrainer = WalletTransaction::query()
+            ->whereIn('user_id', $trainerIds)
+            ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+            ->where('status', WalletTransaction::STATUS_APPROVED)
+            ->selectRaw('user_id, COALESCE(SUM(amount), 0) as total_withdrawn_minor')
+            ->groupBy('user_id')
+            ->pluck('total_withdrawn_minor', 'user_id')
+            ->map(fn (mixed $amount): int => (int) $amount)
+            ->all();
+
+        $remainingWithdrawalsByTrainer = $withdrawalsByTrainer;
+
+        $payments
+            ->sortBy(fn (Payment $payment): int => $payment->created_at?->getTimestamp() ?? 0)
+            ->each(function (Payment $payment) use (&$remainingWithdrawalsByTrainer): void {
+                $trainerId = $payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id;
+                $netMinor = max(0, (int) $payment->trainer_net_minor);
+                $availableWithdrawalMinor = max(0, (int) ($remainingWithdrawalsByTrainer[$trainerId] ?? 0));
+                $hasSentPayout = $payment->userRequest?->payout?->status === Payout::STATUS_SENT;
+                $executedMinor = $hasSentPayout ? $netMinor : min($netMinor, $availableWithdrawalMinor);
+                $remainingMinor = max(0, $netMinor - $executedMinor);
+
+                if ($trainerId !== null) {
+                    $remainingWithdrawalsByTrainer[$trainerId] = max(0, $availableWithdrawalMinor - $executedMinor);
+                }
+
+                $payment->setAttribute('executed_withdrawal_minor', $executedMinor);
+                $payment->setAttribute('remaining_trainer_net_minor', $remainingMinor);
+                $payment->setAttribute('payout_execution_status', match (true) {
+                    $netMinor <= 0 || $remainingMinor <= 0 => 'منفذة',
+                    $executedMinor > 0 => 'منفذة جزئياً',
+                    default => 'غير منفذة',
+                });
+            });
+
+        return $payments;
     }
 
     public function activeCourses(Request $request)
@@ -229,12 +277,13 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new ActiveCoursesExport($courses),
-                'active-courses-' . now()->format('Y-m-d') . '.xlsx'
+                'active-courses-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
         $rows = $courses->map(function (UserRequest $req) {
             $payment = $req->payments->first();
+
             return [
                 $req->id,
                 $req->trainer?->name ?? '-',
@@ -260,7 +309,7 @@ class AdvancedReportsController extends BaseController
             ->where('status', UserRequest::STATUS_AWAITING_OFFERS)
             ->get();
 
-        $rows = $requests->map(fn($r) => [
+        $rows = $requests->map(fn ($r) => [
             $r->id,
             $r->user?->name ?? '-',
             $r->user?->phone_with_cc ?? '-',
@@ -292,7 +341,7 @@ class AdvancedReportsController extends BaseController
 
         $rows = $items->map(function (UserScheduleProgress $p) {
             return [
-                $p->userRequest?->formatted_order_number ? ('#' . $p->userRequest->formatted_order_number) : '-',
+                $p->userRequest?->formatted_order_number ? ('#'.$p->userRequest->formatted_order_number) : '-',
                 $p->userRequest?->user?->name ?? '-',
                 $p->userRequest?->user?->phone_with_cc ?? '-',
                 $p->userRequest?->trainer?->name ?? '-',
@@ -308,7 +357,7 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new ArrayRowsExport($headers, $rows),
-                'rejected-progress-' . now()->format('Y-m-d') . '.xlsx'
+                'rejected-progress-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -340,12 +389,12 @@ class AdvancedReportsController extends BaseController
         if ($name !== '' || $phone !== '') {
             $usersQuery->where(function (Builder $query) use ($name, $phone): void {
                 if ($name !== '') {
-                    $query->where('name', 'like', '%' . $name . '%');
+                    $query->where('name', 'like', '%'.$name.'%');
                 }
 
                 if ($phone !== '') {
                     $method = $name === '' ? 'where' : 'orWhere';
-                    $query->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                    $query->{$method}('phone_with_cc', 'like', '%'.$phone.'%');
                 }
             });
         }
@@ -362,11 +411,11 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new WalletBalancesExport($users),
-                'wallet-balances-' . now()->format('Y-m-d') . '.xlsx'
+                'wallet-balances-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
-        $rows = $users->map(fn(User $u) => [
+        $rows = $users->map(fn (User $u) => [
             $u->id,
             $u->name ?? '-',
             $u->phone_with_cc ?? '-',
@@ -422,12 +471,12 @@ class AdvancedReportsController extends BaseController
             ->when($name !== '' || $phone !== '', function (Builder $query) use ($name, $phone): void {
                 $query->where(function (Builder $nested) use ($name, $phone): void {
                     if ($name !== '') {
-                        $nested->where('name', 'like', '%' . $name . '%');
+                        $nested->where('name', 'like', '%'.$name.'%');
                     }
 
                     if ($phone !== '') {
                         $method = $name === '' ? 'where' : 'orWhere';
-                        $nested->{$method}('phone_with_cc', 'like', '%' . $phone . '%');
+                        $nested->{$method}('phone_with_cc', 'like', '%'.$phone.'%');
                     }
                 });
             });
@@ -442,11 +491,11 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new PointsBalancesExport($users),
-                'points-balances-' . now()->format('Y-m-d') . '.xlsx'
+                'points-balances-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
-        $rows = $users->map(fn(User $u) => [
+        $rows = $users->map(fn (User $u) => [
             $u->id,
             $u->name ?? '-',
             $u->phone_with_cc ?? '-',
@@ -482,11 +531,11 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new PrizeRedemptionsExport($items),
-                'reward-redemptions-' . now()->format('Y-m-d') . '.xlsx'
+                'reward-redemptions-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
-        $rows = $items->map(fn(RewardRedemption $r) => [
+        $rows = $items->map(fn (RewardRedemption $r) => [
             $r->id,
             $r->user?->name ?? '-',
             $r->user?->phone_with_cc ?? '-',
@@ -564,7 +613,7 @@ class AdvancedReportsController extends BaseController
             $totalPackageFeesMinor += $packageFeesMinor;
 
             return [
-                $userRequest->formatted_order_number ? ('#' . $userRequest->formatted_order_number) : '-',
+                $userRequest->formatted_order_number ? ('#'.$userRequest->formatted_order_number) : '-',
                 $userRequest->user?->name ?? '-',
                 $userRequest->country?->name ?? $userRequest->plan?->country?->name ?? '-',
                 number_format($bookingFeesMinor / 100, 2),
@@ -579,7 +628,7 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new ArrayRowsExport($headers, $rows),
-                'app-profits-' . now()->format('Y-m-d') . '.xlsx'
+                'app-profits-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -618,7 +667,7 @@ class AdvancedReportsController extends BaseController
         if ($request->query('export') === 'excel') {
             return Excel::download(
                 new WalletPaymentsExport($items),
-                'wallet-payments-' . now()->format('Y-m-d') . '.xlsx'
+                'wallet-payments-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
