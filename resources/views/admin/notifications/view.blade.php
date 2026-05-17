@@ -77,11 +77,25 @@
                         </thead>
                         <tbody>
                             @forelse($notifications as $notification)
+                                @php
+                                    $notificationType = $notification->data['type'] ?? '';
+                                    $notificationIconMap = [
+                                        'support_ticket_created' => 'ticket',
+                                        'support_ticket_user_reply' => 'ticket',
+                                        'prize_request' => 'gift',
+                                        'wallet_topup_request' => 'wallet',
+                                        'wallet_withdraw_request' => 'arrow-up-right-circle',
+                                        'cancellation_request' => 'x',
+                                        'user_account_deleted' => 'user',
+                                        'trainer_profile_update' => 'user-check',
+                                    ];
+                                    $notificationIcon = $notificationIconMap[$notificationType] ?? 'bell';
+                                @endphp
                                 <tr class="{{ $notification->read_at ? '' : 'table-active' }}">
                                     <td>
                                         <div class="avatar">
                                             <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
-                                                <i class="icon-base ti tabler-{{ in_array($notification->data['type'] ?? '', ['support_ticket_created', 'support_ticket_user_reply'], true) ? 'ticket' : (($notification->data['type'] ?? '') === 'prize_request' ? 'gift' : (($notification->data['type'] ?? '') === 'wallet_topup_request' ? 'wallet' : (($notification->data['type'] ?? '') === 'wallet_withdraw_request' ? 'arrow-up-right-circle' : (($notification->data['type'] ?? '') === 'cancellation_request' ? 'x' : (($notification->data['type'] ?? '') === 'user_account_deleted' ? 'user' : 'bell')))))) }}"></i>
+                                                <i class="icon-base ti tabler-{{ $notificationIcon }}"></i>
                                             </span>
                                         </div>
                                     </td>
@@ -109,7 +123,7 @@
                                                 'user_account_deleted' => 'حذف حساب',
                                                 'trainer_profile_update' => 'تعديل ملف مدرب',
                                             ];
-                                            $typeName = $typeMap[$notification->data['type'] ?? ''] ?? 'عام';
+                                            $typeName = $typeMap[$notificationType] ?? 'عام';
                                         @endphp
                                         <span class="badge bg-label-info">{{ $typeName }}</span>
                                     </td>

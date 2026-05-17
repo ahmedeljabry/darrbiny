@@ -54,13 +54,25 @@
                         @forelse($notifications as $notification)
                             @php
                                 $notificationUrl = route('admin.notifications.show', $notification->id);
+                                $notificationType = $notification->data['type'] ?? '';
+                                $notificationIconMap = [
+                                    'support_ticket_created' => 'ticket',
+                                    'support_ticket_user_reply' => 'ticket',
+                                    'prize_request' => 'gift',
+                                    'wallet_topup_request' => 'wallet',
+                                    'wallet_withdraw_request' => 'arrow-up-right-circle',
+                                    'cancellation_request' => 'x',
+                                    'trainer_profile_update' => 'user-check',
+                                    'user_account_deleted' => 'user',
+                                ];
+                                $notificationIcon = $notificationIconMap[$notificationType] ?? 'bell';
                             @endphp
                             <a href="{{ $notificationUrl }}" class="dropdown-item dropdown-notifications-item {{ $notification->read_at ? '' : 'marked-as-read' }}">
                                 <div class="d-flex">
                                     <div class="flex-shrink-0 me-3">
                                         <div class="avatar">
                                             <span class="avatar-initial rounded-circle bg-label-{{ $notification->read_at ? 'secondary' : 'primary' }}">
-                                                <i class="icon-base ti tabler-{{ in_array($notification->data['type'] ?? '', ['support_ticket_created', 'support_ticket_user_reply'], true) ? 'ticket' : (($notification->data['type'] ?? '') === 'prize_request' ? 'gift' : (($notification->data['type'] ?? '') === 'wallet_topup_request' ? 'wallet' : (($notification->data['type'] ?? '') === 'wallet_withdraw_request' ? 'arrow-up-right-circle' : (($notification->data['type'] ?? '') === 'cancellation_request' ? 'x' : (($notification->data['type'] ?? '') === 'trainer_profile_update' ? 'user-check' : (($notification->data['type'] ?? '') === 'user_account_deleted' ? 'user' : 'bell')))))) }}"></i>
+                                                <i class="icon-base ti tabler-{{ $notificationIcon }}"></i>
                                             </span>
                                         </div>
                                     </div>
