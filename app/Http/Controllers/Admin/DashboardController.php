@@ -32,8 +32,8 @@ class DashboardController extends BaseController
             ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['ADMIN', 'TRAINER']))
             ->whereBetween('created_at', [$from, $to])
             ->count();
-        $trainersCount = \App\Models\User::role('TRAINER')
-            ->whereBetween('users.created_at', [$from, $to])
+        $trainersCount = \App\Models\User::where('user_type', \App\Enums\UserType::CAPTAIN->value)
+            ->whereBetween('created_at', [$from, $to])
             ->count();
         $bookingsCount = \App\Models\UserRequest::whereBetween('created_at', [$from, $to])->count();
         $activeBookings = \App\Models\UserRequest::where('status', \App\Models\UserRequest::STATUS_IN_TRAINING)

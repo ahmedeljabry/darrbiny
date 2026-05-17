@@ -17,6 +17,7 @@ use App\Services\Admin\AppWalletAccountService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -155,6 +156,28 @@ class AdminDashboardTest extends TestCase
             ->assertSee('0.00')
             ->assertSee('312.57')
             ->assertSee('الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ');
+    }
+
+    public function test_dashboard_does_not_require_trainer_role_to_count_trainers(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009031',
+            'email' => 'admin-dashboard-no-trainer-role@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        Role::where('name', 'TRAINER')->delete();
+
+        User::factory()->create([
+            'phone_with_cc' => '+10000009032',
+            'user_type' => \App\Enums\UserType::CAPTAIN,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('المدربون الجدد')
+            ->assertSee('1');
     }
 
     public function test_dashboard_supports_custom_date_range_filter(): void
