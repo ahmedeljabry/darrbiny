@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
+use App\Models\WalletTransaction;
 use App\Support\ReportCurrencyConverter;
 use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -115,7 +116,7 @@ class AdminReportsDataTest extends TestCase
             ->assertOk()
             ->assertSee('رقم الطلب')
             ->assertSee('المبلغ')
-            ->assertSee('#' . $request->fresh()->formatted_order_number)
+            ->assertSee('#'.$request->fresh()->formatted_order_number)
             ->assertSee('70.00 SAR')
             ->assertSee($country->name);
     }
@@ -722,6 +723,101 @@ class AdminReportsDataTest extends TestCase
             ->assertSee('Alpha Bank')
             ->assertDontSee('Other Trainer')
             ->assertDontSee('>المعرف<', false);
+    }
+
+    public function test_completed_payouts_report_applies_withdrawal_to_latest_eligible_course(): void
+    {
+        $admin = $this->createAdmin();
+        [, $plan] = $this->createLocationPlan();
+
+        $student = User::factory()->create([
+            'name' => 'Payout Allocation Student',
+            'phone_with_cc' => '+10000008051',
+        ]);
+        $student->assignRole('USER');
+
+        $trainer = User::factory()->create([
+            'name' => 'Payout Allocation Trainer',
+            'phone_with_cc' => '+10000008052',
+            'user_type' => 'captain',
+            'bank_name' => 'Allocation Bank',
+            'bank_account' => '54239800845',
+            'iban' => 'SA5558986500',
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $olderRequest = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-05-10',
+            'status' => UserRequest::STATUS_COMPLETED,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $latestRequest = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'start_date' => '2026-05-14',
+            'status' => UserRequest::STATUS_COMPLETED,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Carbon::setTestNow('2026-05-10 11:43:00');
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $olderRequest->id,
+            'amount_minor' => 100_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 10_000,
+            'trainer_net_minor' => 90_000,
+        ]);
+
+        Carbon::setTestNow('2026-05-14 08:13:00');
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $latestRequest->id,
+            'amount_minor' => 100_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 10_000,
+            'trainer_net_minor' => 90_000,
+        ]);
+
+        WalletTransaction::create([
+            'user_id' => $trainer->id,
+            'amount' => 90_000,
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'processed_by' => $admin->id,
+            'processed_at' => Carbon::parse('2026-05-14 12:19:00'),
+        ]);
+        Carbon::setTestNow();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reports.completed-payouts'))
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression(
+            '/<tr>.*?Payout Allocation Trainer.*?900\.00.*?900\.00.*?0\.00.*?منفذة.*?2026-05-14 08:13.*?<\/tr>/s',
+            $response->getContent()
+        );
+        $this->assertMatchesRegularExpression(
+            '/<tr>.*?Payout Allocation Trainer.*?900\.00.*?0\.00.*?900\.00.*?غير منفذة.*?2026-05-10 11:43.*?<\/tr>/s',
+            $response->getContent()
+        );
     }
 
     public function test_rejected_progress_report_filters_by_phone_and_date_range_and_hides_identifier_column(): void

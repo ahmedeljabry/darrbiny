@@ -220,6 +220,14 @@ class AdvancedReportsController extends BaseController
 
     private function attachTrainerWithdrawalExecution(\Illuminate\Support\Collection $payments): \Illuminate\Support\Collection
     {
+        $payments->each(function (Payment $payment): void {
+            $netMinor = max(0, (int) $payment->trainer_net_minor);
+            $hasSentPayout = $payment->userRequest?->payout?->status === Payout::STATUS_SENT;
+
+            $payment->setAttribute('executed_withdrawal_minor', $hasSentPayout ? $netMinor : 0);
+            $payment->setAttribute('remaining_trainer_net_minor', $hasSentPayout ? 0 : $netMinor);
+        });
+
         $trainerIds = $payments
             ->map(fn (Payment $payment): ?string => $payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id)
             ->filter()
@@ -234,36 +242,67 @@ class AdvancedReportsController extends BaseController
             ->whereIn('user_id', $trainerIds)
             ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->where('status', WalletTransaction::STATUS_APPROVED)
-            ->selectRaw('user_id, COALESCE(SUM(amount), 0) as total_withdrawn_minor')
-            ->groupBy('user_id')
-            ->pluck('total_withdrawn_minor', 'user_id')
-            ->map(fn (mixed $amount): int => (int) $amount)
-            ->all();
+            ->orderByRaw('COALESCE(processed_at, updated_at, created_at) asc')
+            ->orderBy('created_at')
+            ->get(['user_id', 'amount', 'processed_at', 'updated_at', 'created_at'])
+            ->groupBy('user_id');
 
-        $remainingWithdrawalsByTrainer = $withdrawalsByTrainer;
+        $paymentsByTrainer = $payments
+            ->filter(fn (Payment $payment): bool => filled($payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id))
+            ->groupBy(fn (Payment $payment): string => (string) ($payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id));
 
-        $payments
-            ->sortBy(fn (Payment $payment): int => $payment->created_at?->getTimestamp() ?? 0)
-            ->each(function (Payment $payment) use (&$remainingWithdrawalsByTrainer): void {
-                $trainerId = $payment->userRequest?->trainer_id ?? $payment->userRequest?->trainer?->id;
-                $netMinor = max(0, (int) $payment->trainer_net_minor);
-                $availableWithdrawalMinor = max(0, (int) ($remainingWithdrawalsByTrainer[$trainerId] ?? 0));
-                $hasSentPayout = $payment->userRequest?->payout?->status === Payout::STATUS_SENT;
-                $executedMinor = $hasSentPayout ? $netMinor : min($netMinor, $availableWithdrawalMinor);
-                $remainingMinor = max(0, $netMinor - $executedMinor);
+        $paymentsByTrainer->each(function (\Illuminate\Support\Collection $trainerPayments, string $trainerId) use ($withdrawalsByTrainer): void {
+            foreach ($withdrawalsByTrainer->get($trainerId, collect()) as $withdrawal) {
+                $withdrawalRemainingMinor = max(0, (int) $withdrawal->amount);
+                $withdrawalAt = $withdrawal->processed_at ?? $withdrawal->updated_at ?? $withdrawal->created_at;
 
-                if ($trainerId !== null) {
-                    $remainingWithdrawalsByTrainer[$trainerId] = max(0, $availableWithdrawalMinor - $executedMinor);
+                while ($withdrawalRemainingMinor > 0) {
+                    $eligiblePayment = $trainerPayments
+                        ->filter(function (Payment $payment) use ($withdrawalAt): bool {
+                            $remainingMinor = (int) $payment->getAttribute('remaining_trainer_net_minor');
+
+                            if ($remainingMinor <= 0) {
+                                return false;
+                            }
+
+                            if ($withdrawalAt === null || $payment->created_at === null) {
+                                return true;
+                            }
+
+                            return $payment->created_at->lessThanOrEqualTo($withdrawalAt);
+                        })
+                        ->sortByDesc(fn (Payment $payment): int => $payment->created_at?->getTimestamp() ?? 0)
+                        ->first();
+
+                    if (! $eligiblePayment instanceof Payment) {
+                        break;
+                    }
+
+                    $paymentRemainingMinor = (int) $eligiblePayment->getAttribute('remaining_trainer_net_minor');
+                    $executedMinor = min($paymentRemainingMinor, $withdrawalRemainingMinor);
+
+                    $eligiblePayment->setAttribute(
+                        'executed_withdrawal_minor',
+                        (int) $eligiblePayment->getAttribute('executed_withdrawal_minor') + $executedMinor
+                    );
+                    $eligiblePayment->setAttribute('remaining_trainer_net_minor', $paymentRemainingMinor - $executedMinor);
+
+                    $withdrawalRemainingMinor -= $executedMinor;
                 }
+            }
+        });
 
-                $payment->setAttribute('executed_withdrawal_minor', $executedMinor);
-                $payment->setAttribute('remaining_trainer_net_minor', $remainingMinor);
-                $payment->setAttribute('payout_execution_status', match (true) {
-                    $netMinor <= 0 || $remainingMinor <= 0 => 'منفذة',
-                    $executedMinor > 0 => 'منفذة جزئياً',
-                    default => 'غير منفذة',
-                });
+        $payments->each(function (Payment $payment): void {
+            $netMinor = max(0, (int) $payment->trainer_net_minor);
+            $executedMinor = (int) $payment->getAttribute('executed_withdrawal_minor');
+            $remainingMinor = (int) $payment->getAttribute('remaining_trainer_net_minor');
+
+            $payment->setAttribute('payout_execution_status', match (true) {
+                $netMinor <= 0 || $remainingMinor <= 0 => 'منفذة',
+                $executedMinor > 0 => 'منفذة جزئياً',
+                default => 'غير منفذة',
             });
+        });
 
         return $payments;
     }

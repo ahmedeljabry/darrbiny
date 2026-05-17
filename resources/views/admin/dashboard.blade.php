@@ -11,13 +11,13 @@
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 
   $financeCards = [
-    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + قيمة الباقات الكاملة + نسبة الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
     ['label' => 'رسوم الحجز', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز الثابتة ورسوم حجز الباقات • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
     ['label' => 'رسوم الباقات', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],
     ['label' => 'رصيد محفظة التطبيق', 'value' => number_format($appWalletBalanceMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'الرصيد الحقيقي الحالي بالريال ولا يتأثر بفلتر التاريخ', 'icon' => 'wallet', 'tone' => 'primary'],
     ['label' => 'مستحقات المدربين', 'value' => number_format($bookingsValueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'صافي المدرب للكورسات المكتملة بعد خصم سحوبات المدربين المنفذة', 'icon' => 'calendar-dollar', 'tone' => 'warning'],
-    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي الإيرادات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
+    ['label' => 'صافي الربح', 'value' => number_format($netProfitMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات - المصروفات', 'icon' => 'chart-arrows-vertical', 'tone' => 'secondary'],
     ['label' => 'السحوبات', 'value' => number_format(($executedWithdrawalsMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'desc' => 'إجمالي قيمة طلبات السحب المنفذة ضمن ' . ($rangeLabel ?? 'الفترة الحالية'), 'icon' => 'arrow-up-right-circle', 'tone' => 'danger'],
   ];
 
@@ -44,7 +44,7 @@
   $queueItems = [
     ['label' => 'طلبات الإلغاء', 'desc' => 'مراجعة الطلبات المعلقة', 'value' => $pendingCancellations, 'route' => route('admin.cancellation-requests.index'), 'tone' => 'warning', 'icon' => 'rotate-clockwise-2'],
     ['label' => 'طلبات الإيداع', 'desc' => 'طلبات إضافة رصيد للمحفظة', 'value' => $pendingWalletRequests, 'route' => route('admin.wallet-transactions.index'), 'tone' => 'primary', 'icon' => 'wallet'],
-    ['label' => 'طلبات السحب', 'desc' => 'طلبات سحب من محافظ الطلاب والمدربين', 'value' => $pendingWithdrawalRequests, 'route' => route('admin.withdrawal-requests.index'), 'tone' => 'danger', 'icon' => 'arrow-up-right-circle'],
+    ['label' => 'طلبات السحب', 'desc' => 'طلبات سحب من محافظ الطلاب والمدربين', 'meta' => number_format(($withdrawalRequestsValueMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'value' => $pendingWithdrawalRequests, 'route' => route('admin.withdrawal-requests.index'), 'tone' => 'danger', 'icon' => 'arrow-up-right-circle'],
     ['label' => 'طلبات الجوائز', 'desc' => 'استبدال النقاط بالمكافآت', 'value' => $pendingPrizeRequests, 'route' => route('admin.prize-redemptions.index'), 'tone' => 'info', 'icon' => 'gift'],
     ['label' => 'تذاكر الدعم', 'desc' => 'تذاكر جديدة أو ردود من المستخدمين', 'value' => $pendingSupportTickets, 'alert' => $supportTicketAlertsCount ?? 0, 'route' => route('admin.support.index'), 'tone' => 'secondary', 'icon' => 'message-2'],
     ['label' => 'إشعارات السحوبات', 'desc' => 'طلبات سحب غير مقروءة تحتاج مراجعة', 'value' => ($dashboardAlerts ?? collect())->count(), 'route' => route('admin.notifications.view', ['read' => 'unread', 'type' => 'WalletWithdrawRequest']), 'tone' => 'danger', 'icon' => 'bell-ringing'],
@@ -261,6 +261,9 @@
                   <div>
                     <div class="fw-semibold">{{ $item['label'] }}</div>
                     <small class="text-muted">{{ $item['desc'] }}</small>
+                    @if(!empty($item['meta']))
+                      <small class="text-muted d-block">{{ $item['meta'] }}</small>
+                    @endif
                   </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">

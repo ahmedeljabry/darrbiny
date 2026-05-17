@@ -87,7 +87,7 @@ final class UserPurgeService
                 'iban' => null,
                 'bank_name' => null,
                 'bank_country_id' => null,
-                'banned_until' => $timestamp->copy()->addYears(100),
+                'banned_until' => $this->deletedAccountBanUntil($timestamp),
                 'banned_reason' => 'تم حذف الحساب وتحرير رقم الجوال',
             ])->save();
 
@@ -128,6 +128,14 @@ final class UserPurgeService
 
     private function releasedPhoneValue(string $userId, \DateTimeInterface $timestamp): string
     {
-        return 'deleted:' . $timestamp->format('YmdHis') . ':' . substr($userId, 0, 8);
+        return 'deleted:'.$timestamp->format('YmdHis').':'.substr($userId, 0, 8);
+    }
+
+    private function deletedAccountBanUntil(\Illuminate\Support\Carbon $timestamp): \Illuminate\Support\Carbon
+    {
+        $safeTimestampLimit = $timestamp->copy()->setDate(2037, 12, 31)->endOfDay();
+        $banUntil = $timestamp->copy()->addYears(10);
+
+        return $banUntil->lessThanOrEqualTo($safeTimestampLimit) ? $banUntil : $safeTimestampLimit;
     }
 }

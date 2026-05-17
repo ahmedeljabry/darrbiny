@@ -301,6 +301,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (notificationMarkAsReadList) {
     notificationMarkAsReadList.forEach(item => {
       item.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
         item.closest('.dropdown-notifications-item').classList.toggle('marked-as-read');
       });
     });

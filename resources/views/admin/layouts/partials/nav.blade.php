@@ -87,8 +87,8 @@
                             </div>
                         @endforelse
                     </li>
-                    <li class="dropdown-menu-footer border-top">
-                        <a href="{{ route('admin.notifications.view') }}" class="dropdown-item d-flex justify-content-center p-3">
+                    <li class="dropdown-menu-footer border-top position-relative bg-navbar-theme" style="z-index: 2;">
+                        <a href="{{ route('admin.notifications.view') }}" class="dropdown-item d-flex justify-content-center p-3 js-notifications-view-all" onclick="event.stopPropagation();">
                             عرض جميع الإشعارات
                         </a>
                     </li>

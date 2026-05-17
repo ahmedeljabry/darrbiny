@@ -135,6 +135,11 @@ class AdminUserPurgeServiceTest extends TestCase
             'name' => 'مستخدم محذوف',
             'email' => null,
         ]);
+        $purgedStudent = User::withTrashed()->findOrFail($student->id);
+        $this->assertNotNull($purgedStudent->banned_until);
+        $this->assertTrue($purgedStudent->banned_until->lessThanOrEqualTo(
+            \Illuminate\Support\Carbon::parse('2037-12-31 23:59:59')
+        ));
         $this->assertDatabaseMissing('users', [
             'phone_with_cc' => '+10000006101',
         ]);

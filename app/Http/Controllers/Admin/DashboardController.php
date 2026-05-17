@@ -99,18 +99,6 @@ class DashboardController extends BaseController
             ...$dashboardIncomeFilters,
             'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
         ])['incoming_minor'];
-        $packageRevenueMinor = \App\Models\Payment::query()
-            ->where('status', \App\Models\Payment::STATUS_SUCCEEDED)
-            ->where('type', \App\Models\Payment::TYPE_PLAN_FULL)
-            ->whereBetween('created_at', [$from, $to])
-            ->get(['amount_minor', 'app_fee_minor', 'trainer_net_minor', 'currency'])
-            ->sum(fn (\App\Models\Payment $payment): int => $this->reportCurrencyConverter->convertMinor(
-                max(
-                    (int) $payment->amount_minor,
-                    (int) $payment->trainer_net_minor + (int) $payment->app_fee_minor
-                ),
-                $payment->currency
-            ));
         $appFeesMinor = $this->appWalletAccountService->summary([
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
@@ -131,13 +119,7 @@ class DashboardController extends BaseController
             $cancellationFilters,
             'app_fee'
         ));
-        $packageRevenueMinor = max(0, $packageRevenueMinor - $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            $cancellationFilters,
-            'plan_full'
-        ));
-        $salesMinor = $packageReservationFeesMinor + $packageRevenueMinor;
+        $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $executedWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
             ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
