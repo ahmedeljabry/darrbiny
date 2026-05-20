@@ -172,7 +172,7 @@ class HomeService
                         $w->whereNull('banned_until')
                             ->orWhere('banned_until', '<=', now());
                     })
-                    ->role('TRAINER');
+                    ->trainerAccount();
                 if ($search !== '') {
                     $uq->where(function ($w) use ($search) {
                         $w->where('name', 'like', "%{$search}%")
@@ -204,7 +204,7 @@ class HomeService
                     })
                     ->whereYear('created_at', $year)
                     ->whereMonth('created_at', $month)
-                    ->role('TRAINER');
+                    ->trainerAccount();
             })
             ->with('user:id,name,deleted_at,profile_picture_id,created_at', 'user.profilePicture')
             ->orderByDesc(

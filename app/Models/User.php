@@ -8,6 +8,7 @@ use App\Support\StorageUrl;
 use App\Support\WalletAmount;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -112,6 +113,16 @@ class User extends Authenticatable
     public function trainerProfile()
     {
         return $this->hasOne(TrainerProfile::class);
+    }
+
+    public function scopeTrainerAccount(Builder $query): Builder
+    {
+        return $query->where(static function (Builder $accountQuery): void {
+            $accountQuery->where('user_type', UserType::CAPTAIN->value)
+                ->orWhereHas('roles', static function (Builder $roleQuery): Builder {
+                    return $roleQuery->where('name', 'TRAINER');
+                });
+        });
     }
 
     public function isBanned(): bool

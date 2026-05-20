@@ -25,7 +25,7 @@ class TrainerController extends BaseController
                         $w->whereNull('banned_until')
                             ->orWhere('banned_until', '<=', now());
                     })
-                    ->role('TRAINER');
+                    ->trainerAccount();
                 if ($search !== '') {
                     $uq->where(function ($w) use ($search) {
                         $w->where('name', 'like', "%{$search}%")

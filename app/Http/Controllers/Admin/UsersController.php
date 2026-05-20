@@ -53,7 +53,7 @@ class UsersController extends BaseController
 
         $role = $request->query('role');
         if ($role === 'trainer') {
-            $q->role('TRAINER');
+            $q->trainerAccount();
         } elseif ($role === 'admin') {
             $q->role('ADMIN');
         } elseif ($role === 'user') {
@@ -70,7 +70,7 @@ class UsersController extends BaseController
                   ->orWhere('banned_until', '>', now());
             });
         } elseif (in_array($status, ['pending_trainer', 'activation_required'], true)) {
-            $q->role('TRAINER')
+            $q->trainerAccount()
               ->whereHas('trainerProfile', function ($profileQuery) {
                   $profileQuery->where('pending_approval', true);
               });
@@ -91,7 +91,7 @@ class UsersController extends BaseController
         $users = $q->latest()->paginate(20)->withQueryString();
 
         $totalUsers = User::count();
-        $trainersCount = User::role('TRAINER')->count();
+        $trainersCount = User::query()->trainerAccount()->count();
         $normalUsersCount = User::whereDoesntHave('roles', function ($r) {
             $r->whereIn('name', ['ADMIN', 'TRAINER']);
         })->count();
@@ -100,7 +100,7 @@ class UsersController extends BaseController
                 $w->whereNotNull('deleted_at')
                   ->orWhere('banned_until', '>', now());
             })->count();
-        $pendingTrainersCount = User::role('TRAINER')
+        $pendingTrainersCount = User::query()->trainerAccount()
             ->whereHas('trainerProfile', function ($profileQuery) {
                 $profileQuery->where('pending_approval', true);
             })->count();

@@ -157,7 +157,7 @@ class NotificationsAdminController extends BaseController
     private function resolveAudienceQuery(string $audience)
     {
         return $audience === 'trainers'
-            ? User::role('TRAINER')
+            ? User::query()->trainerAccount()
             : User::role('USER');
     }
 
