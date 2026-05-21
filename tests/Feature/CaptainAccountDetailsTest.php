@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\UserType;
 use App\Models\Country;
 use App\Models\User;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CaptainAccountDetailsTest extends TestCase
@@ -38,6 +40,23 @@ class CaptainAccountDetailsTest extends TestCase
             ->assertJsonPath('data.pending_approval', false)
             ->assertJsonPath('data.approval_status', 'approved')
             ->assertJsonPath('data.guidelines.title', 'تنبيه هام');
+    }
+
+    public function test_captain_user_type_can_fetch_account_details_without_trainer_role_assignment(): void
+    {
+        Role::where('name', 'TRAINER')->delete();
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+201555500011',
+            'user_type' => UserType::CAPTAIN,
+        ]);
+        $token = $trainer->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->getJson('/api/v1/captain/account-details')
+            ->assertOk()
+            ->assertJsonPath('data.pending_approval', false)
+            ->assertJsonPath('data.approval_status', 'approved');
     }
 
     public function test_trainer_can_update_account_details(): void

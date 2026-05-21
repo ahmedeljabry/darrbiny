@@ -23,6 +23,7 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 
 class AuthController extends BaseController
 {
@@ -47,6 +48,7 @@ class AuthController extends BaseController
         ]);
 
         $role = $type === 'captain' ? 'TRAINER' : 'USER';
+        Role::findOrCreate($role);
         $user->assignRole($role);
         if ($type === 'captain') {
             $user->trainerProfile()->create([
@@ -85,7 +87,7 @@ class AuthController extends BaseController
 
         $user->loadMissing('trainerProfile');
 
-        if ($user->hasRole('TRAINER') && $user->trainerProfile?->pending_approval) {
+        if ($user->isTrainerAccount() && $user->trainerProfile?->pending_approval) {
             return response()->json([
                 'message' => 'Account pending approval',
                 'errors' => [
@@ -120,7 +122,7 @@ class AuthController extends BaseController
         $user = $request->user();
         $userResource = new UserResource($user);
         $data = $userResource->resolve();
-        $data['user_type'] = $user->hasRole('TRAINER') || $user->user_type === UserType::CAPTAIN ? 'trainer' : 'user';
+        $data['user_type'] = $user->isTrainerAccount() ? 'trainer' : 'user';
 
         return response()->json(['data' => $data]);
     }

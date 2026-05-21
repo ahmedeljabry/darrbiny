@@ -48,7 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 $code = $e->getCode();
-                $message = config('app.debug') ? $e->getMessage() : __('Server error');
+                $message = config('app.debug') || ($status >= 400 && $status < 500)
+                    ? ($e->getMessage() ?: (\Symfony\Component\HttpFoundation\Response::$statusTexts[$status] ?? __('Server error')))
+                    : __('Server error');
 
                 return response()->json([
                     'success' => false,

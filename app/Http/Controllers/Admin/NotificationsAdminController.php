@@ -158,7 +158,7 @@ class NotificationsAdminController extends BaseController
     {
         return $audience === 'trainers'
             ? User::query()->trainerAccount()
-            : User::role('USER');
+            : User::query()->studentAccount();
     }
 
     private function countDeviceTokensForAudience($query): int

@@ -10,7 +10,7 @@ class CaptainAccountDetailsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->hasRole('TRAINER');
+        return (bool) $this->user()?->isTrainerAccount();
     }
 
     protected function prepareForValidation(): void

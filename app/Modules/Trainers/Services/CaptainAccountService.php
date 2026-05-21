@@ -141,7 +141,7 @@ class CaptainAccountService
 
     private function assertTrainer(User $user): void
     {
-        abort_unless($user->hasRole('TRAINER'), 403, 'Only captains can access this resource.');
+        abort_unless($user->isTrainerAccount(), 403, 'Only captains can access this resource.');
     }
 
     private function hasValueChanged(mixed $currentValue, mixed $newValue): bool

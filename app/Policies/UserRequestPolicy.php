@@ -31,7 +31,7 @@ class UserRequestPolicy
 
     public function logDay(User $user, UserRequest $req): bool
     {
-        return $user->hasRole('TRAINER');
+        return $user->isTrainerAccount();
     }
 
     public function approveDay(User $user, UserRequest $req): bool
@@ -39,4 +39,3 @@ class UserRequestPolicy
         return $req->user_id === $user->id;
     }
 }
-

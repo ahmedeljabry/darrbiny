@@ -57,9 +57,7 @@ class UsersController extends BaseController
         } elseif ($role === 'admin') {
             $q->role('ADMIN');
         } elseif ($role === 'user') {
-            $q->whereDoesntHave('roles', function ($r) {
-                $r->whereIn('name', ['ADMIN', 'TRAINER']);
-            });
+            $q->studentAccount();
         }
 
         $status = $request->query('status');
@@ -92,9 +90,7 @@ class UsersController extends BaseController
 
         $totalUsers = User::count();
         $trainersCount = User::query()->trainerAccount()->count();
-        $normalUsersCount = User::whereDoesntHave('roles', function ($r) {
-            $r->whereIn('name', ['ADMIN', 'TRAINER']);
-        })->count();
+        $normalUsersCount = User::query()->studentAccount()->count();
         $bannedCount = User::withTrashed()
             ->where(function ($w) {
                 $w->whereNotNull('deleted_at')
@@ -225,7 +221,7 @@ class UsersController extends BaseController
     {
         $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
         
-        abort_unless($user->hasRole('TRAINER'), 422, 'المستخدم ليس مدرباً');
+        abort_unless($user->isTrainerAccount(), 422, 'المستخدم ليس مدرباً');
         abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'لا توجد موافقة معلقة لهذا المدرب');
 
         $validated = $request->validate([
@@ -377,7 +373,10 @@ class UsersController extends BaseController
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['required', 'uuid', 'exists:users,id'],
             'action' => ['required', 'string', 'in:ban,unban,delete,approve_trainers'],
-        ], [], [
+        ], [
+            'user_ids.required' => 'حقل المستخدمون المحددون مطلوب.',
+            'action.required' => 'حقل الإجراء مطلوب.',
+        ], [
             'user_ids' => 'المستخدمون المحددون',
             'user_ids.*' => 'المستخدم المحدد',
             'action' => 'الإجراء',
@@ -438,7 +437,7 @@ class UsersController extends BaseController
 
     private function approveTrainer(User $user): bool
     {
-        if (!$user->hasRole('TRAINER') || !$user->trainerProfile || !$user->trainerProfile->pending_approval) {
+        if (!$user->isTrainerAccount() || !$user->trainerProfile || !$user->trainerProfile->pending_approval) {
             return false;
         }
 

@@ -125,6 +125,14 @@ class User extends Authenticatable
         });
     }
 
+    public function scopeStudentAccount(Builder $query): Builder
+    {
+        return $query->where('user_type', UserType::USER->value)
+            ->whereDoesntHave('roles', static function (Builder $roleQuery): Builder {
+                return $roleQuery->whereIn('name', ['ADMIN', 'TRAINER']);
+            });
+    }
+
     public function isBanned(): bool
     {
         return ($this->deleted_at !== null) || ($this->banned_until && $this->banned_until->isFuture());
@@ -197,9 +205,19 @@ class User extends Authenticatable
         return $this->user_type === UserType::CAPTAIN;
     }
 
+    public function isTrainerAccount(): bool
+    {
+        return $this->isCaptain() || $this->hasRole('TRAINER');
+    }
+
     public function isUser(): bool
     {
         return $this->user_type === UserType::USER;
+    }
+
+    public function isStudentAccount(): bool
+    {
+        return $this->isUser() && !$this->isTrainerAccount() && !$this->hasRole('ADMIN');
     }
 
     public function plan()

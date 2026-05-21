@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -36,6 +37,29 @@ class AuthTest extends TestCase
             'phone_with_cc' => '+962790000001',
             'currency' => 'JOD',
         ]);
+    }
+
+    public function test_register_recreates_missing_captain_role_before_assignment(): void
+    {
+        Role::where('name', 'TRAINER')->delete();
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Captain User',
+            'phone_with_cc' => '+201111122222',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'type' => 'captain',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.user.phone_with_cc', '+201111122222');
+
+        $this->assertDatabaseHas('roles', [
+            'name' => 'TRAINER',
+            'guard_name' => 'web',
+        ]);
+
+        $trainer = User::where('phone_with_cc', '+201111122222')->firstOrFail();
+        $this->assertTrue($trainer->hasRole('TRAINER'));
     }
 
     public function test_login_can_store_nullable_fcm_token_when_present(): void
