@@ -2,11 +2,26 @@
   RewriteEngine On
 
   # Serve the static landing page at the domain root.
-  RewriteRule ^$ public/landing/index.html [L]
+  RewriteRule ^$ public/landing/index.html [L,E=NO_CACHE_LANDING:1]
+
+  # Prevent browsers from holding stale landing HTML/CSS while design changes ship.
+  RewriteRule ^landing/.*\.(css|html)$ - [E=NO_CACHE_LANDING:1]
 
   # Redirect everything through public so the app works without typing /public
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^(.*)$ public/$1 [L,QSA]
+
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=NO_CACHE_LANDING
+    Header set Pragma "no-cache" env=NO_CACHE_LANDING
+    Header set Expires "0" env=NO_CACHE_LANDING
+    Header unset ETag env=NO_CACHE_LANDING
+
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=REDIRECT_NO_CACHE_LANDING
+    Header set Pragma "no-cache" env=REDIRECT_NO_CACHE_LANDING
+    Header set Expires "0" env=REDIRECT_NO_CACHE_LANDING
+    Header unset ETag env=REDIRECT_NO_CACHE_LANDING
+  </IfModule>
 </IfModule>
