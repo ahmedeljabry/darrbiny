@@ -62,13 +62,16 @@ body {
   z-index: 1000;
   border-bottom: 1px solid var(--border);
   transition: all 0.35s ease;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .navbar.scrolled {
   padding: 8px 5%;
   box-shadow: 0 6px 28px rgba(201, 112, 186, 0.14);
+}
+.navbar.scrolled .logo img {
+  height: 60px;
 }
 
 .logo {
@@ -79,7 +82,7 @@ body {
   z-index: 10;
 }
 .logo img {
-  height: 110px;
+  height: 80px;
   width: auto;
   object-fit: contain;
   transition:
@@ -92,15 +95,18 @@ body {
 
 .desktop-nav {
   display: flex;
-  gap: 28px;
-  flex-wrap: wrap;
+  gap: 14px;
+  flex-wrap: nowrap;
   justify-content: center;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 .desktop-nav a {
   text-decoration: none;
   color: var(--light-text);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   transition: color 0.25s;
   position: relative;
   padding-bottom: 1px;
@@ -237,7 +243,7 @@ body {
     display: none;
   }
   .logo img {
-    height: 85px;
+    height: 65px;
   }
   .navbar {
     padding: 10px 5%;
@@ -249,7 +255,7 @@ body {
     padding: 5px 3%;
   }
   .logo img {
-    height: 75px;
+    height: 55px;
   }
   .mobile-menu {
     gap: 24px;
@@ -1474,7 +1480,7 @@ footer {
 
 @media (max-width: 768px) {
   .hero {
-    padding: 110px 16px 100px;
+    padding: 80px 16px 100px;
   }
   .hero-content h1 {
     font-size: 2.4rem;
@@ -1521,7 +1527,7 @@ footer {
     max-width: 220px;
   }
   .hero-small {
-    padding: 120px 16px 60px;
+    padding: 90px 16px 60px;
   }
   .hero-small h1 {
     font-size: 2rem;
