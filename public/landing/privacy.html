@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سياسة الخصوصية | دربيني</title>
+    <meta
+      name="description"
+      content="سياسة الخصوصية لتطبيق دربيني - منصة تعلم القيادة للنساء في المملكة العربية السعودية"
+    />
+    <link rel="icon" href="/landing/media/Logo.gif" />
+    <link rel="stylesheet" href="/landing/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="logo" href="/">
+        <img src="/landing/media/Logo.gif" alt="دربيني - منصة تعلم القيادة للنساء" />
+      </a>
+      <nav class="desktop-nav">
+        <a href="/#about">عن التطبيق</a>
+        <a href="/#features">المميزات</a>
+        <a href="/#courses">الكورسات</a>
+        <a href="/#steps">كيف يعمل</a>
+        <a href="/#safety">الأمان</a>
+        <a href="/#faq">الأسئلة الشائعة</a>
+        <a href="/#contact">تواصل معنا</a>
+        <a href="/landing/privacy.html">سياسة الخصوصية</a>
+      </nav>
+      <button class="cta desktop-cta" onclick="downloadApp()">
+        ابدئي الآن
+      </button>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="القائمة">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <div class="mobile-menu" id="mobileMenu">
+      <nav>
+        <a href="/#about" onclick="toggleMenu()">عن التطبيق</a>
+        <a href="/#features" onclick="toggleMenu()">المميزات</a>
+        <a href="/#courses" onclick="toggleMenu()">الكورسات</a>
+        <a href="/#steps" onclick="toggleMenu()">كيف يعمل</a>
+        <a href="/#safety" onclick="toggleMenu()">الأمان</a>
+        <a href="/#faq" onclick="toggleMenu()">الأسئلة الشائعة</a>
+        <a href="/#contact" onclick="toggleMenu()">تواصل معنا</a>
+        <a href="/landing/privacy.html" onclick="toggleMenu()">سياسة الخصوصية</a>
+      </nav>
+      <button
+        class="cta"
+        onclick="
+          downloadApp();
+          toggleMenu();
+        "
+      >
+        ابدئي الآن
+      </button>
+    </div>
+
+    <section class="hero-small">
+      <div class="container">
+        <div class="hero-badge">
+          <i class="fas fa-shield-alt"></i>
+          حماية البيانات الشخصية
+        </div>
+        <h1>سياسة <span class="highlight">الخصوصية</span></h1>
+      </div>
+    </section>
+
+    <section class="privacy-content">
+      <div class="container">
+        <div class="privacy-box">
+          <p class="privacy-intro">
+            توضح هذه السياسة كيفية جمع بيانات المستخدمين ومعالجتها وحمايتها في
+            تطبيق <strong>دربيني</strong>، وذلك بما يتوافق مع نظام حماية
+            البيانات الشخصية في المملكة العربية السعودية (PDPL) والأنظمة ذات
+            العلاقة. <br /><br />
+            باستخدامكِ للتطبيق، فإنكِ توافقين على ما ورد في هذه السياسة.
+          </p>
+
+          <div class="privacy-section">
+            <h2><span class="pink">1.</span> البيانات التي نقوم بجمعها</h2>
+
+            <h3>
+              <i class="fas fa-hand-point-right"></i> أولاً: البيانات التي
+              تقدمينها مباشرة
+            </h3>
+            <ul>
+              <li>الاسم الكامل</li>
+              <li>رقم الجوال</li>
+              <li>البريد الإلكتروني</li>
+              <li>بيانات المركبة (للمدربة عند التسجيل)</li>
+              <li>معلومات الحساب البنكي (للمدربة لتحويل المستحقات)</li>
+              <li>معلومات الحساب البنكي (للطالبة في حال الاسترداد المالي)</li>
+            </ul>
+
+            <h3>
+              <i class="fas fa-hand-point-right"></i> ثانياً: البيانات التي يتم
+              جمعها تلقائياً
+            </h3>
+            <ul>
+              <li>بيانات الموقع الجغرافي عند إنشاء الطلب أو أثناء التدريب</li>
+              <li>نوع الجهاز ونظام التشغيل</li>
+              <li>سجلات الحجز والدفع</li>
+              <li>العروض المقدمة</li>
+              <li>تقارير المراحل اليومية</li>
+              <li>الموافقات والرفض</li>
+              <li>التقييمات والملاحظات</li>
+            </ul>
+            <p class="note">
+              <i class="fas fa-info-circle"></i> تتم معالجة بيانات الدفع
+              الإلكتروني عبر مزود دفع معتمد، ولا يحتفظ التطبيق ببيانات البطاقات
+              البنكية.
+            </p>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">2.</span> كيفية استخدام البيانات</h2>
+            <p>نستخدم البيانات للأغراض التالية:</p>
+            <ul>
+              <li>تمكين الربط والتواصل بين الطالبة والمدربة</li>
+              <li>إدارة الطلبات والعروض والمراحل اليومية</li>
+              <li>معالجة المدفوعات وتحويل المستحقات</li>
+              <li>تحسين جودة الخدمات وتجربة المستخدم</li>
+              <li>معالجة الشكاوى وحل النزاعات</li>
+              <li>الامتثال للأنظمة واللوائح المعمول بها في المملكة</li>
+            </ul>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">3.</span> حفظ وأمان البيانات</h2>
+            <ul>
+              <li>
+                نطبق معايير الأمن السيبراني المعتمدة في المملكة العربية السعودية
+                (NCA).
+              </li>
+              <li>
+                يتم تخزين البيانات داخل المملكة العربية السعودية كلما أمكن ذلك.
+              </li>
+              <li>
+                يقتصر الوصول إلى البيانات على الموظفين المخولين ووفق مبدأ
+                "الحاجة إلى المعرفة".
+              </li>
+              <li>
+                نستخدم وسائل حماية تقنية وإدارية (مثل التشفير وضوابط الوصول)، مع
+                الإقرار بأنه لا يمكن ضمان حماية مطلقة بنسبة 100%.
+              </li>
+            </ul>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">4.</span> مشاركة البيانات</h2>
+            <p>قد تتم مشاركة البيانات في الحالات التالية فقط:</p>
+            <ul>
+              <li>مع مزودي خدمات الدفع الإلكتروني المعتمدين.</li>
+              <li>مع الجهات الحكومية المختصة عند وجود طلب نظامي رسمي.</li>
+              <li>بين المدربة والطالبة بالقدر اللازم لتنفيذ الطلب التدريبي.</li>
+              <li>مع فريق الدعم الداخلي لمعالجة الشكاوى أو النزاعات.</li>
+            </ul>
+            <p class="note">
+              <i class="fas fa-exclamation-triangle"></i> ولا يتم بيع بيانات
+              المستخدمين لأي طرف ثالث لأغراض تجارية.
+            </p>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">5.</span> حقوق المستخدم وفق نظام PDPL</h2>
+            <p>يحق لكِ وفقاً للأنظمة المعمول بها:</p>
+            <ul>
+              <li>الوصول إلى بياناتك الشخصية.</li>
+              <li>طلب تصحيحها أو تحديثها.</li>
+              <li>طلب حذفها ما لم يوجد التزام نظامي بالاحتفاظ بها.</li>
+              <li>
+                سحب الموافقة على معالجة البيانات (مع العلم أن ذلك قد يؤثر على
+                استمرار تقديم الخدمة).
+              </li>
+            </ul>
+            <p>يمكن ممارسة هذه الحقوق عبر التواصل مع دعم التطبيق.</p>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">6.</span> ملفات الارتباط (Cookies)</h2>
+            <p>
+              يستخدم التطبيق ملفات الارتباط والتقنيات المشابهة لتحسين الأداء
+              وتحليل الاستخدام، ولا يتم جمع معلومات غير ضرورية من خلالها.
+            </p>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">7.</span> مدة الاحتفاظ بالبيانات</h2>
+            <p>يتم الاحتفاظ بالبيانات:</p>
+            <ul>
+              <li>طوال مدة بقاء الحساب فعالاً.</li>
+              <li>أو بحسب الحاجة التشغيلية.</li>
+              <li>أو وفق المدد الإلزامية المنصوص عليها في الأنظمة السعودية.</li>
+            </ul>
+          </div>
+
+          <div class="privacy-section">
+            <h2><span class="pink">8.</span> التعديلات على سياسة الخصوصية</h2>
+            <p>
+              يحق للتطبيق تحديث هذه السياسة في أي وقت. ويُعد استمراركِ في
+              استخدام التطبيق بعد نشر التحديثات موافقة ضمنية على السياسة
+              المعدّلة.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container">
+        <h2>هل لديكِ استفسار حول الخصوصية؟</h2>
+        <p>
+          فريق الدعم جاهز للإجابة على جميع استفساراتكِ المتعلقة بحماية البيانات
+        </p>
+        <button
+          class="cta-primary big"
+          onclick="location.href = 'index.html#contact'"
+        >
+          تواصلي معنا
+        </button>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <img
+          class="footer-logo-img"
+          src="/landing/media/Logo.gif"
+          alt="شعار دربيني"
+          loading="lazy"
+        />
+        <p class="footer-tagline">منصة تعلم القيادة الأولى للمرأة السعودية</p>
+        <div class="footer-links">
+          <a href="/">الرئيسية</a>
+        </div>
+        <p class="footer-copy">
+          © <span id="current-year">2026</span> دربيني. جميع الحقوق محفوظة.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/landing/script.js"></script>
+  </body>
+</html>

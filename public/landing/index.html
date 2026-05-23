@@ -1,442 +1,627 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>دربيني | تعلمي القيادة بثقة وأمان - منصة سعودية معتمدة</title>
+    <meta
+      name="description"
+      content="دربيني: منصة سعودية 100% للنساء لتعلم القيادة مع مدربات معتمدات. تدريب عملي مرن في أي وقت وأي مكان."
+    />
+    <link rel="icon" href="/landing/media/Logo.gif" />
+    <link rel="stylesheet" href="/landing/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="logo" href="#">
+        <img
+          src="/landing/media/Logo.gif"
+          alt="دربيني - منصة تعلم القيادة للنساء"
+        />
+      </a>
+      <nav class="desktop-nav">
+        <a href="#about">عن التطبيق</a>
+        <a href="#features">المميزات</a>
+        <a href="#courses">الكورسات</a>
+        <a href="#steps">كيف يعمل</a>
+        <a href="#safety">الأمان</a>
+        <a href="#faq">الأسئلة الشائعة</a>
+        <a href="#contact">تواصل معنا</a>
+        <a href="/landing/privacy.html">سياسة الخصوصية</a>
+      </nav>
+      <button class="cta desktop-cta" onclick="downloadApp()">
+        ابدئي الآن
+      </button>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="القائمة">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div class="mobile-menu" id="mobileMenu">
+      <nav>
+        <a href="#about" onclick="toggleMenu()">عن التطبيق</a>
+        <a href="#features" onclick="toggleMenu()">المميزات</a>
+        <a href="#courses" onclick="toggleMenu()">الكورسات</a>
+        <a href="#steps" onclick="toggleMenu()">كيف يعمل</a>
+        <a href="#safety" onclick="toggleMenu()">الأمان</a>
+        <a href="#faq" onclick="toggleMenu()">الأسئلة الشائعة</a>
+        <a href="#contact" onclick="toggleMenu()">تواصل معنا</a>
+        <a href="/landing/privacy.html" onclick="toggleMenu()">سياسة الخصوصية</a>
+      </nav>
+      <button
+        class="cta"
+        onclick="
+          downloadApp();
+          toggleMenu();
+        "
+      >
+        ابدئي الآن
+      </button>
+    </div>
 
-  <!-- Primary Meta Tags -->
-  <title>دربيني | تعلمي القيادة بثقة وأمان - منصة سعودية معتمدة</title>
-  <meta name="description" content="دربيني: منصة سعودية 100% للنساء لتعلم القيادة مع مدربات معتمدات. تدريب عملي مرن في أي وقت وأي مكان. +2500 طالبة راضية وتقييم 4.9/5">
-  <meta name="keywords" content="دربيني, تعلم القيادة, مدربات قيادة, تدريب قيادة للنساء, السعودية, تطبيق القيادة">
-  <meta name="robots" content="index, follow">
-  <meta name="author" content="دربيني">
-  <link rel="canonical" href="https://darbaini.com/">
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://darbaini.com/">
-  <meta property="og:title" content="دربيني | تعلمي القيادة بثقة وأمان">
-  <meta property="og:description" content="منصة سعودية معتمدة لتعلم القيادة. مدربات معتمدات، تدريب عملي مرن، بيئة آمنة 100% نسائية">
-  <meta property="og:image" content="https://darbaini.com/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:locale" content="ar_SA">
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://darbaini.com/">
-  <meta name="twitter:title" content="دربيني | تعلمي القيادة بثقة وأمان">
-  <meta name="twitter:description" content="منصة سعودية معتمدة لتعلم القيادة. مدربات معتمدات، تدريب عملي مرن، بيئة آمنة 100% نسائية">
-  <meta name="twitter:image" content="https://darbaini.com/og-image.png">
-
-  <!-- Apple App Meta -->
-  <meta name="apple-itunes-app" content="app-id=6758008373">
-
-  <!-- Favicon -->
-  <link rel="icon" href="/landing/media/Logo.gif">
-
-  <link rel="stylesheet" href="/landing/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-
-<body>
-
-  <!-- NAVBAR -->
-  <header class="navbar">
-    <a class="logo" href="#">
-      <img src="/landing/media/Logo.gif" alt="دربيني - منصة تعلم القيادة للنساء">
-    </a>
-    <nav>
-      <a href="#about">عن التطبيق</a>
-      <a href="#features">المميزات</a>
-      <a href="#gallery">معرض الصور</a>
-      <a href="#courses">الكورسات</a>
-      <a href="#steps">كيف يعمل</a>
-      <a href="#safety">الأمان</a>
-      <a href="#faq">الأسئلة الشائعة</a>
-    </nav>
-    <button class="cta" onclick="downloadApp()">ابدئي الآن</button>
-  </header>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-logo">
-        <img src="/landing/media/Logo.gif" alt="شعار دربيني">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-logo">
+          <img src="/landing/media/Logo.gif" alt="شعار دربيني" />
+        </div>
+        <div class="hero-badge">
+          <i class="fas fa-award"></i>
+          منصة سعودية معتمدة للمرأة
+        </div>
+        <h1>
+          تعلمي القيادة <span class="highlight">بثقة</span> و<span
+            class="highlight"
+            >أمان</span
+          >
+        </h1>
+        <p class="hero-subtitle">
+          منصة سعودية 100% للنساء تربطك بمدربات قيادة معتمدات<br />
+          تدريب عملي مرن في أي وقت وأي مكان
+        </p>
+        <div class="hero-buttons">
+          <button class="cta-primary" onclick="downloadApp()">
+            احجزي تدريبك الآن
+          </button>
+          <button
+            class="cta-secondary"
+            onclick="
+              document
+                .getElementById('video-section')
+                .scrollIntoView({ behavior: 'smooth' })
+            "
+          >
+            <i class="fas fa-play"></i>شاهدي الفيديو
+          </button>
+        </div>
+        <div class="trust-badges">
+          <div><i class="fas fa-shield-alt"></i> مدربات موثقة</div>
+          <div><i class="fas fa-users"></i> +٢٥٠٠ طالبة</div>
+          <div><i class="fas fa-star"></i> تقييم ٤.٩/٥</div>
+        </div>
       </div>
-      <div class="hero-badge">
-        <i class="fas fa-award"></i>
-        منصة سعودية معتمدة للمرأة
+    </section>
+
+    <div class="stats-bar">
+      <div class="stats-inner">
+        <div class="stat-item">
+          <div class="stat-number" data-target="2500" data-suffix="+">0</div>
+          <div class="stat-label">طالبة مسجلة</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" data-target="150" data-suffix="+">0</div>
+          <div class="stat-label">مدربة معتمدة</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" data-target="15" data-suffix="+">0</div>
+          <div class="stat-label">مدينة سعودية</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" data-target="4.9" data-suffix="/٥">0</div>
+          <div class="stat-label">متوسط التقييم</div>
+        </div>
       </div>
-      <h1>تعلمي القيادة <span class="highlight">بثقة</span> و<span class="highlight">أمان</span></h1>
-      <p class="hero-subtitle">
-        منصة سعودية 100% للنساء تربطك بمدربات قيادة معتمدات<br>
-        تدريب عملي مرن في أي وقت وأي مكان
-      </p>
-      <div class="hero-buttons">
-        <button class="cta-primary" onclick="downloadApp()">احجزي تدريبك الآن</button>
-        <button class="cta-secondary"
-          onclick="document.getElementById('video-section').scrollIntoView({behavior:'smooth'})">
-          <i class="fas fa-play" style="margin-left:8px;font-size:0.85em;"></i>شاهدي الفيديو
+    </div>
+
+    <section id="video-section" class="video-section">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-play-circle"></i> شاهدي التجربة
+          </div>
+          <h2>
+            اكتشفي كيف نغيّر <span class="highlight-soft">تجربة التعلم</span>
+          </h2>
+          <p class="section-desc">
+            شاهدي كيف تتحول رحلة تعلم القيادة إلى تجربة ممتعة وآمنة مع دربيني
+          </p>
+        </div>
+        <div class="video-wrapper">
+          <div class="video-container">
+            <video controls poster="/landing/media/videoCover.jpeg">
+              <source src="/landing/media/FINAL%20HQ.mp4" type="video/mp4" />
+              متصفحك لا يدعم تشغيل الفيديو
+            </video>
+          </div>
+          <div class="video-stats">
+            <div class="video-stat">
+              <span class="num">٩٨٪</span
+              ><span class="lbl">نسبة رضا الطالبات</span>
+            </div>
+            <div class="video-stat">
+              <span class="num">٣٠+</span
+              ><span class="lbl">ساعة محتوى تدريبي</span>
+            </div>
+            <div class="video-stat">
+              <span class="num">٥ ★</span><span class="lbl">تقييم التطبيق</span>
+            </div>
+            <div class="video-stat">
+              <span class="num">١٠٠٪</span
+              ><span class="lbl">بيئة نسائية آمنة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="about">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-info-circle"></i> عن التطبيق
+          </div>
+          <h2>عن <span class="pink">دربيني</span></h2>
+          <p class="section-desc">
+            دربيني هو التطبيق الذي يجعل تعلم القيادة تجربة آمنة ومريحة ومخصصة
+            للمرأة السعودية.
+          </p>
+        </div>
+        <div class="about-grid">
+          <div class="about-item">
+            <div class="icon-wrap"><i class="fas fa-car"></i></div>
+            <h3>تدريب عملي</h3>
+            <p>على سيارة حقيقية مع مدربة متخصصة</p>
+          </div>
+          <div class="about-item">
+            <div class="icon-wrap"><i class="fas fa-female"></i></div>
+            <h3>للنساء فقط</h3>
+            <p>بيئة آمنة ومريحة تمامًا</p>
+          </div>
+          <div class="about-item">
+            <div class="icon-wrap"><i class="fas fa-clock"></i></div>
+            <h3>مرونة كاملة</h3>
+            <p>الوقت والمكان حسب راحتك</p>
+          </div>
+          <div class="about-item">
+            <div class="icon-wrap"><i class="fas fa-certificate"></i></div>
+            <h3>مدربات معتمدات</h3>
+            <p>رخص سارية وخبرة عالية</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gallery" class="gallery">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-images"></i> معرض الصور
+          </div>
+          <h2>لحظات <span class="pink">الثقة والنجاح</span></h2>
+          <p class="section-desc">
+            كل رحلة قيادة هي خطوة نحو الاستقلالية والثقة بالنفس
+          </p>
+        </div>
+        <div class="gallery-grid">
+          <div class="gallery-item">
+            <img
+              src="/landing/media/img1.png"
+              alt="سيدة تتعلم القيادة بثقة خلف المقود"
+              loading="lazy"
+            />
+            <div class="gallery-overlay"><span>الثقة خلف المقود</span></div>
+          </div>
+          <div class="gallery-item">
+            <img
+              src="/landing/media/img3.png"
+              alt="تدريب على الطريق السريعة"
+              loading="lazy"
+            />
+            <div class="gallery-overlay">
+              <span>تدريب على الطرق السريعة</span>
+            </div>
+          </div>
+          <div class="gallery-item">
+            <img
+              src="/landing/media/img2.png"
+              alt="سيارة التدريب الحديثة"
+              loading="lazy"
+            />
+            <div class="gallery-overlay">
+              <span>سيارات التدريب الحديثة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label"><i class="fas fa-star"></i> المميزات</div>
+          <h2>لماذا تختارين <span class="pink">دربيني</span>؟</h2>
+          <p class="section-desc">
+            كل ما تحتاجينه في مكان واحد لتجربة تدريب مثالية
+          </p>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="icon-wrap"><i class="fas fa-shield-alt"></i></div>
+            <h3>أمان مطلق</h3>
+            <p>التحقق الكامل من هوية وخبرة كل مدربة قبل القبول</p>
+          </div>
+          <div class="card">
+            <div class="icon-wrap"><i class="fas fa-credit-card"></i></div>
+            <h3>دفع آمن</h3>
+            <p>كل المعاملات المالية تتم داخل التطبيق بحماية كاملة</p>
+          </div>
+          <div class="card">
+            <div class="icon-wrap"><i class="fas fa-star"></i></div>
+            <h3>تقييمات حقيقية</h3>
+            <p>شفافية كاملة من تجارب الطالبات الفعليات</p>
+          </div>
+          <div class="card">
+            <div class="icon-wrap"><i class="fas fa-map-marker-alt"></i></div>
+            <h3>في أي مكان</h3>
+            <p>اختاري الموقع الأنسب لكِ في مدينتك</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="courses" class="courses">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-graduation-cap"></i> الباقات التدريبية
+          </div>
+          <h2>اختاري الباقة <span class="pink">المناسبة</span></h2>
+          <p class="section-desc">
+            باقات مرنة تناسب جميع المستويات من المبتدئة حتى المحترفة
+          </p>
+        </div>
+        <div class="courses-grid">
+          <div class="course-card">
+            <div class="course-body">
+              <h3>كورس التدريب المكثف</h3>
+              <p class="course-subtitle">
+                برنامج سريع للمبتدئات
+              </p>
+              <div class="course-meta">
+                <span><i class="fas fa-clock"></i> ٥ أيام</span>
+                <span><i class="fas fa-hourglass"></i> ١٠ ساعات</span>
+              </div>
+              <ul class="course-features">
+                <li><i class="fas fa-check-circle"></i> تدريب عملي مكثف</li>
+                <li><i class="fas fa-check-circle"></i> مدربة شخصية معتمدة</li>
+                <li><i class="fas fa-check-circle"></i> جدول مرن حسب راحتك</li>
+                <li><i class="fas fa-check-circle"></i> تقرير أداء تفصيلي</li>
+              </ul>
+              <button class="btn-course" onclick="downloadApp()">
+                احجزي الآن
+              </button>
+            </div>
+          </div>
+          <div class="course-card featured">
+            <div class="course-body">
+              <h3>كورس التدريب الشامل ( SA )</h3>
+              <p class="course-subtitle">
+                برنامج متكامل للثقة الكاملة
+              </p>
+              <div class="course-meta">
+                <span><i class="fas fa-clock"></i> ١٠ أيام</span>
+                <span><i class="fas fa-hourglass"></i> ٢٠ ساعة</span>
+              </div>
+              <ul class="course-features">
+                <li>
+                  <i class="fas fa-check-circle"></i> تدريب نظري وعملي متكامل
+                </li>
+                <li>
+                  <i class="fas fa-check-circle"></i> مدربة خاصة طوال الكورس
+                </li>
+                <li>
+                  <i class="fas fa-check-circle"></i> تدريب على الطرق السريعة
+                </li>
+                <li>
+                  <i class="fas fa-check-circle"></i> حماية كاملة لبياناتك
+                </li>
+                <li><i class="fas fa-check-circle"></i> ضمان الرضا الذهبي</li>
+              </ul>
+              <button class="btn-course" onclick="downloadApp()">
+                احجزي الآن
+              </button>
+            </div>
+          </div>
+          <div class="course-card">
+            <div class="course-body">
+              <h3>حصص فردية مرنة</h3>
+              <p class="course-subtitle">
+                مرونة تامة حسب احتياجك
+              </p>
+              <div class="course-meta">
+                <span><i class="fas fa-clock"></i> حسب الطلب</span>
+                <span><i class="fas fa-hourglass"></i> ساعة فأكثر</span>
+              </div>
+              <ul class="course-features">
+                <li><i class="fas fa-check-circle"></i> اختاري عدد الساعات</li>
+                <li><i class="fas fa-check-circle"></i> مدربات متاحة يوميًا</li>
+                <li>
+                  <i class="fas fa-check-circle"></i> إلغاء وإعادة جدولة مجانية
+                </li>
+                <li>
+                  <i class="fas fa-check-circle"></i> استرداد كامل عند الإلغاء
+                </li>
+              </ul>
+              <button class="btn-course" onclick="downloadApp()">
+                احجزي الآن
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="steps" class="steps">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-list-ol"></i> كيف يعمل
+          </div>
+          <h2>خطوات بسيطة نحو <span class="pink">الاستقلالية</span></h2>
+          <p class="section-desc">أربع خطوات فقط تفصلك عن رحلة تعلم القيادة</p>
+        </div>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-number">١</div>
+            <h3>قدمي طلبك</h3>
+            <p>اختري عدد الساعات والمنطقة والوقت المناسب</p>
+          </div>
+          <div class="step">
+            <div class="step-number">٢</div>
+            <h3>استلمي عروض</h3>
+            <p>مدربات متاحات مع تقييماتهن وتخصصاتهن</p>
+          </div>
+          <div class="step">
+            <div class="step-number">٣</div>
+            <h3>اختاري المدربة</h3>
+            <p>بناءً على التوافق والتقييم والسعر</p>
+          </div>
+          <div class="step">
+            <div class="step-number">٤</div>
+            <h3>ابدئي التدريب</h3>
+            <p>وتابعي تقدمك داخل التطبيق بشكل مستمر</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="safety" class="safety">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-shield-alt"></i> الأمان
+          </div>
+          <h2>الأمان <span class="pink">أولويتنا</span></h2>
+          <p class="section-desc">نضع سلامتك فوق كل اعتبار في كل خطوة</p>
+        </div>
+        <div class="safety-grid">
+          <div class="safety-item">
+            <div class="icon-wrap"><i class="fas fa-id-card"></i></div>
+            <h3>التحقق الكامل</h3>
+            <p>من الهوية والرخصة لكل مدربة</p>
+          </div>
+          <div class="safety-item">
+            <div class="icon-wrap"><i class="fas fa-lock"></i></div>
+            <h3>حماية البيانات</h3>
+            <p>بأعلى المعايير العالمية</p>
+          </div>
+          <div class="safety-item">
+            <div class="icon-wrap"><i class="fas fa-bell"></i></div>
+            <h3>تتبع آمن</h3>
+            <p>الموقع يُشارك فقط أثناء الدرس</p>
+          </div>
+          <div class="safety-item">
+            <div class="icon-wrap"><i class="fas fa-headset"></i></div>
+            <h3>دعم ٢٤/٧</h3>
+            <p>فريق نسائي جاهز لمساعدتك</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="faq">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-question-circle"></i> أسئلة شائعة
+          </div>
+          <h2>الأسئلة <span class="pink">الشائعة</span></h2>
+          <p class="section-desc">
+            إجابات على أكثر الأسئلة التي تطرحها الطالبات
+          </p>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3
+              class="faq-question"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              onclick="toggleFAQ(this)"
+            >
+              هل التطبيق مرخص وموثوق؟
+              <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
+            </h3>
+            <p class="faq-answer">
+              نعم، مرخص رسميًا ويعمل وفق أنظمة وزارة النقل والمرور السعودية.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3
+              class="faq-question"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              onclick="toggleFAQ(this)"
+            >
+              هل يمكن الدفع خارج التطبيق؟
+              <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
+            </h3>
+            <p class="faq-answer">
+              لا، الدفع داخل التطبيق فقط لحماية حقوقك وضمان استرداد المبالغ عند
+              الحاجة.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3
+              class="faq-question"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              onclick="toggleFAQ(this)"
+            >
+              هل التدريب مناسب للمبتدئات؟
+              <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
+            </h3>
+            <p class="faq-answer">
+              نعم، لدينا برامج خاصة تبدأ من الصفر الكامل حتى تصلي لمرحلة الثقة
+              التامة خلف المقود.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3
+              class="faq-question"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              onclick="toggleFAQ(this)"
+            >
+              ماذا لو لم تحضر المدربة؟
+              <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
+            </h3>
+            <p class="faq-answer">
+              يمكنك إعادة الجدولة بالكامل أو استرداد المبلغ كاملاً دون أي
+              خصومات.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3
+              class="faq-question"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              onclick="toggleFAQ(this)"
+            >
+              هل الخدمة متاحة في جميع مدن المملكة؟
+              <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
+            </h3>
+            <p class="faq-answer">
+              نعم، نغطي حاليًا أكثر من ١٥ مدينة سعودية ونتوسع باستمرار لخدمة
+              أكبر عدد ممكن من الطالبات.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-label">
+            <i class="fas fa-comments"></i> تواصل معنا
+          </div>
+          <h2>نحن <span class="pink">هنا</span> لمساعدتك</h2>
+          <p class="section-desc">
+            تواصلي مع فريق الدعم النسائي أو حملي التطبيق مباشرة
+          </p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="contact-item">
+              <div class="icon-wrap"><i class="fas fa-envelope"></i></div>
+              <h3>البريد الإلكتروني</h3>
+              <a id="email-link" href="mailto:support@darbaini.com"
+                >support@darbaini.com</a
+              >
+            </div>
+            <div class="contact-item">
+              <div class="icon-wrap"><i class="fas fa-phone"></i></div>
+              <h3>الهاتف</h3>
+              <p class="phone-number">+966568389005</p>
+            </div>
+            <div class="contact-item">
+              <div class="icon-wrap"><i class="fab fa-whatsapp"></i></div>
+              <h3>واتساب</h3>
+              <p class="phone-number">+966568389005</p>
+            </div>
+          </div>
+          <div class="contact-qr">
+            <div class="qr-card">
+              <h3>حملي التطبيق الآن</h3>
+              <div class="qr-wrap">
+                <img
+                  src="/landing/media/app-store-qr.jpeg"
+                  alt="امسحي هذا الكود بكاميرا هاتفك لتحميل تطبيق دربيني من App Store"
+                  loading="lazy"
+                />
+              </div>
+              <p>امسحي الكود بكاميرا هاتفك للتحميل</p>
+              <button class="btn-course" onclick="downloadApp()">
+                أو اضغطي هنا
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container">
+        <h2>جاهزة تبدئين رحلتك نحو الاستقلال؟</h2>
+        <p>انضمي لآلاف النساء اللاتي اكتسبن الثقة خلف المقود مع دربيني</p>
+        <button class="cta-primary big" onclick="downloadApp()">
+          تحميل التطبيق الآن
         </button>
       </div>
-      <div class="trust-badges">
-        <div><i class="fas fa-shield-alt"></i> مدربات موثقة</div>
-        <div><i class="fas fa-users"></i> +٢٥٠٠ طالبة</div>
-        <div><i class="fas fa-star"></i> تقييم ٤.٩/٥</div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- STATS BAR -->
-  <div class="stats-bar">
-    <div class="stats-inner">
-      <div class="stat-item">
-        <div class="stat-number" data-target="2500" data-suffix="+">٢٥٠٠+</div>
-        <div class="stat-label">طالبة مسجلة</div>
+    <footer>
+      <div class="footer-inner">
+        <img
+          class="footer-logo-img"
+          src="/landing/media/Logo.gif"
+          alt="شعار دربيني"
+          loading="lazy"
+        />
+        <p class="footer-tagline">منصة تعلم القيادة الأولى للمرأة السعودية</p>
+        <div class="footer-links">
+          <a href="#about">عن التطبيق</a>
+          <a href="#features">المميزات</a>
+          <a href="#courses">الباقات التدريبية</a>
+          <a href="#faq">الأسئلة الشائعة</a>
+          <a href="#contact">تواصل معنا</a>
+        </div>
+        <p class="footer-copy">© <span id="current-year">2026</span> دربيني. جميع الحقوق محفوظة.</p>
       </div>
-      <div class="stat-item">
-        <div class="stat-number" data-target="150" data-suffix="+">١٥٠+</div>
-        <div class="stat-label">مدربة معتمدة</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-number" data-target="15" data-suffix="+">١٥+</div>
-        <div class="stat-label">مدينة سعودية</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-number">٤.٩</div>
-        <div class="stat-label">متوسط التقييم</div>
-      </div>
-    </div>
-  </div>
+    </footer>
 
-  <!-- VIDEO SECTION -->
-  <section id="video-section" class="video-section">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-play-circle"></i> شاهدي التجربة</div>
-        <h2>اكتشفي كيف نغيّر <span style="color:#F0C8EB;">تجربة التعلم</span></h2>
-        <p class="section-desc">شاهدي كيف تتحول رحلة تعلم القيادة إلى تجربة ممتعة وآمنة مع دربيني</p>
-      </div>
-      <div class="video-wrapper">
-        <div class="video-container">
-
-          <video controls poster="/landing/media/videoCover.jpeg">
-            <source src="/landing/media/FINAL HQ.mp4" type="video/mp4">
-            متصفحك لا يدعم تشغيل الفيديو
-          </video>
-        </div>
-        <div class="video-stats">
-          <div class="video-stat">
-            <span class="num">٩٨٪</span>
-            <span class="lbl">نسبة رضا الطالبات</span>
-          </div>
-          <div class="video-stat">
-            <span class="num">٣٠+</span>
-            <span class="lbl">ساعة محتوى تدريبي</span>
-          </div>
-          <div class="video-stat">
-            <span class="num">٥ ★</span>
-            <span class="lbl">تقييم التطبيق</span>
-          </div>
-          <div class="video-stat">
-            <span class="num">١٠٠٪</span>
-            <span class="lbl">بيئة نسائية آمنة</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about" class="about">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-info-circle"></i> عن التطبيق</div>
-        <h2>عن <span class="pink">دربيني</span></h2>
-        <p class="section-desc">دربيني هو التطبيق الذي يجعل تعلم القيادة تجربة آمنة ومريحة ومخصصة للمرأة السعودية.</p>
-      </div>
-      <div class="about-grid">
-        <div class="about-item">
-          <div class="icon-wrap"><i class="fas fa-car"></i></div>
-          <h3>تدريب عملي</h3>
-          <p>على سيارة حقيقية مع مدربة متخصصة</p>
-        </div>
-        <div class="about-item">
-          <div class="icon-wrap"><i class="fas fa-female"></i></div>
-          <h3>للنساء فقط</h3>
-          <p>بيئة آمنة ومريحة تمامًا</p>
-        </div>
-        <div class="about-item">
-          <div class="icon-wrap"><i class="fas fa-clock"></i></div>
-          <h3>مرونة كاملة</h3>
-          <p>الوقت والمكان حسب راحتك</p>
-        </div>
-        <div class="about-item">
-          <div class="icon-wrap"><i class="fas fa-certificate"></i></div>
-          <h3>مدربات معتمدات</h3>
-          <p>رخص سارية وخبرة عالية</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- GALLERY -->
-  <section id="gallery" class="gallery">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-images"></i> معرض الصور</div>
-        <h2>لحظات <span class="pink">الثقة والنجاح</span></h2>
-        <p class="section-desc">كل رحلة قيادة هي خطوة نحو الاستقلالية والثقة بالنفس</p>
-      </div>
-      <div class="gallery-grid">
-        <div class="gallery-item">
-          <img src="/landing/media/img1.png" alt="سيدة تتعلم القيادة بثقة خلف المقود" loading="lazy">
-          <div class="gallery-overlay"><span>الثقة خلف المقود</span></div>
-        </div>
-        <div class="gallery-item">
-          <img src="/landing/media/img3.png" alt="تدريب على الطريق السريعة" loading="lazy">
-          <div class="gallery-overlay"><span>تدريب على الطرق السريعة</span></div>
-        </div>
-        <div class="gallery-item">
-          <img src="/landing/media/img2.png" alt="سيارة التدريب الحديثة" loading="lazy">
-          <div class="gallery-overlay"><span>سيارات التدريب الحديثة</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section id="features" class="features">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-star"></i> المميزات</div>
-        <h2>لماذا تختارين <span class="pink">دربيني</span>؟</h2>
-        <p class="section-desc">كل ما تحتاجينه في مكان واحد لتجربة تدريب مثالية</p>
-      </div>
-      <div class="cards">
-        <div class="card">
-          <div class="icon-wrap"><i class="fas fa-shield-alt"></i></div>
-          <h3>أمان مطلق</h3>
-          <p>التحقق الكامل من هوية وخبرة كل مدربة قبل القبول</p>
-        </div>
-        <div class="card">
-          <div class="icon-wrap"><i class="fas fa-credit-card"></i></div>
-          <h3>دفع آمن</h3>
-          <p>كل المعاملات المالية تتم داخل التطبيق بحماية كاملة</p>
-        </div>
-        <div class="card">
-          <div class="icon-wrap"><i class="fas fa-star"></i></div>
-          <h3>تقييمات حقيقية</h3>
-          <p>شفافية كاملة من تجارب الطالبات الفعليات</p>
-        </div>
-        <div class="card">
-          <div class="icon-wrap"><i class="fas fa-map-marker-alt"></i></div>
-          <h3>في أي مكان</h3>
-          <p>اختاري الموقع الأنسب لكِ في مدينتك</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- COURSES -->
-  <section id="courses" class="courses">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-graduation-cap"></i> الباقات التدريبية</div>
-        <h2>اختاري الباقة <span class="pink">المناسبة</span></h2>
-        <p class="section-desc">باقات مرنة تناسب جميع المستويات من المبتدئة حتى المحترفة</p>
-      </div>
-      <div class="courses-grid">
-        <div class="course-card">
-          <div class="course-body">
-            <h3>كورس التدريب المكثف</h3>
-            <p style="color:var(--light-text);font-size:0.9rem;margin-bottom:4px;">برنامج سريع للمبتدئات</p>
-            <div class="course-meta">
-              <span><i class="fas fa-clock"></i> ٥ أيام</span>
-              <span><i class="fas fa-hourglass"></i> ١٠ ساعات</span>
-            </div>
-            <ul class="course-features">
-              <li><i class="fas fa-check-circle"></i> تدريب عملي مكثف</li>
-              <li><i class="fas fa-check-circle"></i> مدربة شخصية معتمدة</li>
-              <li><i class="fas fa-check-circle"></i> جدول مرن حسب راحتك</li>
-              <li><i class="fas fa-check-circle"></i> تقرير أداء تفصيلي</li>
-            </ul>
-            <button class="btn-course" onclick="downloadApp()">احجزي الآن</button>
-          </div>
-        </div>
-        <div class="course-card featured">
-          <div class="course-body">
-            <h3>كورس التدريب الشامل ( SA )</h3>
-            <p style="color:var(--light-text);font-size:0.9rem;margin-bottom:4px;">برنامج متكامل للثقة الكاملة</p>
-            <div class="course-meta">
-              <span><i class="fas fa-clock"></i> ١٠ أيام</span>
-              <span><i class="fas fa-hourglass"></i> ٢٠ ساعة</span>
-            </div>
-            <ul class="course-features">
-              <li><i class="fas fa-check-circle"></i> تدريب نظري وعملي متكامل</li>
-              <li><i class="fas fa-check-circle"></i> مدربة خاصة طوال الكورس</li>
-              <li><i class="fas fa-check-circle"></i> تدريب على الطرق السريعة</li>
-              <li><i class="fas fa-check-circle"></i> حماية كاملة لبياناتك</li>
-              <li><i class="fas fa-check-circle"></i> ضمان الرضا الذهبي</li>
-            </ul>
-            <button class="btn-course" onclick="downloadApp()">احجزي الآن</button>
-          </div>
-        </div>
-        <div class="course-card">
-          <div class="course-body">
-            <h3>حصص فردية مرنة</h3>
-            <p style="color:var(--light-text);font-size:0.9rem;margin-bottom:4px;">مرونة تامة حسب احتياجك</p>
-            <div class="course-meta">
-              <span><i class="fas fa-clock"></i> حسب الطلب</span>
-              <span><i class="fas fa-hourglass"></i> ساعة فأكثر</span>
-            </div>
-            <ul class="course-features">
-              <li><i class="fas fa-check-circle"></i> اختاري عدد الساعات</li>
-              <li><i class="fas fa-check-circle"></i> مدربات متاحة يوميًا</li>
-              <li><i class="fas fa-check-circle"></i> إلغاء وإعادة جدولة مجانية</li>
-              <li><i class="fas fa-check-circle"></i> استرداد كامل عند الإلغاء</li>
-            </ul>
-            <button class="btn-course" onclick="downloadApp()">احجزي الآن</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STEPS -->
-  <section id="steps" class="steps">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-list-ol"></i> كيف يعمل</div>
-        <h2>خطوات بسيطة نحو <span class="pink">الاستقلالية</span></h2>
-        <p class="section-desc">أربع خطوات فقط تفصلك عن رحلة تعلم القيادة</p>
-      </div>
-      <div class="steps-grid">
-        <div class="step">
-          <div class="step-number">١</div>
-          <h3>قدمي طلبك</h3>
-          <p>اختري عدد الساعات والمنطقة والوقت المناسب</p>
-        </div>
-        <div class="step">
-          <div class="step-number">٢</div>
-          <h3>استلمي عروض</h3>
-          <p>مدربات متاحات مع تقييماتهن وتخصصاتهن</p>
-        </div>
-        <div class="step">
-          <div class="step-number">٣</div>
-          <h3>اختاري المدربة</h3>
-          <p>بناءً على التوافق والتقييم والسعر</p>
-        </div>
-        <div class="step">
-          <div class="step-number">٤</div>
-          <h3>ابدئي التدريب</h3>
-          <p>وتابعي تقدمك داخل التطبيق بشكل مستمر</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SAFETY -->
-  <section id="safety" class="safety">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-shield-alt"></i> الأمان</div>
-        <h2>الأمان <span class="pink">أولويتنا</span></h2>
-        <p class="section-desc">نضع سلامتك فوق كل اعتبار في كل خطوة</p>
-      </div>
-      <div class="safety-grid">
-        <div class="safety-item">
-          <div class="icon-wrap"><i class="fas fa-id-card"></i></div>
-          <h3>التحقق الكامل</h3>
-          <p>من الهوية والرخصة لكل مدربة</p>
-        </div>
-        <div class="safety-item">
-          <div class="icon-wrap"><i class="fas fa-lock"></i></div>
-          <h3>حماية البيانات</h3>
-          <p>بأعلى المعايير العالمية</p>
-        </div>
-        <div class="safety-item">
-          <div class="icon-wrap"><i class="fas fa-bell"></i></div>
-          <h3>تتبع آمن</h3>
-          <p>الموقع يُشارك فقط أثناء الدرس</p>
-        </div>
-        <div class="safety-item">
-          <div class="icon-wrap"><i class="fas fa-headset"></i></div>
-          <h3>دعم ٢٤/٧</h3>
-          <p>فريق نسائي جاهز لمساعدتك</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section id="faq" class="faq">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label"><i class="fas fa-question-circle"></i> أسئلة شائعة</div>
-        <h2>الأسئلة <span class="pink">الشائعة</span></h2>
-        <p class="section-desc">إجابات على أكثر الأسئلة التي تطرحها الطالبات</p>
-      </div>
-      <div class="faq-list">
-        <div class="faq-item">
-          <h3 onclick="toggleFAQ(this)">
-            هل التطبيق مرخص وموثوق؟
-            <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
-          </h3>
-          <p>نعم، مرخص رسميًا ويعمل وفق أنظمة وزارة النقل والمرور السعودية.</p>
-        </div>
-        <div class="faq-item">
-          <h3 onclick="toggleFAQ(this)">
-            هل يمكن الدفع خارج التطبيق؟
-            <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
-          </h3>
-          <p>لا، الدفع داخل التطبيق فقط لحماية حقوقك وضمان استرداد المبالغ عند الحاجة.</p>
-        </div>
-        <div class="faq-item">
-          <h3 onclick="toggleFAQ(this)">
-            هل التدريب مناسب للمبتدئات؟
-            <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
-          </h3>
-          <p>نعم، لدينا برامج خاصة تبدأ من الصفر الكامل حتى تصلي لمرحلة الثقة التامة خلف المقود.</p>
-        </div>
-        <div class="faq-item">
-          <h3 onclick="toggleFAQ(this)">
-            ماذا لو لم تحضر المدربة؟
-            <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
-          </h3>
-          <p>يمكنك إعادة الجدولة بالكامل أو استرداد المبلغ كاملاً دون أي خصومات.</p>
-        </div>
-        <div class="faq-item">
-          <h3 onclick="toggleFAQ(this)">
-            هل الخدمة متاحة في جميع مدن المملكة؟
-            <span class="faq-arrow"><i class="fas fa-chevron-down"></i></span>
-          </h3>
-          <p>نعم، نغطي حاليًا أكثر من ١٥ مدينة سعودية ونتوسع باستمرار لخدمة أكبر عدد ممكن من الطالبات.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FINAL CTA -->
-  <section class="cta-section">
-    <div class="container" style="position:relative;z-index:1;">
-      <h2>جاهزة تبدئين رحلتك نحو الاستقلال؟</h2>
-      <p>انضمي لآلاف النساء اللاتي اكتسبن الثقة خلف المقود مع دربيني</p>
-      <button class="cta-primary big" onclick="downloadApp()">تحميل التطبيق الآن</button>
-    </div>
-  </section>
-
-  <footer>
-    <div class="footer-inner">
-      <img class="footer-logo-img" src="/landing/media/Logo.gif" alt="شعار دربيني">
-      <p class="footer-tagline">منصة تعلم القيادة الأولى للمرأة السعودية</p>
-    </div>
-  </footer>
-
-  <script src="/landing/script.js"></script>
-</body>
-
+    <script src="/landing/script.js"></script>
+  </body>
 </html>
