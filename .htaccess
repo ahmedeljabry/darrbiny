@@ -1,6 +1,9 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Serve the static landing page at the domain root.
+  RewriteRule ^$ public/landing/index.html [L]
+
   # Redirect everything through public so the app works without typing /public
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteCond %{REQUEST_FILENAME} !-f
