@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return response()->file(public_path('landing/index.html'));
+    return response(file_get_contents(public_path('landing/index.html')), 200, [
+        'Content-Type' => 'text/html; charset=UTF-8',
+    ]);
 });
 
 Route::get('/login', function () {
