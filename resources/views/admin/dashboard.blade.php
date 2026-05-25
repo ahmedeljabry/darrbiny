@@ -11,7 +11,7 @@
   $toValue = ($to ?? null) instanceof \DateTimeInterface ? $to->format('Y-m-d') : '';
 
   $financeCards = [
-    ['label' => 'إجمالي الإيرادات', 'value' => number_format($salesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + رسوم الباقات ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
+    ['label' => 'إجمالي الإيرادات', 'value' => number_format($totalRevenueMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز + قيمة الباقة بالكامل ضمن ' . ($rangeLabel ?? ($rangeOptions[$range ?? 'day'] ?? 'اليوم')), 'icon' => 'cash', 'tone' => 'success'],
     ['label' => 'رسوم الحجز', 'value' => number_format($packageReservationFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'رسوم الحجز الثابتة ورسوم حجز الباقات • محول للريال', 'icon' => 'receipt-2', 'tone' => 'info'],
     ['label' => 'رسوم الباقات', 'value' => number_format($appFeesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'نسبة التطبيق من الدفعات الكلية • محول للريال', 'icon' => 'stack-3', 'tone' => 'primary'],
     ['label' => 'المصروفات', 'value' => number_format($expensesMinor / 100, 2) . ' ' . $reportCurrency, 'desc' => 'المسجلة ضمن النطاق المحدد', 'icon' => 'credit-card-off', 'tone' => 'danger'],

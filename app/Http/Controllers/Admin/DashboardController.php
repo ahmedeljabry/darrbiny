@@ -103,6 +103,10 @@ class DashboardController extends BaseController
             ...$dashboardIncomeFilters,
             'source' => 'app_fee',
         ])['incoming_minor'];
+        $fullPackagePaymentsMinor = $this->appWalletAccountService->summary([
+            ...$dashboardIncomeFilters,
+            'source' => \App\Models\Payment::TYPE_PLAN_FULL,
+        ])['incoming_minor'];
         $cancellationFilters = [
             'from' => $from,
             'to' => $to,
@@ -119,6 +123,13 @@ class DashboardController extends BaseController
             $cancellationFilters,
             'app_fee'
         ));
+        $fullPackagePaymentsMinor = max(0, $fullPackagePaymentsMinor - $this->reportsService->allocatedCancellationRefundsMinor(
+            $from,
+            $to,
+            $cancellationFilters,
+            'plan_full'
+        ));
+        $totalRevenueMinor = $packageReservationFeesMinor + $fullPackagePaymentsMinor;
         $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $executedWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
             ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
@@ -162,7 +173,7 @@ class DashboardController extends BaseController
             'pendingSupportTickets', 'unreadNotifications',
             'dashboardAlerts', 'supportTicketAlertsCount',
             'labels', 'userSeries', 'planSeries', 'bookingSeries',
-            'range', 'salesMinor', 'packageReservationFeesMinor', 'appFeesMinor', 'awaitingOffers',
+            'range', 'totalRevenueMinor', 'salesMinor', 'packageReservationFeesMinor', 'appFeesMinor', 'awaitingOffers',
             'from', 'to', 'rangeLabel', 'usesCustomRange', 'trendLabel',
             'bookingsValueMinor', 'expensesMinor', 'netProfitMinor', 'appWalletBalanceMinor',
             'withdrawalRequestsValueMinor', 'executedWithdrawalsMinor'
