@@ -357,6 +357,75 @@ class AdminDashboardTest extends TestCase
             ->assertSee('محول للريال');
     }
 
+    public function test_dashboard_includes_converted_jordan_reservation_fees_in_revenue_cards(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009023',
+            'email' => 'admin-dashboard-jordan@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Jordan Reservation Plan',
+            'description' => 'Plan used for Jordan reservation fee totals',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+962790000001',
+        ]);
+
+        $request = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'JOD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 200,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_RESERVATION_FEE,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 200,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('10.58 SAR');
+
+        $this->assertSame(1058, $response->viewData('totalRevenueMinor'));
+        $this->assertSame(1058, $response->viewData('packageReservationFeesMinor'));
+        $this->assertSame(1058, $response->viewData('salesMinor'));
+        $this->assertSame(1058, $response->viewData('netProfitMinor'));
+    }
+
     public function test_dashboard_revenue_deducts_cancellation_refunds_and_keeps_app_wallet_balance_separate(): void
     {
         $admin = User::factory()->create([

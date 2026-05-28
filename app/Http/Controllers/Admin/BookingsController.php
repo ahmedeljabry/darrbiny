@@ -257,7 +257,7 @@ class BookingsController extends BaseController
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'processed_by' => $request->user()->id,
                     'processed_at' => now(),
-                    'notes' => "إلغاء دورة #{$booking->id} - {$validated['reason']}",
+                    'notes' => "إلغاء دورة #{$booking->display_order_number} - {$validated['reason']}",
                 ]);
 
                 $booking->user->notify(new WalletBalanceAddedNotification(

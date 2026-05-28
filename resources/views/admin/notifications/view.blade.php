@@ -78,7 +78,8 @@
                         <tbody>
                             @forelse($notifications as $notification)
                                 @php
-                                    $notificationType = $notification->data['type'] ?? '';
+                                    $notificationData = \App\Support\NotificationDisplayData::for($notification);
+                                    $notificationType = $notificationData['type'] ?? '';
                                     $notificationIconMap = [
                                         'support_ticket_created' => 'ticket',
                                         'support_ticket_user_reply' => 'ticket',
@@ -101,12 +102,12 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <h6 class="mb-1">{{ $notification->data['title'] ?? $notification->data['message'] ?? 'إشعار جديد' }}</h6>
-                                            <p class="mb-0 text-muted">{{ Str::limit($notification->data['message'] ?? $notification->data['title'] ?? '', 100) }}</p>
-                                            @if(isset($notification->data['trainer_id']) && isset($notification->data['trainer_name']))
+                                            <h6 class="mb-1">{{ $notificationData['title'] ?? $notificationData['message'] ?? 'إشعار جديد' }}</h6>
+                                            <p class="mb-0 text-muted">{{ Str::limit($notificationData['message'] ?? $notificationData['title'] ?? '', 100) }}</p>
+                                            @if(isset($notificationData['trainer_id']) && isset($notificationData['trainer_name']))
                                                 <small class="text-primary">
                                                     <i class="icon-base ti tabler-user me-1"></i>
-                                                    المدرب: {{ $notification->data['trainer_name'] }}
+                                                    المدرب: {{ $notificationData['trainer_name'] }}
                                                 </small>
                                             @endif
                                         </div>
@@ -141,8 +142,8 @@
                                     </td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            @if(isset($notification->data['trainer_id']))
-                                                <a href="{{ route('admin.users.show', $notification->data['trainer_id']) }}" class="btn btn-sm btn-outline-primary" title="عرض تفاصيل المدرب">
+                                            @if(isset($notificationData['trainer_id']))
+                                                <a href="{{ route('admin.users.show', $notificationData['trainer_id']) }}" class="btn btn-sm btn-outline-primary" title="عرض تفاصيل المدرب">
                                                     <i class="icon-base ti tabler-eye"></i>
                                                 </a>
                                             @endif

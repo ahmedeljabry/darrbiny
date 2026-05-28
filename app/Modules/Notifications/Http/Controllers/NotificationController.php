@@ -17,6 +17,7 @@ use App\Notifications\ReferralPointsAddedNotification;
 use App\Notifications\ScheduleItemSentNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
+use App\Support\NotificationDisplayData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -67,10 +68,12 @@ class NotificationController extends BaseController
 
         return response()->json([
             'data' => $notifications->map(function ($notification) {
+                $data = NotificationDisplayData::for($notification);
+
                 return [
                     'id' => $notification->id,
                     'type' => $notification->type,
-                    'data' => $notification->data,
+                    'data' => $data,
                     'read_at' => $notification->read_at?->toIso8601String(),
                     'created_at' => $notification->created_at?->toIso8601String(),
                 ];

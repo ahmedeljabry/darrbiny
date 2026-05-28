@@ -8,6 +8,7 @@ use App\Models\AppExpense;
 use App\Services\Admin\AppWalletAccountService;
 use App\Services\Admin\ReportsService;
 use App\Support\ReportCurrencyConverter;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -86,49 +87,20 @@ class DashboardController extends BaseController
             ], true))
             ->count();
 
-        $dashboardIncomeFilters = [
-            'from' => $from,
-            'to' => $to,
-            'direction' => 'in',
-        ];
-        $reservationFeesMinor = $this->appWalletAccountService->summary([
-            ...$dashboardIncomeFilters,
-            'source' => \App\Models\Payment::TYPE_RESERVATION_FEE,
-        ])['incoming_minor'];
-        $packageReservationFeesMinor = $reservationFeesMinor + $this->appWalletAccountService->summary([
-            ...$dashboardIncomeFilters,
-            'source' => \App\Models\Payment::TYPE_PLAN_PARTIAL,
-        ])['incoming_minor'];
-        $appFeesMinor = $this->appWalletAccountService->summary([
-            ...$dashboardIncomeFilters,
-            'source' => 'app_fee',
-        ])['incoming_minor'];
-        $fullPackagePaymentsMinor = $this->appWalletAccountService->summary([
-            ...$dashboardIncomeFilters,
-            'source' => \App\Models\Payment::TYPE_PLAN_FULL,
-        ])['incoming_minor'];
-        $cancellationFilters = [
-            'from' => $from,
-            'to' => $to,
-        ];
-        $packageReservationFeesMinor = max(0, $packageReservationFeesMinor - $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            $cancellationFilters,
-            'booking_fees'
-        ));
-        $appFeesMinor = max(0, $appFeesMinor - $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            $cancellationFilters,
-            'app_fee'
-        ));
-        $fullPackagePaymentsMinor = max(0, $fullPackagePaymentsMinor - $this->reportsService->allocatedCancellationRefundsMinor(
-            $from,
-            $to,
-            $cancellationFilters,
-            'plan_full'
-        ));
+        $reportFrom = CarbonImmutable::instance($from);
+        $reportTo = CarbonImmutable::instance($to);
+        $reservationFeesMinor = $this->reportsService->sales(
+            $reportFrom,
+            $reportTo,
+            \App\Models\Payment::TYPE_RESERVATION_FEE
+        )['totalMinor'];
+        $packageReservationFeesMinor = max(0, $reservationFeesMinor + $this->reportsService->sales(
+            $reportFrom,
+            $reportTo,
+            \App\Models\Payment::TYPE_PLAN_PARTIAL
+        )['totalMinor']);
+        $appFeesMinor = max(0, $this->reportsService->appFees($reportFrom, $reportTo)['totalMinor']);
+        $fullPackagePaymentsMinor = max(0, $this->reportsService->planSales($reportFrom, $reportTo)['totalMinor']);
         $totalRevenueMinor = $packageReservationFeesMinor + $fullPackagePaymentsMinor;
         $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
         $executedWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()

@@ -26,10 +26,11 @@ class CourseCancelledNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         $planTitle = $this->userRequest->plan?->title;
+        $orderNumber = $this->userRequest->display_order_number;
         $title = 'تم إلغاء الدورة';
         $message = $planTitle
-            ? "تم إلغاء دورة {$planTitle} رقم #{$this->userRequest->id}"
-            : "تم إلغاء الدورة رقم #{$this->userRequest->id}";
+            ? "تم إلغاء دورة {$planTitle} رقم #{$orderNumber}"
+            : "تم إلغاء الدورة رقم #{$orderNumber}";
 
         if ($this->reason !== '') {
             $message .= "، السبب: {$this->reason}";
@@ -40,6 +41,9 @@ class CourseCancelledNotification extends Notification
             'message' => $message,
             'type' => 'course_cancelled',
             'user_request_id' => $this->userRequest->id,
+            'order_number' => $this->userRequest->order_number,
+            'formatted_order_number' => $this->userRequest->formatted_order_number,
+            'display_order_number' => $orderNumber,
             'plan_title' => $planTitle,
             'reason' => $this->reason,
             'refund_amount' => $this->refundAmount > 0 ? round((float) $this->refundAmount, 2) : null,

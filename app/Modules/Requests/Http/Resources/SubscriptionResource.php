@@ -21,8 +21,8 @@ class SubscriptionResource extends JsonResource
             ? $this->start_date->copy()->addDays($durationDays)
             : null;
 
-        $uuidHex = str_replace('-', '', $this->id);
-        $courseId = 500 + (int) hexdec(substr($uuidHex, 0, 4));
+        $courseNumber = $this->display_order_number;
+        $courseId = $this->order_number ?? $courseNumber;
 
         $locationParts = array_filter([
             $this->locality,
@@ -60,6 +60,7 @@ class SubscriptionResource extends JsonResource
             'order_number' => $this->order_number,
             'formatted_order_number' => $this->formatted_order_number,
             'course_id' => $courseId,
+            'course_number' => $courseNumber,
             'status' => $this->status,
             'status_category' => $statusCategory,
             'retry_source_request_id' => $this->retry_source_request_id,
@@ -94,7 +95,8 @@ class SubscriptionResource extends JsonResource
                 'profile_picture' => $this->user->profile_picture_url ?? null,
             ],
             'course_details' => [
-                'course_id' => '#' . $courseId,
+                'course_id' => '#' . $courseNumber,
+                'course_number' => $courseNumber,
                 'order_number' => $this->order_number,
                 'formatted_order_number' => $this->formatted_order_number,
                 'start_date' => $this->start_date?->format('d M Y'),

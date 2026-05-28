@@ -174,6 +174,11 @@ class UserRequest extends BaseModel
         return self::formatOrderNumber($this->order_number);
     }
 
+    public function getDisplayOrderNumberAttribute(): string
+    {
+        return $this->formatted_order_number ?? (string) ($this->order_number ?? $this->id);
+    }
+
     public static function formatOrderNumber(int|string|null $orderNumber): ?string
     {
         if ($orderNumber === null || $orderNumber === '') {

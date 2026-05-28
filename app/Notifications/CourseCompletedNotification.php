@@ -24,7 +24,7 @@ class CourseCompletedNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         $planTitle = $this->userRequest->plan?->title;
-        $orderNumber = $this->userRequest->order_number ?: $this->userRequest->id;
+        $orderNumber = $this->userRequest->display_order_number;
         $message = $planTitle
             ? "تم إكمال دورة {$planTitle} رقم #{$orderNumber}"
             : "تم إكمال الدورة رقم #{$orderNumber}";
@@ -34,7 +34,9 @@ class CourseCompletedNotification extends Notification
             'message' => $message,
             'type' => 'course_completed',
             'user_request_id' => $this->userRequest->id,
-            'order_number' => $orderNumber,
+            'order_number' => $this->userRequest->order_number,
+            'formatted_order_number' => $this->userRequest->formatted_order_number,
+            'display_order_number' => $orderNumber,
             'plan_title' => $planTitle,
             'status' => UserRequest::STATUS_COMPLETED,
         ];
