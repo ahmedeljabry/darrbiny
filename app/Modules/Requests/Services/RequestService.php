@@ -221,7 +221,7 @@ class RequestService
 
     private function buildTrainerPayoutWalletNote(UserRequest $req): string
     {
-        return 'إضافة مستحقات كورس رقم ' . ($req->formatted_order_number ?? $req->order_number ?? $req->id);
+        return 'إضافة مستحقات كورس رقم ' . ($req->display_order_number ?? $req->order_number ?? $req->id);
     }
 
     /**

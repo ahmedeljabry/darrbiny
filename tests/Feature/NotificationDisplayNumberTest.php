@@ -28,11 +28,12 @@ class NotificationDisplayNumberTest extends TestCase
             10
         ))->toDatabase($user);
 
-        $this->assertStringContainsString('#' . $userRequest->formatted_order_number, $data['message']);
+        $this->assertStringContainsString('#' . $userRequest->order_number, $data['message']);
         $this->assertStringNotContainsString($userRequest->id, $data['message']);
         $this->assertSame($userRequest->order_number, $data['order_number']);
         $this->assertSame($userRequest->formatted_order_number, $data['formatted_order_number']);
-        $this->assertSame($userRequest->formatted_order_number, $data['display_order_number']);
+        $this->assertSame((string) $userRequest->order_number, $data['display_order_number']);
+        $this->assertStringStartsWith('5', $data['display_order_number']);
     }
 
     public function test_notifications_api_normalizes_legacy_uuid_course_references(): void
@@ -57,11 +58,11 @@ class NotificationDisplayNumberTest extends TestCase
         $response = $this->withToken($user->createToken('notifications')->plainTextToken)
             ->getJson('/api/v1/notifications')
             ->assertOk()
-            ->assertJsonPath('data.0.data.display_order_number', $userRequest->formatted_order_number);
+            ->assertJsonPath('data.0.data.display_order_number', (string) $userRequest->order_number);
 
         $message = (string) $response->json('data.0.data.message');
 
-        $this->assertStringContainsString('#' . $userRequest->formatted_order_number, $message);
+        $this->assertStringContainsString('#' . $userRequest->order_number, $message);
         $this->assertStringNotContainsString($userRequest->id, $message);
     }
 

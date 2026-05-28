@@ -100,9 +100,9 @@ class UserRequestOrderNumberApiTest extends TestCase
                 'formatted_order_number' => $subscription->formatted_order_number,
             ])
             ->assertJsonPath('data.0.course_id', $subscription->order_number)
-            ->assertJsonPath('data.0.course_number', $subscription->formatted_order_number)
-            ->assertJsonPath('data.0.course_details.course_id', '#' . $subscription->formatted_order_number)
-            ->assertJsonPath('data.0.course_details.course_number', $subscription->formatted_order_number)
+            ->assertJsonPath('data.0.course_number', (string) $subscription->order_number)
+            ->assertJsonPath('data.0.course_details.course_id', '#' . $subscription->order_number)
+            ->assertJsonPath('data.0.course_details.course_number', (string) $subscription->order_number)
             ->assertJsonPath('data.0.course_details.order_number', $subscription->order_number)
             ->assertJsonPath('data.0.course_details.formatted_order_number', $subscription->formatted_order_number);
     }

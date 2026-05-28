@@ -86,7 +86,7 @@ class WalletsController extends BaseController
         if ($courseReference !== '') {
             $booking = $this->resolveCourseBooking($data);
 
-            return 'إضافة مستحقات كورس رقم '.($booking->formatted_order_number ?? $booking->order_number ?? $booking->id);
+            return 'إضافة مستحقات كورس رقم '.($booking->display_order_number ?? $booking->order_number ?? $booking->id);
         }
 
         return $data['notes'] ?? null;

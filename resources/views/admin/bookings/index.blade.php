@@ -96,7 +96,7 @@
                             <tr>
                                 <td>
                                     <a href="{{ route('admin.bookings.show', $booking->id) }}" class="fw-semibold text-primary text-decoration-none">
-                                        #{{ $booking->formatted_order_number ?? $booking->order_number ?? '—' }}
+                                        #{{ $booking->display_order_number ?? $booking->order_number ?? '—' }}
                                     </a>
                                 </td>
                                 <td>

@@ -44,7 +44,7 @@ class WalletTransactionDisplayTest extends TestCase
         $response = $this->withToken($user->createToken('wallet')->plainTextToken)
             ->getJson('/api/v1/wallet/transactions')
             ->assertOk()
-            ->assertJsonPath('data.0.notes', 'دفع طلب رقم #' . $userRequest->formatted_order_number);
+            ->assertJsonPath('data.0.notes', 'دفع طلب رقم #' . $userRequest->order_number);
 
         $this->assertStringNotContainsString($payment->id, (string) $response->json('data.0.notes'));
     }
@@ -64,7 +64,7 @@ class WalletTransactionDisplayTest extends TestCase
         $response = $this->withToken($user->createToken('wallet')->plainTextToken)
             ->getJson('/api/v1/wallet/transactions')
             ->assertOk()
-            ->assertJsonPath('data.0.notes', 'إلغاء دورة #' . $userRequest->formatted_order_number . ' - سبب الإلغاء');
+            ->assertJsonPath('data.0.notes', 'إلغاء دورة #' . $userRequest->order_number . ' - سبب الإلغاء');
 
         $this->assertStringNotContainsString($userRequest->id, (string) $response->json('data.0.notes'));
     }
