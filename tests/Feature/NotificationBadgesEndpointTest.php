@@ -134,6 +134,26 @@ class NotificationBadgesEndpointTest extends TestCase
             'needs_pickup' => false,
         ]);
 
+        UserRequest::create([
+            'user_id' => $otherUser->id,
+            'trainer_id' => null,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => null,
+            'locality' => 'Open Missing District',
+            'start_date' => now()->addDays(4)->toDateString(),
+            'start_time' => '11:30:00',
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => false,
+            'needs_pickup' => false,
+        ]);
+
         $unmatchedOpenRequest = UserRequest::create([
             'user_id' => $otherUser->id,
             'trainer_id' => null,
@@ -143,7 +163,7 @@ class NotificationBadgesEndpointTest extends TestCase
             'area_level_2' => 'Riyadh',
             'area_level_3' => 'South',
             'locality' => 'Unmatched Locality',
-            'start_date' => now()->addDays(4)->toDateString(),
+            'start_date' => now()->addDays(5)->toDateString(),
             'start_time' => '12:00:00',
             'status' => UserRequest::STATUS_AWAITING_OFFERS,
             'currency' => 'SAR',
@@ -274,7 +294,7 @@ class NotificationBadgesEndpointTest extends TestCase
             ->assertJsonPath('data.account.has_unread', true)
             ->assertJsonPath('data.offers.count', 2)
             ->assertJsonPath('data.offers.has_unread', true)
-            ->assertJsonPath('data.bookings.count', 2)
+            ->assertJsonPath('data.bookings.count', 3)
             ->assertJsonPath('data.bookings.has_unread', true);
     }
 

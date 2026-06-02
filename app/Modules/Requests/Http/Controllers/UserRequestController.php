@@ -11,6 +11,7 @@ use App\Modules\Requests\Http\Requests\StoreUserRequest;
 use App\Modules\Requests\Http\Resources\SubscriptionResource;
 use App\Modules\Requests\Http\Resources\UserRequestResource;
 use App\Modules\Requests\Services\RequestService;
+use App\Support\TrainerLocationMatcher;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -109,13 +110,9 @@ class UserRequestController extends BaseController
         $profile = $canSeeOpenRequests
             ? TrainerProfile::where('user_id', $trainerId)->first()
             : null;
-        $effectiveCountryId = $this->resolveTrainerLocation($profile, 'country_id');
-        $effectiveAreaLevelOne = $this->resolveTrainerLocation($profile, 'area_level_1');
-        $effectiveAreaLevelTwo = $this->resolveTrainerLocation($profile, 'area_level_2');
-        $effectiveAreaLevelThree = $this->resolveTrainerLocation($profile, 'area_level_3');
         $canSeeLocationMatchedOpenRequests = $canSeeOpenRequests
-            && filled($effectiveCountryId)
-            && filled($effectiveAreaLevelOne);
+            && $profile instanceof TrainerProfile
+            && TrainerLocationMatcher::hasBaseLocation($profile);
 
         $q = UserRequest::with([
             'user',
@@ -135,10 +132,7 @@ class UserRequestController extends BaseController
             ) use (
                 $trainerId,
                 $canSeeLocationMatchedOpenRequests,
-                $effectiveCountryId,
-                $effectiveAreaLevelOne,
-                $effectiveAreaLevelTwo,
-                $effectiveAreaLevelThree
+                $profile
             ) {
                 $query->whereHas('offers', function ($offerQuery) use ($trainerId) {
                     $offerQuery->where('trainer_id', $trainerId);
@@ -148,28 +142,8 @@ class UserRequestController extends BaseController
                     })
                     ->orWhere('trainer_id', $trainerId);
                 if ($canSeeLocationMatchedOpenRequests) {
-                    $query->orWhere(function (
-                        $openQuery
-                    ) use (
-                        $effectiveCountryId,
-                        $effectiveAreaLevelOne,
-                        $effectiveAreaLevelTwo,
-                        $effectiveAreaLevelThree
-                    ) {
-                        $openQuery->whereNull('trainer_id')
-                            ->whereIn('status', [
-                                UserRequest::STATUS_PENDING_PAYMENT,
-                                UserRequest::STATUS_AWAITING_OFFERS,
-                            ])
-                            ->where('country_id', $effectiveCountryId)
-                            ->where('area_level_1', $effectiveAreaLevelOne);
-
-                        if ($effectiveAreaLevelTwo) {
-                            $openQuery->where('area_level_2', $effectiveAreaLevelTwo);
-                        }
-                        if ($effectiveAreaLevelThree) {
-                            $openQuery->where('area_level_3', $effectiveAreaLevelThree);
-                        }
+                    $query->orWhere(function ($openQuery) use ($profile) {
+                        TrainerLocationMatcher::applyOpenRequestScope($openQuery, $profile);
                     });
                 }
             });
@@ -242,21 +216,4 @@ class UserRequestController extends BaseController
         return response()->json(['data' => $req->fresh()]);
     }
 
-    private function resolveTrainerLocation(?TrainerProfile $profile, string $field): ?string
-    {
-        if (!$profile) {
-            return null;
-        }
-
-        $value = $profile->getAttribute($field);
-        if (
-            $profile->pending_approval
-            && is_array($profile->pending_changes)
-            && array_key_exists($field, $profile->pending_changes)
-        ) {
-            $value = $profile->pending_changes[$field];
-        }
-
-        return $value;
-    }
 }

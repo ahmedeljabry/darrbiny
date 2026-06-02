@@ -10,6 +10,7 @@ use App\Models\UserRequest;
 use App\Modules\Requests\Services\RequestService;
 use App\Notifications\TrainerOfferAcceptedNotification;
 use App\Notifications\TrainerOfferSentNotification;
+use App\Support\TrainerLocationMatcher;
 use Illuminate\Support\Facades\DB;
 
 class OfferService
@@ -21,16 +22,7 @@ class OfferService
         $req = UserRequest::findOrFail($data['user_request_id']);
         $profile = TrainerProfile::where('user_id', $trainerId)->firstOrFail();
 
-        if ($profile->country_id && $profile->country_id !== $req->country_id) {
-            abort(422, 'Trainer not eligible for this country');
-        }
-        if ($profile->area_level_1 && $profile->area_level_1 !== $req->area_level_1) {
-            abort(422, 'Trainer not eligible for this location');
-        }
-        if ($profile->area_level_2 && $profile->area_level_2 !== $req->area_level_2) {
-            abort(422, 'Trainer not eligible for this location');
-        }
-        if ($profile->area_level_3 && $profile->area_level_3 !== $req->area_level_3) {
+        if (!TrainerLocationMatcher::matchesRequest($profile, $req, requireBaseLocation: false)) {
             abort(422, 'Trainer not eligible for this location');
         }
 

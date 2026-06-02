@@ -39,6 +39,12 @@ class NewRequestAvailableNotificationTest extends TestCase
             'area_level_3' => 'Nasr City',
             'locality' => 'Different Locality',
         ]);
+        $broadAreaTrainer = $this->createTrainer($country->id, [
+            'area_level_1' => ' cairo governorate ',
+            'area_level_2' => ' cairo ',
+            'area_level_3' => null,
+            'locality' => 'Nasr City',
+        ]);
         $otherAreaTrainer = $this->createTrainer($country->id, [
             'area_level_1' => 'Cairo Governorate',
             'area_level_2' => 'Cairo',
@@ -79,6 +85,11 @@ class NewRequestAvailableNotificationTest extends TestCase
             ->first();
 
         $this->assertNotNull($storedNotification);
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $broadAreaTrainer->id,
+            'type' => NewRequestAvailable::class,
+        ]);
 
         $payload = json_decode((string) $storedNotification->data, true);
         $this->assertSame('new_request_available', $payload['type']);

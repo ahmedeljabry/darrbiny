@@ -23,7 +23,7 @@ class TrainerLocationMatchingTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_trainer_bookings_only_include_open_requests_matching_country_and_area_levels_ignoring_locality(): void
+    public function test_trainer_bookings_include_open_requests_for_overlapping_locations_ignoring_locality(): void
     {
         [$country, $plan] = $this->createCountryAndPlan();
         $trainer = $this->createTrainerWithProfile($country->id);
@@ -56,6 +56,15 @@ class TrainerLocationMatchingTest extends TestCase
             'locality' => 'Trainer Locality',
         ]);
 
+        $normalizedLocationRequest = $this->createUserRequest($plan, [
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'country_id' => $country->id,
+            'area_level_1' => '  riyadh province  ',
+            'area_level_2' => 'riyadh',
+            'area_level_3' => ' north ',
+            'locality' => 'Spaced Locality',
+        ]);
+
         $assignedRequest = $this->createUserRequest($plan, [
             'trainer_id' => $trainer->id,
             'status' => UserRequest::STATUS_IN_TRAINING,
@@ -80,9 +89,10 @@ class TrainerLocationMatchingTest extends TestCase
                 'formatted_order_number' => $assignedRequest->formatted_order_number,
             ])
             ->assertJsonFragment(['id' => $matchingRequest->id])
+            ->assertJsonFragment(['id' => $missingAreaThreeRequest->id])
+            ->assertJsonFragment(['id' => $normalizedLocationRequest->id])
             ->assertJsonFragment(['id' => $assignedRequest->id])
-            ->assertJsonMissing(['id' => $differentAreaThreeRequest->id])
-            ->assertJsonMissing(['id' => $missingAreaThreeRequest->id]);
+            ->assertJsonMissing(['id' => $differentAreaThreeRequest->id]);
     }
 
     public function test_trainer_can_create_offer_when_only_locality_differs(): void
@@ -117,6 +127,32 @@ class TrainerLocationMatchingTest extends TestCase
         ]);
     }
 
+    public function test_trainer_can_create_offer_when_optional_district_is_missing_on_request(): void
+    {
+        [$country, $plan] = $this->createCountryAndPlan();
+        $trainer = $this->createTrainerWithProfile($country->id);
+        $token = $trainer->createToken('trainer')->plainTextToken;
+
+        $request = $this->createUserRequest($plan, [
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'country_id' => $country->id,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => null,
+            'locality' => 'Trainer Locality',
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/trainer/offers', [
+                'user_request_id' => $request->id,
+                'price_minor' => 25000,
+                'message' => 'عرض مناسب',
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('data.user_request_id', $request->id)
+            ->assertJsonPath('data.trainer_id', $trainer->id);
+    }
+
     private function createCountryAndPlan(): array
     {
         $country = Country::create([
@@ -141,7 +177,7 @@ class TrainerLocationMatchingTest extends TestCase
     private function createTrainerWithProfile(string $countryId): User
     {
         $trainer = User::factory()->create([
-            'phone_with_cc' => '+966500000001',
+            'phone_with_cc' => fake()->unique()->numerify('+966511000###'),
         ]);
         $trainer->assignRole('TRAINER');
         $trainer->trainerProfile()->create([

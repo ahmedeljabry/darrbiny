@@ -19,6 +19,7 @@ use App\Notifications\ScheduleItemSentNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
 use App\Support\NotificationDisplayData;
+use App\Support\TrainerLocationMatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -281,22 +282,15 @@ class NotificationController extends BaseController
         $profile = $canSeeOpenRequests
             ? TrainerProfile::where('user_id', $trainerId)->first()
             : null;
-        $effectiveCountryId = $this->resolveTrainerLocation($profile, 'country_id');
-        $effectiveAreaLevelOne = $this->resolveTrainerLocation($profile, 'area_level_1');
-        $effectiveAreaLevelTwo = $this->resolveTrainerLocation($profile, 'area_level_2');
-        $effectiveAreaLevelThree = $this->resolveTrainerLocation($profile, 'area_level_3');
         $canSeeLocationMatchedOpenRequests = $canSeeOpenRequests
-            && filled($effectiveCountryId)
-            && filled($effectiveAreaLevelOne);
+            && $profile instanceof TrainerProfile
+            && TrainerLocationMatcher::hasBaseLocation($profile);
 
         return UserRequest::query()
             ->where(function (Builder $query) use (
                 $trainerId,
                 $canSeeLocationMatchedOpenRequests,
-                $effectiveCountryId,
-                $effectiveAreaLevelOne,
-                $effectiveAreaLevelTwo,
-                $effectiveAreaLevelThree
+                $profile
             ): void {
                 $query->whereHas('offers', function (Builder $offerQuery) use ($trainerId): void {
                     $offerQuery->where('trainer_id', $trainerId);
@@ -307,48 +301,11 @@ class NotificationController extends BaseController
                     ->orWhere('trainer_id', $trainerId);
 
                 if ($canSeeLocationMatchedOpenRequests) {
-                    $query->orWhere(function (Builder $openQuery) use (
-                        $effectiveCountryId,
-                        $effectiveAreaLevelOne,
-                        $effectiveAreaLevelTwo,
-                        $effectiveAreaLevelThree
-                    ): void {
-                        $openQuery->whereNull('trainer_id')
-                            ->whereIn('status', [
-                                UserRequest::STATUS_PENDING_PAYMENT,
-                                UserRequest::STATUS_AWAITING_OFFERS,
-                            ])
-                            ->where('country_id', $effectiveCountryId)
-                            ->where('area_level_1', $effectiveAreaLevelOne);
-
-                        if ($effectiveAreaLevelTwo) {
-                            $openQuery->where('area_level_2', $effectiveAreaLevelTwo);
-                        }
-
-                        if ($effectiveAreaLevelThree) {
-                            $openQuery->where('area_level_3', $effectiveAreaLevelThree);
-                        }
+                    $query->orWhere(function (Builder $openQuery) use ($profile): void {
+                        TrainerLocationMatcher::applyOpenRequestScope($openQuery, $profile);
                     });
                 }
             });
-    }
-
-    private function resolveTrainerLocation(?TrainerProfile $profile, string $field): ?string
-    {
-        if (!$profile) {
-            return null;
-        }
-
-        $value = $profile->getAttribute($field);
-        if (
-            $profile->pending_approval
-            && is_array($profile->pending_changes)
-            && array_key_exists($field, $profile->pending_changes)
-        ) {
-            $value = $profile->pending_changes[$field];
-        }
-
-        return $value;
     }
 
     private function badgePayload(int $count): array
