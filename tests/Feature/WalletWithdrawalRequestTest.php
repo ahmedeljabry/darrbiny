@@ -191,6 +191,59 @@ class WalletWithdrawalRequestTest extends TestCase
             'notifiable_id' => $user->id,
             'notifiable_type' => User::class,
         ]);
+
+        $notification = DB::table('notifications')
+            ->where('type', WalletWithdrawalProcessedNotification::class)
+            ->where('notifiable_id', $user->id)
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $payload = json_decode((string) $notification->data, true);
+        $this->assertSame('تم تحويل قيمة الكورس إلى حسابك البنكي', $payload['message'] ?? null);
+        $this->assertSame('student', $payload['withdrawal_recipient_type'] ?? null);
+
+        $walletNotification = new WalletWithdrawalProcessedNotification($withdrawalRequest->fresh(), true);
+        $this->assertContains(\App\Notifications\Channels\FcmChannel::class, $walletNotification->via($user));
+    }
+
+    public function test_admin_withdrawal_approval_notifies_trainer_about_dues_transfer_to_bank(): void
+    {
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000005011',
+            'points_balance' => 100,
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000005012',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $withdrawalRequest = WalletTransaction::create([
+            'user_id' => $trainer->id,
+            'amount' => 4000,
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.withdrawal-requests.approve', $withdrawalRequest->id))
+            ->assertRedirect();
+
+        $notification = DB::table('notifications')
+            ->where('type', WalletWithdrawalProcessedNotification::class)
+            ->where('notifiable_id', $trainer->id)
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($notification);
+
+        $payload = json_decode((string) $notification->data, true);
+        $this->assertSame('تم تحويل مستحقاتك إلى الحساب البنكي', $payload['message'] ?? null);
+        $this->assertSame('trainer', $payload['withdrawal_recipient_type'] ?? null);
     }
 
     public function test_admin_can_reject_withdrawal_request_without_deducting_wallet_balance(): void

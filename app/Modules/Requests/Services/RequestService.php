@@ -215,7 +215,8 @@ class RequestService
         $trainer->notify(new WalletBalanceAddedNotification(
             $trainerNetMinor,
             'course_payout',
-            $walletTransaction->id
+            $walletTransaction->id,
+            $req
         ));
     }
 

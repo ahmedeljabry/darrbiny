@@ -79,7 +79,7 @@ class ScheduleController extends BaseController
     {
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
-        $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber);
+        $progress = $this->service->acceptScheduleItem($userRequest, $dayNumber, $request->user());
         return response()->json([
             'data' => [
                 'id' => $progress->id,
@@ -103,7 +103,7 @@ class ScheduleController extends BaseController
         $userRequest = UserRequest::findOrFail($id);
         abort_unless(in_array($request->user()->id, [$userRequest->user_id, $userRequest->trainer_id], true), 403, 'Unauthorized');
 
-        $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber, $request->input('reason'));
+        $progress = $this->service->rejectScheduleItem($userRequest, $dayNumber, $request->input('reason'), $request->user());
 
         return response()->json([
             'data' => [

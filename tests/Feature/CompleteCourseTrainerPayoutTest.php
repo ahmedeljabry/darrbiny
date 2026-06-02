@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Notifications\CourseCompletedNotification;
+use App\Notifications\WalletBalanceAddedNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -104,6 +105,21 @@ class CompleteCourseTrainerPayoutTest extends TestCase
             'notifiable_id' => $trainer->id,
             'type' => CourseCompletedNotification::class,
         ]);
+        $trainerWalletNotification = DB::table('notifications')
+            ->where('notifiable_id', $trainer->id)
+            ->where('type', WalletBalanceAddedNotification::class)
+            ->first();
+
+        $this->assertNotNull($trainerWalletNotification);
+
+        $trainerWalletPayload = json_decode((string) $trainerWalletNotification->data, true);
+        $this->assertSame('course_payout', $trainerWalletPayload['reason']);
+        $this->assertSame('تم إضافة مستحقات الكورس رقم #' . $booking->order_number . ' إلى محفظتك', $trainerWalletPayload['message']);
+        $this->assertSame((string) $booking->order_number, $trainerWalletPayload['display_order_number']);
+
+        $walletNotification = new WalletBalanceAddedNotification(8100, 'course_payout', null, $booking);
+        $this->assertContains(\App\Notifications\Channels\FcmChannel::class, $walletNotification->via($trainer));
+
         $this->assertSame(2, DB::table('notifications')
             ->where('type', CourseCompletedNotification::class)
             ->whereIn('notifiable_id', [$student->id, $trainer->id])

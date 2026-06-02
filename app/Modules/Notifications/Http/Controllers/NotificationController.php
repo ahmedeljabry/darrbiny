@@ -14,6 +14,7 @@ use App\Notifications\CancellationRequestNotification;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\NewRequestAvailable;
 use App\Notifications\ReferralPointsAddedNotification;
+use App\Notifications\ScheduleItemReviewedByStudentNotification;
 use App\Notifications\ScheduleItemSentNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
@@ -27,6 +28,7 @@ class NotificationController extends BaseController
 {
     private const TRAINING_NOTIFICATION_TYPES = [
         ScheduleItemSentNotification::class,
+        ScheduleItemReviewedByStudentNotification::class,
         NewRequestAvailable::class,
         CancellationRequestNotification::class,
         CourseCancelledNotification::class,

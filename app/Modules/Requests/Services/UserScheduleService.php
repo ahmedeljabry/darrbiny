@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Requests\Services;
 
 use App\Models\UserScheduleProgress;
+use App\Notifications\ScheduleItemReviewedByStudentNotification;
 use App\Notifications\ScheduleItemSentNotification;
 use Illuminate\Support\Facades\DB;
 
@@ -128,7 +129,7 @@ class UserScheduleService
     /**
      * User accepts schedule item
      */
-    public function acceptScheduleItem($userRequest, int $dayNumber): UserScheduleProgress
+    public function acceptScheduleItem($userRequest, int $dayNumber, $actor = null): UserScheduleProgress
     {
         $planId = $userRequest->plan_id;
         abort_unless($planId, 422, 'Plan not set');
@@ -152,6 +153,7 @@ class UserScheduleService
         $progress->is_checked = true;
         $progress->checked_at = now();
         $progress->save();
+        $this->notifyTrainerOfStudentReview($progress, $actor);
 
         return $progress;
     }
@@ -159,7 +161,7 @@ class UserScheduleService
     /**
      * User rejects schedule item with reason
      */
-    public function rejectScheduleItem($userRequest, int $dayNumber, string $reason): UserScheduleProgress
+    public function rejectScheduleItem($userRequest, int $dayNumber, string $reason, $actor = null): UserScheduleProgress
     {
         $planId = $userRequest->plan_id;
         abort_unless($planId, 422, 'Plan not set');
@@ -182,6 +184,7 @@ class UserScheduleService
         $progress->status = UserScheduleProgress::STATUS_REJECTED;
         $progress->rejection_reason = $reason;
         $progress->save();
+        $this->notifyTrainerOfStudentReview($progress, $actor);
 
         return $progress;
     }
@@ -226,5 +229,21 @@ class UserScheduleService
         $progress->save();
 
         return $progress;
+    }
+
+    private function notifyTrainerOfStudentReview(UserScheduleProgress $progress, $actor = null): void
+    {
+        $progress->loadMissing(['userRequest.trainer', 'userRequest.user', 'planScheduleItem']);
+        if ($actor && (string) $actor->id !== (string) $progress->userRequest?->user_id) {
+            return;
+        }
+
+        $trainer = $progress->userRequest?->trainer;
+
+        if (!$trainer) {
+            return;
+        }
+
+        $trainer->notify(new ScheduleItemReviewedByStudentNotification($progress));
     }
 }

@@ -27,6 +27,10 @@ class WalletWithdrawalProcessedNotification extends Notification
     {
         $amountMinor = $this->transaction->amountMinor();
         $formattedAmount = WalletAmount::formatMinor($amountMinor, 2);
+        $isTrainer = method_exists($notifiable, 'isTrainerAccount') && $notifiable->isTrainerAccount();
+        $approvedMessage = $isTrainer
+            ? 'تم تحويل مستحقاتك إلى الحساب البنكي'
+            : 'تم تحويل قيمة الكورس إلى حسابك البنكي';
 
         return [
             'type' => 'wallet_withdraw_processed',
@@ -37,8 +41,9 @@ class WalletWithdrawalProcessedNotification extends Notification
             'rejection_reason' => $this->transaction->rejection_reason,
             'title' => $this->approved ? 'تم تنفيذ طلب السحب' : 'تم رفض طلب السحب',
             'message' => $this->approved
-                ? "تم تنفيذ طلب سحب {$formattedAmount} من محفظتك"
+                ? $approvedMessage
                 : "تم رفض طلب سحب {$formattedAmount} من محفظتك",
+            'withdrawal_recipient_type' => $isTrainer ? 'trainer' : 'student',
         ];
     }
 }
