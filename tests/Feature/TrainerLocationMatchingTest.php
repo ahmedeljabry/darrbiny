@@ -23,7 +23,7 @@ class TrainerLocationMatchingTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_trainer_bookings_include_open_requests_for_overlapping_locations_ignoring_locality(): void
+    public function test_trainer_bookings_return_only_awaiting_offer_requests_for_overlapping_locations_ignoring_locality(): void
     {
         [$country, $plan] = $this->createCountryAndPlan();
         $trainer = $this->createTrainerWithProfile($country->id);
@@ -83,19 +83,14 @@ class TrainerLocationMatchingTest extends TestCase
                 'order_number' => $matchingRequest->order_number,
                 'formatted_order_number' => $matchingRequest->formatted_order_number,
             ])
-            ->assertJsonFragment([
-                'id' => $assignedRequest->id,
-                'order_number' => $assignedRequest->order_number,
-                'formatted_order_number' => $assignedRequest->formatted_order_number,
-            ])
             ->assertJsonFragment(['id' => $matchingRequest->id])
-            ->assertJsonFragment(['id' => $missingAreaThreeRequest->id])
             ->assertJsonFragment(['id' => $normalizedLocationRequest->id])
-            ->assertJsonFragment(['id' => $assignedRequest->id])
+            ->assertJsonMissing(['id' => $missingAreaThreeRequest->id])
+            ->assertJsonMissing(['id' => $assignedRequest->id])
             ->assertJsonMissing(['id' => $differentAreaThreeRequest->id]);
     }
 
-    public function test_trainer_bookings_pending_filter_returns_awaiting_offer_requests(): void
+    public function test_trainer_bookings_status_filter_still_returns_awaiting_offer_requests_only(): void
     {
         [$country, $plan] = $this->createCountryAndPlan();
         $trainer = $this->createTrainerWithProfile($country->id);
@@ -121,7 +116,7 @@ class TrainerLocationMatchingTest extends TestCase
             ->getJson('/api/v1/trainers/' . $trainer->id . '/bookings?status=pending')
             ->assertOk()
             ->assertJsonFragment(['id' => $awaitingOffersRequest->id])
-            ->assertJsonFragment(['id' => $pendingPaymentRequest->id])
+            ->assertJsonMissing(['id' => $pendingPaymentRequest->id])
             ->assertJsonMissing(['id' => $activeRequest->id]);
 
         $this->withToken($token)
