@@ -95,6 +95,43 @@ class TrainerLocationMatchingTest extends TestCase
             ->assertJsonMissing(['id' => $differentAreaThreeRequest->id]);
     }
 
+    public function test_trainer_bookings_pending_filter_returns_awaiting_offer_requests(): void
+    {
+        [$country, $plan] = $this->createCountryAndPlan();
+        $trainer = $this->createTrainerWithProfile($country->id);
+        $token = $trainer->createToken('trainer')->plainTextToken;
+
+        $awaitingOffersRequest = $this->createUserRequest($plan, [
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'country_id' => $country->id,
+        ]);
+
+        $pendingPaymentRequest = $this->createUserRequest($plan, [
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'country_id' => $country->id,
+        ]);
+
+        $activeRequest = $this->createUserRequest($plan, [
+            'trainer_id' => $trainer->id,
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'country_id' => $country->id,
+        ]);
+
+        $this->withToken($token)
+            ->getJson('/api/v1/trainers/' . $trainer->id . '/bookings?status=pending')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $awaitingOffersRequest->id])
+            ->assertJsonFragment(['id' => $pendingPaymentRequest->id])
+            ->assertJsonMissing(['id' => $activeRequest->id]);
+
+        $this->withToken($token)
+            ->getJson('/api/v1/trainers/' . $trainer->id . '/bookings?status=awaiting_offers')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $awaitingOffersRequest->id])
+            ->assertJsonMissing(['id' => $pendingPaymentRequest->id])
+            ->assertJsonMissing(['id' => $activeRequest->id]);
+    }
+
     public function test_trainer_can_create_offer_when_only_locality_differs(): void
     {
         [$country, $plan] = $this->createCountryAndPlan();

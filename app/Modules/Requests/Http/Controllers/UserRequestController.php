@@ -12,6 +12,7 @@ use App\Modules\Requests\Http\Resources\SubscriptionResource;
 use App\Modules\Requests\Http\Resources\UserRequestResource;
 use App\Modules\Requests\Services\RequestService;
 use App\Support\TrainerLocationMatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -103,6 +104,7 @@ class UserRequestController extends BaseController
     public function trainerBookings(Request $request, string $trainerId)
     {
         $status = $request->query('status');
+        $status = is_string($status) ? trim($status) : null;
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
         $viewer = $request->user();
@@ -148,10 +150,7 @@ class UserRequestController extends BaseController
                 }
             });
 
-        // Filter by status
-        if ($status) {
-            $q->where('status', $status);
-        }
+        $this->applyTrainerBookingsStatusFilter($q, $status);
 
         // Filter by date range
         if ($dateFrom) {
@@ -163,6 +162,26 @@ class UserRequestController extends BaseController
 
         $bookings = $q->latest()->paginate(20);
         return UserRequestResource::collection($bookings)->response();
+    }
+
+    private function applyTrainerBookingsStatusFilter(Builder $query, ?string $status): void
+    {
+        if ($status === null || $status === '') {
+            return;
+        }
+
+        match ($status) {
+            'active' => $query->where('status', UserRequest::STATUS_IN_TRAINING),
+            'completed' => $query->where('status', UserRequest::STATUS_COMPLETED),
+            'pending' => $query->whereIn('status', [
+                UserRequest::STATUS_PENDING_PAYMENT,
+                UserRequest::STATUS_AWAITING_OFFERS,
+                UserRequest::STATUS_OFFER_SELECTED,
+                UserRequest::STATUS_PAID,
+                UserRequest::STATUS_CANCELLED,
+            ]),
+            default => $query->where('status', $status),
+        };
     }
 
     /**
