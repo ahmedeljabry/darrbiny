@@ -179,6 +179,34 @@ class UserRequest extends BaseModel
         return (string) ($this->order_number ?? $this->formatted_order_number ?? $this->id);
     }
 
+    public function ensureOrderNumber(): int
+    {
+        if (! empty($this->order_number)) {
+            return (int) $this->order_number;
+        }
+
+        return DB::transaction(function (): int {
+            $request = self::query()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (empty($request->order_number)) {
+                $request->forceFill(['order_number' => self::reserveNextOrderNumber()]);
+                $request->save();
+            }
+
+            $this->setAttribute('order_number', $request->order_number);
+
+            return (int) $request->order_number;
+        });
+    }
+
+    public function notificationOrderNumber(): string
+    {
+        return (string) $this->ensureOrderNumber();
+    }
+
     public static function formatOrderNumber(int|string|null $orderNumber): ?string
     {
         if ($orderNumber === null || $orderNumber === '') {

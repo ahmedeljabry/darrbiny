@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use App\Models\UserRequest;
 use App\Models\UserScheduleProgress;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -33,6 +32,7 @@ class ScheduleItemReviewedByStudentNotification extends Notification
         $message = $accepted
             ? 'تم استلام الطالبة لمرحلة اليوم'
             : 'رفض استلام الطالبة لمرحلة اليوم';
+        $orderNumber = $userRequest?->notificationOrderNumber();
 
         return [
             'type' => 'schedule_item_reviewed_by_student',
@@ -45,7 +45,7 @@ class ScheduleItemReviewedByStudentNotification extends Notification
             'student_name' => $userRequest?->user?->name,
             'order_number' => $userRequest?->order_number,
             'formatted_order_number' => $userRequest?->formatted_order_number,
-            'display_order_number' => $userRequest instanceof UserRequest ? $userRequest->display_order_number : null,
+            'display_order_number' => $orderNumber,
             'title' => $message,
             'message' => $message,
         ];

@@ -25,7 +25,7 @@ final class NotificationDisplayData
             return $data;
         }
 
-        $displayOrderNumber = $userRequest->display_order_number;
+        $displayOrderNumber = $userRequest->notificationOrderNumber();
 
         $data['order_number'] ??= $userRequest->order_number;
         $data['formatted_order_number'] ??= $userRequest->formatted_order_number;
@@ -39,7 +39,7 @@ final class NotificationDisplayData
             );
         }
 
-        return $data;
+        return NotificationPayloadSanitizer::withoutUuids($data);
     }
 
     private static function userRequestFromData(array $data): ?UserRequest

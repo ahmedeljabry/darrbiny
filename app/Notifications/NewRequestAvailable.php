@@ -30,6 +30,8 @@ class NewRequestAvailable extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable): array
     {
+        $orderNumber = $this->request->notificationOrderNumber();
+
         return [
             'type' => 'new_request_available',
             'title' => 'طلب تدريب جديد',
@@ -38,7 +40,7 @@ class NewRequestAvailable extends Notification implements ShouldQueue
             'user_request_id' => $this->request->id,
             'order_number' => $this->request->order_number,
             'formatted_order_number' => $this->request->formatted_order_number,
-            'display_order_number' => $this->request->display_order_number,
+            'display_order_number' => $orderNumber,
             'start_date' => optional($this->request->start_date)->toDateString(),
             'plan_title' => $this->request->plan?->title,
             'user_name' => $this->request->user?->name,

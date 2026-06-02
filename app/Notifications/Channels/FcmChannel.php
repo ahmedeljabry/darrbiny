@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications\Channels;
 
 use App\Models\UserDeviceToken;
+use App\Support\NotificationPayloadSanitizer;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -79,12 +80,13 @@ class FcmChannel
             }
         }
 
-        $payload = $this->resolvePayload($notifiable, $notification);
+        $payload = NotificationPayloadSanitizer::withoutUuids(
+            $this->resolvePayload($notifiable, $notification)
+        );
         $title = isset($payload['title']) && is_scalar($payload['title']) ? (string) $payload['title'] : config('app.name');
         $body = isset($payload['message']) && is_scalar($payload['message']) ? (string) $payload['message'] : null;
 
         $data = $this->stringifyPayload([
-            'notification_id' => (string) $notification->id,
             'notification_type' => $payload['type'] ?? $notification::class,
             ...$payload,
         ]);

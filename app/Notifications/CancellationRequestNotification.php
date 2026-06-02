@@ -27,7 +27,7 @@ class CancellationRequestNotification extends Notification
         $userRequest = $this->cancellationRequest->userRequest;
         $user = $this->cancellationRequest->user;
         $status = $this->cancellationRequest->status;
-        $orderNumber = $userRequest?->display_order_number ?? $userRequest?->formatted_order_number ?? $userRequest?->order_number ?? $userRequest?->id;
+        $orderNumber = $userRequest?->notificationOrderNumber();
 
         $title = match ($status) {
             'approved' => 'تم قبول طلب الإلغاء',

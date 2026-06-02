@@ -80,6 +80,19 @@ class ScheduleRecheckTest extends TestCase
         $progress->refresh();
         $this->assertSame(UserScheduleProgress::STATUS_SENT, $progress->status);
         $this->assertNull($progress->rejection_reason);
-        Notification::assertSentTo($student, ScheduleItemSentNotification::class);
+        Notification::assertSentTo(
+            $student,
+            ScheduleItemSentNotification::class,
+            function (ScheduleItemSentNotification $notification) use ($request, $student): bool {
+                $payload = $notification->toDatabase($student);
+
+                $this->assertSame($request->order_number, $payload['order_number']);
+                $this->assertSame($request->formatted_order_number, $payload['formatted_order_number']);
+                $this->assertSame((string) $request->order_number, $payload['display_order_number']);
+                $this->assertStringStartsWith('5', $payload['display_order_number']);
+
+                return true;
+            }
+        );
     }
 }

@@ -962,7 +962,16 @@ class AdminReportsDataTest extends TestCase
             '/Referral Owner.*?\+10000008041.*?(?:مستخدم|مدرب).*?<td>\s*1\s*<\/td>/u',
             $normalizedHtml
         );
-        $this->assertDoesNotMatchRegularExpression('/Referral Owner.*?777/u', $normalizedHtml);
+        preg_match_all('/<tr>.*?<\/tr>/u', $normalizedHtml, $rowMatches);
+        $ownerRow = collect($rowMatches[0] ?? [])
+            ->first(fn (string $row): bool => str_contains($row, 'Referral Owner'));
+
+        $this->assertIsString($ownerRow);
+        preg_match_all('/<td>\s*(.*?)\s*<\/td>/u', $ownerRow, $cellMatches);
+
+        $pointsCell = trim(strip_tags($cellMatches[1][4] ?? ''));
+        $this->assertSame('1', $pointsCell);
+        $this->assertNotSame('777', $pointsCell);
     }
 
     private function createAdmin(): User

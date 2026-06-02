@@ -49,12 +49,14 @@ class TrainerOfferAcceptedNotification extends Notification implements ShouldQue
 
     private function offerPayload(?UserRequest $userRequest): array
     {
+        $orderNumber = $userRequest?->notificationOrderNumber();
+
         return [
             'offer_id' => $this->offer->id,
             'user_request_id' => $this->offer->user_request_id,
             'order_number' => $userRequest?->order_number,
             'formatted_order_number' => $userRequest?->formatted_order_number,
-            'display_order_number' => $userRequest?->display_order_number,
+            'display_order_number' => $orderNumber,
             'price_minor' => $this->offer->price_minor,
             'status' => $this->offer->status,
         ];

@@ -26,7 +26,7 @@ class CourseCancelledNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         $planTitle = $this->userRequest->plan?->title;
-        $orderNumber = $this->userRequest->display_order_number;
+        $orderNumber = $this->userRequest->notificationOrderNumber();
         $title = 'تم إلغاء الدورة';
         $message = $planTitle
             ? "تم إلغاء دورة {$planTitle} رقم #{$orderNumber}"

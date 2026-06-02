@@ -25,10 +25,14 @@ class ScheduleItemSentNotification extends Notification
     {
         $userRequest = $this->scheduleProgress->userRequest;
         $planScheduleItem = $this->scheduleProgress->planScheduleItem;
+        $orderNumber = $userRequest->notificationOrderNumber();
 
         return [
             'type' => 'schedule_item_sent',
             'user_request_id' => $userRequest->id,
+            'order_number' => $userRequest->order_number,
+            'formatted_order_number' => $userRequest->formatted_order_number,
+            'display_order_number' => $orderNumber,
             'schedule_progress_id' => $this->scheduleProgress->id,
             'day_number' => $this->scheduleProgress->day_number,
             'title' => $planScheduleItem->title ?? "اليوم {$this->scheduleProgress->day_number}",

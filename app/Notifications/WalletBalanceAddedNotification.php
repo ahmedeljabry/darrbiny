@@ -29,7 +29,7 @@ class WalletBalanceAddedNotification extends Notification
     {
         $formattedAmount = WalletAmount::formatMinor($this->amountMinor, 2);
         $isCoursePayout = $this->reason === 'course_payout' && $this->userRequest instanceof UserRequest;
-        $orderNumber = $isCoursePayout ? $this->userRequest->display_order_number : null;
+        $orderNumber = $isCoursePayout ? $this->userRequest->notificationOrderNumber() : null;
 
         return [
             'type' => 'wallet_balance_added',

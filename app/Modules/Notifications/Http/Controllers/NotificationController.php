@@ -195,7 +195,7 @@ class NotificationController extends BaseController
             'data' => [
                 'id' => $notification->id,
                 'type' => $notification->type,
-                'data' => $notification->data,
+                'data' => NotificationDisplayData::for($notification),
                 'read_at' => $notification->read_at?->toIso8601String(),
                 'created_at' => $notification->created_at?->toIso8601String(),
             ],
