@@ -160,6 +160,7 @@ class CancellationRequestsController extends BaseController
                 $walletTransaction = WalletTransaction::create([
                     'user_id' => $user->id,
                     'amount' => $refundAmountMinor,
+                    'currency' => $userRequest->currency,
                     'type' => WalletTransaction::TYPE_REFUND,
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'processed_by' => $request->user()->id,

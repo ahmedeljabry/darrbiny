@@ -287,15 +287,15 @@
       <div class="card-body">
         <div class="dashboard-section-head">
           <div>
-            <h5 class="mb-1 text-danger">إعادة تهيئة بيانات المستخدمين</h5>
-            <p class="text-muted mb-0 small">يحذف حسابات المستخدمين غير الإداريين ويحرر أرقام الجوال مع الحفاظ على الحجوزات والمدفوعات والسجلات المالية السابقة.</p>
+            <h5 class="mb-1 text-danger">إعادة تهيئة البيانات بالكامل</h5>
+            <p class="text-muted mb-0 small">يحذف المستخدمين غير الإداريين وكل الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية وتذاكر الدعم.</p>
           </div>
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetUsersModal">
             <i class="icon-base ti tabler-alert-triangle me-1"></i> بدء داتا جديدة
           </button>
         </div>
         <div class="report-note-box mt-3">
-          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيتم تحرير أرقام الجوال وإخفاء بيانات الحسابات الشخصية، مع تنظيف تذاكر الدعم وبقاء الحجوزات والمدفوعات والمحافظ والسجلات المالية محفوظة.</p>
+          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيتم حذف الحجوزات والمدفوعات والمحافظ وطلبات السحب والإلغاء والدعم وكل البيانات التشغيلية، مع الإبقاء على حسابات الإدارة والإعدادات الأساسية.</p>
         </div>
       </div>
     </div>
@@ -310,7 +310,7 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
-              <p class="mb-3">سيتم حذف حسابات المستخدمين غير الإداريين وتحرير أرقام الجوال، مع الحفاظ على السجلات المالية والتشغيلية السابقة. لا يمكن التراجع بعد التأكيد.</p>
+              <p class="mb-3">سيتم حذف حسابات المستخدمين غير الإداريين وكل الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية وتذاكر الدعم. لا يمكن التراجع بعد التأكيد.</p>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" value="1" id="confirm_reset" name="confirm_reset" required>
                 <label class="form-check-label" for="confirm_reset">أفهم أن العملية نهائية وأريد المتابعة.</label>
@@ -318,7 +318,7 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-              <button type="submit" class="btn btn-danger">تأكيد حذف الحسابات</button>
+              <button type="submit" class="btn btn-danger">تأكيد حذف كل البيانات</button>
             </div>
           </form>
         </div>

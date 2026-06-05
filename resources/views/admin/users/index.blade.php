@@ -223,13 +223,35 @@
           <option value="pending_trainer" {{ ($status==='pending_trainer' || $status === 'activation_required') ? 'selected' : '' }}>مطلوب تنشيط</option>
         </select>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small">
+          <i class="icon-base ti tabler-world me-1"></i> الدولة
+        </label>
+        <select name="country_id" class="form-select form-select-sm">
+          <option value="">كل الدول</option>
+          @foreach($countries as $country)
+            <option value="{{ $country->id }}" @selected(($countryId ?? request('country_id')) == $country->id)>{{ $country->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small">
+          <i class="icon-base ti tabler-map-pin me-1"></i> المدينة
+        </label>
+        <input list="user-city-options" type="text" name="city" class="form-control form-control-sm" value="{{ $city ?? request('city') }}" placeholder="المدينة">
+        <datalist id="user-city-options">
+          @foreach($cityOptions as $cityOption)
+            <option value="{{ $cityOption }}"></option>
+          @endforeach
+        </datalist>
+      </div>
+      <div class="col-md-3">
         <label class="form-label fw-semibold small">
           <i class="icon-base ti tabler-search me-1"></i> بحث
         </label>
         <input type="text" name="search" class="form-control form-control-sm" value="{{ $s ?? '' }}" placeholder="اسم، بريد، هاتف">
       </div>
-      <div class="col-md-2 d-flex align-items-end">
+      <div class="col-md-1 d-flex align-items-end">
         <button class="btn btn-primary btn-sm w-100" type="submit">
           <i class="icon-base ti tabler-filter me-1"></i> تصفية
         </button>
@@ -248,6 +270,8 @@
             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
             <th style="width: 200px;"><i class="icon-base ti tabler-mail me-1"></i> البريد</th>
             <th style="width: 150px;"><i class="icon-base ti tabler-phone me-1"></i> الهاتف</th>
+            <th style="width: 150px;"><i class="icon-base ti tabler-world me-1"></i> الدولة</th>
+            <th style="width: 150px;"><i class="icon-base ti tabler-map-pin me-1"></i> المدينة</th>
             <th style="width: 150px;"><i class="icon-base ti tabler-shield me-1"></i> الأدوار</th>
             <th style="width: 120px;"><i class="icon-base ti tabler-info-circle me-1"></i> الحالة</th>
             <th style="width: 150px;" class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
@@ -285,6 +309,12 @@
             </td>
             <td>
               <span class="text-muted">{{ $u->phone_with_cc }}</span>
+            </td>
+            <td>
+              {{ $u->country?->name ?? $u->trainerProfile?->country?->name ?? $u->latestUserRequest?->country?->name ?? '-' }}
+            </td>
+            <td>
+              {{ $u->trainerProfile?->area_level_2 ?? $u->latestUserRequest?->area_level_2 ?? '-' }}
             </td>
             <td>
               @foreach($u->getRoleNames() as $r)
@@ -362,7 +392,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="text-center py-5">
+            <td colspan="9" class="text-center py-5">
               <div class="d-flex flex-column align-items-center">
                 <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                   <i class="icon-base ti tabler-users" style="font-size: 32px;"></i>

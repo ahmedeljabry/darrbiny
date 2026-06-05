@@ -50,7 +50,7 @@
                                             @if(array_key_exists('count', $stat))
                                                 {{ number_format($stat['count']) }}
                                             @else
-                                                {{ number_format(($stat['value'] ?? 0) / 100, 2) }}
+                                                {{ number_format(($stat['value'] ?? 0) / 100, 2) }} {{ $reportCurrency ?? 'SAR' }}
                                             @endif
                                         </strong>
                                     </div>
@@ -123,7 +123,7 @@
                             <th style="width: 160px;">اسم البنك</th>
                             <th style="width: 170px;">رقم الحساب</th>
                             <th style="width: 200px;">IBAN</th>
-                            <th style="width: 120px;">المبلغ</th>
+                            <th style="width: 150px;">المبلغ ({{ $reportCurrency ?? 'SAR' }})</th>
                             <th style="width: 120px;">الحالة</th>
                             <th style="width: 160px;">تاريخ الطلب</th>
                             <th style="width: 100px;" class="text-center">إجراءات</th>
@@ -157,7 +157,14 @@
                                 <td><span dir="ltr">{{ $withdrawal->user?->bank_account ?? '-' }}</span></td>
                                 <td><span dir="ltr">{{ $withdrawal->user?->iban ?? '-' }}</span></td>
                                 <td>
-                                    <span class="fw-semibold">{{ number_format($withdrawal->amountMajor(), 2) }}</span>
+                                    <span class="fw-semibold">
+                                        {{ $reportCurrencyConverter->formatReportMinor($withdrawal->reportAmountMinor($reportCurrencyConverter)) }}
+                                    </span>
+                                    @if($withdrawal->transactionCurrency() !== ($reportCurrency ?? 'SAR'))
+                                        <small class="text-muted d-block">
+                                            المحفظة: {{ number_format($withdrawal->amountMajor(), 2) }} {{ $withdrawal->transactionCurrency() }}
+                                        </small>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($withdrawal->status === 'pending')

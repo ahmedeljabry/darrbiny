@@ -253,6 +253,7 @@ class BookingsController extends BaseController
                 $walletTransaction = WalletTransaction::create([
                     'user_id' => $booking->user->id,
                     'amount' => $refundAmountMinor,
+                    'currency' => $booking->currency,
                     'type' => WalletTransaction::TYPE_REFUND,
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'processed_by' => $request->user()->id,

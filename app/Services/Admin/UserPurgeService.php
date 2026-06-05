@@ -7,6 +7,7 @@ namespace App\Services\Admin;
 use App\Models\Upload;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -109,6 +110,80 @@ final class UserPurgeService
         });
     }
 
+    /**
+     * @return array{users_deleted:int}
+     */
+    public function resetOperationalData(?string $currentAdminId = null): array
+    {
+        $adminIds = User::withTrashed()
+            ->whereHas('roles', fn ($query) => $query->where('name', 'ADMIN'))
+            ->pluck('id')
+            ->push($currentAdminId)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $nonAdminUsers = User::withTrashed()
+            ->whereNotIn('id', $adminIds)
+            ->get(['id', 'profile_picture_id']);
+        $uploadIds = $nonAdminUsers
+            ->pluck('profile_picture_id')
+            ->filter()
+            ->unique()
+            ->values();
+        $profileUploads = Upload::query()
+            ->whereIn('id', $uploadIds)
+            ->get(['id', 'disk', 'path']);
+
+        DB::transaction(function () use ($adminIds, $uploadIds): void {
+            Schema::disableForeignKeyConstraints();
+
+            try {
+                foreach ($this->operationalTablesForReset() as $table) {
+                    if (Schema::hasTable($table)) {
+                        DB::table($table)->delete();
+                    }
+                }
+
+                DB::table('users')
+                    ->whereIn('id', $adminIds)
+                    ->whereNotNull('referred_by')
+                    ->update(['referred_by' => null]);
+                DB::table('users')->whereNotIn('id', $adminIds)->delete();
+
+                $roleTable = config('permission.table_names.model_has_roles');
+                $permissionTable = config('permission.table_names.model_has_permissions');
+                $modelKey = (string) config('permission.column_names.model_morph_key', 'model_id');
+
+                if (filled($roleTable) && Schema::hasTable($roleTable)) {
+                    DB::table($roleTable)
+                        ->where('model_type', User::class)
+                        ->whereNotIn($modelKey, $adminIds)
+                        ->delete();
+                }
+
+                if (filled($permissionTable) && Schema::hasTable($permissionTable)) {
+                    DB::table($permissionTable)
+                        ->where('model_type', User::class)
+                        ->whereNotIn($modelKey, $adminIds)
+                        ->delete();
+                }
+
+                if ($uploadIds->isNotEmpty() && Schema::hasTable('uploads')) {
+                    DB::table('uploads')->whereIn('id', $uploadIds)->delete();
+                }
+            } finally {
+                Schema::enableForeignKeyConstraints();
+            }
+        });
+
+        foreach ($profileUploads as $upload) {
+            Storage::disk($upload->disk)->delete($upload->path);
+        }
+
+        return ['users_deleted' => $nonAdminUsers->count()];
+    }
+
     private function deleteSupportDataForUser(User $user, string $phone, string $email): void
     {
         $supportTicketIds = DB::table('support_tickets')
@@ -137,5 +212,36 @@ final class UserPurgeService
         $banUntil = $timestamp->copy()->addYears(10);
 
         return $banUntil->lessThanOrEqualTo($safeTimestampLimit) ? $banUntil : $safeTimestampLimit;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function operationalTablesForReset(): array
+    {
+        return [
+            'support_ticket_messages',
+            'support_tickets',
+            'messages',
+            'conversations',
+            'notifications',
+            'user_device_tokens',
+            'refresh_tokens',
+            'personal_access_tokens',
+            'favorites',
+            'reward_redemptions',
+            'ratings',
+            'payouts',
+            'cancellation_requests',
+            'user_schedule_progress',
+            'training_days',
+            'trainer_offers',
+            'payments',
+            'wallet_transactions',
+            'app_wallet_transactions',
+            'app_expenses',
+            'user_requests',
+            'trainer_profiles',
+        ];
     }
 }

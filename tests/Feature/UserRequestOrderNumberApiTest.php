@@ -21,6 +21,7 @@ class UserRequestOrderNumberApiTest extends TestCase
         $user = User::factory()->create([
             'phone_with_cc' => '+966500001001',
         ]);
+        $this->createEligibleTrainer($country->id);
 
         $response = $this->withToken($user->createToken('test')->plainTextToken)
             ->postJson('/api/v1/user-requests', [
@@ -149,5 +150,24 @@ class UserRequestOrderNumberApiTest extends TestCase
             'wants_trainer_car' => false,
             'needs_pickup' => false,
         ], $overrides));
+    }
+
+    private function createEligibleTrainer(string $countryId): User
+    {
+        $trainer = User::factory()->create([
+            'phone_with_cc' => fake()->unique()->numerify('+9665112#####'),
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+        $trainer->trainerProfile()->create([
+            'country_id' => $countryId,
+            'area_level_1' => 'Riyadh Province',
+            'area_level_2' => 'Riyadh',
+            'area_level_3' => 'North',
+            'locality' => 'Another Locality',
+            'verified_at' => now(),
+        ]);
+
+        return $trainer;
     }
 }

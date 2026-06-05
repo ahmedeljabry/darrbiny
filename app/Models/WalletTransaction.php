@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\ReportCurrencyConverter;
 use App\Support\WalletAmount;
 
 class WalletTransaction extends BaseModel
@@ -21,6 +22,7 @@ class WalletTransaction extends BaseModel
     protected $fillable = [
         'user_id',
         'amount',
+        'currency',
         'type',
         'status',
         'rejection_reason',
@@ -69,5 +71,34 @@ class WalletTransaction extends BaseModel
     public function amountMajor(): float
     {
         return WalletAmount::minorToMajor($this->amountMinor());
+    }
+
+    public function transactionCurrency(): string
+    {
+        $currency = strtoupper(trim((string) $this->currency));
+
+        if ($currency !== '') {
+            return $currency;
+        }
+
+        $user = $this->relationLoaded('user')
+            ? $this->user
+            : $this->user()->with(['country', 'bankCountry'])->first();
+
+        $currency = strtoupper(trim((string) (
+            $user?->currency
+            ?: $user?->country?->currency
+            ?: $user?->bankCountry?->currency
+            ?: ReportCurrencyConverter::REPORT_CURRENCY
+        )));
+
+        return $currency !== '' ? $currency : ReportCurrencyConverter::REPORT_CURRENCY;
+    }
+
+    public function reportAmountMinor(?ReportCurrencyConverter $converter = null): int
+    {
+        $converter ??= app(ReportCurrencyConverter::class);
+
+        return $converter->convertMinor($this->amountMinor(), $this->transactionCurrency());
     }
 }

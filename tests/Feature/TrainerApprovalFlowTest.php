@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Country;
+use App\Models\Plan;
 use App\Models\User;
+use App\Models\UserRequest;
 use App\Notifications\TrainerProfileApprovalNotification;
 use App\Notifications\TrainerRegistrationPendingApprovalNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -167,5 +170,86 @@ class TrainerApprovalFlowTest extends TestCase
             ->assertOk()
             ->assertSee('+201555570004')
             ->assertSee('tabler-alert-circle me-1"></i>مطلوب تنشيط', false);
+    }
+
+    public function test_admin_users_index_shows_and_filters_country_and_city(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007005',
+            'email' => 'location-filter-admin@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        $egypt = Country::create([
+            'name' => 'Egypt',
+            'iso2' => 'EG',
+            'currency' => 'EGP',
+        ]);
+        $jordan = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'User Location Plan',
+            'description' => 'Plan for admin user location filter test',
+            'price_min' => 100,
+            'duration_days' => '3',
+            'hours_count' => 6,
+            'country_id' => $egypt->id,
+            'is_active' => true,
+        ]);
+
+        $trainer = User::factory()->create([
+            'name' => 'Cairo Trainer',
+            'phone_with_cc' => '+201555570005',
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+        $trainer->trainerProfile()->create([
+            'country_id' => $egypt->id,
+            'area_level_1' => 'Cairo Governorate',
+            'area_level_2' => 'Cairo',
+            'verified_at' => now(),
+        ]);
+
+        $student = User::factory()->create([
+            'name' => 'Amman Student',
+            'phone_with_cc' => '+962790000001',
+            'country_id' => $jordan->id,
+        ]);
+        $student->assignRole('USER');
+
+        UserRequest::create([
+            'user_id' => $student->id,
+            'plan_id' => $plan->id,
+            'country_id' => $jordan->id,
+            'area_level_1' => 'Amman Governorate',
+            'area_level_2' => 'Amman',
+            'start_date' => now()->addDay()->toDateString(),
+            'start_time' => '09:00:00',
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'JOD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['country_id' => $egypt->id, 'city' => 'Cairo']))
+            ->assertOk()
+            ->assertSee('Cairo Trainer')
+            ->assertSee('Egypt')
+            ->assertSee('Cairo')
+            ->assertDontSee('Amman Student');
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['city' => 'Amman']))
+            ->assertOk()
+            ->assertSee('Amman Student')
+            ->assertSee('Jordan')
+            ->assertSee('Amman')
+            ->assertDontSee('Cairo Trainer');
     }
 }

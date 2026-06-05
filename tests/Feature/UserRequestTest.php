@@ -40,6 +40,7 @@ class UserRequestTest extends TestCase
             'country_id' => $country->id,
             'is_active' => true,
         ]);
+        $this->createEligibleTrainer($country->id, 'Cairo Governorate', 'Cairo');
 
         $payload = [
             'plan_id' => $plan->id,
@@ -57,6 +58,47 @@ class UserRequestTest extends TestCase
         $res = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/v1/user-requests', $payload);
         $res->assertStatus(201)->assertJsonPath('success', true);
+    }
+
+    public function test_create_user_request_fails_when_no_trainer_is_available_in_same_location(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Unavailable Area Plan',
+            'description' => 'Plan without trainers in same area',
+            'price_min' => 100,
+            'duration_days' => '3',
+            'hours_count' => 6,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001001',
+        ]);
+        $user->assignRole('USER');
+
+        $this->withHeader('Authorization', 'Bearer ' . $user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests', [
+                'plan_id' => $plan->id,
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+                'start_date' => now()->addDay()->toDateString(),
+                'start_time' => '09:00',
+                'has_user_car' => false,
+                'wants_trainer_car' => true,
+                'needs_pickup' => false,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.0.message', 'عذرًا، لا تتوفر أي مدربة في الوقت الحالي. نأمل إعادة المحاولة في وقت لاحق والتواصل مع الدعم الفني لمساعدتك');
     }
 
     public function test_request_currency_uses_plan_country_currency_before_user_currency(): void
@@ -77,6 +119,7 @@ class UserRequestTest extends TestCase
             'country_id' => $country->id,
             'is_active' => true,
         ]);
+        $this->createEligibleTrainer($country->id, 'Amman Governorate', 'Amman');
         $user = User::factory()->create([
             'phone_with_cc' => '+10000001000',
             'currency' => 'USD',
@@ -107,5 +150,24 @@ class UserRequestTest extends TestCase
             'plan_id' => $plan->id,
             'currency' => 'JOD',
         ]);
+    }
+
+    private function createEligibleTrainer(string $countryId, string $areaLevelOne, string $areaLevelTwo): User
+    {
+        $trainer = User::factory()->create([
+            'phone_with_cc' => fake()->unique()->numerify('+1999000####'),
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+        $trainer->trainerProfile()->create([
+            'country_id' => $countryId,
+            'area_level_1' => $areaLevelOne,
+            'area_level_2' => $areaLevelTwo,
+            'area_level_3' => null,
+            'locality' => null,
+            'verified_at' => now(),
+        ]);
+
+        return $trainer;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\WalletTransaction;
+use App\Support\ReportCurrencyConverter;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -14,7 +15,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
     public function __construct(
-        private readonly \Illuminate\Support\Collection $requests
+        private readonly \Illuminate\Support\Collection $requests,
+        private readonly ReportCurrencyConverter $reportCurrencyConverter
     ) {}
 
     public function collection()
@@ -33,7 +35,9 @@ class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapp
             'اسم البنك',
             'رقم الحساب',
             'IBAN',
-            'المبلغ',
+            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'مبلغ المحفظة',
+            'عملة المحفظة',
             'الحالة',
             'تاريخ الطلب',
         ];
@@ -59,7 +63,9 @@ class WithdrawalRequestsExport implements FromCollection, WithHeadings, WithMapp
             $user?->bank_name ?? '-',
             $user?->bank_account ?? '-',
             $user?->iban ?? '-',
+            number_format($withdrawalRequest->reportAmountMinor($this->reportCurrencyConverter) / 100, 2),
             number_format($withdrawalRequest->amountMajor(), 2),
+            $withdrawalRequest->transactionCurrency(),
             $statusLabels[$withdrawalRequest->status] ?? $withdrawalRequest->status,
             $withdrawalRequest->created_at?->format('Y-m-d H:i:s') ?? '-',
         ];

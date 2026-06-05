@@ -59,7 +59,10 @@
                     <div class="col-md-6">
                         <h6>بيانات الطلب</h6>
                         <p class="mb-0">
-                            <strong>المبلغ المطلوب:</strong> {{ number_format($withdrawalRequest->amountMajor(), 2) }}<br>
+                            <strong>المبلغ المطلوب:</strong> {{ $reportCurrencyConverter->formatReportMinor($withdrawalRequest->reportAmountMinor($reportCurrencyConverter)) }}<br>
+                            @if($withdrawalRequest->transactionCurrency() !== ($reportCurrency ?? 'SAR'))
+                                <small class="text-muted">مبلغ المحفظة: {{ number_format($withdrawalRequest->amountMajor(), 2) }} {{ $withdrawalRequest->transactionCurrency() }}</small><br>
+                            @endif
                             <strong>النوع:</strong> طلب سحب<br>
                             <strong>الحالة:</strong>
                             @if($withdrawalRequest->status === 'pending')

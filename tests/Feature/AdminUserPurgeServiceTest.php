@@ -153,4 +153,88 @@ class AdminUserPurgeServiceTest extends TestCase
         $this->assertDatabaseMissing('support_ticket_messages', ['id' => $message->id]);
         $this->assertDatabaseMissing('support_tickets', ['id' => $ticket->id]);
     }
+
+    public function test_reset_all_wipes_operational_data_and_keeps_admin_accounts(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000006110',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_users');
+
+        $country = Country::create([
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Full Reset Plan',
+            'description' => 'Plan for full reset test',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+10000006111',
+        ]);
+        $student->assignRole('USER');
+
+        $booking = UserRequest::create([
+            'user_id' => $student->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        WalletTransaction::create([
+            'user_id' => $student->id,
+            'amount' => 2_500,
+            'currency' => 'SAR',
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $student->id,
+            'name' => $student->name,
+            'phone_with_cc' => $student->phone_with_cc,
+            'subject' => 'Reset cleanup',
+            'status' => 'open',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.reset-all'), ['confirm_reset' => '1'])
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+        $this->assertDatabaseMissing('users', ['id' => $student->id]);
+        $this->assertDatabaseCount('user_requests', 0);
+        $this->assertDatabaseCount('payments', 0);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('support_tickets', 0);
+    }
 }

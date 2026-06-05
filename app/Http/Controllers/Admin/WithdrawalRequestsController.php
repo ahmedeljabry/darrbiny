@@ -8,13 +8,17 @@ use App\Exports\WithdrawalRequestsExport;
 use App\Models\Country;
 use App\Models\WalletTransaction;
 use App\Modules\Wallet\Services\WalletService;
+use App\Support\ReportCurrencyConverter;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Maatwebsite\Excel\Facades\Excel;
 
 class WithdrawalRequestsController extends BaseController
 {
-    public function __construct(private readonly WalletService $wallets) {}
+    public function __construct(
+        private readonly WalletService $wallets,
+        private readonly ReportCurrencyConverter $reportCurrencyConverter
+    ) {}
 
     public function index(Request $request)
     {
@@ -65,20 +69,20 @@ class WithdrawalRequestsController extends BaseController
                 ->get();
 
             return Excel::download(
-                new WithdrawalRequestsExport($allRequests),
+                new WithdrawalRequestsExport($allRequests, $this->reportCurrencyConverter),
                 'withdrawal-requests-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
-        $statsQuery = clone $query;
-        $totalAmountMinor = (int) (clone $statsQuery)->sum('amount');
-        $approvedAmountMinor = (int) (clone $statsQuery)
+        $statsRequests = (clone $query)->get();
+        $totalAmountMinor = $statsRequests->sum(fn (WalletTransaction $transaction) => $transaction->reportAmountMinor($this->reportCurrencyConverter));
+        $approvedAmountMinor = $statsRequests
             ->where('status', WalletTransaction::STATUS_APPROVED)
-            ->sum('amount');
-        $unapprovedAmountMinor = (int) (clone $statsQuery)
+            ->sum(fn (WalletTransaction $transaction) => $transaction->reportAmountMinor($this->reportCurrencyConverter));
+        $unapprovedAmountMinor = $statsRequests
             ->where('status', '<>', WalletTransaction::STATUS_APPROVED)
-            ->sum('amount');
-        $movementsCount = (int) (clone $statsQuery)->count();
+            ->sum(fn (WalletTransaction $transaction) => $transaction->reportAmountMinor($this->reportCurrencyConverter));
+        $movementsCount = $statsRequests->count();
 
         $requests = $query->orderBy('created_at', 'desc')
             ->paginate(20)
@@ -86,6 +90,8 @@ class WithdrawalRequestsController extends BaseController
 
         $users = \App\Models\User::orderBy('name')->get(['id', 'name', 'phone_with_cc', 'user_type']);
         $countries = Country::query()->orderBy('name')->get(['id', 'name']);
+        $reportCurrencyConverter = $this->reportCurrencyConverter;
+        $reportCurrency = ReportCurrencyConverter::REPORT_CURRENCY;
 
         return view('admin.withdrawal-requests.index', compact(
             'requests',
@@ -100,7 +106,9 @@ class WithdrawalRequestsController extends BaseController
             'totalAmountMinor',
             'approvedAmountMinor',
             'unapprovedAmountMinor',
-            'movementsCount'
+            'movementsCount',
+            'reportCurrencyConverter',
+            'reportCurrency'
         ));
     }
 
@@ -111,7 +119,11 @@ class WithdrawalRequestsController extends BaseController
             ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->findOrFail($id);
 
-        return view('admin.withdrawal-requests.show', ['withdrawalRequest' => $request]);
+        return view('admin.withdrawal-requests.show', [
+            'withdrawalRequest' => $request,
+            'reportCurrencyConverter' => $this->reportCurrencyConverter,
+            'reportCurrency' => ReportCurrencyConverter::REPORT_CURRENCY,
+        ]);
     }
 
     public function approve(Request $request, string $id)

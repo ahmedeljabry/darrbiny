@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Country;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Notifications\WalletWithdrawalProcessedNotification;
+use App\Services\Admin\AppWalletAccountService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -205,6 +208,64 @@ class WalletWithdrawalRequestTest extends TestCase
 
         $walletNotification = new WalletWithdrawalProcessedNotification($withdrawalRequest->fresh(), true);
         $this->assertContains(\App\Notifications\Channels\FcmChannel::class, $walletNotification->via($user));
+    }
+
+    public function test_admin_withdrawal_requests_convert_wallet_currency_to_riyal_for_dashboard_and_app_wallet_account(): void
+    {
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+962790000050',
+            'points_balance' => 192,
+            'country_id' => $country->id,
+            'currency' => 'JOD',
+            'bank_account' => '1234567890',
+            'bank_account_name' => 'Jordan Wallet User',
+            'iban' => 'JO94CBJO0010000000000131000302',
+            'bank_name' => 'Jordan Test Bank',
+            'bank_country_id' => $country->id,
+        ]);
+        $user->assignRole('USER');
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000005013',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $withdrawalRequest = WalletTransaction::create([
+            'user_id' => $user->id,
+            'amount' => 19_200,
+            'currency' => 'JOD',
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.withdrawal-requests.index'))
+            ->assertOk()
+            ->assertSee('1,015.68 SAR')
+            ->assertSee('المحفظة: 192.00 JOD')
+            ->assertDontSee('192.00 SAR');
+
+        $this->actingAs($admin)
+            ->post(route('admin.withdrawal-requests.approve', $withdrawalRequest->id))
+            ->assertRedirect();
+
+        $this->assertSame(0, (int) $user->fresh()->points_balance);
+
+        $summary = app(AppWalletAccountService::class)->summary();
+        $this->assertSame(101_568, $summary['outgoing_minor']);
+        $this->assertSame(-101_568, $summary['net_minor']);
     }
 
     public function test_admin_withdrawal_approval_notifies_trainer_about_dues_transfer_to_bank(): void

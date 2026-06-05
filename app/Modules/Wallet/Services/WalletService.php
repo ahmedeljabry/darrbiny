@@ -28,6 +28,7 @@ class WalletService
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amountMinor,
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_TOPUP_REQUEST,
                 'status' => WalletTransaction::STATUS_PENDING,
                 'notes' => $notes,
@@ -71,6 +72,7 @@ class WalletService
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amountMinor,
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
                 'status' => WalletTransaction::STATUS_PENDING,
                 'notes' => $notes,
@@ -158,6 +160,7 @@ class WalletService
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amountMinor,
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes,
@@ -202,6 +205,7 @@ class WalletService
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amountMinor,
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_PAYMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes ?? ($reference ? "Payment: {$reference}" : 'Wallet deduction'),
@@ -233,6 +237,7 @@ class WalletService
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => $amountMinor,
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes ?? 'Admin adjustment (debit)',
@@ -264,6 +269,7 @@ class WalletService
                 return WalletTransaction::create([
                     'user_id' => $user->id,
                     'amount' => 0,
+                    'currency' => $this->walletCurrencyFor($user),
                     'type' => WalletTransaction::TYPE_ADJUSTMENT,
                     'status' => WalletTransaction::STATUS_APPROVED,
                     'notes' => $notes ?? 'لا يوجد تغيير في الرصيد',
@@ -275,6 +281,7 @@ class WalletService
             $txn = WalletTransaction::create([
                 'user_id' => $user->id,
                 'amount' => abs($differenceMinor),
+                'currency' => $this->walletCurrencyFor($user),
                 'type' => WalletTransaction::TYPE_ADJUSTMENT,
                 'status' => WalletTransaction::STATUS_APPROVED,
                 'notes' => $notes ?? sprintf(
@@ -432,5 +439,19 @@ class WalletService
         $paymentId = trim(substr($notes, strlen('Payment: ')));
 
         return $paymentId !== '' ? $paymentId : null;
+    }
+
+    private function walletCurrencyFor(User $user): string
+    {
+        $user->loadMissing(['country', 'bankCountry']);
+
+        $currency = strtoupper(trim((string) (
+            $user->currency
+            ?: $user->country?->currency
+            ?: $user->bankCountry?->currency
+            ?: \App\Support\ReportCurrencyConverter::REPORT_CURRENCY
+        )));
+
+        return $currency !== '' ? $currency : \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
     }
 }

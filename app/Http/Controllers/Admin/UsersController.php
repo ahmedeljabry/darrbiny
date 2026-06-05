@@ -47,7 +47,11 @@ class UsersController extends BaseController
     {
         $q = User::query()->with([
             'roles',
-            'trainerProfile:id,user_id,pending_approval',
+            'country:id,name',
+            'trainerProfile:id,user_id,pending_approval,country_id,area_level_2',
+            'trainerProfile.country:id,name',
+            'latestUserRequest',
+            'latestUserRequest.country:id,name',
             'profilePicture:id,path,disk',
         ]);
 
@@ -86,6 +90,23 @@ class UsersController extends BaseController
                 ->orWhere('email', 'like', "%$s%"));
         }
 
+        $countryId = $request->query('country_id');
+        if ($countryId) {
+            $q->where(function ($w) use ($countryId) {
+                $w->where('country_id', $countryId)
+                    ->orWhereHas('trainerProfile', fn ($profileQuery) => $profileQuery->where('country_id', $countryId))
+                    ->orWhereHas('userRequests', fn ($requestQuery) => $requestQuery->where('country_id', $countryId));
+            });
+        }
+
+        $city = trim((string) $request->query('city', ''));
+        if ($city !== '') {
+            $q->where(function ($w) use ($city) {
+                $w->whereHas('trainerProfile', fn ($profileQuery) => $profileQuery->where('area_level_2', 'like', "%{$city}%"))
+                    ->orWhereHas('userRequests', fn ($requestQuery) => $requestQuery->where('area_level_2', 'like', "%{$city}%"));
+            });
+        }
+
         $users = $q->latest()->paginate(20)->withQueryString();
 
         $totalUsers = User::count();
@@ -102,8 +123,32 @@ class UsersController extends BaseController
             })->count();
         $activeCount = $totalUsers - $bannedCount;
 
+        $countries = Country::query()->orderBy('name')->get(['id', 'name']);
+        $cityOptions = TrainerProfile::query()
+            ->whereNotNull('area_level_2')
+            ->pluck('area_level_2')
+            ->merge(UserRequest::query()->whereNotNull('area_level_2')->pluck('area_level_2'))
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
         return view('admin.users.index', compact(
-            'users', 'totalUsers', 'trainersCount', 'normalUsersCount', 'bannedCount', 'pendingTrainersCount', 'activeCount', 'role', 'status', 's'
+            'users',
+            'totalUsers',
+            'trainersCount',
+            'normalUsersCount',
+            'bannedCount',
+            'pendingTrainersCount',
+            'activeCount',
+            'role',
+            'status',
+            's',
+            'countryId',
+            'city',
+            'countries',
+            'cityOptions'
         ));
     }
 
@@ -323,20 +368,12 @@ class UsersController extends BaseController
             'confirm_reset' => 'تأكيد إعادة التهيئة',
         ]);
 
-        $users = User::withTrashed()
-            ->whereKeyNot(Auth::id())
-            ->whereDoesntHave('roles', function ($roleQuery) {
-                $roleQuery->where('name', 'ADMIN');
-            })
-            ->get();
+        $summary = $purgeService->resetOperationalData(Auth::id());
 
-        foreach ($users as $user) {
-            $purgeService->purgeUser($user);
-        }
-
-        $purgeService->purgeStandaloneSupportData();
-
-        return redirect()->route('admin.dashboard')->with('status', 'تم حذف بيانات المستخدمين غير الإدارية وتحرير أرقام الجوال، مع تنظيف تذاكر الدعم غير المرتبطة.');
+        return redirect()->route('admin.dashboard')->with(
+            'status',
+            'تمت إعادة تهيئة البيانات بالكامل وحذف الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية. عدد المستخدمين المحذوفين: ' . number_format($summary['users_deleted'])
+        );
     }
 
     public function ban(string $id, Request $request)

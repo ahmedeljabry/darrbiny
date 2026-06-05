@@ -59,7 +59,7 @@ final class AppWalletAccountService
         if (($filters['direction'] ?? null) !== 'in') {
             $outgoingMinor = (int) $this->outgoingExpensesQuery($filters)->sum('amount_minor')
                 + (int) $this->outgoingManualTransactionsQuery($filters)->sum('amount_minor')
-                + (int) $this->approvedWalletWithdrawalsQuery($filters)->sum('amount');
+                + $this->approvedWalletWithdrawalsReportAmountMinor($filters);
         }
 
         return [
@@ -197,6 +197,7 @@ final class AppWalletAccountService
             ->map(function (WalletTransaction $transaction): object {
                 $user = $transaction->user;
                 $isTrainer = ($user?->user_type?->value ?? null) === 'captain';
+                $reportAmountMinor = $transaction->reportAmountMinor($this->reportCurrencyConverter);
 
                 return (object) [
                     'reference_id' => $transaction->id,
@@ -214,8 +215,8 @@ final class AppWalletAccountService
                         $transaction->processedBy?->name ? 'تم التنفيذ بواسطة: ' . $transaction->processedBy->name : null,
                     ])->filter()->implode(' | ') ?: '—',
                     'amount_minor' => $transaction->amountMinor(),
-                    'report_amount_minor' => $transaction->amountMinor(),
-                    'currency' => ReportCurrencyConverter::REPORT_CURRENCY,
+                    'report_amount_minor' => $reportAmountMinor,
+                    'currency' => $transaction->transactionCurrency(),
                     'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
                     'notes' => $transaction->notes ?: '—',
                     'occurred_at' => $transaction->processed_at ?? $transaction->updated_at ?? $transaction->created_at,
@@ -376,7 +377,7 @@ final class AppWalletAccountService
         $source = $filters['source'] ?? null;
 
         $query = WalletTransaction::query()
-            ->with(['user', 'processedBy'])
+            ->with(['user.country', 'user.bankCountry', 'processedBy'])
             ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->where('status', WalletTransaction::STATUS_APPROVED);
 
@@ -406,6 +407,13 @@ final class AppWalletAccountService
                         });
                 });
             });
+    }
+
+    private function approvedWalletWithdrawalsReportAmountMinor(array $filters): int
+    {
+        return $this->approvedWalletWithdrawalsQuery($filters)
+            ->get()
+            ->sum(fn (WalletTransaction $transaction) => $transaction->reportAmountMinor($this->reportCurrencyConverter));
     }
 
     private function entrySourceLabel(string $sourceKey): string

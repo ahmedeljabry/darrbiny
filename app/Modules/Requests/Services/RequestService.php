@@ -7,11 +7,14 @@ namespace App\Modules\Requests\Services;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Payout;
+use App\Models\TrainerProfile;
 use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Support\Fees;
+use App\Support\TrainerLocationMatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use App\Jobs\NotifyEligibleTrainers;
 use App\Notifications\CourseCompletedNotification;
@@ -20,9 +23,13 @@ use App\Services\ConversationService;
 
 class RequestService
 {
+    private const NO_TRAINERS_AVAILABLE_MESSAGE = 'عذرًا، لا تتوفر أي مدربة في الوقت الحالي. نأمل إعادة المحاولة في وقت لاحق والتواصل مع الدعم الفني لمساعدتك';
+
     public function create(array $data, string $userId): UserRequest
     {
         $plan = Plan::with('country')->findOrFail($data['plan_id']);
+
+        $this->ensureTrainerAvailableForOpenRequest($data);
 
         return DB::transaction(function () use ($data, $userId, $plan) {
             $freeRetrySource = $this->findEligibleFreeRetrySource(
@@ -204,6 +211,7 @@ class RequestService
         $walletTransaction = WalletTransaction::create([
             'user_id' => $trainer->id,
             'amount' => $trainerNetMinor,
+            'currency' => $payment->currency ?: $req->currency,
             'type' => WalletTransaction::TYPE_ADJUSTMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
             'notes' => $notes,
@@ -286,5 +294,30 @@ class RequestService
         $userCurrency = strtoupper(trim((string) (auth()->user()?->currency ?? '')));
 
         return $userCurrency !== '' ? $userCurrency : 'USD';
+    }
+
+    private function ensureTrainerAvailableForOpenRequest(array $data): void
+    {
+        if (! empty($data['trainer_id'])) {
+            return;
+        }
+
+        $requestLocation = new UserRequest($data);
+
+        $hasEligibleTrainer = TrainerLocationMatcher::applyEligibleTrainerProfilesScope(
+            TrainerProfile::query()->whereHas('user', function (Builder $query): void {
+                $query
+                    ->trainerAccount()
+                    ->whereNull('deleted_at')
+                    ->where(function (Builder $banQuery): void {
+                        $banQuery
+                            ->whereNull('banned_until')
+                            ->orWhere('banned_until', '<=', now());
+                    });
+            }),
+            $requestLocation
+        )->exists();
+
+        abort_unless($hasEligibleTrainer, 422, self::NO_TRAINERS_AVAILABLE_MESSAGE);
     }
 }
