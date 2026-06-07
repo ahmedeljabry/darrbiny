@@ -11,6 +11,7 @@ use App\Notifications\WalletTopupRequestNotification;
 use App\Notifications\WalletWithdrawalProcessedNotification;
 use App\Notifications\WalletWithdrawRequestNotification;
 use App\Support\WalletAmount;
+use App\Support\WalletCurrency;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -183,11 +184,11 @@ class WalletService
      * Deduct amount from wallet (debit)
      * Creates a payment transaction and deducts from balance
      *
-     * @param User $user The user to deduct from
-     * @param int $amount Amount to deduct (in major units, e.g., 100 = 100.00)
-     * @param string|null $notes Optional notes for the transaction
-     * @param string|null $reference Optional reference ID (e.g., payment_id, order_id)
-     * @return WalletTransaction
+     * @param  User  $user  The user to deduct from
+     * @param  int  $amount  Amount to deduct (in major units, e.g., 100 = 100.00)
+     * @param  string|null  $notes  Optional notes for the transaction
+     * @param  string|null  $reference  Optional reference ID (e.g., payment_id, order_id)
+     *
      * @throws \Exception If insufficient balance
      */
     public function deduct(User $user, int|float|string $amount, ?string $notes = null, ?string $reference = null): WalletTransaction
@@ -432,7 +433,7 @@ class WalletService
 
     private function extractPaymentIdFromTransactionNotes(?string $notes): ?string
     {
-        if (!is_string($notes) || !str_starts_with($notes, 'Payment: ')) {
+        if (! is_string($notes) || ! str_starts_with($notes, 'Payment: ')) {
             return null;
         }
 
@@ -443,15 +444,6 @@ class WalletService
 
     private function walletCurrencyFor(User $user): string
     {
-        $user->loadMissing(['country', 'bankCountry']);
-
-        $currency = strtoupper(trim((string) (
-            $user->currency
-            ?: $user->country?->currency
-            ?: $user->bankCountry?->currency
-            ?: \App\Support\ReportCurrencyConverter::REPORT_CURRENCY
-        )));
-
-        return $currency !== '' ? $currency : \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
+        return WalletCurrency::forUser($user);
     }
 }

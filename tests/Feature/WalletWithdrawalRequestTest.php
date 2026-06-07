@@ -53,14 +53,22 @@ class WalletWithdrawalRequestTest extends TestCase
 
     public function test_user_can_request_wallet_withdrawal_with_complete_bank_details(): void
     {
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
         $user = User::factory()->create([
             'phone_with_cc' => '+10000005009',
             'points_balance' => 120,
+            'country_id' => $country->id,
+            'currency' => 'USD',
             'bank_account' => '1234567890',
             'bank_account_name' => 'Withdrawal User',
             'iban' => 'SA0380000000608010167519',
             'bank_name' => 'Test Bank',
-            'bank_country_id' => (string) \Illuminate\Support\Str::uuid(),
+            'bank_country_id' => $country->id,
         ]);
         $user->assignRole('USER');
 
@@ -78,6 +86,7 @@ class WalletWithdrawalRequestTest extends TestCase
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->id,
             'amount' => 5000,
+            'currency' => 'JOD',
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -227,7 +236,7 @@ class WalletWithdrawalRequestTest extends TestCase
             'phone_with_cc' => '+962790000050',
             'points_balance' => 192,
             'country_id' => $country->id,
-            'currency' => 'JOD',
+            'currency' => 'USD',
             'bank_account' => '1234567890',
             'bank_account_name' => 'Jordan Wallet User',
             'iban' => 'JO94CBJO0010000000000131000302',
@@ -245,7 +254,7 @@ class WalletWithdrawalRequestTest extends TestCase
         $withdrawalRequest = WalletTransaction::create([
             'user_id' => $user->id,
             'amount' => 19_200,
-            'currency' => 'JOD',
+            'currency' => 'USD',
             'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
@@ -263,7 +272,8 @@ class WalletWithdrawalRequestTest extends TestCase
             ->assertSee('عملة الدولة: JOD')
             ->assertSee('سعر التحويل: 1 JOD = 5.29 SAR')
             ->assertSee('رصيد المحفظة الحالي: 192.00 JOD')
-            ->assertSee('مبلغ المحفظة: 192.00 JOD');
+            ->assertSee('مبلغ المحفظة: 192.00 JOD')
+            ->assertDontSee('192.00 USD');
 
         $this->actingAs($admin)
             ->post(route('admin.withdrawal-requests.approve', $withdrawalRequest->id))

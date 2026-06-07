@@ -6,17 +6,24 @@ namespace App\Models;
 
 use App\Support\ReportCurrencyConverter;
 use App\Support\WalletAmount;
+use App\Support\WalletCurrency;
 
 class WalletTransaction extends BaseModel
 {
     const TYPE_TOPUP_REQUEST = 'topup_request';
+
     const TYPE_WITHDRAW_REQUEST = 'withdraw_request';
+
     const TYPE_REFUND = 'refund';
+
     const TYPE_PAYMENT = 'payment';
+
     const TYPE_ADJUSTMENT = 'adjustment';
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
@@ -77,22 +84,21 @@ class WalletTransaction extends BaseModel
     {
         $currency = strtoupper(trim((string) $this->currency));
 
-        if ($currency !== '') {
-            return $currency;
-        }
-
         $user = $this->relationLoaded('user')
             ? $this->user
             : $this->user()->with(['country', 'bankCountry'])->first();
 
-        $currency = strtoupper(trim((string) (
-            $user?->currency
-            ?: $user?->country?->currency
-            ?: $user?->bankCountry?->currency
-            ?: ReportCurrencyConverter::REPORT_CURRENCY
-        )));
+        $countryCurrency = WalletCurrency::countryCurrencyForUser($user);
 
-        return $currency !== '' ? $currency : ReportCurrencyConverter::REPORT_CURRENCY;
+        if ($countryCurrency !== null) {
+            return $countryCurrency;
+        }
+
+        if ($currency !== '') {
+            return $currency;
+        }
+
+        return WalletCurrency::forUser($user);
     }
 
     public function reportAmountMinor(?ReportCurrencyConverter $converter = null): int
