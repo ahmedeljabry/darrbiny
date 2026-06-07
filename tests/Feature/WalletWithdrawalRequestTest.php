@@ -272,7 +272,9 @@ class WalletWithdrawalRequestTest extends TestCase
             ->assertSee('عملة الدولة: JOD')
             ->assertSee('سعر التحويل: 1 JOD = 5.29 SAR')
             ->assertSee('رصيد المحفظة الحالي: 192.00 JOD')
-            ->assertSee('مبلغ المحفظة: 192.00 JOD')
+            ->assertSee('المبلغ المطلوب:</strong> 192.00 JOD', false)
+            ->assertSee('المبلغ المحول للريال: 1,015.68 SAR')
+            ->assertDontSee('المبلغ المطلوب:</strong> 1,015.68 SAR', false)
             ->assertDontSee('192.00 USD');
 
         $this->actingAs($admin)
