@@ -426,6 +426,107 @@ class AdminDashboardTest extends TestCase
         $this->assertSame(1058, $response->viewData('netProfitMinor'));
     }
 
+    public function test_dashboard_withdrawal_cards_and_trainer_dues_use_report_currency(): void
+    {
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000009024',
+            'email' => 'admin-dashboard-withdrawals-currency@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        Setting::create([
+            'key' => 'reports.exchange_rates_to_sar',
+            'value' => json_encode(['JOD' => 5.29], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Jordan Withdrawal Plan',
+            'description' => 'Plan used for Jordan withdrawal conversion',
+            'price_min' => 192,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'session_count' => 5,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+962790000002',
+            'currency' => 'JOD',
+            'country_id' => $country->id,
+        ]);
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+962790000003',
+            'currency' => 'JOD',
+            'country_id' => $country->id,
+            'user_type' => \App\Enums\UserType::CAPTAIN,
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $request = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_COMPLETED,
+            'currency' => 'JOD',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $request->id,
+            'amount_minor' => 19200,
+            'currency' => 'JOD',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => 'wallet',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1920,
+            'trainer_net_minor' => 17280,
+        ]);
+
+        WalletTransaction::create([
+            'user_id' => $student->id,
+            'amount' => 19200,
+            'currency' => 'JOD',
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'processed_by' => $admin->id,
+            'processed_at' => now(),
+            'notes' => 'Student withdrawal from Jordan wallet',
+        ]);
+
+        WalletTransaction::create([
+            'user_id' => $trainer->id,
+            'amount' => 17280,
+            'currency' => 'JOD',
+            'type' => WalletTransaction::TYPE_WITHDRAW_REQUEST,
+            'status' => WalletTransaction::STATUS_APPROVED,
+            'processed_by' => $admin->id,
+            'processed_at' => now(),
+            'notes' => 'Trainer withdrawal from Jordan wallet',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('1,929.79 SAR')
+            ->assertDontSee('364.80 SAR');
+
+        $this->assertSame(192979, $response->viewData('withdrawalRequestsValueMinor'));
+        $this->assertSame(192979, $response->viewData('executedWithdrawalsMinor'));
+        $this->assertSame(0, $response->viewData('bookingsValueMinor'));
+    }
+
     public function test_dashboard_revenue_deducts_cancellation_refunds_and_keeps_app_wallet_balance_separate(): void
     {
         $admin = User::factory()->create([
@@ -516,5 +617,31 @@ class AdminDashboardTest extends TestCase
             ->assertSee('1.00 SAR')
             ->assertSee('99.00 SAR')
             ->assertSee('13.00 SAR');
+    }
+
+    public function test_dashboard_date_range_uses_saudi_timezone_even_when_php_default_differs(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+        Carbon::setTestNow(Carbon::parse('2026-06-07 00:30:00', 'Asia/Riyadh'));
+
+        try {
+            $admin = User::factory()->create([
+                'phone_with_cc' => '+10000009041',
+                'email' => 'admin-dashboard-timezone@example.com',
+            ]);
+            $admin->assignRole('ADMIN');
+
+            $response = $this->actingAs($admin)
+                ->get(route('admin.dashboard'))
+                ->assertOk();
+
+            $this->assertSame('Asia/Riyadh', $response->viewData('from')->timezoneName);
+            $this->assertSame('2026-06-07 00:00:00', $response->viewData('from')->format('Y-m-d H:i:s'));
+            $this->assertSame('2026-06-07 23:59:59', $response->viewData('to')->format('Y-m-d H:i:s'));
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($originalTimezone);
+        }
     }
 }

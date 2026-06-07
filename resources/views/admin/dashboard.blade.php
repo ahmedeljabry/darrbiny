@@ -4,7 +4,7 @@
 @include('admin.reports.partials.theme')
 
 @php
-  $today = \Illuminate\Support\Carbon::now();
+  $today = \Illuminate\Support\Carbon::now(config('app.timezone', 'Asia/Riyadh'));
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $rangeOptions = ['day' => 'اليوم', 'month' => 'هذا الشهر', 'year' => 'هذا العام'];
   $fromValue = ($from ?? null) instanceof \DateTimeInterface ? $from->format('Y-m-d') : '';

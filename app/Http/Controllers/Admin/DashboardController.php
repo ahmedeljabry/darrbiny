@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserType;
 use App\Models\AppExpense;
+use App\Models\WalletTransaction;
 use App\Services\Admin\AppWalletAccountService;
 use App\Services\Admin\ReportsService;
 use App\Support\ReportCurrencyConverter;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Carbon;
@@ -24,7 +27,7 @@ class DashboardController extends BaseController
 
     public function __invoke(Request $request)
     {
-        $now = Carbon::now();
+        $now = Carbon::now($this->appTimezone());
         [$range, $from, $to, $rangeLabel, $usesCustomRange] = $this->resolveDateRange($request, $now);
 
         $planCount = \App\Models\Plan::whereBetween('created_at', [$from, $to])->count();
@@ -60,10 +63,11 @@ class DashboardController extends BaseController
             ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
             ->whereBetween('created_at', [$from, $to])
             ->count();
-        $withdrawalRequestsValueMinor = (int) \App\Models\WalletTransaction::query()
-            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
-            ->whereBetween('created_at', [$from, $to])
-            ->sum('amount');
+        $withdrawalRequestsValueMinor = $this->walletWithdrawalsReportAmountMinor(
+            WalletTransaction::query()
+                ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+                ->whereBetween('created_at', [$from, $to])
+        );
         $pendingPrizeRequests = \App\Models\RewardRedemption::where('status', 'pending')
             ->whereBetween('created_at', [$from, $to])
             ->count();
@@ -103,11 +107,12 @@ class DashboardController extends BaseController
         $fullPackagePaymentsMinor = max(0, $this->reportsService->planSales($reportFrom, $reportTo)['totalMinor']);
         $totalRevenueMinor = $packageReservationFeesMinor + $fullPackagePaymentsMinor;
         $salesMinor = $packageReservationFeesMinor + $appFeesMinor;
-        $executedWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
-            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
-            ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
-            ->whereBetween('processed_at', [$from, $to])
-            ->sum('amount');
+        $executedWithdrawalsMinor = $this->walletWithdrawalsReportAmountMinor(
+            WalletTransaction::query()
+                ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+                ->where('status', WalletTransaction::STATUS_APPROVED)
+                ->whereBetween('processed_at', [$from, $to])
+        );
         $succeededPayments = \App\Models\Payment::where('status', \App\Models\Payment::STATUS_SUCCEEDED)
             ->whereBetween('created_at', [$from, $to]);
         $bookingsValueMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency(
@@ -116,12 +121,13 @@ class DashboardController extends BaseController
                 ->whereHas('userRequest', fn ($query) => $query->where('status', \App\Models\UserRequest::STATUS_COMPLETED)),
             'trainer_net_minor'
         );
-        $trainerWithdrawalsMinor = (int) \App\Models\WalletTransaction::query()
-            ->where('type', \App\Models\WalletTransaction::TYPE_WITHDRAW_REQUEST)
-            ->where('status', \App\Models\WalletTransaction::STATUS_APPROVED)
-            ->whereBetween('processed_at', [$from, $to])
-            ->whereHas('user', fn ($query) => $query->where('user_type', \App\Enums\UserType::CAPTAIN->value))
-            ->sum('amount');
+        $trainerWithdrawalsMinor = $this->walletWithdrawalsReportAmountMinor(
+            WalletTransaction::query()
+                ->where('type', WalletTransaction::TYPE_WITHDRAW_REQUEST)
+                ->where('status', WalletTransaction::STATUS_APPROVED)
+                ->whereBetween('processed_at', [$from, $to])
+                ->whereHas('user', fn ($query) => $query->where('user_type', UserType::CAPTAIN->value))
+        );
         $bookingsValueMinor = max(0, $bookingsValueMinor - $trainerWithdrawalsMinor);
         $expensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
@@ -227,12 +233,25 @@ class DashboardController extends BaseController
         }
 
         try {
-            $date = Carbon::parse($value);
+            $date = Carbon::parse($value, $this->appTimezone());
         } catch (\Throwable) {
             return null;
         }
 
         return $endOfDay ? $date->endOfDay() : $date->startOfDay();
+    }
+
+    private function walletWithdrawalsReportAmountMinor(Builder $query): int
+    {
+        return (int) $query
+            ->with(['user.country', 'user.bankCountry'])
+            ->get()
+            ->sum(fn (WalletTransaction $transaction): int => $transaction->reportAmountMinor($this->reportCurrencyConverter));
+    }
+
+    private function appTimezone(): string
+    {
+        return config('app.timezone', 'Asia/Riyadh');
     }
 
     /**
