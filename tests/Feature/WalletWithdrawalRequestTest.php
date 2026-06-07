@@ -258,6 +258,14 @@ class WalletWithdrawalRequestTest extends TestCase
             ->assertDontSee('192.00 SAR');
 
         $this->actingAs($admin)
+            ->get(route('admin.withdrawal-requests.show', $withdrawalRequest->id))
+            ->assertOk()
+            ->assertSee('عملة الدولة: JOD')
+            ->assertSee('سعر التحويل: 1 JOD = 5.29 SAR')
+            ->assertSee('رصيد المحفظة الحالي: 192.00 JOD')
+            ->assertSee('مبلغ المحفظة: 192.00 JOD');
+
+        $this->actingAs($admin)
             ->post(route('admin.withdrawal-requests.approve', $withdrawalRequest->id))
             ->assertRedirect();
 

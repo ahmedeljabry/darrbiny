@@ -1,5 +1,12 @@
 @extends('admin.layouts.app')
 @section('title', 'تفاصيل طلب السحب')
+@php
+    $accountCountry = $withdrawalRequest->user?->country ?? $withdrawalRequest->user?->bankCountry;
+    $walletCurrency = $withdrawalRequest->transactionCurrency();
+    $countryCurrency = strtoupper(trim((string) ($accountCountry?->currency ?: $walletCurrency)));
+    $countryCurrency = $countryCurrency !== '' ? $countryCurrency : ($reportCurrency ?? 'SAR');
+    $exchangeRate = $reportCurrencyConverter->rateFor($countryCurrency);
+@endphp
 @section('content')
 
 <nav aria-label="breadcrumb" class="mb-4">
@@ -45,12 +52,14 @@
                             <strong>{{ $withdrawalRequest->user?->name ?? 'N/A' }}</strong><br>
                             <small class="text-muted">{{ $withdrawalRequest->user?->phone_with_cc ?? '' }}</small><br>
                             <small class="text-muted">الاسم الحقيقي: {{ $withdrawalRequest->user?->bank_account_name ?? '-' }}</small><br>
-                            <small class="text-muted">الدولة: {{ $withdrawalRequest->user?->country?->name ?? $withdrawalRequest->user?->bankCountry?->name ?? '-' }}</small><br>
+                            <small class="text-muted">الدولة: {{ $accountCountry?->name ?? '-' }}</small><br>
+                            <small class="text-muted">عملة الدولة: {{ $countryCurrency }}</small><br>
+                            <small class="text-muted">سعر التحويل: 1 {{ $countryCurrency }} = {{ number_format($exchangeRate, 2) }} {{ $reportCurrency ?? 'SAR' }}</small><br>
                             @php
                                 $isTrainer = ($withdrawalRequest->user?->user_type?->value ?? null) === 'captain';
                             @endphp
                             <small class="text-muted">نوع الحساب: {{ $isTrainer ? 'مدرب' : 'طالب' }}</small><br>
-                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($withdrawalRequest->user?->points_balance ?? 0, 2) }}</small><br>
+                            <small class="text-muted">رصيد المحفظة الحالي: {{ number_format($withdrawalRequest->user?->points_balance ?? 0, 2) }} {{ $walletCurrency }}</small><br>
                             <small class="text-muted">اسم البنك: {{ $withdrawalRequest->user?->bank_name ?? '-' }}</small><br>
                             <small class="text-muted">رقم الحساب: <span dir="ltr">{{ $withdrawalRequest->user?->bank_account ?? '-' }}</span></small><br>
                             <small class="text-muted">IBAN: <span dir="ltr">{{ $withdrawalRequest->user?->iban ?? '-' }}</span></small>
