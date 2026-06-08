@@ -123,7 +123,7 @@
                             <th style="width: 160px;">اسم البنك</th>
                             <th style="width: 170px;">رقم الحساب</th>
                             <th style="width: 200px;">IBAN</th>
-                            <th style="width: 150px;">المبلغ ({{ $reportCurrency ?? 'SAR' }})</th>
+                            <th style="width: 150px;">المبلغ المطلوب</th>
                             <th style="width: 120px;">الحالة</th>
                             <th style="width: 160px;">تاريخ الطلب</th>
                             <th style="width: 100px;" class="text-center">إجراءات</th>
@@ -157,14 +157,15 @@
                                 <td><span dir="ltr">{{ $withdrawal->user?->bank_account ?? '-' }}</span></td>
                                 <td><span dir="ltr">{{ $withdrawal->user?->iban ?? '-' }}</span></td>
                                 <td>
+                                    @php
+                                        $walletCurrency = $withdrawal->transactionCurrency();
+                                    @endphp
                                     <span class="fw-semibold">
-                                        {{ $reportCurrencyConverter->formatReportMinor($withdrawal->reportAmountMinor($reportCurrencyConverter)) }}
+                                        {{ number_format($withdrawal->amountMajor(), 2) }} {{ $walletCurrency }}
                                     </span>
-                                    @if($withdrawal->transactionCurrency() !== ($reportCurrency ?? 'SAR'))
-                                        <small class="text-muted d-block">
-                                            المحفظة: {{ number_format($withdrawal->amountMajor(), 2) }} {{ $withdrawal->transactionCurrency() }}
-                                        </small>
-                                    @endif
+                                    <small class="text-muted d-block">
+                                        المحول للريال: {{ $reportCurrencyConverter->formatReportMinor($withdrawal->reportAmountMinor($reportCurrencyConverter)) }}
+                                    </small>
                                 </td>
                                 <td>
                                     @if($withdrawal->status === 'pending')
