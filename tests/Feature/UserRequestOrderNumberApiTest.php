@@ -84,15 +84,19 @@ class UserRequestOrderNumberApiTest extends TestCase
         $user = User::factory()->create([
             'phone_with_cc' => '+966500001003',
         ]);
+        $startDate = '2026-06-10';
+        $startTime = '2026-06-10T09:30:00.000Z';
 
         $subscription = $this->createUserRequest($user, $plan, [
             'country_id' => $country->id,
             'order_number' => 7345,
             'status' => UserRequest::STATUS_IN_TRAINING,
+            'start_date' => $startDate,
+            'start_time' => $startTime,
         ]);
 
         $this->withToken($user->createToken('test')->plainTextToken)
-            ->getJson('/api/v1/subscriptions')
+            ->getJson('/api/v1/subscriptions?page=1')
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonFragment([
@@ -105,7 +109,14 @@ class UserRequestOrderNumberApiTest extends TestCase
             ->assertJsonPath('data.0.course_details.course_id', '#' . $subscription->order_number)
             ->assertJsonPath('data.0.course_details.course_number', (string) $subscription->order_number)
             ->assertJsonPath('data.0.course_details.order_number', $subscription->order_number)
-            ->assertJsonPath('data.0.course_details.formatted_order_number', $subscription->formatted_order_number);
+            ->assertJsonPath('data.0.course_details.formatted_order_number', $subscription->formatted_order_number)
+            ->assertJsonPath('data.0.start_date', $startDate)
+            ->assertJsonPath('data.0.start_time', $startTime)
+            ->assertJsonPath('data.0.course_details.start_date', $startDate)
+            ->assertJsonPath('data.0.course_details.start_date_ar', $startDate)
+            ->assertJsonPath('data.0.course_details.start_time', $startTime)
+            ->assertJsonPath('data.0.course_details.end_date', '2026-06-13')
+            ->assertJsonPath('data.0.course_details.end_date_ar', '2026-06-13');
     }
 
     private function createCountryAndPlan(): array

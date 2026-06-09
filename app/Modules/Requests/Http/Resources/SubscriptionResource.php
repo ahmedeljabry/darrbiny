@@ -20,6 +20,8 @@ class SubscriptionResource extends JsonResource
         $endDate = $this->start_date && $durationDays > 0
             ? $this->start_date->copy()->addDays($durationDays)
             : null;
+        $startDate = $this->start_date?->format('Y-m-d');
+        $endDateValue = $endDate?->format('Y-m-d');
 
         $courseNumber = $this->display_order_number;
         $courseId = $this->order_number ?? $courseNumber;
@@ -69,6 +71,8 @@ class SubscriptionResource extends JsonResource
             'trainer_name' => $trainer ? $trainer->name : null,
             'trainer_offer_message' => $offerMessage,
             'description' => $this->description,
+            'start_date' => $startDate,
+            'start_time' => $this->start_time,
 
             'title' => 'كورس تدريب',
             'duration' => [
@@ -99,14 +103,14 @@ class SubscriptionResource extends JsonResource
                 'course_number' => $courseNumber,
                 'order_number' => $this->order_number,
                 'formatted_order_number' => $this->formatted_order_number,
-                'start_date' => $this->start_date?->format('d M Y'),
-                'start_date_ar' => $this->start_date,
+                'start_date' => $startDate,
+                'start_date_ar' => $startDate,
                 'has_user_car' => $this->has_user_car,
                 'wants_trainer_car' => $this->wants_trainer_car,
                 'needs_pickup' => $this->needs_pickup,
                 'start_time' => $this->start_time,
-                'end_date' => $endDate?->format('d M Y'),
-                'end_date_ar' => $endDate,
+                'end_date' => $endDateValue,
+                'end_date_ar' => $endDateValue,
                 'location' => $location,
                 'location_details' => [
                     'country_id' => $this->country_id,
