@@ -12,11 +12,12 @@ use Illuminate\Support\Str;
 final class TrainerLocationMatcher
 {
     private const BASE_FIELDS = ['country_id', 'area_level_1'];
+
     private const OPTIONAL_FIELDS = ['area_level_2', 'area_level_3'];
 
     public static function profileValue(?TrainerProfile $profile, string $field): ?string
     {
-        if (!$profile) {
+        if (! $profile) {
             return null;
         }
 
@@ -70,7 +71,7 @@ final class TrainerLocationMatcher
 
     public static function applyOpenRequestScope(Builder $query, TrainerProfile $profile): Builder
     {
-        if (!self::hasBaseLocation($profile)) {
+        if (! self::hasBaseLocation($profile)) {
             return $query->whereRaw('1 = 0');
         }
 
@@ -108,7 +109,7 @@ final class TrainerLocationMatcher
 
     public static function normalize(mixed $value): ?string
     {
-        if ($value === null || !is_scalar($value)) {
+        if ($value === null || ! is_scalar($value)) {
             return null;
         }
 
@@ -125,6 +126,12 @@ final class TrainerLocationMatcher
         $normalized = self::normalize($value);
         if ($normalized === null) {
             $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        if ($column === 'country_id') {
+            $query->where($column, (string) $value);
 
             return;
         }

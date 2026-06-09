@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Country;
 use App\Models\Plan;
 use App\Models\User;
+use App\Modules\Requests\Services\RequestService;
 use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -83,7 +84,7 @@ class UserRequestTest extends TestCase
         ]);
         $user->assignRole('USER');
 
-        $this->withHeader('Authorization', 'Bearer ' . $user->createToken('t')->plainTextToken)
+        $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
             ->postJson('/api/v1/user-requests', [
                 'plan_id' => $plan->id,
                 'country_id' => $country->id,
@@ -98,7 +99,95 @@ class UserRequestTest extends TestCase
                 'needs_pickup' => false,
             ])
             ->assertStatus(422)
-            ->assertJsonPath('errors.0.message', 'عذرًا، لا تتوفر أي مدربة في الوقت الحالي. نأمل إعادة المحاولة في وقت لاحق والتواصل مع الدعم الفني لمساعدتك');
+            ->assertJsonPath('errors.0.message', RequestService::NO_TRAINERS_AVAILABLE_MESSAGE);
+    }
+
+    public function test_trainer_availability_endpoint_returns_available_for_matching_place(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $this->createEligibleTrainer($country->id, 'Amman Governorate', 'Amman');
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001002',
+        ]);
+        $user->assignRole('USER');
+
+        $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests/trainer-availability', [
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.available', true)
+            ->assertJsonPath('data.message', null);
+    }
+
+    public function test_trainer_availability_endpoint_returns_message_when_no_trainer_matches_place(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $this->createEligibleTrainer($country->id, 'Irbid Governorate', 'Irbid');
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001003',
+        ]);
+        $user->assignRole('USER');
+
+        $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests/trainer-availability', [
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.message', RequestService::NO_TRAINERS_AVAILABLE_MESSAGE);
+    }
+
+    public function test_trainer_availability_endpoint_does_not_count_banned_trainer(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $trainer = $this->createEligibleTrainer($country->id, 'Amman Governorate', 'Amman');
+        $trainer->forceFill(['banned_until' => now()->addDay()])->save();
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001004',
+        ]);
+        $user->assignRole('USER');
+
+        $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests/trainer-availability', [
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.message', RequestService::NO_TRAINERS_AVAILABLE_MESSAGE);
     }
 
     public function test_request_currency_uses_plan_country_currency_before_user_currency(): void
@@ -126,7 +215,7 @@ class UserRequestTest extends TestCase
         ]);
         $user->assignRole('USER');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $user->createToken('t')->plainTextToken)
+        $response = $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
             ->postJson('/api/v1/user-requests', [
                 'plan_id' => $plan->id,
                 'country_id' => $country->id,

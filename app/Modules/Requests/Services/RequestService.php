@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\Requests\Services;
 
+use App\Jobs\NotifyEligibleTrainers;
 use App\Models\Payment;
-use App\Models\Plan;
 use App\Models\Payout;
-use App\Models\TrainerProfile;
+use App\Models\Plan;
 use App\Models\TrainerOffer;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
-use App\Support\Fees;
-use App\Support\TrainerLocationMatcher;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use App\Jobs\NotifyEligibleTrainers;
 use App\Notifications\CourseCompletedNotification;
 use App\Notifications\WalletBalanceAddedNotification;
 use App\Services\ConversationService;
+use App\Support\Fees;
+use Illuminate\Support\Facades\DB;
 
 class RequestService
 {
-    private const NO_TRAINERS_AVAILABLE_MESSAGE = 'عذرًا، لا تتوفر أي مدربة في الوقت الحالي. نأمل إعادة المحاولة في وقت لاحق والتواصل مع الدعم الفني لمساعدتك';
+    public const NO_TRAINERS_AVAILABLE_MESSAGE = 'عذرًا، لا تتوفر أي مدربة في الوقت الحالي. نأمل إعادة المحاولة في وقت لاحق والتواصل مع الدعم الفني لمساعدتك';
+
+    public function __construct(
+        private readonly TrainerAvailabilityService $trainerAvailabilityService
+    ) {}
 
     public function create(array $data, string $userId): UserRequest
     {
@@ -133,7 +134,7 @@ class RequestService
 
     private function findEligibleFreeRetrySource(string $userId, string $planId, ?string $trainerId): ?UserRequest
     {
-        if (!$trainerId) {
+        if (! $trainerId) {
             return null;
         }
 
@@ -149,7 +150,7 @@ class RequestService
 
     private function ensureConversationExists(UserRequest $req): void
     {
-        if (!$req->trainer_id || !$req->user_id) {
+        if (! $req->trainer_id || ! $req->user_id) {
             return;
         }
 
@@ -204,7 +205,7 @@ class RequestService
             ->lockForUpdate()
             ->first();
 
-        if (!$trainer) {
+        if (! $trainer) {
             return;
         }
 
@@ -230,7 +231,7 @@ class RequestService
 
     private function buildTrainerPayoutWalletNote(UserRequest $req): string
     {
-        return 'إضافة مستحقات كورس رقم ' . $req->notificationOrderNumber();
+        return 'إضافة مستحقات كورس رقم '.$req->notificationOrderNumber();
     }
 
     /**
@@ -240,7 +241,7 @@ class RequestService
     {
         $amountMinor = max(0, (int) $payment->amount_minor);
 
-        if (!$payment->isFullType()) {
+        if (! $payment->isFullType()) {
             return [
                 max(0, (int) $payment->app_fee_minor),
                 max(0, (int) $payment->trainer_net_minor ?: $amountMinor),
@@ -302,21 +303,7 @@ class RequestService
             return;
         }
 
-        $requestLocation = new UserRequest($data);
-
-        $hasEligibleTrainer = TrainerLocationMatcher::applyEligibleTrainerProfilesScope(
-            TrainerProfile::query()->whereHas('user', function (Builder $query): void {
-                $query
-                    ->trainerAccount()
-                    ->whereNull('deleted_at')
-                    ->where(function (Builder $banQuery): void {
-                        $banQuery
-                            ->whereNull('banned_until')
-                            ->orWhere('banned_until', '<=', now());
-                    });
-            }),
-            $requestLocation
-        )->exists();
+        $hasEligibleTrainer = $this->trainerAvailabilityService->hasEligibleTrainerForLocation($data);
 
         abort_unless($hasEligibleTrainer, 422, self::NO_TRAINERS_AVAILABLE_MESSAGE);
     }

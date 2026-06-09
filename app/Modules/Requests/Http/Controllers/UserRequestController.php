@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Requests\Http\Controllers;
 
 use App\Models\TrainerProfile;
-use App\Models\TrainingDay;
 use App\Models\UserRequest;
+use App\Modules\Requests\Http\Requests\CheckTrainerAvailabilityRequest;
 use App\Modules\Requests\Http\Requests\StoreUserRequest;
 use App\Modules\Requests\Http\Resources\SubscriptionResource;
 use App\Modules\Requests\Http\Resources\UserRequestResource;
 use App\Modules\Requests\Services\RequestService;
+use App\Modules\Requests\Services\TrainerAvailabilityService;
 use App\Support\TrainerLocationMatcher;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -20,13 +21,16 @@ class UserRequestController extends BaseController
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly RequestService $service) {}
+    public function __construct(
+        private readonly RequestService $service,
+        private readonly TrainerAvailabilityService $trainerAvailabilityService
+    ) {}
 
     public function index(Request $request)
     {
         $user = $request->user();
         $mine = $request->boolean('mine');
-        if (!$user->hasRole('ADMIN')) {
+        if (! $user->hasRole('ADMIN')) {
             $mine = true;
         }
         $trainerId = $request->query('trainer_id');
@@ -62,6 +66,7 @@ class UserRequestController extends BaseController
         }
 
         $bookings = $q->latest()->paginate(20);
+
         return UserRequestResource::collection($bookings)->response();
     }
 
@@ -79,9 +84,10 @@ class UserRequestController extends BaseController
             'offers',
             'offers.trainer',
             'payments',
-            'trainingDays'
+            'trainingDays',
         ])->findOrFail($id);
         $this->authorize('view', $req);
+
         return response()->json(['data' => new UserRequestResource($req)]);
     }
 
@@ -93,7 +99,20 @@ class UserRequestController extends BaseController
             $relationships[] = 'trainer';
         }
         $req->load($relationships);
+
         return response()->json(['data' => new UserRequestResource($req)], 201);
+    }
+
+    public function checkTrainerAvailability(CheckTrainerAvailabilityRequest $request)
+    {
+        $available = $this->trainerAvailabilityService->hasEligibleTrainerForLocation($request->validated());
+
+        return response()->json([
+            'data' => [
+                'available' => $available,
+                'message' => $available ? null : RequestService::NO_TRAINERS_AVAILABLE_MESSAGE,
+            ],
+        ]);
     }
 
     /**
@@ -123,7 +142,7 @@ class UserRequestController extends BaseController
             'offers.trainer',
             'trainingDays' => function ($query) use ($trainerId) {
                 $query->where('trainer_id', $trainerId);
-            }
+            },
         ])
             ->where(function (
                 $query
@@ -157,6 +176,7 @@ class UserRequestController extends BaseController
         }
 
         $bookings = $q->latest()->paginate(20);
+
         return UserRequestResource::collection($bookings)->response();
     }
 
@@ -182,10 +202,10 @@ class UserRequestController extends BaseController
             'cancellationRequest',
             'scheduleProgress',
         ])
-        ->where(function ($query) use ($userId) {
-            $query->where('user_id', $userId)
-                ->orWhere('trainer_id', $userId);
-        });
+            ->where(function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->orWhere('trainer_id', $userId);
+            });
         match ($statusCategory) {
             'active' => $q->where('status', UserRequest::STATUS_IN_TRAINING),
             'completed' => $q->where('status', UserRequest::STATUS_COMPLETED),
@@ -199,6 +219,7 @@ class UserRequestController extends BaseController
             default => null,
         };
         $subscriptions = $q->latest()->paginate(20);
+
         return SubscriptionResource::collection($subscriptions)->response();
     }
 
@@ -210,5 +231,4 @@ class UserRequestController extends BaseController
 
         return response()->json(['data' => $req->fresh()]);
     }
-
 }

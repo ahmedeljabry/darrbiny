@@ -85,6 +85,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
     // User Requests
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/user-requests/trainer-availability', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'checkTrainerAvailability']);
         Route::post('/user-requests', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'store']);
         Route::get('/user-requests/offers', [\App\Modules\Offers\Http\Controllers\OfferController::class, 'listForUserRequests']);
         Route::get('/user-requests/{id}', [\App\Modules\Requests\Http\Controllers\UserRequestController::class, 'show']);
