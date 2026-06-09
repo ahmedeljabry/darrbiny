@@ -147,7 +147,7 @@ class NewRequestAvailableNotificationTest extends TestCase
     private function createTrainer(string $countryId, array $location): User
     {
         $trainer = User::factory()->create([
-            'phone_with_cc' => fake()->unique()->numerify('+201000000###'),
+            'phone_with_cc' => fake()->unique()->numerify('+201000001###'),
         ]);
         $trainer->assignRole('TRAINER');
         $trainer->trainerProfile()->create([

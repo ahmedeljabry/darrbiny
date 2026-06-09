@@ -61,6 +61,59 @@ class UserRequestTest extends TestCase
         $res->assertStatus(201)->assertJsonPath('success', true);
     }
 
+    public function test_create_user_request_preserves_start_time_exactly_as_sent(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $country = Country::create([
+            'name' => 'Jordan',
+            'iso2' => 'JO',
+            'currency' => 'JOD',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Mobile Time Plan',
+            'description' => 'Plan used to verify mobile start time is preserved',
+            'price_min' => 100,
+            'duration_days' => '3',
+            'hours_count' => 6,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $this->createEligibleTrainer($country->id, 'Amman Governorate', 'Amman');
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000001005',
+        ]);
+        $user->assignRole('USER');
+
+        $startTime = '2026-06-10T09:30:00.000Z';
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$user->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/user-requests', [
+                'plan_id' => $plan->id,
+                'country_id' => $country->id,
+                'area_level_1' => 'Amman Governorate',
+                'area_level_2' => 'Amman',
+                'area_level_3' => null,
+                'locality' => 'Sweifieh',
+                'start_date' => now()->addDay()->toDateString(),
+                'start_time' => $startTime,
+                'has_user_car' => false,
+                'wants_trainer_car' => true,
+                'needs_pickup' => false,
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.start_time', $startTime);
+
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $response->json('data.id'),
+            'start_time' => $startTime,
+        ]);
+    }
+
     public function test_create_user_request_fails_when_no_trainer_is_available_in_same_location(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
