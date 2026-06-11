@@ -60,4 +60,38 @@ class SettingsPagesTest extends TestCase
             ->assertOk()
             ->assertSee('5.290000', false);
     }
+
+    public function test_admin_settings_page_has_tabs_and_saves_hypersend_whatsapp_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000002001',
+            'email' => 'settings-hypersend@example.com',
+        ]);
+        $admin->assignRole('ADMIN');
+
+        $this->actingAs($admin)
+            ->get(route('admin.settings.index'))
+            ->assertOk()
+            ->assertSee('data-bs-toggle="tab"', false)
+            ->assertSee('name="hypersend_whatsapp_token"', false)
+            ->assertSee('name="hypersend_whatsapp_instance_id"', false);
+
+        $this->actingAs($admin)
+            ->post(route('admin.settings.update'), [
+                'hypersend_whatsapp_token' => 'hs_test_token',
+                'hypersend_whatsapp_instance_id' => 'instance-123',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.hypersend.whatsapp.token',
+            'value' => 'hs_test_token',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.hypersend.whatsapp.instance_id',
+            'value' => 'instance-123',
+        ]);
+    }
 }

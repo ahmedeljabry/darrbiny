@@ -7,14 +7,13 @@ namespace App\Services\Admin;
 use App\Models\Setting;
 use App\Models\Upload;
 use App\Support\ReportCurrencyConverter;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 
 final class SettingsService
 {
     public function allKeyed(): array
     {
-        return Setting::pluck('value','key')->toArray();
+        return Setting::pluck('value', 'key')->toArray();
     }
 
     public function update(
@@ -23,8 +22,7 @@ final class SettingsService
         ?UploadedFile $video = null,
         ?UploadedFile $favicon = null,
         ?UploadedFile $captainVideo = null,
-    ): void
-    {
+    ): void {
         if ($logo) {
             $disk = config('filesystems.default', 'public');
             $path = $logo->store('brand', $disk);
@@ -53,6 +51,8 @@ final class SettingsService
         $this->save('payment.tap.public_key', $data['tap_public_key'] ?? null);
         $this->save('payment.tap.secret_key', $data['tap_secret_key'] ?? null);
         $this->save('payment.tap.webhook_secret', $data['tap_webhook_secret'] ?? null);
+        $this->save('integrations.hypersend.whatsapp.token', $data['hypersend_whatsapp_token'] ?? null);
+        $this->save('integrations.hypersend.whatsapp.instance_id', $data['hypersend_whatsapp_instance_id'] ?? null);
         $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
         if (array_key_exists('report_exchange_rates', $data)) {
@@ -64,12 +64,12 @@ final class SettingsService
                 )
             );
         }
-        
-        if (!empty($data['country_fees']) && is_array($data['country_fees'])) {
+
+        if (! empty($data['country_fees']) && is_array($data['country_fees'])) {
             foreach ($data['country_fees'] as $countryId => $feeMinor) {
                 if ($feeMinor !== null && $feeMinor !== '') {
                     \App\Models\Country::where('id', $countryId)->update([
-                        'reservation_fee_minor' => (int) $feeMinor
+                        'reservation_fee_minor' => (int) $feeMinor,
                     ]);
                 }
             }
@@ -112,17 +112,20 @@ final class SettingsService
         $this->saveFaqSetting('pages.faq', $data, 'faqs');
         $this->save('pages.contact', $data['page_contact'] ?? null);
 
-        if (!empty($data['how_it_works']) && is_array($data['how_it_works'])) {
+        if (! empty($data['how_it_works']) && is_array($data['how_it_works'])) {
             $sections = collect($data['how_it_works'])
                 ->map(function ($row) {
-                    $title = trim((string)($row['title'] ?? ''));
+                    $title = trim((string) ($row['title'] ?? ''));
                     $steps = collect($row['steps'] ?? [])
-                        ->map(fn($s) => trim((string)$s))
+                        ->map(fn ($s) => trim((string) $s))
                         ->filter()
                         ->values()
                         ->all();
-                    if ($title === '' || empty($steps)) return null;
-                    return [ 'title' => $title, 'steps' => $steps ];
+                    if ($title === '' || empty($steps)) {
+                        return null;
+                    }
+
+                    return ['title' => $title, 'steps' => $steps];
                 })
                 ->filter()
                 ->values()
@@ -146,7 +149,9 @@ final class SettingsService
 
     private function save(string $key, mixed $value): void
     {
-        if ($value === null) return;
+        if ($value === null) {
+            return;
+        }
         Setting::updateOrCreate(['key' => $key], ['value' => $value]);
     }
 
@@ -156,6 +161,7 @@ final class SettingsService
             $rows = is_array($data[$rowsKey] ?? null) ? $data[$rowsKey] : [];
             $faqs = $this->normalizeFaqRows($rows);
             $this->save($key, json_encode($faqs, JSON_UNESCAPED_UNICODE));
+
             return;
         }
 
@@ -171,12 +177,14 @@ final class SettingsService
     {
         return collect($rows)
             ->map(function ($row) {
-                if (!is_array($row)) {
+                if (! is_array($row)) {
                     $answer = trim((string) $row);
+
                     return $answer === '' ? null : ['question' => '', 'answer' => $answer];
                 }
                 $q = trim((string) ($row['question'] ?? ''));
                 $a = trim((string) ($row['answer'] ?? ''));
+
                 return ($q === '' && $a === '') ? null : ['question' => $q, 'answer' => $a];
             })
             ->filter()

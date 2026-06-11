@@ -66,24 +66,48 @@
           <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
             <div>
               <h5 class="mb-1 fw-bold">إدارة إعدادات المنصة</h5>
-              <p class="mb-0 text-muted">واجهة إعدادات موحّدة بدون تبويبات مع تنظيم حديث وسريع</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <a href="#site" class="btn btn-sm btn-outline-primary"><i class="icon-base ti tabler-world me-1"></i>الموقع</a>
-              <a href="#financial-rates" class="btn btn-sm btn-outline-success"><i class="icon-base ti tabler-exchange me-1"></i>التحويل</a>
-              <a href="#videos" class="btn btn-sm btn-outline-info"><i class="icon-base ti tabler-video me-1"></i>الفيديو</a>
-              <a href="#pages" class="btn btn-sm btn-outline-secondary"><i class="icon-base ti tabler-file-text me-1"></i>الصفحات</a>
-              <a href="#roles" class="btn btn-sm btn-outline-warning"><i class="icon-base ti tabler-shield me-1"></i>الأدوار</a>
-              <a href="#howitworks" class="btn btn-sm btn-outline-success"><i class="icon-base ti tabler-help me-1"></i>كيف تعمل الخدمة</a>
+              <p class="mb-0 text-muted">واجهة إعدادات مبسطة بتبويبات واضحة وسريعة</p>
             </div>
           </div>
+          <ul class="nav nav-pills settings-tabs" id="settings-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab" aria-controls="site" aria-selected="true">
+                <i class="icon-base ti tabler-world me-1"></i>عام والدفع
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="financial-rates-tab" data-bs-toggle="tab" data-bs-target="#financial-rates" type="button" role="tab" aria-controls="financial-rates" aria-selected="false">
+                <i class="icon-base ti tabler-exchange me-1"></i>الرسوم والتحويل
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab" aria-controls="videos" aria-selected="false">
+                <i class="icon-base ti tabler-video me-1"></i>الفيديو
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="pages-tab" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab" aria-controls="pages" aria-selected="false">
+                <i class="icon-base ti tabler-file-text me-1"></i>الصفحات
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles" type="button" role="tab" aria-controls="roles" aria-selected="false">
+                <i class="icon-base ti tabler-shield me-1"></i>الأدوار
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="howitworks-tab" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab" aria-controls="howitworks" aria-selected="false">
+                <i class="icon-base ti tabler-help me-1"></i>كيف تعمل الخدمة
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
       <div class="card-body">
-        <div class="settings-sections d-flex flex-column gap-4">
-          <div class="settings-pane settings-block" id="site" data-section-label="الموقع">
+        <div class="tab-content settings-sections">
+          <div class="tab-pane fade show active settings-pane settings-block" id="site" data-section-label="الموقع" role="tabpanel" aria-labelledby="site-tab" tabindex="0">
             <div class="row g-4">
-              <div class="col-lg-6">
+              <div class="col-xl-4 col-lg-6">
                 <div class="card h-100 border-0 shadow-sm">
                   <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
                     <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
@@ -138,7 +162,7 @@
                 </div>
               </div>
 
-              <div class="col-lg-6">
+              <div class="col-xl-4 col-lg-6">
                 <div class="card h-100 border-0 shadow-sm">
                   <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
                     <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
@@ -189,6 +213,51 @@
                 </div>
               </div>
 
+              <div class="col-xl-4 col-lg-6">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
+                    <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
+                      <i class="icon-base ti tabler-brand-whatsapp" style="font-size: 24px;"></i>
+                    </span>
+                    <div>
+                      <h6 class="mb-0 fw-bold">HyperSend WhatsApp</h6>
+                      <small class="text-muted">Token و Instance ID</small>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">Token</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-key"></i></span>
+                          <input type="password" class="form-control" name="hypersend_whatsapp_token" value="{{ old('hypersend_whatsapp_token', $settings['integrations.hypersend.whatsapp.token'] ?? '') }}" autocomplete="off" placeholder="HyperSend token">
+                        </div>
+                        @error('hypersend_whatsapp_token')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">Instance ID</label>
+                        <div class="input-group input-group-merge">
+                          <span class="input-group-text"><i class="ti tabler-device-mobile"></i></span>
+                          <input type="text" class="form-control" name="hypersend_whatsapp_instance_id" value="{{ old('hypersend_whatsapp_instance_id', $settings['integrations.hypersend.whatsapp.instance_id'] ?? '') }}" placeholder="Instance ID">
+                        </div>
+                        @error('hypersend_whatsapp_instance_id')
+                          <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                      </div>
+                      <button class="btn btn-primary w-100">
+                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade settings-pane settings-block" id="financial-rates" data-section-label="الرسوم والتحويل" role="tabpanel" aria-labelledby="financial-rates-tab" tabindex="0">
+            <div class="row g-4">
               <div class="col-lg-12">
                 <div class="card h-100 border-0 shadow-sm">
                   <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
@@ -349,7 +418,7 @@
                         </div>
                       </div>
 
-                      <div id="financial-rates" class="mt-4">
+                      <div id="exchange-rates" class="mt-4">
                         <div class="card border border-info h-100">
                           <div class="card-body">
                             <div class="d-flex align-items-center gap-2 mb-3">
@@ -450,7 +519,7 @@
             </div>
           </div>
 
-          <div class="settings-pane settings-block" id="videos" data-section-label="الفيديو">
+          <div class="tab-pane fade settings-pane settings-block" id="videos" data-section-label="الفيديو" role="tabpanel" aria-labelledby="videos-tab" tabindex="0">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-info">
@@ -517,7 +586,7 @@
             </div>
           </div>
 
-          <div class="settings-pane settings-block" id="pages" data-section-label="الصفحات">
+          <div class="tab-pane fade settings-pane settings-block" id="pages" data-section-label="الصفحات" role="tabpanel" aria-labelledby="pages-tab" tabindex="0">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-secondary">
@@ -715,7 +784,7 @@
             </div>
           </div>
 
-          <div class="settings-pane settings-block" id="roles" data-section-label="الأدوار والمحظورات">
+          <div class="tab-pane fade settings-pane settings-block" id="roles" data-section-label="الأدوار والمحظورات" role="tabpanel" aria-labelledby="roles-tab" tabindex="0">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center gap-2">
                 <span class="avatar-initial rounded bg-label-primary">
@@ -847,7 +916,7 @@
             </div>
           </div>
 
-          <div class="settings-pane settings-block" id="howitworks" data-section-label="كيف تعمل الخدمة">
+          <div class="tab-pane fade settings-pane settings-block" id="howitworks" data-section-label="كيف تعمل الخدمة" role="tabpanel" aria-labelledby="howitworks-tab" tabindex="0">
             <div class="card border-0 surface">
               <div class="card-header border-0 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -944,6 +1013,26 @@
   .settings-banner h5 {
     letter-spacing: 0.2px;
   }
+  .settings-tabs {
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+  .settings-tabs .nav-link {
+    align-items: center;
+    border: 1px solid rgba(79, 70, 229, 0.14);
+    border-radius: 8px;
+    color: #4b5563;
+    display: inline-flex;
+    font-weight: 600;
+    min-height: 40px;
+    white-space: nowrap;
+  }
+  .settings-tabs .nav-link.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    box-shadow: 0 6px 14px rgba(79, 70, 229, 0.2);
+  }
   .settings-sections {
     scroll-behavior: smooth;
   }
@@ -998,14 +1087,78 @@
     to { opacity: 1; transform: translateY(0); }
   }
   @media (max-width: 1199.98px) {
-    .settings-banner .btn {
+    .settings-tabs .nav-item {
       flex: 1 1 calc(50% - 0.5rem);
+    }
+    .settings-tabs .nav-link {
+      justify-content: center;
+      width: 100%;
     }
     .settings-block {
       padding: 0.75rem;
     }
   }
 </style>
+@endpush
+
+@push('scripts')
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const tabButtons = Array.from(document.querySelectorAll('#settings-tabs [data-bs-toggle="tab"]'));
+
+    function showTab(tabButton) {
+      if (!tabButton) return;
+
+      if (window.bootstrap && window.bootstrap.Tab) {
+        window.bootstrap.Tab.getOrCreateInstance(tabButton).show();
+        return;
+      }
+
+      tabButtons.forEach(function (button) {
+        const pane = document.querySelector(button.getAttribute('data-bs-target'));
+        const isActive = button === tabButton;
+
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+
+        if (pane) {
+          pane.classList.toggle('active', isActive);
+          pane.classList.toggle('show', isActive);
+        }
+      });
+    }
+
+    function showTabForHash(hash, shouldScroll) {
+      const target = hash ? document.getElementById(hash.replace('#', '')) : null;
+      if (!target) return;
+
+      const pane = target.classList.contains('tab-pane') ? target : target.closest('.tab-pane');
+      if (!pane || !pane.id) return;
+
+      const tabButton = document.querySelector(`#settings-tabs [data-bs-target="#${pane.id}"]`);
+      showTab(tabButton);
+
+      if (shouldScroll) {
+        window.setTimeout(function () {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+      }
+    }
+
+    if (window.location.hash) {
+      showTabForHash(window.location.hash, true);
+    }
+
+    tabButtons.forEach(function (button) {
+      button.addEventListener('shown.bs.tab', function (event) {
+        const target = event.target.getAttribute('data-bs-target');
+        if (target && window.history.replaceState) {
+          window.history.replaceState(null, '', target);
+        }
+      });
+    });
+  });
+  </script>
 @endpush
 
 @push('scripts')
