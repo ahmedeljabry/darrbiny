@@ -76,7 +76,8 @@ class SettingsPagesTest extends TestCase
             ->assertOk()
             ->assertSee('data-bs-toggle="tab"', false)
             ->assertSee('name="hypersend_whatsapp_token"', false)
-            ->assertSee('name="hypersend_whatsapp_instance_id"', false);
+            ->assertSee('name="hypersend_whatsapp_instance_id"', false)
+            ->assertDontSee('بوابة الدفع: TAP');
 
         $this->actingAs($admin)
             ->post(route('admin.settings.update'), [

@@ -107,7 +107,7 @@
         <div class="tab-content settings-sections">
           <div class="tab-pane fade show active settings-pane settings-block" id="site" data-section-label="الموقع" role="tabpanel" aria-labelledby="site-tab" tabindex="0">
             <div class="row g-4">
-              <div class="col-xl-4 col-lg-6">
+              <div class="col-xl-6 col-lg-6">
                 <div class="card h-100 border-0 shadow-sm">
                   <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
                     <span class="avatar-initial rounded bg-label-primary" style="width: 48px; height: 48px;">
@@ -162,58 +162,7 @@
                 </div>
               </div>
 
-              <div class="col-xl-4 col-lg-6">
-                <div class="card h-100 border-0 shadow-sm">
-                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
-                    <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
-                      <i class="icon-base ti tabler-credit-card" style="font-size: 24px;"></i>
-                    </span>
-                    <div>
-                      <h6 class="mb-0 fw-bold">بوابة الدفع: TAP</h6>
-                      <small class="text-muted">المفاتيح والويب هوك</small>
-                    </div>
-                  </div>
-                  <div class="card-body">
-                    <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">المفتاح العام</label>
-                        <div class="input-group input-group-merge">
-                          <span class="input-group-text"><i class="ti tabler-key"></i></span>
-                          <input type="text" class="form-control" name="tap_public_key" value="{{ old('tap_public_key', $settings['payment.tap.public_key'] ?? '') }}" placeholder="pk_test_...">
-                        </div>
-                        @error('tap_public_key')
-                          <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">المفتاح السري</label>
-                        <div class="input-group input-group-merge">
-                          <span class="input-group-text"><i class="ti tabler-lock"></i></span>
-                          <input type="password" class="form-control" name="tap_secret_key" value="{{ old('tap_secret_key', $settings['payment.tap.secret_key'] ?? '') }}" placeholder="sk_test_...">
-                        </div>
-                        @error('tap_secret_key')
-                          <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">سر الويب هوك</label>
-                        <div class="input-group input-group-merge">
-                          <span class="input-group-text"><i class="ti tabler-webhook"></i></span>
-                          <input type="text" class="form-control" name="tap_webhook_secret" value="{{ old('tap_webhook_secret', $settings['payment.tap.webhook_secret'] ?? '') }}" placeholder="whsec_...">
-                        </div>
-                        @error('tap_webhook_secret')
-                          <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </div>
-                      <button class="btn btn-primary w-100">
-                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-xl-4 col-lg-6">
+              <div class="col-xl-6 col-lg-6">
                 <div class="card h-100 border-0 shadow-sm">
                   <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
                     <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
