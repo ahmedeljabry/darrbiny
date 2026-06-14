@@ -111,21 +111,27 @@ final class UserPurgeService
     }
 
     /**
-     * @return array{users_deleted:int}
+     * @return array{users_deleted:int,data_deleted:bool}
      */
-    public function resetOperationalData(?string $currentAdminId = null): array
-    {
-        $adminIds = User::withTrashed()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'ADMIN'))
-            ->pluck('id')
-            ->push($currentAdminId)
-            ->filter()
-            ->unique()
-            ->values();
+    public function resetOperationalData(
+        ?string $currentAdminId = null,
+        bool $deleteUsers = true,
+        bool $deleteData = true,
+    ): array {
+        $adminIds = $this->adminUserIds($currentAdminId);
 
-        $nonAdminUsers = User::withTrashed()
-            ->whereNotIn('id', $adminIds)
-            ->get(['id', 'profile_picture_id']);
+        if ($deleteUsers && ! $deleteData) {
+            return [
+                'users_deleted' => $this->purgeNonAdminUsersPreservingHistory($adminIds),
+                'data_deleted' => false,
+            ];
+        }
+
+        $nonAdminUsers = $deleteUsers
+            ? User::withTrashed()
+                ->whereNotIn('id', $adminIds)
+                ->get(['id', 'profile_picture_id'])
+            : collect();
         $uploadIds = $nonAdminUsers
             ->pluck('profile_picture_id')
             ->filter()
@@ -135,42 +141,20 @@ final class UserPurgeService
             ->whereIn('id', $uploadIds)
             ->get(['id', 'disk', 'path']);
 
-        DB::transaction(function () use ($adminIds, $uploadIds): void {
+        DB::transaction(function () use ($adminIds, $uploadIds, $deleteUsers, $deleteData): void {
             Schema::disableForeignKeyConstraints();
 
             try {
-                foreach ($this->operationalTablesForReset() as $table) {
-                    if (Schema::hasTable($table)) {
-                        DB::table($table)->delete();
-                    }
+                if ($deleteData) {
+                    $this->deleteOperationalDataForReset();
                 }
 
-                DB::table('users')
-                    ->whereIn('id', $adminIds)
-                    ->whereNotNull('referred_by')
-                    ->update(['referred_by' => null]);
-                DB::table('users')->whereNotIn('id', $adminIds)->delete();
-
-                $roleTable = config('permission.table_names.model_has_roles');
-                $permissionTable = config('permission.table_names.model_has_permissions');
-                $modelKey = (string) config('permission.column_names.model_morph_key', 'model_id');
-
-                if (filled($roleTable) && Schema::hasTable($roleTable)) {
-                    DB::table($roleTable)
-                        ->where('model_type', User::class)
-                        ->whereNotIn($modelKey, $adminIds)
-                        ->delete();
+                if ($deleteData && ! $deleteUsers) {
+                    $this->resetNonAdminWalletBalances($adminIds);
                 }
 
-                if (filled($permissionTable) && Schema::hasTable($permissionTable)) {
-                    DB::table($permissionTable)
-                        ->where('model_type', User::class)
-                        ->whereNotIn($modelKey, $adminIds)
-                        ->delete();
-                }
-
-                if ($uploadIds->isNotEmpty() && Schema::hasTable('uploads')) {
-                    DB::table('uploads')->whereIn('id', $uploadIds)->delete();
+                if ($deleteUsers) {
+                    $this->deleteNonAdminUsersForReset($adminIds, $uploadIds);
                 }
             } finally {
                 Schema::enableForeignKeyConstraints();
@@ -181,7 +165,95 @@ final class UserPurgeService
             Storage::disk($upload->disk)->delete($upload->path);
         }
 
-        return ['users_deleted' => $nonAdminUsers->count()];
+        return [
+            'users_deleted' => $nonAdminUsers->count(),
+            'data_deleted' => $deleteData,
+        ];
+    }
+
+    private function adminUserIds(?string $currentAdminId = null): \Illuminate\Support\Collection
+    {
+        return User::withTrashed()
+            ->whereHas('roles', fn ($query) => $query->where('name', 'ADMIN'))
+            ->pluck('id')
+            ->push($currentAdminId)
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    private function purgeNonAdminUsersPreservingHistory(\Illuminate\Support\Collection $adminIds): int
+    {
+        $users = User::withTrashed()
+            ->whereNotIn('id', $adminIds)
+            ->get(['id']);
+
+        foreach ($users as $user) {
+            $this->purgeUser($user);
+        }
+
+        return $users->count();
+    }
+
+    private function deleteOperationalDataForReset(): void
+    {
+        foreach ($this->operationalTablesForReset() as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->delete();
+            }
+        }
+    }
+
+    private function resetNonAdminWalletBalances(\Illuminate\Support\Collection $adminIds): void
+    {
+        if (! Schema::hasTable('users') || ! Schema::hasColumn('users', 'points_balance')) {
+            return;
+        }
+
+        $updates = ['points_balance' => 0];
+
+        if (Schema::hasColumn('users', 'updated_at')) {
+            $updates['updated_at'] = now();
+        }
+
+        DB::table('users')->whereNotIn('id', $adminIds)->update($updates);
+    }
+
+    private function deleteNonAdminUsersForReset(\Illuminate\Support\Collection $adminIds, \Illuminate\Support\Collection $uploadIds): void
+    {
+        if (Schema::hasTable('trainer_profiles')) {
+            DB::table('trainer_profiles')
+                ->whereNotIn('user_id', $adminIds)
+                ->delete();
+        }
+
+        DB::table('users')
+            ->whereIn('id', $adminIds)
+            ->whereNotNull('referred_by')
+            ->update(['referred_by' => null]);
+        DB::table('users')->whereNotIn('id', $adminIds)->delete();
+
+        $roleTable = config('permission.table_names.model_has_roles');
+        $permissionTable = config('permission.table_names.model_has_permissions');
+        $modelKey = (string) config('permission.column_names.model_morph_key', 'model_id');
+
+        if (filled($roleTable) && Schema::hasTable($roleTable)) {
+            DB::table($roleTable)
+                ->where('model_type', User::class)
+                ->whereNotIn($modelKey, $adminIds)
+                ->delete();
+        }
+
+        if (filled($permissionTable) && Schema::hasTable($permissionTable)) {
+            DB::table($permissionTable)
+                ->where('model_type', User::class)
+                ->whereNotIn($modelKey, $adminIds)
+                ->delete();
+        }
+
+        if ($uploadIds->isNotEmpty() && Schema::hasTable('uploads')) {
+            DB::table('uploads')->whereIn('id', $uploadIds)->delete();
+        }
     }
 
     private function deleteSupportDataForUser(User $user, string $phone, string $email): void
@@ -241,7 +313,6 @@ final class UserPurgeService
             'app_wallet_transactions',
             'app_expenses',
             'user_requests',
-            'trainer_profiles',
         ];
     }
 }

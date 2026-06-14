@@ -69,18 +69,18 @@ class UsersController extends BaseController
             $q->withTrashed();
             $q->where(function ($w) {
                 $w->whereNotNull('deleted_at')
-                  ->orWhere('banned_until', '>', now());
+                    ->orWhere('banned_until', '>', now());
             });
         } elseif (in_array($status, ['pending_trainer', 'activation_required'], true)) {
             $q->trainerAccount()
-              ->whereHas('trainerProfile', function ($profileQuery) {
-                  $profileQuery->where('pending_approval', true);
-              });
+                ->whereHas('trainerProfile', function ($profileQuery) {
+                    $profileQuery->where('pending_approval', true);
+                });
         } elseif ($status === 'active') {
             $q->whereNull('deleted_at')
-              ->where(function ($w) {
-                  $w->whereNull('banned_until')->orWhere('banned_until', '<=', now());
-              });
+                ->where(function ($w) {
+                    $w->whereNull('banned_until')->orWhere('banned_until', '<=', now());
+                });
         }
 
         $s = (string) $request->query('search', '');
@@ -115,7 +115,7 @@ class UsersController extends BaseController
         $bannedCount = User::withTrashed()
             ->where(function ($w) {
                 $w->whereNotNull('deleted_at')
-                  ->orWhere('banned_until', '>', now());
+                    ->orWhere('banned_until', '>', now());
             })->count();
         $pendingTrainersCount = User::query()->trainerAccount()
             ->whereHas('trainerProfile', function ($profileQuery) {
@@ -155,8 +155,8 @@ class UsersController extends BaseController
     public function create()
     {
         $roles = Role::orderBy('name')->pluck('name');
-        $countries = Country::orderBy('name')->get(['id','name']);
-        return view('admin.users.create', compact('roles','countries'));
+        $countries = Country::orderBy('name')->get(['id', 'name']);
+        return view('admin.users.create', compact('roles', 'countries'));
     }
 
     public function store(AdminStoreUserRequest $request)
@@ -168,9 +168,9 @@ class UsersController extends BaseController
             'email' => $data['email'] ?? null,
             'phone_with_cc' => $data['phone_with_cc'],
             'country_id' => $data['country_id'] ?? null,
-            'whatsapp_enabled' => (bool)($data['whatsapp_enabled'] ?? false),
+            'whatsapp_enabled' => (bool) ($data['whatsapp_enabled'] ?? false),
         ]);
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $user->password = $data['password'];
         }
 
@@ -179,14 +179,14 @@ class UsersController extends BaseController
 
         $user->syncRoles($data['roles'] ?? []);
 
-        if (!empty($data['banned_until'])) {
+        if (! empty($data['banned_until'])) {
             $user->update([
                 'banned_until' => $data['banned_until'],
                 'banned_reason' => $data['banned_reason'] ?? null,
             ]);
         }
 
-        return redirect()->route('admin.users.index')->with('status','تم إنشاء المستخدم');
+        return redirect()->route('admin.users.index')->with('status', 'تم إنشاء المستخدم');
     }
 
     public function show(string $id)
@@ -252,7 +252,7 @@ class UsersController extends BaseController
     public function approveTrainerProfile(string $id)
     {
         $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
-        $hadPendingDetails = is_array($user->trainerProfile?->pending_changes) && !empty($user->trainerProfile->pending_changes);
+        $hadPendingDetails = is_array($user->trainerProfile?->pending_changes) && ! empty($user->trainerProfile->pending_changes);
 
         abort_unless($this->approveTrainer($user), 422, 'لا توجد موافقة معلقة لهذا المدرب');
 
@@ -265,7 +265,7 @@ class UsersController extends BaseController
     public function rejectTrainerProfile(Request $request, string $id)
     {
         $user = User::withTrashed()->with('trainerProfile')->findOrFail($id);
-        
+
         abort_unless($user->isTrainerAccount(), 422, 'المستخدم ليس مدرباً');
         abort_unless($user->trainerProfile && $user->trainerProfile->pending_approval, 422, 'لا توجد موافقة معلقة لهذا المدرب');
 
@@ -275,7 +275,7 @@ class UsersController extends BaseController
 
         DB::transaction(function () use ($user, $validated) {
             $profile = $user->trainerProfile;
-            
+
             // Clear pending changes
             $profile->pending_approval = false;
             $profile->pending_changes = null;
@@ -301,8 +301,8 @@ class UsersController extends BaseController
     {
         $user = User::withTrashed()->findOrFail($id);
         $roles = Role::orderBy('name')->pluck('name');
-        $countries = Country::orderBy('name')->get(['id','name']);
-        return view('admin.users.edit', compact('user','roles','countries'));
+        $countries = Country::orderBy('name')->get(['id', 'name']);
+        return view('admin.users.edit', compact('user', 'roles', 'countries'));
     }
 
     public function update(string $id, AdminUpdateUserRequest $request)
@@ -314,9 +314,9 @@ class UsersController extends BaseController
             'email' => $data['email'] ?? null,
             'phone_with_cc' => $data['phone_with_cc'],
             'country_id' => $data['country_id'] ?? null,
-            'whatsapp_enabled' => (bool)($data['whatsapp_enabled'] ?? false),
+            'whatsapp_enabled' => (bool) ($data['whatsapp_enabled'] ?? false),
         ]);
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $user->password = $data['password'];
         }
 
@@ -330,7 +330,7 @@ class UsersController extends BaseController
             'banned_reason' => $data['banned_reason'] ?? null,
         ]);
 
-        return redirect()->route('admin.users.index')->with('status','تم تحديث المستخدم');
+        return redirect()->route('admin.users.index')->with('status', 'تم تحديث المستخدم');
     }
 
     public function freeze(string $id)
@@ -362,18 +362,47 @@ class UsersController extends BaseController
 
     public function resetAll(Request $request, UserPurgeService $purgeService)
     {
-        $request->validate([
+        $data = $request->validate([
             'confirm_reset' => ['accepted'],
+            'delete_users' => ['nullable', 'boolean'],
+            'delete_data' => ['nullable', 'boolean'],
         ], [], [
             'confirm_reset' => 'تأكيد إعادة التهيئة',
+            'delete_users' => 'حذف المستخدمين',
+            'delete_data' => 'حذف البيانات',
         ]);
 
-        $summary = $purgeService->resetOperationalData(Auth::id());
+        $deleteUsers = (bool) ($data['delete_users'] ?? false);
+        $deleteData = (bool) ($data['delete_data'] ?? false);
+
+        if (! $deleteUsers && ! $deleteData) {
+            return back()
+                ->withInput()
+                ->withErrors(['reset_options' => 'اختر حذف المستخدمين أو حذف البيانات على الأقل.']);
+        }
+
+        $summary = $purgeService->resetOperationalData(Auth::id(), $deleteUsers, $deleteData);
 
         return redirect()->route('admin.dashboard')->with(
             'status',
-            'تمت إعادة تهيئة البيانات بالكامل وحذف الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية. عدد المستخدمين المحذوفين: ' . number_format($summary['users_deleted'])
+            $this->resetAllStatusMessage($deleteUsers, $deleteData, $summary)
         );
+    }
+
+    /**
+     * @param  array{users_deleted:int,data_deleted:bool}  $summary
+     */
+    private function resetAllStatusMessage(bool $deleteUsers, bool $deleteData, array $summary): string
+    {
+        if ($deleteUsers && $deleteData) {
+            return 'تم حذف المستخدمين والبيانات التشغيلية بالكامل. عدد المستخدمين المحذوفين: '.number_format($summary['users_deleted']);
+        }
+
+        if ($deleteUsers) {
+            return 'تم حذف المستخدمين غير الإداريين وتحرير أرقام الجوال مع الحفاظ على السجلات المالية. عدد المستخدمين المحذوفين: '.number_format($summary['users_deleted']);
+        }
+
+        return 'تم حذف البيانات التشغيلية فقط مع الإبقاء على المستخدمين.';
     }
 
     public function ban(string $id, Request $request)
@@ -422,10 +451,10 @@ class UsersController extends BaseController
         $userIds = $validated['user_ids'];
         $action = $validated['action'];
         $currentUserId = Auth::id();
-        
+
         // Remove current user from selection to prevent self-action
-        $userIds = array_filter($userIds, fn($id) => $id !== $currentUserId);
-        
+        $userIds = array_filter($userIds, fn ($id) => $id !== $currentUserId);
+
         if (empty($userIds)) {
             return back()->withErrors(['error' => 'لا يمكنك تنفيذ هذا الإجراء على نفسك']);
         }
@@ -474,14 +503,14 @@ class UsersController extends BaseController
 
     private function approveTrainer(User $user): bool
     {
-        if (!$user->isTrainerAccount() || !$user->trainerProfile || !$user->trainerProfile->pending_approval) {
+        if (! $user->isTrainerAccount() || ! $user->trainerProfile || ! $user->trainerProfile->pending_approval) {
             return false;
         }
 
         DB::transaction(function () use ($user) {
             $profile = $user->trainerProfile;
 
-            if (is_array($profile->pending_changes) && !empty($profile->pending_changes)) {
+            if (is_array($profile->pending_changes) && ! empty($profile->pending_changes)) {
                 $profile->fill($profile->pending_changes);
             }
 
@@ -508,7 +537,7 @@ class UsersController extends BaseController
 
     private function buildTrainerProfileView(?TrainerProfile $profile): ?array
     {
-        if (!$profile) {
+        if (! $profile) {
             return null;
         }
 

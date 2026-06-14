@@ -288,14 +288,14 @@
         <div class="dashboard-section-head">
           <div>
             <h5 class="mb-1 text-danger">إعادة تهيئة البيانات بالكامل</h5>
-            <p class="text-muted mb-0 small">يحذف المستخدمين غير الإداريين وكل الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية وتذاكر الدعم.</p>
+            <p class="text-muted mb-0 small">اختر حذف المستخدمين، أو حذف البيانات التشغيلية، أو الاثنين معًا.</p>
           </div>
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetUsersModal">
             <i class="icon-base ti tabler-alert-triangle me-1"></i> بدء داتا جديدة
           </button>
         </div>
         <div class="report-note-box mt-3">
-          <p>تنبيه: هذا الإجراء غير قابل للتراجع. سيتم حذف الحجوزات والمدفوعات والمحافظ وطلبات السحب والإلغاء والدعم وكل البيانات التشغيلية، مع الإبقاء على حسابات الإدارة والإعدادات الأساسية.</p>
+          <p>تنبيه: هذا الإجراء غير قابل للتراجع. يمكن حذف الحسابات غير الإدارية فقط، أو حذف الحجوزات والمدفوعات والمحافظ وطلبات السحب والإلغاء والدعم فقط مع الإبقاء على المستخدمين.</p>
         </div>
       </div>
     </div>
@@ -310,7 +310,20 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
-              <p class="mb-3">سيتم حذف حسابات المستخدمين غير الإداريين وكل الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية وتذاكر الدعم. لا يمكن التراجع بعد التأكيد.</p>
+              <p class="mb-3">حدد نوع الحذف المطلوب. يمكنك اختيار حذف المستخدمين فقط، أو حذف البيانات فقط، أو اختيار الاثنين لحذف كل شيء عدا حسابات الإدارة والإعدادات الأساسية.</p>
+              <div class="border rounded p-3 mb-3">
+                <label class="form-label fw-semibold d-block mb-2">ماذا تريد حذف؟</label>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" value="1" id="delete_users" name="delete_users">
+                  <label class="form-check-label" for="delete_users">حذف المستخدمين</label>
+                  <small class="text-muted d-block">يحذف حسابات المستخدمين غير الإداريين ويحرر أرقام الجوال مع الحفاظ على السجلات المالية عند اختيار هذا الخيار وحده.</small>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="1" id="delete_data" name="delete_data">
+                  <label class="form-check-label" for="delete_data">حذف البيانات</label>
+                  <small class="text-muted d-block">يحذف الحجوزات والمدفوعات والمحافظ والطلبات التشغيلية وتذاكر الدعم بدون حذف المستخدمين عند اختيار هذا الخيار وحده.</small>
+                </div>
+              </div>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" value="1" id="confirm_reset" name="confirm_reset" required>
                 <label class="form-check-label" for="confirm_reset">أفهم أن العملية نهائية وأريد المتابعة.</label>
@@ -318,7 +331,7 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-              <button type="submit" class="btn btn-danger">تأكيد حذف كل البيانات</button>
+              <button type="submit" class="btn btn-danger">تنفيذ الحذف المحدد</button>
             </div>
           </form>
         </div>
