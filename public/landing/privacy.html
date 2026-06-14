@@ -21,48 +21,14 @@
   </head>
   <body>
     <header class="navbar">
-      <a class="logo" href="/">
+      <a class="logo" href="/login">
         <img src="/landing/media/Logo.gif" alt="دربيني - منصة تعلم القيادة للنساء" />
       </a>
       <nav class="desktop-nav">
-        <a href="/#about">عن التطبيق</a>
-        <a href="/#features">المميزات</a>
-        <a href="/#courses">الكورسات</a>
-        <a href="/#steps">كيف يعمل</a>
-        <a href="/#safety">الأمان</a>
-        <a href="/#faq">الأسئلة الشائعة</a>
-        <a href="/#contact">تواصل معنا</a>
+        <a href="/login">تسجيل الدخول</a>
         <a href="/landing/privacy.html">سياسة الخصوصية</a>
       </nav>
-      <button class="cta desktop-cta" onclick="downloadApp()">
-        ابدئي الآن
-      </button>
-      <button class="hamburger" onclick="toggleMenu()" aria-label="القائمة">
-        <span></span><span></span><span></span>
-      </button>
     </header>
-
-    <div class="mobile-menu" id="mobileMenu">
-      <nav>
-        <a href="/#about" onclick="toggleMenu()">عن التطبيق</a>
-        <a href="/#features" onclick="toggleMenu()">المميزات</a>
-        <a href="/#courses" onclick="toggleMenu()">الكورسات</a>
-        <a href="/#steps" onclick="toggleMenu()">كيف يعمل</a>
-        <a href="/#safety" onclick="toggleMenu()">الأمان</a>
-        <a href="/#faq" onclick="toggleMenu()">الأسئلة الشائعة</a>
-        <a href="/#contact" onclick="toggleMenu()">تواصل معنا</a>
-        <a href="/landing/privacy.html" onclick="toggleMenu()">سياسة الخصوصية</a>
-      </nav>
-      <button
-        class="cta"
-        onclick="
-          downloadApp();
-          toggleMenu();
-        "
-      >
-        ابدئي الآن
-      </button>
-    </div>
 
     <section class="hero-small">
       <div class="container">
@@ -223,9 +189,9 @@
         </p>
         <button
           class="cta-primary big"
-          onclick="location.href = 'index.html#contact'"
+          onclick="location.href = '/login'"
         >
-          تواصلي معنا
+          تسجيل الدخول
         </button>
       </div>
     </section>
@@ -240,7 +206,7 @@
         />
         <p class="footer-tagline">منصة تعلم القيادة الأولى للمرأة السعودية</p>
         <div class="footer-links">
-          <a href="/">الرئيسية</a>
+          <a href="/login">تسجيل الدخول</a>
         </div>
         <p class="footer-copy">
           © <span id="current-year">2026</span> دربيني. جميع الحقوق محفوظة.
