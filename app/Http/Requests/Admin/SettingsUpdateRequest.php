@@ -35,6 +35,8 @@ class SettingsUpdateRequest extends FormRequest
             'page_about' => ['nullable', 'string'],
             'page_sales' => ['nullable', 'string'],
             'page_sales_trainer' => ['nullable', 'string'],
+            'page_app_usage_trainer' => ['nullable', 'string'],
+            'page_app_usage_student' => ['nullable', 'string'],
             'page_exchange_policy' => ['nullable', 'string'],
             'faqs' => ['nullable', 'array'],
             'faqs.*.question' => ['nullable', 'string', 'max:500'],
@@ -65,6 +67,8 @@ class SettingsUpdateRequest extends FormRequest
             'page_about_faqs',
             'page_sales_faqs',
             'page_sales_trainer_faqs',
+            'page_app_usage_trainer_faqs',
+            'page_app_usage_student_faqs',
             'page_exchange_faqs',
         ] as $prefix) {
             $rules[$prefix] = ['nullable', 'array'];

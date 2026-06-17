@@ -624,6 +624,18 @@
                             'id' => 'sales-trainer-faq-list',
                         ],
                         [
+                            'key' => 'pages.app_usage_trainer',
+                            'label' => 'شرح استخدام التطبيق للمدربة',
+                            'name' => 'page_app_usage_trainer_faqs',
+                            'id' => 'app-usage-trainer-faq-list',
+                        ],
+                        [
+                            'key' => 'pages.app_usage_student',
+                            'label' => 'شرح استخدام التطبيق للطالبة',
+                            'name' => 'page_app_usage_student_faqs',
+                            'id' => 'app-usage-student-faq-list',
+                        ],
+                        [
                             'key' => 'pages.faq',
                             'label' => 'الأسئلة الشائعة',
                             'name' => 'faqs',

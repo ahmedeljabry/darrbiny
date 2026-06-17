@@ -17,7 +17,7 @@ class SettingsController extends BaseController
         $countryId = $request->query('country_id');
         $reservationFeeMinor = Fees::reservationFeeMinor($countryId);
         $appFeePercent = Fees::appFeePercent();
-        
+
         $countries = \App\Models\Country::select('id', 'name', 'iso2', 'currency', 'reservation_fee_minor')
             ->orderBy('name')
             ->get()
@@ -33,7 +33,7 @@ class SettingsController extends BaseController
                     ],
                 ];
             });
-        
+
         return response()->json([
             'fees' => [
                 'reservation_fee' => [
@@ -83,6 +83,8 @@ class SettingsController extends BaseController
         $reservationFeeMinor = Fees::reservationFeeMinor($countryId);
         $appFeePercent = Fees::appFeePercent();
         $contactPage = $this->getStringSetting('pages.contact');
+        $appUsageTrainer = $this->getFaqSetting('pages.app_usage_trainer');
+        $appUsageStudent = $this->getFaqSetting('pages.app_usage_student');
 
         return response()->json([
             'pages' => [
@@ -96,6 +98,10 @@ class SettingsController extends BaseController
                 'sales' => $this->getFaqSetting('pages.sales'),
                 'app_fees_user' => $this->getFaqSetting('pages.sales'),
                 'app_fees_trainer' => $this->getFaqSetting('pages.sales_trainer'),
+                'app_usage_trainer' => $appUsageTrainer,
+                'app_usage_student' => $appUsageStudent,
+                'trainer_usage_guide' => $appUsageTrainer,
+                'student_usage_guide' => $appUsageStudent,
                 'faq' => $this->getFaqSetting('pages.faq'),
                 'contact' => $contactPage,
                 'contact_us' => $contactPage,
@@ -117,12 +123,12 @@ class SettingsController extends BaseController
     {
         $raw = Setting::where('key', $key)->value('value');
 
-        if (!is_string($raw) || trim($raw) === '') {
+        if (! is_string($raw) || trim($raw) === '') {
             return [];
         }
 
         $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [];
         }
 
@@ -136,6 +142,7 @@ class SettingsController extends BaseController
     private function getStringSetting(string $key): string
     {
         $value = Setting::where('key', $key)->value('value');
+
         return is_string($value) ? $value : '';
     }
 
@@ -143,22 +150,23 @@ class SettingsController extends BaseController
     {
         $value = Setting::where('key', $key)->value('value');
 
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return [];
         }
 
         $decoded = json_decode($value, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [['question' => '', 'answer' => $value]];
         }
 
         return collect($decoded)
             ->map(static function ($row) {
-                if (!is_array($row)) {
+                if (! is_array($row)) {
                     return ['question' => '', 'answer' => trim((string) $row)];
                 }
                 $question = trim((string) ($row['question'] ?? ''));
                 $answer = trim((string) ($row['answer'] ?? ''));
+
                 return ($question === '' && $answer === '') ? null : [
                     'question' => $question,
                     'answer' => $answer,

@@ -108,6 +108,8 @@ final class SettingsService
         $this->saveFaqSetting('pages.about', $data, 'page_about_faqs', 'page_about');
         $this->saveFaqSetting('pages.sales', $data, 'page_sales_faqs', 'page_sales');
         $this->saveFaqSetting('pages.sales_trainer', $data, 'page_sales_trainer_faqs', 'page_sales_trainer');
+        $this->saveFaqSetting('pages.app_usage_trainer', $data, 'page_app_usage_trainer_faqs', 'page_app_usage_trainer');
+        $this->saveFaqSetting('pages.app_usage_student', $data, 'page_app_usage_student_faqs', 'page_app_usage_student');
         $this->saveFaqSetting('pages.exchange', $data, 'page_exchange_faqs', 'page_exchange_policy');
         $this->saveFaqSetting('pages.faq', $data, 'faqs');
         $this->save('pages.contact', $data['page_contact'] ?? null);
