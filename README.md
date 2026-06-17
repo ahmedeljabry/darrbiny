@@ -47,6 +47,32 @@ Production-grade, secure, multi-tenant-ready API implementing auth, plans, reque
 The backend now stores FCM registration tokens in `user_device_tokens` and sends existing Laravel notifications to both the database and Firebase Cloud Messaging.
 Admin notifications send through stored device tokens for grouped audiences and individual users.
 
+## Production Auto Deploy
+The GitHub Actions workflow `.github/workflows/deploy-production.yml` deploys automatically after every successful push to `master`.
+
+Create these repository secrets in GitHub before enabling production deploy:
+
+- `PRODUCTION_SSH_HOST`: production server host or IP.
+- `PRODUCTION_SSH_USERNAME`: SSH username.
+- `PRODUCTION_SSH_PASSWORD`: SSH password. Prefer replacing this with `PRODUCTION_SSH_KEY` when possible.
+- `PRODUCTION_SSH_KEY`: private SSH key for deploys. Optional if password deploy is used.
+- `PRODUCTION_SSH_PORT`: SSH port. Optional; defaults to `22`.
+- `PRODUCTION_DEPLOY_PATH`: absolute path to the Laravel git checkout on the server.
+
+The workflow runs tests and Vite build first, then connects over SSH and runs:
+
+- `git pull --ff-only origin master`
+- `composer install --no-dev --prefer-dist --optimize-autoloader`
+- `npm install` or `npm ci` when frontend dependencies are available
+- `npm run build`
+- `php artisan migrate --force`
+- `php artisan optimize:clear`
+- `php artisan config:cache`
+- `php artisan view:cache`
+- `php artisan queue:restart`
+
+Do not commit server passwords, `.env` files, Firebase JSON credentials, or SSH private keys to this repository.
+
 ## Example Requests (curl)
 
 Auth
