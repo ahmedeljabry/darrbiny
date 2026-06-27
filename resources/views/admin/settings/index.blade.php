@@ -81,6 +81,11 @@
               </button>
             </li>
             <li class="nav-item" role="presentation">
+              <button class="nav-link" id="gateway-fees-tab" data-bs-toggle="tab" data-bs-target="#gateway-fees" type="button" role="tab" aria-controls="gateway-fees" aria-selected="false">
+                <i class="icon-base ti tabler-credit-card me-1"></i>رسوم وعمولات
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
               <button class="nav-link" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab" aria-controls="videos" aria-selected="false">
                 <i class="icon-base ti tabler-video me-1"></i>الفيديو
               </button>
@@ -464,6 +469,133 @@
                     </form>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade settings-pane settings-block" id="gateway-fees" data-section-label="رسوم وعمولات" role="tabpanel" aria-labelledby="gateway-fees-tab" tabindex="0">
+            <div class="card border-0 surface">
+              <div class="card-header border-0 d-flex align-items-center gap-2">
+                <span class="avatar-initial rounded bg-label-primary">
+                  <i class="icon-base ti tabler-credit-card"></i>
+                </span>
+                <div>
+                  <h6 class="mb-0">رسوم وعمولات بوابات الدفع</h6>
+                  <small class="text-body-secondary">تاب، تابي، تمارا حسب الدولة</small>
+                </div>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th><i class="icon-base ti tabler-credit-card me-1"></i> بوابة الدفع</th>
+                          <th><i class="icon-base ti tabler-world me-1"></i> الدولة</th>
+                          <th><i class="icon-base ti tabler-cash me-1"></i> الرسوم الثابتة</th>
+                          <th><i class="icon-base ti tabler-percentage me-1"></i> العمولة</th>
+                          <th><i class="icon-base ti tabler-info-circle me-1"></i> القيمة الحالية</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @foreach($paymentGatewayFees as $index => $gatewayFee)
+                          @php
+                            $gatewayKey = (string) ($gatewayFee['gateway'] ?? '');
+                            $gatewayLabel = $gatewayFee['label'] ?? (\App\Support\PaymentGatewayFees::GATEWAYS[$gatewayKey] ?? $gatewayKey);
+                            $gatewayCountryId = $gatewayFee['country_id'] ?? null;
+                            $gatewayCountry = $gatewayCountryId ? $countries->firstWhere('id', (string) $gatewayCountryId) : null;
+                            $gatewayCurrency = $gatewayCountry?->currency ?: 'SAR';
+                            $fixedFeeMinor = (int) ($gatewayFee['fixed_fee_minor'] ?? \App\Support\PaymentGatewayFees::DEFAULT_FIXED_FEE_MINOR);
+                            $commissionPercent = $gatewayFee['commission_percent'] ?? \App\Support\PaymentGatewayFees::DEFAULT_COMMISSION_PERCENT;
+                          @endphp
+                          <tr>
+                            <td>
+                              <input type="hidden" name="payment_gateway_fees[{{ $index }}][gateway]" value="{{ $gatewayKey }}">
+                              <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-initial rounded bg-label-primary" style="width: 36px; height: 36px;">
+                                  <i class="icon-base ti tabler-credit-card"></i>
+                                </span>
+                                <div>
+                                  <div class="fw-semibold">{{ $gatewayLabel }}</div>
+                                  <small class="text-muted">{{ strtoupper($gatewayKey) }}</small>
+                                </div>
+                              </div>
+                              @error("payment_gateway_fees.$index.gateway")
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </td>
+                            <td>
+                              <select class="form-select" name="payment_gateway_fees[{{ $index }}][country_id]" style="min-width: 220px;">
+                                <option value="">اختر الدولة</option>
+                                @foreach($countries as $country)
+                                  <option value="{{ $country->id }}" @selected((string) $gatewayCountryId === (string) $country->id)>
+                                    {{ $country->name }} - {{ $country->currency }}
+                                  </option>
+                                @endforeach
+                              </select>
+                              @error("payment_gateway_fees.$index.country_id")
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </td>
+                            <td>
+                              <div class="input-group input-group-merge" style="min-width: 190px;">
+                                <span class="input-group-text"><i class="ti tabler-cash"></i></span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  class="form-control"
+                                  name="payment_gateway_fees[{{ $index }}][fixed_fee_minor]"
+                                  value="{{ $fixedFeeMinor }}"
+                                  placeholder="150"
+                                >
+                              </div>
+                              <small class="text-muted">150 = 1.50 {{ $gatewayCurrency }}</small>
+                              @error("payment_gateway_fees.$index.fixed_fee_minor")
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </td>
+                            <td>
+                              <div class="input-group input-group-merge" style="min-width: 170px;">
+                                <span class="input-group-text"><i class="ti tabler-percentage"></i></span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  class="form-control"
+                                  name="payment_gateway_fees[{{ $index }}][commission_percent]"
+                                  value="{{ $commissionPercent }}"
+                                  placeholder="7"
+                                >
+                              </div>
+                              @error("payment_gateway_fees.$index.commission_percent")
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </td>
+                            <td>
+                              <div class="fw-semibold text-success">{{ number_format($fixedFeeMinor / 100, 2) }} {{ $gatewayCurrency }}</div>
+                              <small class="text-muted">{{ rtrim(rtrim(number_format((float) $commissionPercent, 2, '.', ''), '0'), '.') }}%</small>
+                            </td>
+                          </tr>
+                        @endforeach
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="alert alert-info mt-3 mb-0">
+                    <div class="d-flex align-items-start gap-2">
+                      <i class="icon-base ti tabler-info-circle mt-1"></i>
+                      <div>
+                        يتم حفظ هذه القيم لاستخدام إدارة رسوم بوابات الدفع، ولا يتم إرسال جدول الرسوم والعمولات هذا داخل Endpoint إعدادات الرسوم الخاص بالموبايل.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3">
+                    <button class="btn btn-primary">
+                      <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ رسوم وعمولات بوابات الدفع
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

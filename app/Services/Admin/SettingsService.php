@@ -6,6 +6,7 @@ namespace App\Services\Admin;
 
 use App\Models\Setting;
 use App\Models\Upload;
+use App\Support\PaymentGatewayFees;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Http\UploadedFile;
 
@@ -55,6 +56,9 @@ final class SettingsService
         $this->save('integrations.hypersend.whatsapp.instance_id', $data['hypersend_whatsapp_instance_id'] ?? null);
         $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
+        if (array_key_exists('payment_gateway_fees', $data)) {
+            $this->save(PaymentGatewayFees::SETTINGS_KEY, PaymentGatewayFees::encode($data['payment_gateway_fees'] ?? []));
+        }
         if (array_key_exists('report_exchange_rates', $data)) {
             $this->save(
                 ReportCurrencyConverter::SETTINGS_KEY,

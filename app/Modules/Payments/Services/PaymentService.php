@@ -84,7 +84,7 @@ class PaymentService
             ]);
 
             if (
-                $request->payment_method === 'wallet'
+                $request->payment_method === Payment::METHOD_WALLET
                 && $request->status === Payment::STATUS_SUCCEEDED
             ) {
                 $this->wallets->deduct(

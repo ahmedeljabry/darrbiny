@@ -14,6 +14,7 @@ use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PaymentControllerTest extends TestCase
@@ -91,6 +92,64 @@ class PaymentControllerTest extends TestCase
             'type' => WalletTransaction::TYPE_PAYMENT,
             'status' => WalletTransaction::STATUS_APPROVED,
         ]);
+    }
+
+    public function test_plan_payment_accepts_tabby_and_tamara_gateway_methods(): void
+    {
+        Queue::fake();
+
+        $country = Country::create([
+            'name' => 'Gateway Country',
+            'iso2' => 'GC',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Gateway Plan',
+            'description' => 'Gateway payment plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        foreach ([Payment::METHOD_TABBY, Payment::METHOD_TAMARA] as $index => $paymentMethod) {
+            $user = User::factory()->create(['phone_with_cc' => '+1000000310' . $index]);
+            Sanctum::actingAs($user);
+
+            $userRequest = UserRequest::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'start_date' => now()->toDateString(),
+                'status' => UserRequest::STATUS_OFFER_SELECTED,
+                'currency' => 'SAR',
+                'app_fee_reserved_minor' => 0,
+                'total_paid_minor' => 0,
+                'has_user_car' => false,
+                'wants_trainer_car' => true,
+                'needs_pickup' => false,
+            ]);
+
+            $this->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => $paymentMethod,
+                'type' => Payment::TYPE_PLAN_PARTIAL,
+                'price' => 15000,
+            ])
+                ->assertCreated()
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('data.payment_method', $paymentMethod)
+                ->assertJsonPath('data.status', Payment::STATUS_PENDING);
+
+            $this->assertDatabaseHas('payments', [
+                'user_request_id' => $userRequest->id,
+                'user_id' => $user->id,
+                'type' => Payment::TYPE_PLAN_PARTIAL,
+                'payment_method' => $paymentMethod,
+                'status' => Payment::STATUS_PENDING,
+                'amount_minor' => 15000,
+            ]);
+        }
     }
 
     public function test_plan_full_payment_applies_app_fee_percent_from_settings(): void

@@ -12,6 +12,10 @@ class Payment extends BaseModel
     public const STATUS_PENDING = 'pending';
     public const STATUS_SUCCEEDED = 'succeeded';
     public const STATUS_FAILED = 'failed';
+    public const METHOD_WALLET = 'wallet';
+    public const METHOD_TAP = 'tap';
+    public const METHOD_TABBY = 'tabby';
+    public const METHOD_TAMARA = 'tamara';
 
     protected $fillable = [
         'user_id',
@@ -48,6 +52,16 @@ class Payment extends BaseModel
         return [
             self::TYPE_PLAN_PARTIAL,
             self::TYPE_RESERVATION_FEE,
+        ];
+    }
+
+    public static function paymentMethods(): array
+    {
+        return [
+            self::METHOD_WALLET,
+            self::METHOD_TAP,
+            self::METHOD_TABBY,
+            self::METHOD_TAMARA,
         ];
     }
 

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\PaymentGatewayFees;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SettingsUpdateRequest extends FormRequest
 {
@@ -44,6 +46,11 @@ class SettingsUpdateRequest extends FormRequest
             'page_contact' => ['nullable', 'string'],
             'app_fee_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'reservation_fee_minor' => ['nullable', 'integer', 'min:0'],
+            'payment_gateway_fees' => ['nullable', 'array'],
+            'payment_gateway_fees.*.gateway' => ['required', 'string', Rule::in(PaymentGatewayFees::keys())],
+            'payment_gateway_fees.*.fixed_fee_minor' => ['nullable', 'integer', 'min:0'],
+            'payment_gateway_fees.*.commission_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'payment_gateway_fees.*.country_id' => ['nullable', 'uuid', 'exists:countries,id'],
             'country_fees' => ['nullable', 'array'],
             'country_fees.*' => ['nullable', 'integer', 'min:0'],
             'trainer_roles' => ['nullable', 'array'],

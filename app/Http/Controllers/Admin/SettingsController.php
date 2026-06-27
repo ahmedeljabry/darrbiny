@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\SettingsUpdateRequest;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Services\Admin\SettingsService;
+use App\Support\PaymentGatewayFees;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -21,6 +22,10 @@ class SettingsController extends BaseController
         $trainerRestrictions = $this->decodeListSetting($settings['restrictions.trainer'] ?? null);
         $userRoles = $this->decodeListSetting($settings['roles.user'] ?? null);
         $userRestrictions = $this->decodeListSetting($settings['restrictions.user'] ?? null);
+        $paymentGatewayFees = old('payment_gateway_fees');
+        if (! is_array($paymentGatewayFees)) {
+            $paymentGatewayFees = PaymentGatewayFees::rows($settings[PaymentGatewayFees::SETTINGS_KEY] ?? null);
+        }
         $reportCurrency = ReportCurrencyConverter::REPORT_CURRENCY;
         $paymentCurrencies = Payment::query()
             ->whereNotNull('currency')
@@ -53,6 +58,7 @@ class SettingsController extends BaseController
             'trainerRestrictions',
             'userRoles',
             'userRestrictions',
+            'paymentGatewayFees',
             'reportCurrency',
             'paymentCurrencies',
             'reportExchangeRates'

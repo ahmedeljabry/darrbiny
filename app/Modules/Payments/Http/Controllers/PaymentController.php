@@ -11,6 +11,7 @@ use App\Modules\Payments\Services\PaymentService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends BaseController
 {
@@ -25,14 +26,14 @@ class PaymentController extends BaseController
     {
         $validated = $request->validate([
             'user_request_id' => ['required', 'uuid'],
-            'payment_method' => ['required', 'string', 'in:wallet,tap'],
+            'payment_method' => ['required', 'string', Rule::in(Payment::paymentMethods())],
             'type' => ['sometimes', 'string', 'in:plan_full,plan_partial'],
             'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
             'price' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $paymentType = $validated['type'] ?? Payment::TYPE_PLAN_FULL;
-        $normalizedStatus = $validated['payment_method'] === 'wallet'
+        $normalizedStatus = $validated['payment_method'] === Payment::METHOD_WALLET
             ? Payment::STATUS_SUCCEEDED
             : ($validated['status'] ?? Payment::STATUS_PENDING);
 
