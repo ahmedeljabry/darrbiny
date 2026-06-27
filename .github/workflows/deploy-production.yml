@@ -108,6 +108,38 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare remote shell for file uploads
+        if: steps.deploy-config.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          port: ${{ env.SSH_PORT }}
+          command_timeout: 5m
+          request_pty: true
+          script_stop: true
+          script: |
+            set -e
+
+            touch "$HOME/.bashrc"
+
+            if ! grep -q 'DARRBINY_NON_INTERACTIVE_GUARD' "$HOME/.bashrc"; then
+              cp "$HOME/.bashrc" "$HOME/.bashrc.bak.darrbiny-$(date +%Y%m%d%H%M%S)"
+              tmp_file="$(mktemp)"
+              {
+                printf '%s\n' '# DARRBINY_NON_INTERACTIVE_GUARD: keep deploy SCP/SSH commands quiet.'
+                printf '%s\n' 'case $- in'
+                printf '%s\n' '  *i*) ;;'
+                printf '%s\n' '  *) return ;;'
+                printf '%s\n' 'esac'
+                printf '\n'
+                cat "$HOME/.bashrc"
+              } > "$tmp_file"
+              mv "$tmp_file" "$HOME/.bashrc"
+            fi
+
       - name: Upload application files
         if: steps.deploy-config.outputs.ready == 'true'
         uses: appleboy/scp-action@v0.1.7
