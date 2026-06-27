@@ -57,11 +57,10 @@ Create these repository secrets in GitHub before enabling production deploy:
 - `PRODUCTION_SSH_PASSWORD`: SSH password. Prefer replacing this with `PRODUCTION_SSH_KEY` when possible.
 - `PRODUCTION_SSH_KEY`: private SSH key for deploys. Optional if password deploy is used.
 - `PRODUCTION_SSH_PORT`: SSH port. Optional; defaults to `22`.
-- `PRODUCTION_DEPLOY_PATH`: absolute path to the Laravel git checkout on the server.
+- `PRODUCTION_DEPLOY_PATH`: absolute path to the Laravel application directory on the server.
 
-The workflow runs tests and Vite build first, then connects over SSH and runs:
+The workflow runs tests and Vite build first, uploads repository files to `PRODUCTION_DEPLOY_PATH`, then connects over SSH and runs:
 
-- `git pull --ff-only origin master`
 - `composer install --no-dev --prefer-dist --optimize-autoloader`
 - `npm install` or `npm ci` when frontend dependencies are available
 - `npm run build`

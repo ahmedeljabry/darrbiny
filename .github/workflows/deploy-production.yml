@@ -73,6 +73,9 @@ jobs:
       SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Validate deploy secrets
         id: deploy-config
         run: |
@@ -105,6 +108,20 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Upload application files
+        if: steps.deploy-config.outputs.ready == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          port: ${{ env.SSH_PORT }}
+          source: "."
+          target: ${{ env.DEPLOY_PATH }}
+          overwrite: true
+          rm: false
+
       - name: Deploy over SSH
         if: steps.deploy-config.outputs.ready == 'true'
         uses: appleboy/ssh-action@v1.2.0
@@ -127,8 +144,8 @@ jobs:
 
             cd "$DEPLOY_PATH"
 
-            if [ ! -d .git ]; then
-              echo "Deploy path is not a git checkout: $DEPLOY_PATH"
+            if [ ! -f artisan ]; then
+              echo "Deploy path does not contain a Laravel app checkout: $DEPLOY_PATH"
               exit 1
             fi
 
@@ -138,10 +155,6 @@ jobs:
             trap cleanup EXIT
 
             php artisan down || true
-
-            git fetch --prune origin "$DEPLOY_BRANCH"
-            git checkout "$DEPLOY_BRANCH"
-            git pull --ff-only origin "$DEPLOY_BRANCH"
 
             composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
