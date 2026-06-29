@@ -52,6 +52,13 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-build
+          path: public/build
+          if-no-files-found: error
+
       - name: Run tests
         run: php artisan test
 
@@ -75,6 +82,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download frontend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: public-build
+          path: public/build
 
       - name: Validate deploy secrets
         id: deploy-config
@@ -108,19 +121,37 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Configure SSH client
+        if: steps.deploy-config.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts"
+
+          if [ -n "$SSH_KEY" ]; then
+            printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/production_deploy_key"
+            chmod 600 "$HOME/.ssh/production_deploy_key"
+          else
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+          fi
+
       - name: Prepare remote shell for file uploads
         if: steps.deploy-config.outputs.ready == 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USERNAME }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          port: ${{ env.SSH_PORT }}
-          command_timeout: 5m
-          request_pty: true
-          script_stop: true
-          script: |
+        run: |
+          set -euo pipefail
+
+          remote_shell() {
+            if [ -n "$SSH_KEY" ]; then
+              ssh -tt -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" 'bash -s'
+            else
+              sshpass -p "$SSH_PASSWORD" ssh -tt -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" 'bash -s'
+            fi
+          }
+
+          remote_shell <<'REMOTE_SHELL'
             set -e
 
             touch "$HOME/.bashrc"
@@ -139,34 +170,52 @@ jobs:
               } > "$tmp_file"
               mv "$tmp_file" "$HOME/.bashrc"
             fi
+          REMOTE_SHELL
 
       - name: Upload application files
         if: steps.deploy-config.outputs.ready == 'true'
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USERNAME }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          port: ${{ env.SSH_PORT }}
-          source: "."
-          target: ${{ env.DEPLOY_PATH }}
-          overwrite: true
-          rm: false
+        run: |
+          set -euo pipefail
+
+          printf '%s\n' "$GITHUB_SHA" > .deploy_commit
+          remote_path="$(printf '%q' "$DEPLOY_PATH")"
+
+          upload_ssh() {
+            if [ -n "$SSH_KEY" ]; then
+              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "$@"
+            else
+              sshpass -p "$SSH_PASSWORD" ssh -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "$@"
+            fi
+          }
+
+          tar \
+            --exclude='./.git' \
+            --exclude='./.env' \
+            --exclude='./node_modules' \
+            --exclude='./vendor' \
+            --exclude='./storage/logs' \
+            --exclude='./storage/framework/cache' \
+            --exclude='./storage/framework/sessions' \
+            --exclude='./storage/framework/views' \
+            -czf - . \
+            | upload_ssh "mkdir -p $remote_path && tar -xzf - -C $remote_path"
 
       - name: Deploy over SSH
         if: steps.deploy-config.outputs.ready == 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USERNAME }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          port: ${{ env.SSH_PORT }}
-          command_timeout: 30m
-          script_stop: true
-          envs: DEPLOY_PATH,DEPLOY_BRANCH
-          script: |
+        run: |
+          set -euo pipefail
+
+          remote_path="$(printf '%q' "$DEPLOY_PATH")"
+
+          deploy_ssh() {
+            if [ -n "$SSH_KEY" ]; then
+              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path bash -s"
+            else
+              sshpass -p "$SSH_PASSWORD" ssh -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path bash -s"
+            fi
+          }
+
+          deploy_ssh <<'REMOTE_DEPLOY'
             set -e
 
             if [ -z "$DEPLOY_PATH" ]; then
@@ -208,3 +257,4 @@ jobs:
 
             trap - EXIT
             php artisan up
+          REMOTE_DEPLOY
