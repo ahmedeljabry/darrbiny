@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: production-deploy
@@ -125,29 +126,31 @@ jobs:
         if: steps.deploy-config.outputs.ready == 'true'
         run: |
           set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
 
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts"
 
-          if [ -n "$SSH_KEY" ]; then
-            printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/production_deploy_key"
-            chmod 600 "$HOME/.ssh/production_deploy_key"
-          else
+          if [ -n "$SSH_PASSWORD" ]; then
             sudo apt-get update
             sudo apt-get install -y sshpass
+          elif [ -n "$SSH_KEY" ]; then
+            printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/production_deploy_key"
+            chmod 600 "$HOME/.ssh/production_deploy_key"
           fi
 
       - name: Prepare remote shell for file uploads
         if: steps.deploy-config.outputs.ready == 'true'
         run: |
           set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
 
           remote_shell() {
-            if [ -n "$SSH_KEY" ]; then
-              ssh -tt -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" 'bash -s'
-            else
+            if [ -n "$SSH_PASSWORD" ]; then
               sshpass -p "$SSH_PASSWORD" ssh -tt -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" 'bash -s'
+            else
+              ssh -tt -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" 'bash -s'
             fi
           }
 
@@ -172,46 +175,72 @@ jobs:
             fi
           REMOTE_SHELL
 
-      - name: Upload application files
+      - name: Create incremental git bundle
         if: steps.deploy-config.outputs.ready == 'true'
         run: |
           set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
 
-          printf '%s\n' "$GITHUB_SHA" > .deploy_commit
           remote_path="$(printf '%q' "$DEPLOY_PATH")"
 
-          upload_ssh() {
-            if [ -n "$SSH_KEY" ]; then
-              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "$@"
-            else
+          remote_exec() {
+            if [ -n "$SSH_PASSWORD" ]; then
               sshpass -p "$SSH_PASSWORD" ssh -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "$@"
+            else
+              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "$@"
             fi
           }
 
-          tar \
-            --exclude='./.git' \
-            --exclude='./.env' \
-            --exclude='./node_modules' \
-            --exclude='./vendor' \
-            --exclude='./storage/logs' \
-            --exclude='./storage/framework/cache' \
-            --exclude='./storage/framework/sessions' \
-            --exclude='./storage/framework/views' \
-            -czf - . \
-            | upload_ssh "mkdir -p $remote_path && tar -xzf - -C $remote_path"
+          remote_head="$(remote_exec "cd $remote_path && git rev-parse HEAD")"
+          echo "Production HEAD: $remote_head"
+
+          git branch -f deploy-production "$GITHUB_SHA"
+
+          if [ "$remote_head" = "$GITHUB_SHA" ]; then
+            base_ref="$(git rev-parse "${GITHUB_SHA}^")"
+            git bundle create deploy-production.bundle deploy-production "^$base_ref"
+          elif git merge-base --is-ancestor "$remote_head" "$GITHUB_SHA"; then
+            git bundle create deploy-production.bundle deploy-production "^$remote_head"
+          else
+            echo "::warning::Production HEAD is not an ancestor of this commit. Creating a full bundle."
+            git bundle create deploy-production.bundle deploy-production
+          fi
+
+          git branch -D deploy-production
+          tar -czf public-build.tar.gz public/build
+
+      - name: Upload deploy bundle and frontend build
+        if: steps.deploy-config.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
+
+          scp_file() {
+            if [ -n "$SSH_PASSWORD" ]; then
+              sshpass -p "$SSH_PASSWORD" scp -P "$SSH_PORT" "$1" "$SSH_USERNAME@$SSH_HOST:$2"
+            else
+              scp -i "$HOME/.ssh/production_deploy_key" -P "$SSH_PORT" "$1" "$SSH_USERNAME@$SSH_HOST:$2"
+            fi
+          }
+
+          scp_file deploy-production.bundle "/tmp/darrbiny-${GITHUB_SHA}.bundle"
+          scp_file public-build.tar.gz "/tmp/darrbiny-public-build-${GITHUB_SHA}.tar.gz"
 
       - name: Deploy over SSH
         if: steps.deploy-config.outputs.ready == 'true'
         run: |
           set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
 
           remote_path="$(printf '%q' "$DEPLOY_PATH")"
+          remote_bundle="/tmp/darrbiny-${GITHUB_SHA}.bundle"
+          remote_build="/tmp/darrbiny-public-build-${GITHUB_SHA}.tar.gz"
 
           deploy_ssh() {
-            if [ -n "$SSH_KEY" ]; then
-              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path bash -s"
+            if [ -n "$SSH_PASSWORD" ]; then
+              sshpass -p "$SSH_PASSWORD" ssh -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path DEPLOY_SHA=$GITHUB_SHA DEPLOY_BUNDLE=$remote_bundle DEPLOY_BUILD=$remote_build bash -s"
             else
-              sshpass -p "$SSH_PASSWORD" ssh -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path bash -s"
+              ssh -i "$HOME/.ssh/production_deploy_key" -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "DEPLOY_PATH=$remote_path DEPLOY_SHA=$GITHUB_SHA DEPLOY_BUNDLE=$remote_bundle DEPLOY_BUILD=$remote_build bash -s"
             fi
           }
 
@@ -237,6 +266,12 @@ jobs:
 
             php artisan down || true
 
+            git bundle verify "$DEPLOY_BUNDLE"
+            git fetch "$DEPLOY_BUNDLE" +refs/heads/deploy-production:refs/remotes/local/deploy-production
+            git checkout master
+            git reset --hard refs/remotes/local/deploy-production
+            tar -xzf "$DEPLOY_BUILD" -C "$DEPLOY_PATH"
+
             composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
             if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
@@ -257,4 +292,6 @@ jobs:
 
             trap - EXIT
             php artisan up
+            test "$(git rev-parse HEAD)" = "$DEPLOY_SHA"
+            rm -f "$DEPLOY_BUNDLE" "$DEPLOY_BUILD"
           REMOTE_DEPLOY
