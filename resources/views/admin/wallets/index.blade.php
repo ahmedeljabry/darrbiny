@@ -1,12 +1,12 @@
 @extends('admin.layouts.app')
-@section('title','المحافظ')
+@section('title','محافظ العملاء')
 @section('content')
 
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item active" aria-current="page">المحافظ</li>
+    <li class="breadcrumb-item active" aria-current="page">محافظ العملاء</li>
   </ol>
 </nav>
 
@@ -33,8 +33,8 @@
         <i class="icon-base ti tabler-wallet"></i>
       </span>
       <div>
-        <h5 class="mb-0">أرصدة المحافظ</h5>
-        <small class="text-body-secondary">إدارة أرصدة المستخدمين</small>
+        <h5 class="mb-0">محافظ العملاء</h5>
+        <small class="text-body-secondary">إدارة أرصدة محافظ العملاء</small>
       </div>
     </div>
   </div>

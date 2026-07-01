@@ -10,6 +10,7 @@ use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Models\WalletTransaction;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,6 +18,49 @@ use Tests\TestCase;
 class AdminWalletsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_wallet_pages_use_customer_wallets_label(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007000',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $user = User::factory()->create([
+            'phone_with_cc' => '+10000007009',
+            'points_balance' => 50,
+        ]);
+        $user->assignRole('USER');
+
+        $transaction = WalletTransaction::create([
+            'user_id' => $user->id,
+            'amount' => 2500,
+            'type' => WalletTransaction::TYPE_TOPUP_REQUEST,
+            'status' => WalletTransaction::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.wallets.index'))
+            ->assertOk()
+            ->assertSee('محافظ العملاء')
+            ->assertSee('إدارة أرصدة محافظ العملاء');
+
+        $this->actingAs($admin)
+            ->get(route('admin.wallet-transactions.index'))
+            ->assertOk()
+            ->assertSee('محافظ العملاء')
+            ->assertSee('إدارة طلبات الإضافة والسحب لمحافظ العملاء')
+            ->assertDontSee('طلبات المحافظ');
+
+        $this->actingAs($admin)
+            ->get(route('admin.wallet-transactions.show', $transaction->id))
+            ->assertOk()
+            ->assertSee('محافظ العملاء')
+            ->assertDontSee('طلبات المحافظ');
+    }
 
     public function test_admin_can_add_balance_from_wallets_page(): void
     {
@@ -121,7 +165,7 @@ class AdminWalletsTest extends TestCase
             ->post(route('admin.wallets.store'), [
                 'user_id' => $trainer->id,
                 'amount' => 999,
-                'course_reference' => '#' . $booking->order_number,
+                'course_reference' => '#'.$booking->order_number,
                 'notes' => 'كورسات',
             ])
             ->assertRedirect()
@@ -134,7 +178,7 @@ class AdminWalletsTest extends TestCase
             'amount' => 6300,
             'type' => 'adjustment',
             'status' => 'approved',
-            'notes' => 'إضافة مستحقات كورس رقم ' . $booking->order_number,
+            'notes' => 'إضافة مستحقات كورس رقم '.$booking->order_number,
         ]);
     }
 

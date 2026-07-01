@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.wallet-transactions.index') }}">طلبات المحافظ</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.wallet-transactions.index') }}">محافظ العملاء</a></li>
     <li class="breadcrumb-item active" aria-current="page">تفاصيل طلب المحفظة</li>
   </ol>
 </nav>

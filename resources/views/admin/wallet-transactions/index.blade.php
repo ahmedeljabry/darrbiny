@@ -1,12 +1,12 @@
 @extends('admin.layouts.app')
-@section('title', 'طلبات المحافظ')
+@section('title', 'محافظ العملاء')
 @section('content')
 
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-4">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
-    <li class="breadcrumb-item active" aria-current="page">طلبات المحافظ</li>
+    <li class="breadcrumb-item active" aria-current="page">محافظ العملاء</li>
   </ol>
 </nav>
 
@@ -26,8 +26,8 @@
                     <i class="icon-base ti tabler-wallet" style="font-size: 24px;"></i>
                   </span>
                   <div>
-                    <h5 class="mb-0 fw-bold">طلبات المحافظ</h5>
-                    <small class="text-muted">إدارة طلبات الإضافة والسحب</small>
+                    <h5 class="mb-0 fw-bold">محافظ العملاء</h5>
+                    <small class="text-muted">إدارة طلبات الإضافة والسحب لمحافظ العملاء</small>
                   </div>
                 </div>
                 <a href="{{ route('admin.wallet-transactions.index', array_merge(request()->query(), ['export' => 'excel'])) }}" class="btn btn-success btn-sm">

@@ -131,10 +131,10 @@
           @endif
           @if($canManageWallets)
             <li class="menu-item {{ request()->routeIs('admin.wallets.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.wallets.index') }}" class="menu-link">المحافظ</a>
+              <a href="{{ route('admin.wallets.index') }}" class="menu-link">محافظ العملاء</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">طلبات المحافظ</a>
+              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">محافظ العملاء</a>
             </li>
           @endif
         </ul>
