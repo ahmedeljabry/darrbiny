@@ -6,6 +6,7 @@ namespace App\Modules\Settings\Http\Controllers;
 
 use App\Models\Setting;
 use App\Support\Fees;
+use App\Support\PaymentMethodSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -48,6 +49,7 @@ class SettingsController extends BaseController
                     'type' => 'percentage',
                 ],
                 'countries' => $countries,
+                'payment_methods' => PaymentMethodSettings::mobilePayload(),
             ],
         ]);
     }

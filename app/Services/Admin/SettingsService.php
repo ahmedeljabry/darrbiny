@@ -7,6 +7,7 @@ namespace App\Services\Admin;
 use App\Models\Setting;
 use App\Models\Upload;
 use App\Support\PaymentGatewayFees;
+use App\Support\PaymentMethodSettings;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Http\UploadedFile;
 
@@ -52,8 +53,20 @@ final class SettingsService
         $this->save('payment.tap.public_key', $data['tap_public_key'] ?? null);
         $this->save('payment.tap.secret_key', $data['tap_secret_key'] ?? null);
         $this->save('payment.tap.webhook_secret', $data['tap_webhook_secret'] ?? null);
+        $this->save('payment.tabby.public_key', $data['tabby_public_key'] ?? null);
+        $this->save('payment.tabby.secret_key', $data['tabby_secret_key'] ?? null);
+        $this->save('payment.tabby.webhook_secret', $data['tabby_webhook_secret'] ?? null);
+        $this->save('payment.tamara.public_key', $data['tamara_public_key'] ?? null);
+        $this->save('payment.tamara.secret_key', $data['tamara_secret_key'] ?? null);
+        $this->save('payment.tamara.webhook_secret', $data['tamara_webhook_secret'] ?? null);
+        $this->saveBooleanIfPresent($data, 'tabby_enabled', PaymentMethodSettings::visibilitySettingKey('tabby'));
+        $this->saveBooleanIfPresent($data, 'tamara_enabled', PaymentMethodSettings::visibilitySettingKey('tamara'));
         $this->save('integrations.hypersend.whatsapp.token', $data['hypersend_whatsapp_token'] ?? null);
         $this->save('integrations.hypersend.whatsapp.instance_id', $data['hypersend_whatsapp_instance_id'] ?? null);
+        $this->save('integrations.sms.provider', $data['sms_provider'] ?? null);
+        $this->save('integrations.sms.api_key', $data['sms_api_key'] ?? null);
+        $this->save('integrations.sms.sender_id', $data['sms_sender_id'] ?? null);
+        $this->save('integrations.sms.base_url', $data['sms_base_url'] ?? null);
         $this->save('fees.app_fee_percent', $data['app_fee_percent'] ?? null);
         $this->save('fees.reservation_fee_minor', $data['reservation_fee_minor'] ?? null);
         if (array_key_exists('payment_gateway_fees', $data)) {
@@ -159,6 +172,15 @@ final class SettingsService
             return;
         }
         Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+
+    private function saveBooleanIfPresent(array $data, string $field, string $settingKey): void
+    {
+        if (! array_key_exists($field, $data)) {
+            return;
+        }
+
+        $this->save($settingKey, filter_var($data[$field], FILTER_VALIDATE_BOOL) ? '1' : '0');
     }
 
     private function saveFaqSetting(string $key, array $data, string $rowsKey, ?string $fallbackTextKey = null): void

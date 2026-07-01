@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Country;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\Country;
 use App\Support\PaymentGatewayFees;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,7 +64,7 @@ class SettingsPagesTest extends TestCase
             ->assertSee('5.290000', false);
     }
 
-    public function test_admin_settings_page_has_tabs_and_saves_hypersend_whatsapp_settings(): void
+    public function test_admin_settings_page_has_integration_keys_tab_and_saves_connection_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -78,16 +78,40 @@ class SettingsPagesTest extends TestCase
             ->get(route('admin.settings.index'))
             ->assertOk()
             ->assertSee('data-bs-toggle="tab"', false)
+            ->assertSee('مفاتيح الربط')
             ->assertSee('name="hypersend_whatsapp_token"', false)
             ->assertSee('name="hypersend_whatsapp_instance_id"', false)
+            ->assertSee('name="sms_provider"', false)
+            ->assertSee('name="sms_api_key"', false)
+            ->assertSee('name="tap_public_key"', false)
+            ->assertSee('name="tabby_public_key"', false)
+            ->assertSee('name="tabby_enabled"', false)
+            ->assertSee('name="tamara_public_key"', false)
+            ->assertSee('name="tamara_enabled"', false)
             ->assertDontSee('بوابة الدفع: TAP');
 
         $this->actingAs($admin)
             ->post(route('admin.settings.update'), [
                 'hypersend_whatsapp_token' => 'hs_test_token',
                 'hypersend_whatsapp_instance_id' => 'instance-123',
+                'sms_provider' => 'HyperSMS',
+                'sms_api_key' => 'sms-token',
+                'sms_sender_id' => 'DARRBINY',
+                'sms_base_url' => 'https://sms.example.com',
+                'tap_public_key' => 'tap-public',
+                'tap_secret_key' => 'tap-secret',
+                'tap_webhook_secret' => 'tap-webhook',
+                'tabby_public_key' => 'tabby-public',
+                'tabby_secret_key' => 'tabby-secret',
+                'tabby_webhook_secret' => 'tabby-webhook',
+                'tabby_enabled' => '0',
+                'tamara_public_key' => 'tamara-public',
+                'tamara_secret_key' => 'tamara-secret',
+                'tamara_webhook_secret' => 'tamara-webhook',
+                'tamara_enabled' => '1',
             ])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('settings', [
             'key' => 'integrations.hypersend.whatsapp.token',
@@ -96,6 +120,66 @@ class SettingsPagesTest extends TestCase
         $this->assertDatabaseHas('settings', [
             'key' => 'integrations.hypersend.whatsapp.instance_id',
             'value' => 'instance-123',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.sms.provider',
+            'value' => 'HyperSMS',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.sms.api_key',
+            'value' => 'sms-token',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.sms.sender_id',
+            'value' => 'DARRBINY',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'integrations.sms.base_url',
+            'value' => 'https://sms.example.com',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tap.public_key',
+            'value' => 'tap-public',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tap.secret_key',
+            'value' => 'tap-secret',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tap.webhook_secret',
+            'value' => 'tap-webhook',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.public_key',
+            'value' => 'tabby-public',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.secret_key',
+            'value' => 'tabby-secret',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.webhook_secret',
+            'value' => 'tabby-webhook',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.enabled',
+            'value' => '0',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tamara.public_key',
+            'value' => 'tamara-public',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tamara.secret_key',
+            'value' => 'tamara-secret',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tamara.webhook_secret',
+            'value' => 'tamara-webhook',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tamara.enabled',
+            'value' => '1',
         ]);
     }
 
@@ -165,6 +249,41 @@ class SettingsPagesTest extends TestCase
 
         $this->assertArrayNotHasKey('payment_gateways', $response->json('data.fees'));
         $this->assertArrayNotHasKey('gateway_fees', $response->json('data.fees'));
+
+        $paymentMethods = $response->json('data.fees.payment_methods');
+
+        $this->assertSame('tap', $paymentMethods[0]['key'] ?? null);
+        $this->assertSame('tabby', $paymentMethods[1]['key'] ?? null);
+        $this->assertSame('tamara', $paymentMethods[2]['key'] ?? null);
+        $this->assertTrue($paymentMethods[1]['enabled'] ?? false);
+        $this->assertTrue($paymentMethods[2]['enabled'] ?? false);
+        $this->assertArrayNotHasKey('public_key', $paymentMethods[1] ?? []);
+        $this->assertArrayNotHasKey('secret_key', $paymentMethods[1] ?? []);
+    }
+
+    public function test_mobile_fees_endpoint_returns_payment_method_visibility_without_gateway_secrets(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        Setting::updateOrCreate(['key' => 'payment.tabby.enabled'], ['value' => '0']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.enabled'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'payment.tabby.secret_key'], ['value' => 'tabby-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.secret_key'], ['value' => 'tamara-secret']);
+
+        $response = $this->getJson('/api/v1/settings/fees')->assertOk();
+        $paymentMethods = $response->json('data.fees.payment_methods');
+
+        $this->assertSame([
+            ['key' => 'tap', 'label' => 'تاب', 'enabled' => true],
+            ['key' => 'tabby', 'label' => 'تابي', 'enabled' => false],
+            ['key' => 'tamara', 'label' => 'تمارا', 'enabled' => true],
+        ], $paymentMethods);
+
+        foreach ($paymentMethods as $method) {
+            $this->assertArrayNotHasKey('public_key', $method);
+            $this->assertArrayNotHasKey('secret_key', $method);
+            $this->assertArrayNotHasKey('webhook_secret', $method);
+        }
     }
 
     public function test_admin_can_save_app_usage_pages_and_api_returns_them(): void

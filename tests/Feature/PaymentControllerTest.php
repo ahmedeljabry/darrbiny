@@ -114,7 +114,7 @@ class PaymentControllerTest extends TestCase
         ]);
 
         foreach ([Payment::METHOD_TABBY, Payment::METHOD_TAMARA] as $index => $paymentMethod) {
-            $user = User::factory()->create(['phone_with_cc' => '+1000000310' . $index]);
+            $user = User::factory()->create(['phone_with_cc' => '+1000000310'.$index]);
             Sanctum::actingAs($user);
 
             $userRequest = UserRequest::create([
@@ -150,6 +150,59 @@ class PaymentControllerTest extends TestCase
                 'amount_minor' => 15000,
             ]);
         }
+    }
+
+    public function test_plan_payment_rejects_hidden_app_payment_method(): void
+    {
+        Queue::fake();
+
+        Setting::create([
+            'key' => 'payment.tabby.enabled',
+            'value' => '0',
+        ]);
+
+        $country = Country::create([
+            'name' => 'Hidden Gateway Country',
+            'iso2' => 'HG',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Hidden Gateway Plan',
+            'description' => 'Hidden gateway payment plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+10000003109']);
+        Sanctum::actingAs($user);
+
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $this->postJson('/api/v1/payments/plan', [
+            'user_request_id' => $userRequest->id,
+            'payment_method' => Payment::METHOD_TABBY,
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'price' => 15000,
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('payments', [
+            'user_request_id' => $userRequest->id,
+            'payment_method' => Payment::METHOD_TABBY,
+        ]);
     }
 
     public function test_plan_full_payment_applies_app_fee_percent_from_settings(): void

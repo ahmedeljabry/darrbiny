@@ -72,7 +72,12 @@
           <ul class="nav nav-pills settings-tabs" id="settings-tabs" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site" type="button" role="tab" aria-controls="site" aria-selected="true">
-                <i class="icon-base ti tabler-world me-1"></i>عام والدفع
+                <i class="icon-base ti tabler-world me-1"></i>عام
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="integration-keys-tab" data-bs-toggle="tab" data-bs-target="#integration-keys" type="button" role="tab" aria-controls="integration-keys" aria-selected="false">
+                <i class="icon-base ti tabler-key me-1"></i>مفاتيح الربط
               </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -166,46 +171,214 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div class="col-xl-6 col-lg-6">
-                <div class="card h-100 border-0 shadow-sm">
-                  <div class="card-header border-0 d-flex align-items-center gap-3 pb-3">
-                    <span class="avatar-initial rounded bg-label-success" style="width: 48px; height: 48px;">
-                      <i class="icon-base ti tabler-brand-whatsapp" style="font-size: 24px;"></i>
-                    </span>
-                    <div>
-                      <h6 class="mb-0 fw-bold">HyperSend WhatsApp</h6>
-                      <small class="text-muted">Token و Instance ID</small>
+          <div class="tab-pane fade settings-pane settings-block" id="integration-keys" data-section-label="مفاتيح الربط" role="tabpanel" aria-labelledby="integration-keys-tab" tabindex="0">
+            <div class="card border-0 surface">
+              <div class="card-header border-0 d-flex align-items-center gap-2">
+                <span class="avatar-initial rounded bg-label-primary">
+                  <i class="icon-base ti tabler-key"></i>
+                </span>
+                <div>
+                  <h6 class="mb-0">مفاتيح الربط والتكاملات</h6>
+                  <small class="text-body-secondary">واتساب، مزود SMS، وبوابات الدفع</small>
+                </div>
+              </div>
+              <div class="card-body">
+                <form method="post" action="{{ route('admin.settings.update') }}">@csrf
+                  <div class="row g-4">
+                    <div class="col-xl-6">
+                      <div class="card h-100 border border-success">
+                        <div class="card-body">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-success">
+                              <i class="icon-base ti tabler-brand-whatsapp"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">HyperSend WhatsApp</h6>
+                              <small class="text-muted">Token و Instance ID</small>
+                            </div>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold">Token</label>
+                            <div class="input-group input-group-merge">
+                              <span class="input-group-text"><i class="ti tabler-key"></i></span>
+                              <input type="password" class="form-control" name="hypersend_whatsapp_token" value="{{ old('hypersend_whatsapp_token', $settings['integrations.hypersend.whatsapp.token'] ?? '') }}" autocomplete="off" placeholder="HyperSend token">
+                            </div>
+                            @error('hypersend_whatsapp_token')
+                              <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                          </div>
+                          <div class="mb-0">
+                            <label class="form-label fw-semibold">Instance ID</label>
+                            <div class="input-group input-group-merge">
+                              <span class="input-group-text"><i class="ti tabler-device-mobile"></i></span>
+                              <input type="text" class="form-control" name="hypersend_whatsapp_instance_id" value="{{ old('hypersend_whatsapp_instance_id', $settings['integrations.hypersend.whatsapp.instance_id'] ?? '') }}" placeholder="Instance ID">
+                            </div>
+                            @error('hypersend_whatsapp_instance_id')
+                              <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-xl-6">
+                      <div class="card h-100 border border-info">
+                        <div class="card-body">
+                          <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="avatar-initial rounded bg-label-info">
+                              <i class="icon-base ti tabler-message-2"></i>
+                            </span>
+                            <div>
+                              <h6 class="mb-0">مزود خدمة SMS</h6>
+                              <small class="text-muted">بيانات المزود والمرسل</small>
+                            </div>
+                          </div>
+                          <div class="row g-3">
+                            <div class="col-md-6">
+                              <label class="form-label fw-semibold">اسم المزود</label>
+                              <input type="text" class="form-control" name="sms_provider" value="{{ old('sms_provider', $settings['integrations.sms.provider'] ?? '') }}" placeholder="مثال: HyperSend">
+                              @error('sms_provider')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                            <div class="col-md-6">
+                              <label class="form-label fw-semibold">Sender ID</label>
+                              <input type="text" class="form-control" name="sms_sender_id" value="{{ old('sms_sender_id', $settings['integrations.sms.sender_id'] ?? '') }}" placeholder="Darrbiny">
+                              @error('sms_sender_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                            <div class="col-md-12">
+                              <label class="form-label fw-semibold">API Key / Token</label>
+                              <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ti tabler-key"></i></span>
+                                <input type="password" class="form-control" name="sms_api_key" value="{{ old('sms_api_key', $settings['integrations.sms.api_key'] ?? '') }}" autocomplete="off" placeholder="SMS API key">
+                              </div>
+                              @error('sms_api_key')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                            <div class="col-md-12">
+                              <label class="form-label fw-semibold">Base URL</label>
+                              <input type="url" class="form-control" name="sms_base_url" value="{{ old('sms_base_url', $settings['integrations.sms.base_url'] ?? '') }}" placeholder="https://api.example.com">
+                              @error('sms_base_url')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    @php
+                      $gatewayKeyFields = [
+                        'tap' => [
+                          'label' => 'تاب',
+                          'tone' => 'primary',
+                          'public' => 'tap_public_key',
+                          'secret' => 'tap_secret_key',
+                          'webhook' => 'tap_webhook_secret',
+                          'setting_prefix' => 'payment.tap',
+                        ],
+                        'tabby' => [
+                          'label' => 'تابي',
+                          'tone' => 'warning',
+                          'public' => 'tabby_public_key',
+                          'secret' => 'tabby_secret_key',
+                          'webhook' => 'tabby_webhook_secret',
+                          'enabled' => 'tabby_enabled',
+                          'setting_prefix' => 'payment.tabby',
+                        ],
+                        'tamara' => [
+                          'label' => 'تمارا',
+                          'tone' => 'danger',
+                          'public' => 'tamara_public_key',
+                          'secret' => 'tamara_secret_key',
+                          'webhook' => 'tamara_webhook_secret',
+                          'enabled' => 'tamara_enabled',
+                          'setting_prefix' => 'payment.tamara',
+                        ],
+                      ];
+                    @endphp
+
+                    @foreach($gatewayKeyFields as $gatewayCode => $gateway)
+                      @php
+                        $enabledField = $gateway['enabled'] ?? null;
+                        $enabledValue = $enabledField
+                          ? old($enabledField, $settings[$gateway['setting_prefix'] . '.enabled'] ?? '1')
+                          : '1';
+                        $isEnabled = filter_var($enabledValue, FILTER_VALIDATE_BOOL);
+                      @endphp
+                      <div class="col-xl-4 col-lg-6">
+                        <div class="card h-100 border border-{{ $gateway['tone'] }}">
+                          <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                              <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-initial rounded bg-label-{{ $gateway['tone'] }}">
+                                  <i class="icon-base ti tabler-credit-card"></i>
+                                </span>
+                                <div>
+                                  <h6 class="mb-0">بوابة {{ $gateway['label'] }}</h6>
+                                  <small class="text-muted">{{ strtoupper($gatewayCode) }}</small>
+                                </div>
+                              </div>
+                              @if($enabledField)
+                                <div class="form-check form-switch m-0">
+                                  <input type="hidden" name="{{ $enabledField }}" value="0">
+                                  <input class="form-check-input" type="checkbox" role="switch" id="{{ $enabledField }}" name="{{ $enabledField }}" value="1" @checked($isEnabled)>
+                                </div>
+                              @else
+                                <span class="badge bg-label-success">ظاهر</span>
+                              @endif
+                            </div>
+                            @if($enabledField)
+                              <label class="form-label d-block" for="{{ $enabledField }}">
+                                {{ $isEnabled ? 'ظاهرة في التطبيق' : 'مخفية من التطبيق' }}
+                              </label>
+                            @endif
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Public Key</label>
+                              <input type="text" class="form-control" name="{{ $gateway['public'] }}" value="{{ old($gateway['public'], $settings[$gateway['setting_prefix'] . '.public_key'] ?? '') }}" placeholder="Public key">
+                              @error($gateway['public'])
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Secret Key</label>
+                              <input type="password" class="form-control" name="{{ $gateway['secret'] }}" value="{{ old($gateway['secret'], $settings[$gateway['setting_prefix'] . '.secret_key'] ?? '') }}" autocomplete="off" placeholder="Secret key">
+                              @error($gateway['secret'])
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                            <div class="mb-0">
+                              <label class="form-label fw-semibold">Webhook Secret</label>
+                              <input type="password" class="form-control" name="{{ $gateway['webhook'] }}" value="{{ old($gateway['webhook'], $settings[$gateway['setting_prefix'] . '.webhook_secret'] ?? '') }}" autocomplete="off" placeholder="Webhook secret">
+                              @error($gateway['webhook'])
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                              @enderror
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    @endforeach
+                  </div>
+
+                  <div class="alert alert-warning mt-4 mb-0">
+                    <div class="d-flex align-items-start gap-2">
+                      <i class="icon-base ti tabler-alert-triangle mt-1"></i>
+                      <div>المفاتيح محفوظة للإدارة فقط. الـ API الخاص بالموبايل يرجع حالة ظهور طريقة الدفع فقط ولا يرجع أي مفاتيح سرية.</div>
                     </div>
                   </div>
-                  <div class="card-body">
-                    <form method="post" action="{{ route('admin.settings.update') }}">@csrf
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">Token</label>
-                        <div class="input-group input-group-merge">
-                          <span class="input-group-text"><i class="ti tabler-key"></i></span>
-                          <input type="password" class="form-control" name="hypersend_whatsapp_token" value="{{ old('hypersend_whatsapp_token', $settings['integrations.hypersend.whatsapp.token'] ?? '') }}" autocomplete="off" placeholder="HyperSend token">
-                        </div>
-                        @error('hypersend_whatsapp_token')
-                          <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">Instance ID</label>
-                        <div class="input-group input-group-merge">
-                          <span class="input-group-text"><i class="ti tabler-device-mobile"></i></span>
-                          <input type="text" class="form-control" name="hypersend_whatsapp_instance_id" value="{{ old('hypersend_whatsapp_instance_id', $settings['integrations.hypersend.whatsapp.instance_id'] ?? '') }}" placeholder="Instance ID">
-                        </div>
-                        @error('hypersend_whatsapp_instance_id')
-                          <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </div>
-                      <button class="btn btn-primary w-100">
-                        <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ
-                      </button>
-                    </form>
+
+                  <div class="mt-3">
+                    <button class="btn btn-primary">
+                      <i class="icon-base ti tabler-device-floppy me-1"></i> حفظ مفاتيح الربط
+                    </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>
