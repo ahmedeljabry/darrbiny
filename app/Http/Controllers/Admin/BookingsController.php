@@ -6,12 +6,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\BookingsExport;
 use App\Models\CancellationRequest;
-use App\Models\UserRequest;
 use App\Models\Plan;
+use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use App\Modules\Requests\Services\RequestService;
 use App\Notifications\CourseCancelledNotification;
 use App\Notifications\WalletBalanceAddedNotification;
+use App\Services\Admin\BookingDeletionService;
 use App\Support\ReportCurrencyConverter;
 use App\Support\WalletAmount;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class BookingsController extends BaseController
 {
     public function __construct(
         private readonly RequestService $requests,
+        private readonly BookingDeletionService $bookingDeletion,
     ) {}
 
     public function index(Request $request)
@@ -57,10 +59,10 @@ class BookingsController extends BaseController
                     });
                 });
             })
-            ->when($status, fn($query) => $query->where('status', $status))
-            ->when($planId, fn($query) => $query->where('plan_id', $planId))
-            ->when($dateFrom, fn($query) => $query->whereDate('start_date', '>=', $dateFrom))
-            ->when($dateTo, fn($query) => $query->whereDate('start_date', '<=', $dateTo))
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($planId, fn ($query) => $query->where('plan_id', $planId))
+            ->when($dateFrom, fn ($query) => $query->whereDate('start_date', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('start_date', '<=', $dateTo))
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -102,16 +104,16 @@ class BookingsController extends BaseController
                         });
                     });
                 })
-                ->when($status, fn($query) => $query->where('status', $status))
-                ->when($planId, fn($query) => $query->where('plan_id', $planId))
-                ->when($dateFrom, fn($query) => $query->whereDate('start_date', '>=', $dateFrom))
-                ->when($dateTo, fn($query) => $query->whereDate('start_date', '<=', $dateTo))
+                ->when($status, fn ($query) => $query->where('status', $status))
+                ->when($planId, fn ($query) => $query->where('plan_id', $planId))
+                ->when($dateFrom, fn ($query) => $query->whereDate('start_date', '>=', $dateFrom))
+                ->when($dateTo, fn ($query) => $query->whereDate('start_date', '<=', $dateTo))
                 ->latest()
                 ->get();
 
             return Excel::download(
                 new BookingsExport($allBookings),
-                'bookings-' . now()->format('Y-m-d') . '.xlsx'
+                'bookings-'.now()->format('Y-m-d').'.xlsx'
             );
         }
 
@@ -173,7 +175,7 @@ class BookingsController extends BaseController
     public function updateStatus(Request $request, string $id)
     {
         $request->validate([
-            'status' => ['required', 'string', 'in:' . implode(',', [
+            'status' => ['required', 'string', 'in:'.implode(',', [
                 UserRequest::STATUS_PENDING_PAYMENT,
                 UserRequest::STATUS_AWAITING_OFFERS,
                 UserRequest::STATUS_OFFER_SELECTED,
@@ -315,6 +317,7 @@ class BookingsController extends BaseController
                 'total_paid_minor' => 0,
             ]);
             $booking->save();
+
             return $booking;
         });
 
@@ -324,16 +327,25 @@ class BookingsController extends BaseController
 
     public function destroy(string $id)
     {
-        $booking = UserRequest::findOrFail($id);
-        
-        if (!in_array($booking->status, [UserRequest::STATUS_CANCELLED, UserRequest::STATUS_PENDING_PAYMENT])) {
-            return back()->withErrors(['error' => 'لا يمكن حذف الحجز في هذه الحالة']);
-        }
+        UserRequest::query()->findOrFail($id);
 
-        DB::transaction(function () use ($booking) {
-            $booking->delete();
-        });
+        $this->bookingDeletion->deleteMany([$id]);
 
         return redirect()->route('admin.bookings.index')->with('status', 'تم حذف الحجز بنجاح');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'booking_ids' => ['required', 'array', 'min:1'],
+            'booking_ids.*' => ['required', 'uuid', 'exists:user_requests,id'],
+        ], [
+            'booking_ids.required' => 'يرجى اختيار حجز واحد على الأقل للحذف.',
+            'booking_ids.min' => 'يرجى اختيار حجز واحد على الأقل للحذف.',
+        ]);
+
+        $deletedCount = $this->bookingDeletion->deleteMany($validated['booking_ids']);
+
+        return back()->with('status', 'تم حذف '.$deletedCount.' حجز بنجاح وتحديث التقارير المرتبطة.');
     }
 }

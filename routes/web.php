@@ -39,6 +39,7 @@ Route::middleware(['web'])
             Route::middleware('can:manage_plans')->group(function () {
                 // Bookings Management
                 Route::get('/bookings', [\App\Http\Controllers\Admin\BookingsController::class, 'index'])->name('bookings.index');
+                Route::delete('/bookings/bulk-destroy', [\App\Http\Controllers\Admin\BookingsController::class, 'bulkDestroy'])->name('bookings.bulk-destroy');
                 Route::get('/bookings/{id}', [\App\Http\Controllers\Admin\BookingsController::class, 'show'])->name('bookings.show');
                 Route::post('/bookings', [\App\Http\Controllers\Admin\BookingsController::class, 'store'])->name('bookings.store');
                 Route::put('/bookings/{id}/status', [\App\Http\Controllers\Admin\BookingsController::class, 'updateStatus'])->name('bookings.update-status');

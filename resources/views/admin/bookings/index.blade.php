@@ -21,6 +21,17 @@
   </div>
 @endif
 
+@if ($errors->any())
+  <div class="alert alert-danger alert-dismissible" role="alert">
+    <ul class="mb-0">
+      @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+      @endforeach
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+  </div>
+@endif
+
 <div class="row g-6">
     <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
@@ -77,10 +88,25 @@
                     </div>
                 </form>
             </div>
+            <form id="bulk-delete-bookings-form" method="POST" action="{{ route('admin.bookings.bulk-destroy') }}" data-confirmed="true">
+                @csrf
+                @method('DELETE')
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-4 pb-3">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="booking-select-all-toolbar">
+                        <label class="form-check-label fw-semibold" for="booking-select-all-toolbar">تحديد الكل في الصفحة</label>
+                    </div>
+                    <button type="submit" id="bulk-delete-bookings-button" class="btn btn-danger btn-sm" disabled>
+                        <i class="icon-base ti tabler-trash me-1"></i> حذف المحدد
+                    </button>
+                </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th style="width: 56px;" class="text-center">
+                                <input class="form-check-input" type="checkbox" id="booking-select-all" aria-label="تحديد كل الحجوزات في الصفحة">
+                            </th>
                             <th style="width: 130px;"><i class="icon-base ti tabler-hash me-1"></i> رقم الطلب</th>
                             <th style="width: 200px;"><i class="icon-base ti tabler-user me-1"></i> المستخدم</th>
                             <th style="width: 200px;"><i class="icon-base ti tabler-file-check me-1"></i> الخطة</th>
@@ -94,6 +120,9 @@
                     <tbody>
                         @forelse($bookings as $booking)
                             <tr>
+                                <td class="text-center">
+                                    <input class="form-check-input booking-row-checkbox" type="checkbox" name="booking_ids[]" value="{{ $booking->id }}" aria-label="اختيار الحجز رقم {{ $booking->display_order_number ?? $booking->order_number ?? $booking->id }}">
+                                </td>
                                 <td>
                                     <a href="{{ route('admin.bookings.show', $booking->id) }}" class="fw-semibold text-primary text-decoration-none">
                                         #{{ $booking->display_order_number ?? $booking->order_number ?? '—' }}
@@ -184,7 +213,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-5">
+                                <td colspan="9" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="avatar-initial rounded bg-label-secondary mb-3" style="width: 64px; height: 64px;">
                                             <i class="icon-base ti tabler-calendar-event" style="font-size: 32px;"></i>
@@ -197,6 +226,7 @@
                     </tbody>
                 </table>
             </div>
+            </form>
             @if($bookings->hasPages())
                 <div class="card-footer border-top">
                     {{ $bookings->withQueryString()->links() }}
@@ -223,6 +253,63 @@
             locale: 'ar',
             allowInput: true
         });
+
+        const form = document.getElementById('bulk-delete-bookings-form');
+        if (!form) {
+            return;
+        }
+
+        const rowCheckboxes = Array.from(form.querySelectorAll('.booking-row-checkbox'));
+        const selectAllCheckboxes = [
+            document.getElementById('booking-select-all'),
+            document.getElementById('booking-select-all-toolbar')
+        ].filter(Boolean);
+        const deleteButton = document.getElementById('bulk-delete-bookings-button');
+
+        const checkedCount = () => rowCheckboxes.filter((checkbox) => checkbox.checked).length;
+
+        const syncBulkControls = () => {
+            const selected = checkedCount();
+            const hasRows = rowCheckboxes.length > 0;
+
+            if (deleteButton) {
+                deleteButton.disabled = selected === 0;
+            }
+
+            selectAllCheckboxes.forEach((checkbox) => {
+                checkbox.checked = hasRows && selected === rowCheckboxes.length;
+                checkbox.indeterminate = selected > 0 && selected < rowCheckboxes.length;
+                checkbox.disabled = !hasRows;
+            });
+        };
+
+        selectAllCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                rowCheckboxes.forEach((rowCheckbox) => {
+                    rowCheckbox.checked = checkbox.checked;
+                });
+                syncBulkControls();
+            });
+        });
+
+        rowCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', syncBulkControls);
+        });
+
+        form.addEventListener('submit', (event) => {
+            const selected = checkedCount();
+
+            if (selected === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            if (!window.confirm(`سيتم حذف ${selected} حجز وكل البيانات المرتبطة به من التقارير. هل تريد المتابعة؟`)) {
+                event.preventDefault();
+            }
+        });
+
+        syncBulkControls();
     });
 </script>
 @endpush
