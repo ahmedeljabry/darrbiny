@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -97,6 +98,31 @@ class PaymentControllerTest extends TestCase
     public function test_plan_payment_accepts_tabby_and_tamara_gateway_methods(): void
     {
         Queue::fake();
+        Http::fake([
+            'https://tabby.test/api/v2/checkout' => Http::response([
+                'status' => 'created',
+                'payment' => ['id' => 'tabby-payment-123', 'status' => 'CREATED'],
+                'configuration' => [
+                    'available_products' => [
+                        'installments' => [[
+                            'web_url' => 'https://checkout.tabby.test/session/123',
+                        ]],
+                    ],
+                ],
+            ]),
+            'https://tamara.test/checkout' => Http::response([
+                'order_id' => 'tamara-order-123',
+                'checkout_id' => 'tamara-checkout-123',
+                'status' => 'new',
+                'checkout_url' => 'https://checkout.tamara.test/session/123',
+            ]),
+        ]);
+
+        Setting::updateOrCreate(['key' => 'payment.tabby.secret_key'], ['value' => 'tabby-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tabby.merchant_code'], ['value' => 'darrbiny']);
+        Setting::updateOrCreate(['key' => 'payment.tabby.base_url'], ['value' => 'https://tabby.test']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.secret_key'], ['value' => 'tamara-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.base_url'], ['value' => 'https://tamara.test']);
 
         $country = Country::create([
             'name' => 'Gateway Country',
@@ -139,7 +165,13 @@ class PaymentControllerTest extends TestCase
                 ->assertCreated()
                 ->assertJsonPath('success', true)
                 ->assertJsonPath('data.payment_method', $paymentMethod)
-                ->assertJsonPath('data.status', Payment::STATUS_PENDING);
+                ->assertJsonPath('data.status', Payment::STATUS_PENDING)
+                ->assertJsonPath(
+                    'data.checkout_url',
+                    $paymentMethod === Payment::METHOD_TABBY
+                        ? 'https://checkout.tabby.test/session/123'
+                        : 'https://checkout.tamara.test/session/123'
+                );
 
             $this->assertDatabaseHas('payments', [
                 'user_request_id' => $userRequest->id,
@@ -148,8 +180,167 @@ class PaymentControllerTest extends TestCase
                 'payment_method' => $paymentMethod,
                 'status' => Payment::STATUS_PENDING,
                 'amount_minor' => 15000,
+                'gateway_reference' => $paymentMethod === Payment::METHOD_TABBY ? 'tabby-payment-123' : 'tamara-order-123',
+            ]);
+
+            $this->assertDatabaseHas('user_requests', [
+                'id' => $userRequest->id,
+                'status' => UserRequest::STATUS_OFFER_SELECTED,
+                'total_paid_minor' => 0,
             ]);
         }
+    }
+
+    public function test_tabby_webhook_marks_pending_gateway_payment_successful(): void
+    {
+        Queue::fake();
+
+        Setting::updateOrCreate(['key' => 'payment.tabby.webhook_secret'], ['value' => 'tabby-webhook']);
+
+        $country = Country::create([
+            'name' => 'Tabby Webhook Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Webhook Plan',
+            'description' => 'Gateway webhook plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+966500000001']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TABBY,
+            'gateway_reference' => 'tabby-payment-webhook',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        $this->postJson('/api/v1/payments/webhooks/tabby', [
+            'payment' => [
+                'id' => 'tabby-payment-webhook',
+                'status' => 'CLOSED',
+                'meta' => [
+                    'payment_id' => $payment->id,
+                ],
+            ],
+        ], [
+            'X-Tabby-Signature' => 'tabby-webhook',
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'closed',
+        ]);
+
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'total_paid_minor' => 15000,
+        ]);
+    }
+
+    public function test_tamara_approved_webhook_authorises_order_before_marking_payment_successful(): void
+    {
+        Queue::fake();
+        Http::fake([
+            'https://tamara.test/orders/tamara-order-webhook/authorise' => Http::response([
+                'status' => 'authorised',
+            ]),
+        ]);
+
+        Setting::updateOrCreate(['key' => 'payment.tamara.secret_key'], ['value' => 'tamara-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.webhook_secret'], ['value' => 'tamara-webhook']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.base_url'], ['value' => 'https://tamara.test']);
+
+        $country = Country::create([
+            'name' => 'Tamara Webhook Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tamara Webhook Plan',
+            'description' => 'Gateway webhook plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+966500000002']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TAMARA,
+            'gateway_reference' => 'tamara-order-webhook',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        $this->postJson('/api/v1/payments/webhooks/tamara', [
+            'order_id' => 'tamara-order-webhook',
+            'order_reference_id' => $payment->id,
+            'event_type' => 'order_approved',
+        ], [
+            'Authorization' => 'Bearer tamara-webhook',
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED)
+            ->assertJsonPath('data.gateway_status', 'authorised');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tamara.test/orders/tamara-order-webhook/authorise');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'authorised',
+        ]);
     }
 
     public function test_plan_payment_rejects_hidden_app_payment_method(): void

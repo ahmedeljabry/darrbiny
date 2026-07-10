@@ -85,8 +85,11 @@ class SettingsPagesTest extends TestCase
             ->assertSee('name="sms_api_key"', false)
             ->assertSee('name="tap_public_key"', false)
             ->assertSee('name="tabby_public_key"', false)
+            ->assertSee('name="tabby_merchant_code"', false)
+            ->assertSee('name="tabby_base_url"', false)
             ->assertSee('name="tabby_enabled"', false)
             ->assertSee('name="tamara_public_key"', false)
+            ->assertSee('name="tamara_base_url"', false)
             ->assertSee('name="tamara_enabled"', false)
             ->assertDontSee('بوابة الدفع: TAP');
 
@@ -104,10 +107,13 @@ class SettingsPagesTest extends TestCase
                 'tabby_public_key' => 'tabby-public',
                 'tabby_secret_key' => 'tabby-secret',
                 'tabby_webhook_secret' => 'tabby-webhook',
+                'tabby_merchant_code' => 'darrbiny',
+                'tabby_base_url' => 'https://api.tabby.sa',
                 'tabby_enabled' => '0',
                 'tamara_public_key' => 'tamara-public',
                 'tamara_secret_key' => 'tamara-secret',
                 'tamara_webhook_secret' => 'tamara-webhook',
+                'tamara_base_url' => 'https://api.tamara.co',
                 'tamara_enabled' => '1',
             ])
             ->assertRedirect()
@@ -162,6 +168,14 @@ class SettingsPagesTest extends TestCase
             'value' => 'tabby-webhook',
         ]);
         $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.merchant_code',
+            'value' => 'darrbiny',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tabby.base_url',
+            'value' => 'https://api.tabby.sa',
+        ]);
+        $this->assertDatabaseHas('settings', [
             'key' => 'payment.tabby.enabled',
             'value' => '0',
         ]);
@@ -176,6 +190,10 @@ class SettingsPagesTest extends TestCase
         $this->assertDatabaseHas('settings', [
             'key' => 'payment.tamara.webhook_secret',
             'value' => 'tamara-webhook',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'payment.tamara.base_url',
+            'value' => 'https://api.tamara.co',
         ]);
         $this->assertDatabaseHas('settings', [
             'key' => 'payment.tamara.enabled',

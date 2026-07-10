@@ -289,6 +289,8 @@
                           'public' => 'tabby_public_key',
                           'secret' => 'tabby_secret_key',
                           'webhook' => 'tabby_webhook_secret',
+                          'merchant_code' => 'tabby_merchant_code',
+                          'base_url' => 'tabby_base_url',
                           'enabled' => 'tabby_enabled',
                           'setting_prefix' => 'payment.tabby',
                         ],
@@ -298,6 +300,7 @@
                           'public' => 'tamara_public_key',
                           'secret' => 'tamara_secret_key',
                           'webhook' => 'tamara_webhook_secret',
+                          'base_url' => 'tamara_base_url',
                           'enabled' => 'tamara_enabled',
                           'setting_prefix' => 'payment.tamara',
                         ],
@@ -346,6 +349,24 @@
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                               @enderror
                             </div>
+                            @if(!empty($gateway['merchant_code']))
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">Merchant Code</label>
+                                <input type="text" class="form-control" name="{{ $gateway['merchant_code'] }}" value="{{ old($gateway['merchant_code'], $settings[$gateway['setting_prefix'] . '.merchant_code'] ?? '') }}" placeholder="Merchant code">
+                                @error($gateway['merchant_code'])
+                                  <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                              </div>
+                            @endif
+                            @if(!empty($gateway['base_url']))
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">API Base URL</label>
+                                <input type="url" class="form-control" name="{{ $gateway['base_url'] }}" value="{{ old($gateway['base_url'], $settings[$gateway['setting_prefix'] . '.base_url'] ?? '') }}" placeholder="{{ $gatewayCode === 'tabby' ? 'https://api.tabby.sa' : 'https://api.tamara.co' }}">
+                                @error($gateway['base_url'])
+                                  <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                              </div>
+                            @endif
                             <div class="mb-3">
                               <label class="form-label fw-semibold">Secret Key</label>
                               <input type="password" class="form-control" name="{{ $gateway['secret'] }}" value="{{ old($gateway['secret'], $settings[$gateway['setting_prefix'] . '.secret_key'] ?? '') }}" autocomplete="off" placeholder="Secret key">

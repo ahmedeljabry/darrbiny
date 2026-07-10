@@ -63,6 +63,10 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
     Route::get('/settings/roles', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'roles']);
     Route::get('/settings/pages', [\App\Modules\Settings\Http\Controllers\SettingsController::class, 'pages']);
 
+    // Payment gateway callbacks
+    Route::post('/payments/webhooks/{gateway}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'webhook']);
+    Route::get('/payments/return/{gateway}/{result}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentReturn']);
+
     // User Routes
     Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         Route::post('/subscriptions/{id}/cancel', [\App\Modules\Requests\Http\Controllers\CancellationController::class, 'cancel']);
@@ -101,6 +105,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
         // Payments
         Route::post('/payments/plan', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'plan']);
+        Route::get('/payments/{payment}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'show']);
 
         // Training
         Route::post('/training-days', [\App\Modules\Training\Http\Controllers\TrainingDayController::class, 'store']);

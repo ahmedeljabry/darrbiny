@@ -56,9 +56,12 @@ final class SettingsService
         $this->save('payment.tabby.public_key', $data['tabby_public_key'] ?? null);
         $this->save('payment.tabby.secret_key', $data['tabby_secret_key'] ?? null);
         $this->save('payment.tabby.webhook_secret', $data['tabby_webhook_secret'] ?? null);
+        $this->save('payment.tabby.merchant_code', $data['tabby_merchant_code'] ?? null);
+        $this->save('payment.tabby.base_url', $data['tabby_base_url'] ?? null);
         $this->save('payment.tamara.public_key', $data['tamara_public_key'] ?? null);
         $this->save('payment.tamara.secret_key', $data['tamara_secret_key'] ?? null);
         $this->save('payment.tamara.webhook_secret', $data['tamara_webhook_secret'] ?? null);
+        $this->save('payment.tamara.base_url', $data['tamara_base_url'] ?? null);
         $this->saveBooleanIfPresent($data, 'tabby_enabled', PaymentMethodSettings::visibilitySettingKey('tabby'));
         $this->saveBooleanIfPresent($data, 'tamara_enabled', PaymentMethodSettings::visibilitySettingKey('tamara'));
         $this->save('integrations.hypersend.whatsapp.token', $data['hypersend_whatsapp_token'] ?? null);

@@ -7,14 +7,23 @@ namespace App\Models;
 class Payment extends BaseModel
 {
     public const TYPE_RESERVATION_FEE = 'reservation_fee';
+
     public const TYPE_PLAN_FULL = 'plan_full';
+
     public const TYPE_PLAN_PARTIAL = 'plan_partial';
+
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_SUCCEEDED = 'succeeded';
+
     public const STATUS_FAILED = 'failed';
+
     public const METHOD_WALLET = 'wallet';
+
     public const METHOD_TAP = 'tap';
+
     public const METHOD_TABBY = 'tabby';
+
     public const METHOD_TAMARA = 'tamara';
 
     protected $fillable = [
@@ -24,16 +33,21 @@ class Payment extends BaseModel
         'currency',
         'type',
         'payment_method',
+        'gateway_reference',
+        'gateway_checkout_url',
+        'gateway_status',
+        'gateway_payload',
         'status',
         'app_fee_minor',
         'trainer_net_minor',
-        'version'
+        'version',
     ];
 
     protected $casts = [
         'amount_minor' => 'integer',
         'app_fee_minor' => 'integer',
         'trainer_net_minor' => 'integer',
+        'gateway_payload' => 'array',
         'version' => 'integer',
     ];
 
