@@ -28,7 +28,7 @@
   @php
     $opsOpen = request()->routeIs('admin.bookings.*','admin.course.details','admin.plans.*','admin.withdrawal-requests.*');
     $usersOpen = request()->routeIs('admin.users.*','admin.ratings.*');
-    $financeOpen = request()->routeIs('admin.payments.*','admin.app-wallet-account.*','admin.app-expenses.*','admin.wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
+    $financeOpen = request()->routeIs('admin.payments.*','admin.app-wallet-account.*','admin.app-expenses.*','admin.wallets.*','admin.gateway-wallets.*','admin.wallet-transactions.*','admin.withdrawal-requests.*');
     $rewardsOpen = request()->routeIs('admin.prizes.*','admin.prize-redemptions.*','admin.rewards.*');
     $commsOpen = request()->routeIs('admin.notifications.*','admin.messages.*','admin.support.*');
     $reportsOpen = request()->routeIs('admin.reports.*','admin.cancellation-requests.*');
@@ -135,6 +135,15 @@
             </li>
             <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
               <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">محافظ العملاء</a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('admin.gateway-wallets.*') && request()->route('gateway') === 'tap' ? 'active' : '' }}">
+              <a href="{{ route('admin.gateway-wallets.show', 'tap') }}" class="menu-link">محفظة تاب</a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('admin.gateway-wallets.*') && request()->route('gateway') === 'tabby' ? 'active' : '' }}">
+              <a href="{{ route('admin.gateway-wallets.show', 'tabby') }}" class="menu-link">محفظة تابي</a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('admin.gateway-wallets.*') && request()->route('gateway') === 'tamara' ? 'active' : '' }}">
+              <a href="{{ route('admin.gateway-wallets.show', 'tamara') }}" class="menu-link">محفظة تمارا</a>
             </li>
           @endif
         </ul>

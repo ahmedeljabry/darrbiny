@@ -144,6 +144,12 @@ Route::middleware(['web'])
                 Route::get('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'index'])->name('wallets.index');
                 Route::post('/wallets', [\App\Http\Controllers\Admin\WalletsController::class, 'store'])->name('wallets.store');
                 Route::put('/wallets/{id}', [\App\Http\Controllers\Admin\WalletsController::class, 'update'])->name('wallets.update');
+                Route::get('/gateway-wallets/{gateway}', [\App\Http\Controllers\Admin\GatewayWalletsController::class, 'show'])
+                    ->whereIn('gateway', ['tap', 'tabby', 'tamara'])
+                    ->name('gateway-wallets.show');
+                Route::post('/gateway-wallets/{gateway}/transactions', [\App\Http\Controllers\Admin\GatewayWalletsController::class, 'store'])
+                    ->whereIn('gateway', ['tap', 'tabby', 'tamara'])
+                    ->name('gateway-wallets.transactions.store');
 
                 // Wallet Transactions
                 Route::get('/wallet-transactions', [\App\Http\Controllers\Admin\WalletTransactionsController::class, 'index'])->name('wallet-transactions.index');

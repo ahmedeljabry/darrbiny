@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Exports\GatewayWalletAccountExport;
 use App\Models\Country;
+use App\Models\GatewayWalletTransaction;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Setting;
@@ -13,6 +15,7 @@ use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class AdminWalletsTest extends TestCase
@@ -223,5 +226,180 @@ class AdminWalletsTest extends TestCase
             'status' => 'approved',
             'notes' => 'Payout after fee',
         ]);
+    }
+
+    public function test_admin_can_view_gateway_wallet_pages_with_excel_style_totals(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007100',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        [$student, $booking] = $this->createGatewayWalletBooking();
+
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => Payment::METHOD_TAP,
+            'gateway_reference' => 'tap-ref-100',
+            'gateway_status' => 'captured',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => Payment::METHOD_TABBY,
+            'gateway_reference' => 'tabby-ref-100',
+            'gateway_status' => 'closed',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', 'tap'))
+            ->assertOk()
+            ->assertSee('محفظة حساب تاب')
+            ->assertSee('tap-ref-100')
+            ->assertSee('وارد: قيمة الباقات')
+            ->assertSee('100.00 SAR')
+            ->assertSee('1.00 SAR')
+            ->assertSee('0.15 SAR')
+            ->assertSee('98.85 SAR')
+            ->assertDontSee('tabby-ref-100');
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', 'tabby'))
+            ->assertOk()
+            ->assertSee('محفظة حساب تابي')
+            ->assertSee('tabby-ref-100')
+            ->assertSee('8.49 SAR')
+            ->assertSee('1.27 SAR')
+            ->assertSee('90.24 SAR');
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', 'tamara'))
+            ->assertOk()
+            ->assertSee('محفظة حساب تمارا');
+    }
+
+    public function test_admin_can_record_gateway_wallet_manual_movement(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007101',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $this->actingAs($admin)
+            ->post(route('admin.gateway-wallets.transactions.store', 'tap'), [
+                'direction' => GatewayWalletTransaction::DIRECTION_IN,
+                'source' => GatewayWalletTransaction::SOURCE_BANK_DEPOSIT,
+                'amount' => 50,
+                'notes' => 'Bank settlement transfer',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'تم تسجيل حركة محفظة البوابة بنجاح');
+
+        $this->assertDatabaseHas('gateway_wallet_transactions', [
+            'gateway' => Payment::METHOD_TAP,
+            'direction' => GatewayWalletTransaction::DIRECTION_IN,
+            'source' => GatewayWalletTransaction::SOURCE_BANK_DEPOSIT,
+            'amount_minor' => 5_000,
+            'notes' => 'Bank settlement transfer',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', 'tap'))
+            ->assertOk()
+            ->assertSee('Bank settlement transfer')
+            ->assertSee('50.00 SAR');
+    }
+
+    public function test_admin_can_export_gateway_wallet_excel(): void
+    {
+        Excel::fake();
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007102',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', [
+                'gateway' => 'tamara',
+                'export' => 'excel',
+            ]))
+            ->assertOk();
+
+        Excel::assertDownloaded(
+            'gateway-wallet-tamara-'.now()->format('Y-m-d').'.xlsx',
+            fn (GatewayWalletAccountExport $export) => true
+        );
+    }
+
+    /**
+     * @return array{0: User, 1: UserRequest}
+     */
+    private function createGatewayWalletBooking(): array
+    {
+        $country = Country::create([
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+
+        $plan = Plan::create([
+            'title' => 'Gateway Wallet Plan',
+            'description' => 'Plan for gateway wallet account tests',
+            'price_min' => 100,
+            'duration_days' => '5',
+            'hours_count' => 10,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000007103',
+            'user_type' => 'captain',
+        ]);
+        $trainer->assignRole('TRAINER');
+
+        $student = User::factory()->create([
+            'phone_with_cc' => '+10000007104',
+        ]);
+        $student->assignRole('USER');
+
+        $booking = UserRequest::create([
+            'user_id' => $student->id,
+            'trainer_id' => $trainer->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'currency' => 'SAR',
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        return [$student, $booking];
     }
 }
