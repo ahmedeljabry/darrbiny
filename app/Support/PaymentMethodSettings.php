@@ -4,12 +4,25 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Setting;
+use App\Models\UserRequest;
 
 final class PaymentMethodSettings
 {
     public const DEFAULT_VISIBLE = true;
+
+    private const COUNTRY_LIMITED_METHODS = [
+        Payment::METHOD_TABBY => [
+            'countries' => ['SA'],
+            'currencies' => ['SAR'],
+        ],
+        Payment::METHOD_TAMARA => [
+            'countries' => ['SA'],
+            'currencies' => ['SAR'],
+        ],
+    ];
 
     public static function gatewayLabels(): array
     {
@@ -45,20 +58,56 @@ final class PaymentMethodSettings
         return filter_var($value, FILTER_VALIDATE_BOOL);
     }
 
-    public static function mobilePayload(): array
+    public static function mobilePayload(?string $countryId = null): array
     {
+        $country = $countryId
+            ? Country::query()->find($countryId)
+            : null;
+
         return collect(self::gatewayLabels())
             ->map(static fn (string $label, string $method): array => [
                 'key' => $method,
                 'label' => $label,
-                'enabled' => self::isVisibleInApp($method),
+                'enabled' => self::isVisibleInApp($method) && self::supportsCountry($method, $country),
             ])
             ->values()
             ->all();
     }
 
+    public static function isAvailableForRequest(string $method, UserRequest $request): bool
+    {
+        $request->loadMissing('country');
+
+        return self::isVisibleInApp($method)
+            && self::supportsCountry($method, $request->country, (string) $request->currency);
+    }
+
     public static function visibilitySettingKey(string $method): string
     {
         return "payment.{$method}.enabled";
+    }
+
+    private static function supportsCountry(string $method, ?Country $country, ?string $currency = null): bool
+    {
+        $limits = self::COUNTRY_LIMITED_METHODS[$method] ?? null;
+        if ($limits === null) {
+            return true;
+        }
+
+        if ($country === null && ($currency === null || trim($currency) === '')) {
+            return true;
+        }
+
+        $currency = strtoupper(trim((string) ($currency ?: $country?->currency)));
+        if ($currency !== '' && ! in_array($currency, $limits['currencies'], true)) {
+            return false;
+        }
+
+        $iso2 = strtoupper(trim((string) $country?->iso2));
+        if ($iso2 !== '' && ! in_array($iso2, $limits['countries'], true)) {
+            return false;
+        }
+
+        return $currency !== '';
     }
 }

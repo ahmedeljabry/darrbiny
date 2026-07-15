@@ -304,6 +304,40 @@ class SettingsPagesTest extends TestCase
         }
     }
 
+    public function test_mobile_fees_endpoint_disables_bnpl_methods_for_unsupported_country_currency(): void
+    {
+        Setting::updateOrCreate(['key' => 'payment.tabby.enabled'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.enabled'], ['value' => '1']);
+
+        $egypt = Country::create([
+            'name' => 'Egypt',
+            'iso2' => 'EG',
+            'currency' => 'EGP',
+        ]);
+        $saudiArabia = Country::create([
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+
+        $egyptMethods = collect($this->getJson('/api/v1/settings/fees?country_id='.$egypt->id)
+            ->assertOk()
+            ->json('data.fees.payment_methods'))
+            ->keyBy('key');
+
+        $this->assertTrue($egyptMethods['tap']['enabled'] ?? false);
+        $this->assertFalse($egyptMethods['tabby']['enabled'] ?? true);
+        $this->assertFalse($egyptMethods['tamara']['enabled'] ?? true);
+
+        $saudiMethods = collect($this->getJson('/api/v1/settings/fees?country_id='.$saudiArabia->id)
+            ->assertOk()
+            ->json('data.fees.payment_methods'))
+            ->keyBy('key');
+
+        $this->assertTrue($saudiMethods['tabby']['enabled'] ?? false);
+        $this->assertTrue($saudiMethods['tamara']['enabled'] ?? false);
+    }
+
     public function test_admin_can_save_app_usage_pages_and_api_returns_them(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

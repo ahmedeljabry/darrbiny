@@ -49,7 +49,7 @@ class SettingsController extends BaseController
                     'type' => 'percentage',
                 ],
                 'countries' => $countries,
-                'payment_methods' => PaymentMethodSettings::mobilePayload(),
+                'payment_methods' => PaymentMethodSettings::mobilePayload(is_string($countryId) ? $countryId : null),
             ],
         ]);
     }

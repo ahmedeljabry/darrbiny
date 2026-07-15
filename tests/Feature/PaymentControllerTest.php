@@ -191,6 +191,62 @@ class PaymentControllerTest extends TestCase
         }
     }
 
+    public function test_bnpl_payment_methods_are_rejected_for_unsupported_country_currency(): void
+    {
+        Queue::fake();
+        Http::fake();
+
+        $country = Country::create([
+            'name' => 'Egypt',
+            'iso2' => 'EG',
+            'currency' => 'EGP',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Unsupported Gateway Plan',
+            'description' => 'Gateway payment plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        foreach ([Payment::METHOD_TABBY, Payment::METHOD_TAMARA] as $index => $paymentMethod) {
+            $user = User::factory()->create(['phone_with_cc' => '+1000000320'.$index]);
+            Sanctum::actingAs($user);
+
+            $userRequest = UserRequest::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'country_id' => $country->id,
+                'start_date' => now()->toDateString(),
+                'status' => UserRequest::STATUS_OFFER_SELECTED,
+                'currency' => 'EGP',
+                'app_fee_reserved_minor' => 0,
+                'total_paid_minor' => 0,
+                'has_user_car' => false,
+                'wants_trainer_car' => true,
+                'needs_pickup' => false,
+            ]);
+
+            $this->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => $paymentMethod,
+                'type' => Payment::TYPE_PLAN_PARTIAL,
+                'price' => 15000,
+            ])
+                ->assertStatus(422)
+                ->assertJsonPath('errors.0.message', 'Payment method is not available for this country or currency');
+
+            $this->assertDatabaseMissing('payments', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => $paymentMethod,
+            ]);
+        }
+
+        Http::assertNothingSent();
+    }
+
     public function test_tabby_webhook_marks_pending_gateway_payment_successful(): void
     {
         Queue::fake();

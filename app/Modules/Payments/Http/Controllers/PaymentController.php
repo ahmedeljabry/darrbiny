@@ -41,11 +41,6 @@ class PaymentController extends BaseController
         ]);
 
         $paymentType = $validated['type'] ?? Payment::TYPE_PLAN_FULL;
-        abort_unless(
-            PaymentMethodSettings::isVisibleInApp($validated['payment_method']),
-            422,
-            'Payment method is not available'
-        );
         $normalizedStatus = $validated['payment_method'] === Payment::METHOD_WALLET
             ? Payment::STATUS_SUCCEEDED
             : Payment::STATUS_PENDING;
@@ -55,8 +50,14 @@ class PaymentController extends BaseController
             'status' => $normalizedStatus,
         ]);
 
-        $req = UserRequest::findOrFail($validated['user_request_id']);
+        $req = UserRequest::with('country')->findOrFail($validated['user_request_id']);
         $this->authorize('update', $req);
+        abort_unless(
+            PaymentMethodSettings::isAvailableForRequest($validated['payment_method'], $req),
+            422,
+            'Payment method is not available for this country or currency'
+        );
+
         try {
             $payment = $this->service->createPlanPayment(
                 $req,
