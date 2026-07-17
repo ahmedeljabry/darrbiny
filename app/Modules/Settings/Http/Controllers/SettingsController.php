@@ -7,6 +7,7 @@ namespace App\Modules\Settings\Http\Controllers;
 use App\Models\Setting;
 use App\Support\Fees;
 use App\Support\PaymentMethodSettings;
+use App\Support\Vat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -18,8 +19,10 @@ class SettingsController extends BaseController
         $countryId = $request->query('country_id');
         $reservationFeeMinor = Fees::reservationFeeMinor($countryId);
         $appFeePercent = Fees::appFeePercent();
+        $selectedCountry = is_string($countryId) ? \App\Models\Country::query()->find($countryId) : null;
+        $vatPercent = Vat::percentForCountry($selectedCountry);
 
-        $countries = \App\Models\Country::select('id', 'name', 'iso2', 'currency', 'reservation_fee_minor')
+        $countries = \App\Models\Country::select('id', 'name', 'iso2', 'currency', 'reservation_fee_minor', 'vat_percent')
             ->orderBy('name')
             ->get()
             ->map(function ($country) {
@@ -31,6 +34,9 @@ class SettingsController extends BaseController
                     'reservation_fee' => [
                         'minor' => (int) ($country->reservation_fee_minor ?? Fees::reservationFeeMinor(null)),
                         'amount' => ($country->reservation_fee_minor ?? Fees::reservationFeeMinor(null)) / 100,
+                    ],
+                    'vat' => [
+                        'percent' => Vat::percentForCountry($country),
                     ],
                 ];
             });
@@ -46,6 +52,11 @@ class SettingsController extends BaseController
                 'app_fee' => [
                     'percent' => $appFeePercent,
                     'description' => 'رسوم التطبيق (النسبة) - نسبة معينة تخصم مباشرة من قيمة الباقة المحولة للمدرب',
+                    'type' => 'percentage',
+                ],
+                'vat' => [
+                    'percent' => $vatPercent,
+                    'description' => 'ضريبة القيمة المضافة حسب الدولة',
                     'type' => 'percentage',
                 ],
                 'countries' => $countries,

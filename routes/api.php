@@ -65,7 +65,7 @@ Route::prefix('v1')->middleware(['correlation', 'json.envelope', 'sanitize'])->g
 
     // Payment gateway callbacks
     Route::post('/payments/webhooks/{gateway}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'webhook']);
-    Route::get('/payments/return/{gateway}/{result}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentReturn']);
+    Route::get('/payments/return/{gateway}/{result}/{paymentId?}', [\App\Modules\Payments\Http\Controllers\PaymentController::class, 'paymentReturn']);
 
     // User Routes
     Route::prefix('user')->middleware('auth:sanctum')->group(function () {

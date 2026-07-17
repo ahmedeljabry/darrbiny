@@ -128,6 +128,7 @@ class PaymentControllerTest extends TestCase
             'name' => 'Gateway Country',
             'iso2' => 'GC',
             'currency' => 'SAR',
+            'vat_percent' => 15.0,
         ]);
         $plan = Plan::create([
             'title' => 'Gateway Plan',
@@ -189,6 +190,18 @@ class PaymentControllerTest extends TestCase
                 'total_paid_minor' => 0,
             ]);
         }
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tabby.test/api/v2/checkout'
+            && str_contains((string) data_get($request->data(), 'merchant_urls.success'), '/payments/return/tabby/success/')
+            && ! str_contains((string) data_get($request->data(), 'merchant_urls.success'), '/api/v1/')
+            && data_get($request->data(), 'payment.order.tax_amount') === '22.50'
+            && data_get($request->data(), 'payment.order.items.0.tax_amount') === '22.50');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tamara.test/checkout'
+            && str_contains((string) data_get($request->data(), 'merchant_url.success'), '/payments/return/tamara/success/')
+            && ! str_contains((string) data_get($request->data(), 'merchant_url.success'), '/api/v1/')
+            && data_get($request->data(), 'tax_amount.amount') === '22.50'
+            && data_get($request->data(), 'items.0.tax_amount.amount') === '22.50');
     }
 
     public function test_bnpl_payment_methods_are_rejected_for_unsupported_country_currency(): void
@@ -397,6 +410,65 @@ class PaymentControllerTest extends TestCase
             'status' => Payment::STATUS_SUCCEEDED,
             'gateway_status' => 'authorised',
         ]);
+    }
+
+    public function test_gateway_return_page_renders_html_and_api_return_keeps_json(): void
+    {
+        Queue::fake();
+
+        $country = Country::create([
+            'name' => 'Return Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Return Plan',
+            'description' => 'Gateway return plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['phone_with_cc' => '+966500000003']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TABBY,
+            'gateway_reference' => 'tabby-return-payment',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        $this->get('/payments/return/tabby/success/'.$payment->id)
+            ->assertOk()
+            ->assertHeader('content-type', 'text/html; charset=UTF-8')
+            ->assertSee('تم استلام نتيجة الدفع')
+            ->assertSee('payment_return')
+            ->assertSee($payment->id);
+
+        $this->getJson('/api/v1/payments/return/tabby/success/'.$payment->id)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.payment_id', $payment->id)
+            ->assertJsonPath('data.status', Payment::STATUS_PENDING);
     }
 
     public function test_plan_payment_rejects_hidden_app_payment_method(): void

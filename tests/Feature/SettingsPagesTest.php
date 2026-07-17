@@ -318,6 +318,7 @@ class SettingsPagesTest extends TestCase
             'name' => 'Saudi Arabia',
             'iso2' => 'SA',
             'currency' => 'SAR',
+            'vat_percent' => 15.0,
         ]);
 
         $egyptMethods = collect($this->getJson('/api/v1/settings/fees?country_id='.$egypt->id)
@@ -329,9 +330,12 @@ class SettingsPagesTest extends TestCase
         $this->assertFalse($egyptMethods['tabby']['enabled'] ?? true);
         $this->assertFalse($egyptMethods['tamara']['enabled'] ?? true);
 
-        $saudiMethods = collect($this->getJson('/api/v1/settings/fees?country_id='.$saudiArabia->id)
+        $saudiResponse = $this->getJson('/api/v1/settings/fees?country_id='.$saudiArabia->id)
             ->assertOk()
-            ->json('data.fees.payment_methods'))
+            ->assertJsonPath('data.fees.vat.percent', 15)
+            ->assertJsonPath('data.fees.countries.1.vat.percent', 15);
+
+        $saudiMethods = collect($saudiResponse->json('data.fees.payment_methods'))
             ->keyBy('key');
 
         $this->assertTrue($saudiMethods['tabby']['enabled'] ?? false);

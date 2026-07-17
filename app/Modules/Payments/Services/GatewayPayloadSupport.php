@@ -89,7 +89,7 @@ final class GatewayPayloadSupport
 
     public static function returnUrl(string $gateway, Payment $payment, string $result): string
     {
-        return url("/api/v1/payments/return/{$gateway}/{$result}").'?payment_id='.$payment->id;
+        return url("/payments/return/{$gateway}/{$result}/{$payment->id}").'?payment_id='.$payment->id;
     }
 
     public static function webhookUrl(string $gateway): string

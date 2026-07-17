@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\PlansController;
 use App\Http\Controllers\Admin\UsersController as AdminUsersController;
+use App\Modules\Payments\Http\Controllers\PaymentController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('admin.login');
 });
+
+Route::get('/payments/return/{gateway}/{result}/{paymentId?}', [PaymentController::class, 'paymentReturnPage'])
+    ->whereIn('gateway', ['tap', 'tabby', 'tamara'])
+    ->name('payments.return');
 
 Route::get('/login', function () {
     return redirect()->route('admin.login');

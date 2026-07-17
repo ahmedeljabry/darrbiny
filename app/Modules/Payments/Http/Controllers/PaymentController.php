@@ -15,6 +15,7 @@ use App\Support\PaymentMethodSettings;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Validation\Rule;
 
@@ -126,29 +127,32 @@ class PaymentController extends BaseController
         ]);
     }
 
-    public function paymentReturn(Request $request, string $gateway, string $result): JsonResponse
+    public function paymentReturn(Request $request, string $gateway, string $result, ?string $paymentId = null): JsonResponse
     {
         abort_unless(in_array($gateway, [Payment::METHOD_TAP, Payment::METHOD_TABBY, Payment::METHOD_TAMARA], true), 404);
 
-        $payment = null;
-        if ($request->query('payment_id')) {
-            $payment = Payment::query()->find((string) $request->query('payment_id'));
-        }
-
-        if ($payment && in_array($result, ['cancel', 'failure', 'failed'], true)) {
-            $payment = $this->service->markGatewayPaymentFailed($payment, [
-                'return_result' => $result,
-            ], $result);
-        }
+        $payment = $this->handleGatewayReturn($request, $gateway, $result, $paymentId);
 
         return response()->json([
-            'data' => [
+            'data' => $this->paymentReturnPayload($gateway, $result, $payment),
+        ]);
+    }
+
+    public function paymentReturnPage(Request $request, string $gateway, string $result, ?string $paymentId = null): Response
+    {
+        abort_unless(in_array($gateway, [Payment::METHOD_TAP, Payment::METHOD_TABBY, Payment::METHOD_TAMARA], true), 404);
+
+        $payment = $this->handleGatewayReturn($request, $gateway, $result, $paymentId);
+        $payload = $this->paymentReturnPayload($gateway, $result, $payment);
+
+        return response()
+            ->view('payments.return', [
+                'payload' => $payload,
                 'gateway' => $gateway,
                 'result' => $result,
-                'payment_id' => $payment?->id,
-                'status' => $payment?->status,
-            ],
-        ]);
+                'payment' => $payment,
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     private function resolveWebhookPayment(string $gateway, array $payload): ?Payment
@@ -233,5 +237,48 @@ class PaymentController extends BaseController
             'order_declined',
             'order_expired',
         ], true);
+    }
+
+    private function handleGatewayReturn(Request $request, string $gateway, string $result, ?string $paymentId = null): ?Payment
+    {
+        $payment = $this->resolveReturnPayment($request, $gateway, $paymentId);
+
+        if ($payment && $this->isFailedReturnResult($result)) {
+            return $this->service->markGatewayPaymentFailed($payment, [
+                'return_result' => $result,
+            ], $result);
+        }
+
+        return $payment;
+    }
+
+    private function resolveReturnPayment(Request $request, string $gateway, ?string $paymentId = null): ?Payment
+    {
+        $candidateId = trim((string) ($paymentId ?: $request->query('payment_id', '')));
+
+        if ($candidateId !== '') {
+            return Payment::query()
+                ->where('payment_method', $gateway)
+                ->whereKey($candidateId)
+                ->first();
+        }
+
+        return null;
+    }
+
+    private function paymentReturnPayload(string $gateway, string $result, ?Payment $payment): array
+    {
+        return [
+            'gateway' => $gateway,
+            'result' => $result,
+            'payment_id' => $payment?->id,
+            'status' => $payment?->status,
+            'gateway_status' => $payment?->gateway_status,
+        ];
+    }
+
+    private function isFailedReturnResult(string $result): bool
+    {
+        return in_array(strtolower($result), ['cancel', 'cancelled', 'canceled', 'failure', 'failed'], true);
     }
 }
