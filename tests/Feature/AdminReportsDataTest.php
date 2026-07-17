@@ -333,13 +333,12 @@ class AdminReportsDataTest extends TestCase
 
     public function test_reports_convert_jordanian_dinar_amounts_using_saved_exchange_rate_including_vat(): void
     {
-        config()->set('app.vat_percent', 15.0);
-
         $admin = $this->createAdmin();
         $country = Country::create([
             'name' => 'Jordan',
             'iso2' => 'JO',
             'currency' => 'JOD',
+            'vat_percent' => 15.0,
         ]);
 
         $plan = Plan::create([

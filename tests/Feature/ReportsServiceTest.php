@@ -18,6 +18,8 @@ class ReportsServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?string $vatCountryId = null;
+
     public function test_sales_total_uses_charged_amount_without_double_counting_app_fees(): void
     {
         $this->createPayment([
@@ -73,8 +75,6 @@ class ReportsServiceTest extends TestCase
 
     public function test_app_fees_and_vat_totals_use_only_succeeded_payments(): void
     {
-        config()->set('app.vat_percent', 15.0);
-
         $this->createPayment([
             'status' => Payment::STATUS_SUCCEEDED,
             'amount_minor' => 10_000,
@@ -102,8 +102,6 @@ class ReportsServiceTest extends TestCase
 
     public function test_report_totals_are_converted_to_report_currency_when_rates_exist(): void
     {
-        config()->set('app.vat_percent', 15.0);
-
         Setting::create([
             'key' => 'reports.exchange_rates_to_sar',
             'value' => json_encode(['EGP' => 0.08], JSON_UNESCAPED_UNICODE),
@@ -227,11 +225,38 @@ class ReportsServiceTest extends TestCase
     private function createPayment(array $attributes = []): void
     {
         $defaultTimestamp = CarbonImmutable::parse('2026-01-10 10:00:00');
+        $paymentId = (string) ($attributes['id'] ?? Str::uuid());
+        $requestId = (string) ($attributes['user_request_id'] ?? Str::uuid());
+        $countryId = $this->vatCountryId();
+
+        if (! isset($attributes['user_request_id'])) {
+            DB::table('user_requests')->insert([
+                'id' => $requestId,
+                'user_id' => (string) ($attributes['user_id'] ?? Str::uuid()),
+                'trainer_id' => null,
+                'plan_id' => (string) Str::uuid(),
+                'country_id' => $countryId,
+                'start_date' => '2026-01-15',
+                'has_user_car' => false,
+                'wants_trainer_car' => false,
+                'needs_pickup' => false,
+                'latitude' => null,
+                'longitude' => null,
+                'status' => UserRequest::STATUS_PAID,
+                'currency' => (string) ($attributes['currency'] ?? 'SAR'),
+                'app_fee_reserved_minor' => 0,
+                'total_paid_minor' => 0,
+                'version' => 1,
+                'deleted_at' => null,
+                'created_at' => $defaultTimestamp,
+                'updated_at' => $defaultTimestamp,
+            ]);
+        }
 
         DB::table('payments')->insert(array_merge([
-            'id' => (string) Str::uuid(),
+            'id' => $paymentId,
             'user_id' => (string) Str::uuid(),
-            'user_request_id' => (string) Str::uuid(),
+            'user_request_id' => $requestId,
             'amount_minor' => 1_000,
             'currency' => 'SAR',
             'type' => Payment::TYPE_PLAN_FULL,
@@ -244,6 +269,28 @@ class ReportsServiceTest extends TestCase
             'created_at' => $defaultTimestamp,
             'updated_at' => $defaultTimestamp,
         ], $attributes));
+    }
+
+    private function vatCountryId(): string
+    {
+        if ($this->vatCountryId !== null) {
+            return $this->vatCountryId;
+        }
+
+        $this->vatCountryId = (string) Str::uuid();
+
+        DB::table('countries')->insert([
+            'id' => $this->vatCountryId,
+            'name' => 'Saudi Arabia',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+            'reservation_fee_minor' => null,
+            'vat_percent' => 15.0,
+            'created_at' => CarbonImmutable::parse('2026-01-10 10:00:00'),
+            'updated_at' => CarbonImmutable::parse('2026-01-10 10:00:00'),
+        ]);
+
+        return $this->vatCountryId;
     }
 
     private function createUserRequest(array $attributes = []): void

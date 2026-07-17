@@ -12,9 +12,10 @@ class Country extends Model
     use HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['name','iso2','currency','reservation_fee_minor'];
+    protected $fillable = ['name','iso2','currency','reservation_fee_minor','vat_percent'];
 
     protected $casts = [
         'reservation_fee_minor' => 'integer',
+        'vat_percent' => 'decimal:2',
     ];
 }

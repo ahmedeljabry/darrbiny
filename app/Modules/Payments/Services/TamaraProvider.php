@@ -12,7 +12,7 @@ class TamaraProvider implements PaymentProvider
 {
     public function initiate(Payment $payment, array $metadata = []): array
     {
-        $payment->loadMissing(['user', 'userRequest.plan', 'userRequest.country']);
+        $payment->loadMissing(['user', 'userRequest.plan.country', 'userRequest.country']);
 
         $secret = GatewayPayloadSupport::setting('payment.tamara.secret_key');
         if (! $secret) {
@@ -97,17 +97,19 @@ class TamaraProvider implements PaymentProvider
 
         $user = $payment->user;
         $amount = GatewayPayloadSupport::amount($payment);
+        $taxAmount = GatewayPayloadSupport::taxAmount($payment);
         $currency = strtoupper((string) $payment->currency);
         $orderNumber = GatewayPayloadSupport::orderNumber($request);
         $planTitle = trim((string) ($request->plan?->title ?? 'Training course')) ?: 'Training course';
 
         $money = ['amount' => $amount, 'currency' => $currency];
         $zero = ['amount' => '0.00', 'currency' => $currency];
+        $taxMoney = ['amount' => $taxAmount, 'currency' => $currency];
 
         return [
             'total_amount' => $money,
             'shipping_amount' => $zero,
-            'tax_amount' => $zero,
+            'tax_amount' => $taxMoney,
             'order_reference_id' => (string) $payment->id,
             'order_number' => $orderNumber,
             'description' => GatewayPayloadSupport::description($payment, $request),
@@ -121,7 +123,7 @@ class TamaraProvider implements PaymentProvider
                 'sku' => substr((string) ($request->plan_id ?? $payment->id), 0, 128),
                 'unit_price' => $money,
                 'total_amount' => $money,
-                'tax_amount' => $zero,
+                'tax_amount' => $taxMoney,
                 'discount_amount' => $zero,
             ]],
             'consumer' => [

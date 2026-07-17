@@ -188,7 +188,7 @@ class ReportsController extends BaseController
     public function vat(Request $request, ReportsService $service)
     {
         $filters = $this->paymentFilters($request, allowStatus: false, allowPlan: false);
-        ['payments' => $payments, 'vatPercent' => $vatPercent, 'vatTotalMinor' => $vatTotalMinor, 'count' => $count] = $service->vatReport(
+        ['payments' => $payments, 'vatPercentLabel' => $vatPercentLabel, 'vatTotalMinor' => $vatTotalMinor, 'count' => $count] = $service->vatReport(
             $filters['from'] ?? null,
             $filters['to'] ?? null,
             $filters
@@ -196,7 +196,7 @@ class ReportsController extends BaseController
 
         if ($request->query('export') === 'excel') {
             return Excel::download(
-                new VatReportExport($service->vatCollection($filters['from'] ?? null, $filters['to'] ?? null, $filters), $vatPercent),
+                new VatReportExport($service->vatCollection($filters['from'] ?? null, $filters['to'] ?? null, $filters)),
                 'vat-report-'.now()->format('Y-m-d').'.xlsx'
             );
         }
@@ -207,7 +207,7 @@ class ReportsController extends BaseController
 
         return view('admin.reports.vat', compact(
             'payments',
-            'vatPercent',
+            'vatPercentLabel',
             'vatTotalMinor',
             'count',
             'filters',

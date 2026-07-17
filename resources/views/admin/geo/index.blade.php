@@ -58,6 +58,7 @@
           <th><i class="icon-base ti tabler-world me-1"></i> ISO</th>
           <th><i class="icon-base ti tabler-map-pin me-1"></i> الاسم</th>
           <th><i class="icon-base ti tabler-currency-dollar me-1"></i> العملة</th>
+          <th><i class="icon-base ti tabler-percentage me-1"></i> ضريبة القيمة المضافة</th>
           <th><i class="icon-base ti tabler-exchange me-1"></i> سعر 1 عملة بالـ SAR</th>
           <th class="text-center"><i class="icon-base ti tabler-settings me-1"></i> إجراءات</th>
         </tr>
@@ -68,6 +69,7 @@
             <td>{{ $c->iso2 }}</td>
             <td>{{ $c->name }}</td>
             <td>{{ $c->currency }}</td>
+            <td><span class="badge bg-label-info">{{ number_format((float) $c->vat_percent, 2) }}%</span></td>
             <td>
               @if($c->currency === \App\Support\ReportCurrencyConverter::REPORT_CURRENCY)
                 <span class="badge bg-label-success">1.000000</span>

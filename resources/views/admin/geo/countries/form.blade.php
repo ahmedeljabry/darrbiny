@@ -47,7 +47,7 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">رمز ISO2 <span class="text-danger">*</span></label>
               <div class="input-group input-group-merge">
                 <span class="input-group-text"><i class="ti tabler-flag"></i></span>
@@ -58,7 +58,7 @@
               @enderror
               <small class="text-muted d-block mt-1">رمز الدولة المكون من حرفين (مثل: SA, US)</small>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">العملة <span class="text-danger">*</span></label>
               <div class="input-group input-group-merge">
                 <span class="input-group-text"><i class="ti tabler-currency-dollar"></i></span>
@@ -69,7 +69,7 @@
               @enderror
               <small class="text-muted d-block mt-1">رمز العملة المكون من 3 أحرف (مثل: SAR, USD)</small>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
               <div class="input-group input-group-merge">
                 <span class="input-group-text"><i class="ti tabler-edit"></i></span>
@@ -79,6 +79,17 @@
                 <div class="text-danger small mt-1">{{ $message }}</div>
               @enderror
               <small class="text-muted d-block mt-1">اسم الدولة بالكامل</small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">ضريبة القيمة المضافة %</label>
+              <div class="input-group input-group-merge">
+                <span class="input-group-text"><i class="ti tabler-percentage"></i></span>
+                <input type="number" name="vat_percent" class="form-control @error('vat_percent') is-invalid @enderror" min="0" max="100" step="0.01" placeholder="15" value="{{ old('vat_percent', $isEdit ? number_format((float) $country->vat_percent, 2, '.', '') : '0.00') }}">
+              </div>
+              @error('vat_percent')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+              @enderror
+              <small class="text-muted d-block mt-1">تُستخدم في تقرير الضريبة وبوابات الدفع.</small>
             </div>
             <div class="col-12">
               <div class="alert alert-info mb-0">

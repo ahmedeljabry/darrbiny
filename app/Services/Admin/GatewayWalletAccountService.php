@@ -10,13 +10,12 @@ use App\Models\Setting;
 use App\Models\UserRequest;
 use App\Support\PaymentGatewayFees;
 use App\Support\ReportCurrencyConverter;
+use App\Support\Vat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final class GatewayWalletAccountService
 {
-    public const VAT_PERCENT = 15.0;
-
     private const GATEWAYS = [
         Payment::METHOD_TAP => [
             'label' => 'تاب',
@@ -147,9 +146,9 @@ final class GatewayWalletAccountService
                     (string) $payment->currency
                 );
                 $feeMinor = $this->gatewayFeeMinor($gateway, $amountMinor);
-                $vatMinor = $this->vatMinor($feeMinor);
                 $sourceKey = $this->paymentSourceKey($payment);
                 $request = $payment->userRequest;
+                $vatMinor = $this->vatMinor($feeMinor, $request);
 
                 return (object) [
                     'entry_type' => 'payment',
@@ -220,7 +219,7 @@ final class GatewayWalletAccountService
     private function paymentsQuery(string $gateway, array $filters): Builder
     {
         return Payment::query()
-            ->with(['user', 'userRequest.country', 'userRequest.trainer', 'userRequest.plan'])
+            ->with(['user', 'userRequest.country', 'userRequest.trainer', 'userRequest.plan.country'])
             ->where('payment_method', $gateway)
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->whereIn('type', [
@@ -317,9 +316,9 @@ final class GatewayWalletAccountService
             + (int) $config['fixed_fee_minor'];
     }
 
-    private function vatMinor(int $feeMinor): int
+    private function vatMinor(int $feeMinor, ?UserRequest $request): int
     {
-        return (int) round($feeMinor * (self::VAT_PERCENT / 100));
+        return (int) round($feeMinor * (Vat::percentForRequest($request) / 100));
     }
 
     private function feeConfig(string $gateway): array

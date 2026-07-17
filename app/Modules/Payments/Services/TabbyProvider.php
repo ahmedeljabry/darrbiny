@@ -12,7 +12,7 @@ class TabbyProvider implements PaymentProvider
 {
     public function initiate(Payment $payment, array $metadata = []): array
     {
-        $payment->loadMissing(['user', 'userRequest.plan', 'userRequest.country']);
+        $payment->loadMissing(['user', 'userRequest.plan.country', 'userRequest.country']);
 
         $secret = GatewayPayloadSupport::setting('payment.tabby.secret_key');
         $merchantCode = GatewayPayloadSupport::setting('payment.tabby.merchant_code');
@@ -99,6 +99,7 @@ class TabbyProvider implements PaymentProvider
         $request = $payment->userRequest;
         $user = $payment->user;
         $amount = GatewayPayloadSupport::amount($payment);
+        $taxAmount = GatewayPayloadSupport::taxAmount($payment);
         $orderNumber = GatewayPayloadSupport::orderNumber($request);
         $planTitle = trim((string) ($request->plan?->title ?? 'Training course')) ?: 'Training course';
 
@@ -127,10 +128,11 @@ class TabbyProvider implements PaymentProvider
                         'reference_id' => (string) ($request->plan_id ?? $payment->id),
                         'description' => $planTitle,
                         'discount_amount' => '0.00',
+                        'tax_amount' => $taxAmount,
                         'is_refundable' => true,
                     ]],
                     'updated_at' => now()->toIso8601String(),
-                    'tax_amount' => '0.00',
+                    'tax_amount' => $taxAmount,
                     'shipping_amount' => '0.00',
                     'discount_amount' => '0.00',
                 ],

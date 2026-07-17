@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Admin;
 
 use App\Models\CancellationRequest;
+use App\Models\Country;
 use App\Models\Payment;
 use App\Models\UserRequest;
 use App\Support\ReportCurrencyConverter;
+use App\Support\Vat;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -176,22 +178,18 @@ final class ReportsService
 
     public function vatReport(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
-        $vatPercent = (float) config('app.vat_percent', 0.0);
         $query = $this->vatQuery($from, $to, $filters);
-
-        $vatRate = $vatPercent / 100;
-        $vatTotalMinor = $vatRate > 0
-            ? (clone $query)
-                ->selectRaw('currency, COALESCE(SUM(ROUND(amount_minor * ?, 0)), 0) as total_minor', [$vatRate])
-                ->groupBy('currency')
-                ->get()
-                ->sum(fn ($row) => $this->reportCurrencyConverter->convertMinor((int) $row->total_minor, (string) $row->currency))
-            : 0;
+        $vatTotalMinor = (clone $query)
+            ->get()
+            ->sum(fn (Payment $payment) => $this->reportCurrencyConverter->convertMinor(
+                Vat::minorForPayment($payment),
+                (string) $payment->currency
+            ));
         $count = (int) (clone $query)->count();
 
         return [
             'payments' => (clone $query)->latest()->paginate(25),
-            'vatPercent' => $vatPercent,
+            'vatPercentLabel' => $this->vatPercentLabel($filters['country_id'] ?? null),
             'vatTotalMinor' => $vatTotalMinor,
             'count' => $count,
         ];
@@ -335,6 +333,19 @@ final class ReportsService
             'userRequest.country',
             'userRequest.plan.country',
         ]);
+    }
+
+    private function vatPercentLabel(?string $countryId): string
+    {
+        if ($countryId) {
+            $country = Country::query()->find($countryId);
+
+            if ($country) {
+                return number_format(Vat::percentForCountry($country), 2).'%';
+            }
+        }
+
+        return 'حسب الدولة';
     }
 
     private function applyPaymentFilters(Builder $query, array $filters = []): Builder

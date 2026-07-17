@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
+use App\Support\Vat;
 
 final class GatewayPayloadSupport
 {
@@ -22,6 +23,11 @@ final class GatewayPayloadSupport
     public static function amount(Payment $payment): string
     {
         return number_format(((int) $payment->amount_minor) / 100, 2, '.', '');
+    }
+
+    public static function taxAmount(Payment $payment): string
+    {
+        return Vat::formattedGatewayAmount($payment);
     }
 
     public static function orderNumber(UserRequest $request): string

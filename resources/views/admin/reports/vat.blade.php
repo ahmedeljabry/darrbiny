@@ -4,6 +4,7 @@
 @php
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $converter = app(\App\Support\ReportCurrencyConverter::class);
+  $vatHelper = \App\Support\Vat::class;
   $paymentMethodOptions = $paymentMethods->mapWithKeys(fn ($method) => [$method => strtoupper((string) $method)])->all();
   $countryOptions = $countries->pluck('name', 'id')->all();
   $typeLabelFor = fn ($type) => $typeOptions[$type] ?? \App\Models\Payment::typeLabelFor($type);
@@ -24,7 +25,7 @@
     'icon' => 'receipt-tax',
     'tone' => 'danger',
     'tags' => [
-      ['label' => 'النسبة الحالية ' . number_format((float) $vatPercent, 2) . '%', 'icon' => 'percentage'],
+      ['label' => 'النسبة الحالية ' . $vatPercentLabel, 'icon' => 'percentage'],
       ['label' => 'فلاتر متعددة', 'icon' => 'adjustments-horizontal'],
       ['label' => 'الإجماليات محولة إلى ' . $reportCurrency, 'icon' => 'exchange'],
     ],
@@ -34,7 +35,7 @@
     'stats' => [
       ['label' => 'إجمالي الضريبة', 'value' => number_format(($vatTotalMinor ?? 0) / 100, 2) . ' ' . $reportCurrency, 'icon' => 'receipt-tax'],
       ['label' => 'عدد العمليات', 'value' => number_format($count ?? 0), 'icon' => 'receipt-2', 'tone' => 'primary'],
-      ['label' => 'نسبة الضريبة', 'value' => number_format((float) $vatPercent, 2) . '%', 'icon' => 'percentage', 'tone' => 'warning'],
+      ['label' => 'نسبة الضريبة', 'value' => $vatPercentLabel, 'icon' => 'percentage', 'tone' => 'warning'],
       ['label' => 'أنواع الدفع المتاحة', 'value' => number_format(count($typeOptions)), 'icon' => 'tags', 'tone' => 'secondary'],
     ],
   ])
@@ -62,13 +63,17 @@
               <th>الباقة / الدولة</th>
               <th>المبلغ</th>
               <th>النوع</th>
+              <th>نسبة الضريبة</th>
               <th>ضريبة القيمة المضافة</th>
               <th>التاريخ</th>
             </tr>
           </thead>
           <tbody>
             @forelse($payments as $payment)
-              @php $vatMinor = (int) round($payment->amount_minor * ($vatPercent / 100)); @endphp
+              @php
+                $rowVatPercent = $vatHelper::percentForPayment($payment);
+                $vatMinor = $vatHelper::minorForPayment($payment);
+              @endphp
               <tr>
                 <td><code class="text-primary">#{{ $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '—' }}</code></td>
                 <td>
@@ -90,11 +95,12 @@
                     <small class="text-muted">{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</small>
                   </div>
                 </td>
+                <td><span class="badge bg-label-warning">{{ number_format($rowVatPercent, 2) }}%</span></td>
                 <td><span class="fw-semibold text-danger">{{ $converter->formatConvertedMinor($vatMinor, $payment->currency) }}</span></td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>
               </tr>
             @empty
-              @include('admin.reports.partials.empty-state', ['colspan' => 7, 'icon' => 'receipt-tax', 'message' => 'لا توجد عمليات ضمن الفلاتر الحالية لحساب الضريبة'])
+              @include('admin.reports.partials.empty-state', ['colspan' => 8, 'icon' => 'receipt-tax', 'message' => 'لا توجد عمليات ضمن الفلاتر الحالية لحساب الضريبة'])
             @endforelse
           </tbody>
         </table>
