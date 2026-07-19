@@ -85,7 +85,20 @@ class TrainerOfferNotificationTest extends TestCase
             ->postJson('/api/v1/offers/'.$offer->id.'/accept')
             ->assertOk()
             ->assertJsonPath('data.trainer_id', $trainer->id)
-            ->assertJsonPath('data.status', UserRequest::STATUS_OFFER_SELECTED);
+            ->assertJsonPath('data.status', UserRequest::STATUS_OFFER_SELECTED)
+            ->assertJsonPath('data.trainer.id', $trainer->id)
+            ->assertJsonPath('data.offers.0.status', TrainerOffer::STATUS_ACCEPTED);
+
+        $this->assertDatabaseHas('trainer_offers', [
+            'id' => $offer->id,
+            'status' => TrainerOffer::STATUS_ACCEPTED,
+        ]);
+
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+        ]);
 
         $storedNotification = DB::table('notifications')
             ->where('notifiable_id', $trainer->id)

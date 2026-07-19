@@ -95,6 +95,75 @@ class PaymentControllerTest extends TestCase
         ]);
     }
 
+    public function test_plan_full_payment_requires_selected_trainer_offer(): void
+    {
+        Queue::fake();
+
+        $country = Country::create([
+            'name' => 'Offer Required Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Offer Required Plan',
+            'description' => 'Plan requiring an accepted offer before full payment',
+            'price_min' => 1200,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'phone_with_cc' => '+96650003001',
+            'points_balance' => 2000,
+        ]);
+        $trainer = User::factory()->create(['phone_with_cc' => '+96650003002']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'trainer_id' => null,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 3500,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+        TrainerOffer::create([
+            'user_request_id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'price_minor' => 120000,
+            'message' => 'Pending offer',
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
+
+        $this->withToken($user->createToken('student')->plainTextToken)
+            ->postJson('/api/v1/payments/plan', [
+                'user_request_id' => $userRequest->id,
+                'payment_method' => Payment::METHOD_WALLET,
+                'type' => Payment::TYPE_PLAN_FULL,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.0.message', 'Please accept a trainer offer before full payment');
+
+        $this->assertDatabaseMissing('payments', [
+            'user_request_id' => $userRequest->id,
+            'type' => Payment::TYPE_PLAN_FULL,
+        ]);
+        $this->assertDatabaseHas('trainer_offers', [
+            'user_request_id' => $userRequest->id,
+            'status' => TrainerOffer::STATUS_SENT,
+        ]);
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'trainer_id' => null,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+        ]);
+    }
+
     public function test_plan_payment_accepts_tabby_and_tamara_gateway_methods(): void
     {
         Queue::fake();

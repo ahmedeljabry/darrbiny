@@ -10,6 +10,7 @@ use App\Modules\Offers\Http\Requests\StoreOfferRequest;
 use App\Modules\Offers\Http\Requests\UpdateOfferRequest;
 use App\Modules\Offers\Http\Resources\UserRequestOfferResource;
 use App\Modules\Offers\Services\OfferService;
+use App\Modules\Requests\Http\Resources\UserRequestResource;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -94,6 +95,19 @@ class OfferController extends BaseController
         $this->authorize('acceptOffer', $req);
 
         $this->service->accept($req, $offer);
-        return response()->json(['data' => $req->fresh()]);
+        $req = $req->fresh([
+            'user',
+            'country',
+            'trainer',
+            'trainer.trainerProfile',
+            'plan',
+            'plan.country',
+            'offers',
+            'offers.trainer',
+            'offers.trainer.trainerProfile',
+            'payments',
+        ]);
+
+        return response()->json(['data' => new UserRequestResource($req)]);
     }
 }

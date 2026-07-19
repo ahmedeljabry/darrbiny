@@ -175,6 +175,12 @@ class PaymentService
             ->latest('created_at')
             ->first();
 
+        abort_unless(
+            filled($req->trainer_id) || $acceptedOffer,
+            422,
+            'Please accept a trainer offer before full payment'
+        );
+
         $amountMinor = (int) ($acceptedOffer?->price_minor ?? 0);
 
         if ($amountMinor <= 0) {
