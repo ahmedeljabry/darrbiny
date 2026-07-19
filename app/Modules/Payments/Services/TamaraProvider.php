@@ -88,6 +88,25 @@ class TamaraProvider implements PaymentProvider
         return is_array($body) ? $body : ['status' => 'authorised'];
     }
 
+    public function paymentStatus(string $gatewayReference): ?array
+    {
+        $secret = GatewayPayloadSupport::setting('payment.tamara.secret_key');
+        if (! $secret) {
+            throw new PaymentGatewayException('Tamara keys are not configured.');
+        }
+
+        $baseUrl = rtrim(GatewayPayloadSupport::setting('payment.tamara.base_url', 'https://api.tamara.co'), '/');
+
+        $response = Http::timeout(15)
+            ->acceptJson()
+            ->withToken($secret)
+            ->get($baseUrl.'/orders/'.$gatewayReference);
+
+        $body = $response->json();
+
+        return $response->successful() && is_array($body) ? $body : null;
+    }
+
     private function payload(Payment $payment): array
     {
         $request = $payment->userRequest;

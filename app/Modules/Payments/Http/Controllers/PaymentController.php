@@ -208,6 +208,7 @@ class PaymentController extends BaseController
             'closed',
             'captured',
             'paid',
+            'approved',
             'payment_approved',
             'payment_authorized',
             'payment_authorised',
@@ -249,6 +250,10 @@ class PaymentController extends BaseController
             ], $result);
         }
 
+        if ($payment && $this->isSuccessfulReturnResult($result)) {
+            return $this->syncGatewayReturnStatus($gateway, $payment);
+        }
+
         return $payment;
     }
 
@@ -280,5 +285,57 @@ class PaymentController extends BaseController
     private function isFailedReturnResult(string $result): bool
     {
         return in_array(strtolower($result), ['cancel', 'cancelled', 'canceled', 'failure', 'failed'], true);
+    }
+
+    private function isSuccessfulReturnResult(string $result): bool
+    {
+        return in_array(strtolower($result), ['success', 'succeeded', 'paid', 'approved'], true);
+    }
+
+    private function syncGatewayReturnStatus(string $gateway, Payment $payment): Payment
+    {
+        if ($payment->status === Payment::STATUS_SUCCEEDED || ! $payment->gateway_reference) {
+            return $payment;
+        }
+
+        $provider = $this->gateways->forMethod($gateway);
+        if (! method_exists($provider, 'paymentStatus')) {
+            return $payment;
+        }
+
+        try {
+            $gatewayPayload = $provider->paymentStatus((string) $payment->gateway_reference);
+        } catch (\Throwable) {
+            return $payment;
+        }
+
+        if (! is_array($gatewayPayload)) {
+            return $payment;
+        }
+
+        $gatewayStatus = $this->webhookGatewayStatus($gatewayPayload);
+
+        if ($this->isSuccessfulWebhookStatus($gatewayStatus)) {
+            if ($gateway === Payment::METHOD_TAMARA && $provider instanceof TamaraProvider && in_array($gatewayStatus, ['approved', 'order_approved'], true)) {
+                $authorisePayload = $provider->authorise($payment);
+                $gatewayPayload['authorise_response'] = $authorisePayload;
+                $gatewayStatus = strtolower((string) (data_get($authorisePayload, 'status') ?: 'authorised'));
+            }
+
+            return $this->service->markGatewayPaymentSucceeded($payment, $gatewayPayload, $gatewayStatus);
+        }
+
+        if ($this->isFailedWebhookStatus($gatewayStatus)) {
+            return $this->service->markGatewayPaymentFailed($payment, $gatewayPayload, $gatewayStatus);
+        }
+
+        $payment->forceFill([
+            'gateway_status' => $gatewayStatus ?: $payment->gateway_status,
+            'gateway_payload' => array_merge(is_array($payment->gateway_payload) ? $payment->gateway_payload : [], [
+                'return_status_check' => $gatewayPayload,
+            ]),
+        ])->save();
+
+        return $payment->refresh();
     }
 }

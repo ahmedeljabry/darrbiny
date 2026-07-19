@@ -471,6 +471,158 @@ class PaymentControllerTest extends TestCase
             ->assertJsonPath('data.status', Payment::STATUS_PENDING);
     }
 
+    public function test_tabby_success_return_marks_payment_successful_when_gateway_confirms_authorized(): void
+    {
+        Queue::fake();
+        Http::fake([
+            'https://tabby.test/api/v2/payments/tabby-return-authorized' => Http::response([
+                'id' => 'tabby-return-authorized',
+                'status' => 'AUTHORIZED',
+            ]),
+        ]);
+
+        Setting::updateOrCreate(['key' => 'payment.tabby.secret_key'], ['value' => 'tabby-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tabby.base_url'], ['value' => 'https://tabby.test']);
+
+        $country = Country::create([
+            'name' => 'Tabby Return Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tabby Return Plan',
+            'description' => 'Gateway return plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['phone_with_cc' => '+966500000004']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => Payment::METHOD_TABBY,
+            'gateway_reference' => 'tabby-return-authorized',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        $this->getJson('/api/v1/payments/return/tabby/success/'.$payment->id)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.payment_id', $payment->id)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED)
+            ->assertJsonPath('data.gateway_status', 'authorized');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'authorized',
+        ]);
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'total_paid_minor' => 15000,
+        ]);
+    }
+
+    public function test_tamara_success_return_authorises_approved_order_before_marking_payment_successful(): void
+    {
+        Queue::fake();
+        Http::fake([
+            'https://tamara.test/orders/tamara-return-approved' => Http::response([
+                'order_id' => 'tamara-return-approved',
+                'status' => 'approved',
+            ]),
+            'https://tamara.test/orders/tamara-return-approved/authorise' => Http::response([
+                'status' => 'authorised',
+            ]),
+        ]);
+
+        Setting::updateOrCreate(['key' => 'payment.tamara.secret_key'], ['value' => 'tamara-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tamara.base_url'], ['value' => 'https://tamara.test']);
+
+        $country = Country::create([
+            'name' => 'Tamara Return Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tamara Return Plan',
+            'description' => 'Gateway return plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['phone_with_cc' => '+966500000005']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => Payment::METHOD_TAMARA,
+            'gateway_reference' => 'tamara-return-approved',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        $this->getJson('/api/v1/payments/return/tamara/success/'.$payment->id)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.payment_id', $payment->id)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED)
+            ->assertJsonPath('data.gateway_status', 'authorised');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tamara.test/orders/tamara-return-approved');
+        Http::assertSent(fn ($request) => $request->url() === 'https://tamara.test/orders/tamara-return-approved/authorise');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'authorised',
+        ]);
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'total_paid_minor' => 15000,
+        ]);
+    }
+
     public function test_plan_payment_rejects_hidden_app_payment_method(): void
     {
         Queue::fake();
