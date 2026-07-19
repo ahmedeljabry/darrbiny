@@ -39,6 +39,7 @@ class PaymentController extends BaseController
             'type' => ['sometimes', 'string', 'in:plan_full,plan_partial'],
             'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
             'price' => ['nullable', 'integer', 'min:1'],
+            'offer_id' => ['nullable', 'uuid'],
         ]);
 
         $paymentType = $validated['type'] ?? Payment::TYPE_PLAN_FULL;

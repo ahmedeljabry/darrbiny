@@ -11,6 +11,7 @@ use App\Models\UserRequest;
 use App\Modules\Referrals\Services\ReferralService;
 use App\Modules\Requests\Services\RequestService;
 use App\Modules\Wallet\Services\WalletService;
+use App\Notifications\TrainerOfferAcceptedNotification;
 use App\Support\Fees;
 use App\Support\WalletAmount;
 use Illuminate\Http\Request;
@@ -45,13 +46,20 @@ class PaymentService
 
         if ($paymentType === Payment::TYPE_PLAN_FULL) {
             abort_unless(in_array($request->status, [Payment::STATUS_PENDING, Payment::STATUS_SUCCEEDED, Payment::STATUS_FAILED], true), 422, 'Invalid status');
-            $amountMinor = $this->resolveFullPaymentAmountMinor($req, $request);
+            $selectedOffer = $this->resolveFullPaymentOffer($req, $request);
+            abort_unless(
+                filled($req->trainer_id) || $selectedOffer,
+                422,
+                'Choose a trainer offer before full payment'
+            );
+            $amountMinor = $this->resolveFullPaymentAmountMinor($req, $request, $selectedOffer);
         } else {
+            $selectedOffer = null;
             $amountMinor = (int) $request->input('price', 0);
             abort_unless($amountMinor > 0, 422, 'Payment amount is required');
         }
 
-        $payment = DB::transaction(function () use ($req, $user, $amountMinor, $request, $paymentType) {
+        $payment = DB::transaction(function () use ($req, $user, $amountMinor, $request, $paymentType, $selectedOffer) {
             $isFirstSuccessfulPlanPayment = false;
 
             if (
@@ -87,6 +95,9 @@ class PaymentService
                 'status' => $request->status,
                 'app_fee_minor' => $appFeeMinor,
                 'trainer_net_minor' => $trainerNetMinor,
+                'gateway_payload' => $selectedOffer ? [
+                    'selected_offer_id' => (string) $selectedOffer->id,
+                ] : null,
             ]);
 
             if ($payment->status === Payment::STATUS_SUCCEEDED) {
@@ -166,22 +177,11 @@ class PaymentService
         });
     }
 
-    private function resolveFullPaymentAmountMinor(UserRequest $req, Request $request): int
+    private function resolveFullPaymentAmountMinor(UserRequest $req, Request $request, ?TrainerOffer $selectedOffer = null): int
     {
         $req->loadMissing('plan');
 
-        $acceptedOffer = $req->offers()
-            ->where('status', TrainerOffer::STATUS_ACCEPTED)
-            ->latest('created_at')
-            ->first();
-
-        abort_unless(
-            filled($req->trainer_id) || $acceptedOffer,
-            422,
-            'Please accept a trainer offer before full payment'
-        );
-
-        $amountMinor = (int) ($acceptedOffer?->price_minor ?? 0);
+        $amountMinor = (int) ($selectedOffer?->price_minor ?? 0);
 
         if ($amountMinor <= 0) {
             $amountMinor = (int) ($req->plan?->price_min ?? 0) * 100;
@@ -194,6 +194,68 @@ class PaymentService
         abort_unless($amountMinor > 0, 422, 'Unable to determine payment amount');
 
         return $amountMinor;
+    }
+
+    private function resolveFullPaymentOffer(UserRequest $req, Request $request): ?TrainerOffer
+    {
+        $offerId = trim((string) $request->input('offer_id', ''));
+
+        if ($offerId !== '') {
+            $offer = TrainerOffer::query()
+                ->where('user_request_id', $req->id)
+                ->whereKey($offerId)
+                ->first();
+
+            abort_unless($offer, 422, 'Offer does not belong to request');
+            abort_unless(
+                in_array($offer->status, [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED], true),
+                422,
+                'Offer cannot be paid'
+            );
+
+            return $offer;
+        }
+
+        $acceptedOffer = $req->offers()
+            ->where('status', TrainerOffer::STATUS_ACCEPTED)
+            ->latest('created_at')
+            ->first();
+
+        if ($acceptedOffer) {
+            return $acceptedOffer;
+        }
+
+        if (filled($req->trainer_id)) {
+            return $req->offers()
+                ->where('trainer_id', $req->trainer_id)
+                ->whereIn('status', [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED])
+                ->latest('created_at')
+                ->first();
+        }
+
+        $priceMinor = (int) $request->input('price', 0);
+        if ($priceMinor > 0) {
+            $matchingOffers = $req->offers()
+                ->whereIn('status', [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED])
+                ->where('price_minor', $priceMinor)
+                ->latest('created_at')
+                ->get();
+
+            abort_if($matchingOffers->count() > 1, 422, 'offer_id is required for this payment');
+
+            if ($matchingOffers->count() === 1) {
+                return $matchingOffers->first();
+            }
+        }
+
+        $sentOffers = $req->offers()
+            ->where('status', TrainerOffer::STATUS_SENT)
+            ->latest('created_at')
+            ->get();
+
+        abort_if($sentOffers->count() > 1, 422, 'offer_id is required for this payment');
+
+        return $sentOffers->first();
     }
 
     private function initiateGatewaySession(Payment $payment): Payment
@@ -227,7 +289,9 @@ class PaymentService
             'gateway_reference' => $session['gateway_reference'] ?? $session['reference'] ?? $payment->id,
             'gateway_checkout_url' => $session['checkout_url'] ?? null,
             'gateway_status' => $session['gateway_status'] ?? $session['status'] ?? null,
-            'gateway_payload' => $session['payload'] ?? $session,
+            'gateway_payload' => array_merge(is_array($payment->gateway_payload) ? $payment->gateway_payload : [], [
+                'session' => $session['payload'] ?? $session,
+            ]),
         ])->save();
 
         return $payment->refresh();
@@ -259,6 +323,14 @@ class PaymentService
         }
 
         if ($payment->type === Payment::TYPE_PLAN_FULL) {
+            $this->selectOfferForSuccessfulFullPayment($req, $payment);
+            if (blank($req->trainer_id)) {
+                $req->total_paid_minor = $payment->amount_minor;
+                $req->save();
+
+                return;
+            }
+
             $req->app_fee_reserved_minor = $payment->app_fee_minor;
             $req->total_paid_minor = $payment->amount_minor;
             $req->save();
@@ -286,6 +358,79 @@ class PaymentService
             ->where('status', Payment::STATUS_SUCCEEDED)
             ->whereKeyNot($payment->id)
             ->exists();
+    }
+
+    private function selectOfferForSuccessfulFullPayment(UserRequest $req, Payment $payment): void
+    {
+        if (filled($req->trainer_id)) {
+            return;
+        }
+
+        $offer = $this->resolveOfferForSuccessfulFullPayment($req, $payment);
+        if (! $offer) {
+            return;
+        }
+
+        $wasAccepted = $offer->status === TrainerOffer::STATUS_ACCEPTED;
+
+        $this->requests->selectOffer($req, $offer);
+        $req->refresh();
+
+        if ($wasAccepted) {
+            return;
+        }
+
+        $acceptedOffer = $offer->fresh(['trainer', 'userRequest.user']);
+        if (! $acceptedOffer) {
+            return;
+        }
+
+        DB::afterCommit(static function () use ($acceptedOffer): void {
+            $acceptedOffer->trainer?->notify(new TrainerOfferAcceptedNotification($acceptedOffer));
+        });
+    }
+
+    private function resolveOfferForSuccessfulFullPayment(UserRequest $req, Payment $payment): ?TrainerOffer
+    {
+        $selectedOfferId = data_get($payment->gateway_payload, 'selected_offer_id');
+
+        if (is_string($selectedOfferId) && $selectedOfferId !== '') {
+            $offer = TrainerOffer::query()
+                ->where('user_request_id', $req->id)
+                ->whereKey($selectedOfferId)
+                ->whereIn('status', [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED])
+                ->first();
+
+            if ($offer) {
+                return $offer;
+            }
+        }
+
+        $acceptedOffer = $req->offers()
+            ->where('status', TrainerOffer::STATUS_ACCEPTED)
+            ->latest('created_at')
+            ->first();
+
+        if ($acceptedOffer) {
+            return $acceptedOffer;
+        }
+
+        $matchingOffers = $req->offers()
+            ->whereIn('status', [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED])
+            ->where('price_minor', $payment->amount_minor)
+            ->latest('created_at')
+            ->get();
+
+        if ($matchingOffers->count() === 1) {
+            return $matchingOffers->first();
+        }
+
+        $sentOffers = $req->offers()
+            ->where('status', TrainerOffer::STATUS_SENT)
+            ->latest('created_at')
+            ->get();
+
+        return $sentOffers->count() === 1 ? $sentOffers->first() : null;
     }
 
     private function mergeGatewayPayload(mixed $existing, array $payload): array

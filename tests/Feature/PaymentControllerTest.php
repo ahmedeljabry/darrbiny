@@ -95,7 +95,7 @@ class PaymentControllerTest extends TestCase
         ]);
     }
 
-    public function test_plan_full_payment_requires_selected_trainer_offer(): void
+    public function test_plan_full_payment_can_pay_sent_offer_and_accepts_it_on_success(): void
     {
         Queue::fake();
 
@@ -132,7 +132,7 @@ class PaymentControllerTest extends TestCase
             'wants_trainer_car' => true,
             'needs_pickup' => false,
         ]);
-        TrainerOffer::create([
+        $offer = TrainerOffer::create([
             'user_request_id' => $userRequest->id,
             'trainer_id' => $trainer->id,
             'price_minor' => 120000,
@@ -145,22 +145,29 @@ class PaymentControllerTest extends TestCase
                 'user_request_id' => $userRequest->id,
                 'payment_method' => Payment::METHOD_WALLET,
                 'type' => Payment::TYPE_PLAN_FULL,
+                'offer_id' => $offer->id,
             ])
-            ->assertStatus(422)
-            ->assertJsonPath('errors.0.message', 'Please accept a trainer offer before full payment');
+            ->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.type', Payment::TYPE_PLAN_FULL)
+            ->assertJsonPath('data.amount_minor', 120000)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED);
 
-        $this->assertDatabaseMissing('payments', [
+        $this->assertDatabaseHas('payments', [
             'user_request_id' => $userRequest->id,
             'type' => Payment::TYPE_PLAN_FULL,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'amount_minor' => 120000,
         ]);
         $this->assertDatabaseHas('trainer_offers', [
-            'user_request_id' => $userRequest->id,
-            'status' => TrainerOffer::STATUS_SENT,
+            'id' => $offer->id,
+            'status' => TrainerOffer::STATUS_ACCEPTED,
         ]);
         $this->assertDatabaseHas('user_requests', [
             'id' => $userRequest->id,
-            'trainer_id' => null,
-            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'trainer_id' => $trainer->id,
+            'status' => UserRequest::STATUS_IN_TRAINING,
+            'total_paid_minor' => 120000,
         ]);
     }
 
@@ -568,18 +575,26 @@ class PaymentControllerTest extends TestCase
             'is_active' => true,
         ]);
         $user = User::factory()->create(['phone_with_cc' => '+966500000004']);
+        $trainer = User::factory()->create(['phone_with_cc' => '+966500000104']);
         $userRequest = UserRequest::create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'country_id' => $country->id,
             'start_date' => now()->toDateString(),
-            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
             'currency' => 'SAR',
             'app_fee_reserved_minor' => 0,
             'total_paid_minor' => 0,
             'has_user_car' => false,
             'wants_trainer_car' => true,
             'needs_pickup' => false,
+        ]);
+        $offer = TrainerOffer::create([
+            'user_request_id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'price_minor' => 15000,
+            'message' => 'Gateway return offer',
+            'status' => TrainerOffer::STATUS_SENT,
         ]);
         $payment = Payment::create([
             'user_id' => $user->id,
@@ -592,6 +607,9 @@ class PaymentControllerTest extends TestCase
             'status' => Payment::STATUS_PENDING,
             'app_fee_minor' => 0,
             'trainer_net_minor' => 15000,
+            'gateway_payload' => [
+                'selected_offer_id' => $offer->id,
+            ],
         ]);
 
         $this->getJson('/api/v1/payments/return/tabby/success/'.$payment->id)
@@ -608,8 +626,13 @@ class PaymentControllerTest extends TestCase
         ]);
         $this->assertDatabaseHas('user_requests', [
             'id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
             'status' => UserRequest::STATUS_IN_TRAINING,
             'total_paid_minor' => 15000,
+        ]);
+        $this->assertDatabaseHas('trainer_offers', [
+            'id' => $offer->id,
+            'status' => TrainerOffer::STATUS_ACCEPTED,
         ]);
     }
 
@@ -644,18 +667,26 @@ class PaymentControllerTest extends TestCase
             'is_active' => true,
         ]);
         $user = User::factory()->create(['phone_with_cc' => '+966500000005']);
+        $trainer = User::factory()->create(['phone_with_cc' => '+966500000105']);
         $userRequest = UserRequest::create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'country_id' => $country->id,
             'start_date' => now()->toDateString(),
-            'status' => UserRequest::STATUS_OFFER_SELECTED,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
             'currency' => 'SAR',
             'app_fee_reserved_minor' => 0,
             'total_paid_minor' => 0,
             'has_user_car' => false,
             'wants_trainer_car' => true,
             'needs_pickup' => false,
+        ]);
+        $offer = TrainerOffer::create([
+            'user_request_id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
+            'price_minor' => 15000,
+            'message' => 'Gateway return offer',
+            'status' => TrainerOffer::STATUS_SENT,
         ]);
         $payment = Payment::create([
             'user_id' => $user->id,
@@ -668,6 +699,9 @@ class PaymentControllerTest extends TestCase
             'status' => Payment::STATUS_PENDING,
             'app_fee_minor' => 0,
             'trainer_net_minor' => 15000,
+            'gateway_payload' => [
+                'selected_offer_id' => $offer->id,
+            ],
         ]);
 
         $this->getJson('/api/v1/payments/return/tamara/success/'.$payment->id)
@@ -687,8 +721,13 @@ class PaymentControllerTest extends TestCase
         ]);
         $this->assertDatabaseHas('user_requests', [
             'id' => $userRequest->id,
+            'trainer_id' => $trainer->id,
             'status' => UserRequest::STATUS_IN_TRAINING,
             'total_paid_minor' => 15000,
+        ]);
+        $this->assertDatabaseHas('trainer_offers', [
+            'id' => $offer->id,
+            'status' => TrainerOffer::STATUS_ACCEPTED,
         ]);
     }
 
