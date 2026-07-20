@@ -55,7 +55,7 @@ class PaymentService
             $amountMinor = $this->resolveFullPaymentAmountMinor($req, $request, $selectedOffer);
         } else {
             $selectedOffer = null;
-            $amountMinor = (int) $request->input('price', 0);
+            $amountMinor = $this->inputPriceMinor($request);
             abort_unless($amountMinor > 0, 422, 'Payment amount is required');
         }
 
@@ -188,7 +188,7 @@ class PaymentService
         }
 
         if ($amountMinor <= 0) {
-            $amountMinor = (int) $request->input('price', 0);
+            $amountMinor = $this->inputPriceMinor($request);
         }
 
         abort_unless($amountMinor > 0, 422, 'Unable to determine payment amount');
@@ -233,7 +233,7 @@ class PaymentService
                 ->first();
         }
 
-        $priceMinor = (int) $request->input('price', 0);
+        $priceMinor = $this->inputPriceMinor($request);
         if ($priceMinor > 0) {
             $matchingOffers = $req->offers()
                 ->whereIn('status', [TrainerOffer::STATUS_SENT, TrainerOffer::STATUS_ACCEPTED])
@@ -256,6 +256,21 @@ class PaymentService
         abort_if($sentOffers->count() > 1, 422, 'offer_id is required for this payment');
 
         return $sentOffers->first();
+    }
+
+    private function inputPriceMinor(Request $request): int
+    {
+        $price = $request->input('price');
+        if ($price === null || $price === '') {
+            return 0;
+        }
+
+        $normalized = str_replace(',', '', trim((string) $price));
+        if ($normalized === '' || ! is_numeric($normalized)) {
+            return 0;
+        }
+
+        return max(0, (int) round((float) $normalized));
     }
 
     private function initiateGatewaySession(Payment $payment): Payment

@@ -38,7 +38,7 @@ class PaymentController extends BaseController
             'payment_method' => ['required', 'string', Rule::in(Payment::paymentMethods())],
             'type' => ['sometimes', 'string', 'in:plan_full,plan_partial'],
             'status' => ['nullable', 'string', 'in:pending,succeeded,failed'],
-            'price' => ['nullable', 'integer', 'min:1'],
+            'price' => ['nullable', 'numeric', 'min:1'],
             'offer_id' => ['nullable', 'uuid'],
         ]);
 
