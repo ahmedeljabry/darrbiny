@@ -128,10 +128,14 @@ class ReferralSeparationTest extends TestCase
             'points_balance' => 250,
         ]);
         $plan = $this->createPlan();
+        $trainer = User::factory()->create([
+            'phone_with_cc' => '+10000000013',
+            'user_type' => 'captain',
+        ]);
 
         $service = app(PaymentService::class);
 
-        $firstRequest = $this->createUserRequest($referredUser->id, $plan->id);
+        $firstRequest = $this->createUserRequest($referredUser->id, $plan->id, $trainer->id);
         $service->payWithWallet($firstRequest, $referredUser, new Request([
             'type' => Payment::TYPE_PLAN_FULL,
             'status' => Payment::STATUS_SUCCEEDED,
@@ -139,7 +143,7 @@ class ReferralSeparationTest extends TestCase
             'payment_method' => 'wallet',
         ]));
 
-        $secondRequest = $this->createUserRequest($referredUser->id, $plan->id);
+        $secondRequest = $this->createUserRequest($referredUser->id, $plan->id, $trainer->id);
         $service->payWithWallet($secondRequest, $referredUser->fresh(), new Request([
             'type' => Payment::TYPE_PLAN_FULL,
             'status' => Payment::STATUS_SUCCEEDED,
@@ -264,10 +268,11 @@ class ReferralSeparationTest extends TestCase
             ->assertJsonPath('data.points_spent', 5);
     }
 
-    private function createUserRequest(string $userId, string $planId): UserRequest
+    private function createUserRequest(string $userId, string $planId, string $trainerId): UserRequest
     {
         return UserRequest::create([
             'user_id' => $userId,
+            'trainer_id' => $trainerId,
             'plan_id' => $planId,
             'start_date' => now()->toDateString(),
             'status' => UserRequest::STATUS_PENDING_PAYMENT,

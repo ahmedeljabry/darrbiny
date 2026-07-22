@@ -24,7 +24,7 @@ class SettingsController extends BaseController
         $userRestrictions = $this->decodeListSetting($settings['restrictions.user'] ?? null);
         $paymentGatewayFees = old('payment_gateway_fees');
         if (! is_array($paymentGatewayFees)) {
-            $paymentGatewayFees = PaymentGatewayFees::rows($settings[PaymentGatewayFees::SETTINGS_KEY] ?? null);
+            $paymentGatewayFees = PaymentGatewayFees::rows($settings[PaymentGatewayFees::SETTINGS_KEY] ?? null, $countries);
         }
         $reportCurrency = ReportCurrencyConverter::REPORT_CURRENCY;
         $paymentCurrencies = Payment::query()

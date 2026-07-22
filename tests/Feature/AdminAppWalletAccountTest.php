@@ -9,6 +9,7 @@ use App\Models\AppExpense;
 use App\Models\AppWalletTransaction;
 use App\Models\CancellationRequest;
 use App\Models\Country;
+use App\Models\GatewayWalletTransaction;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Setting;
@@ -75,6 +76,15 @@ class AdminAppWalletAccountTest extends TestCase
             'trainer_net_minor' => 17_000,
         ]);
 
+        GatewayWalletTransaction::create([
+            'gateway' => Payment::METHOD_TABBY,
+            'direction' => GatewayWalletTransaction::DIRECTION_OUT,
+            'source' => GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER,
+            'amount_minor' => 35_000,
+            'notes' => 'Gateway settlement transfer',
+            'created_by' => $admin->id,
+        ]);
+
         AppExpense::query()->create([
             'type' => AppExpense::TYPE_OPERATING_EXPENSE,
             'amount_minor' => 6_000,
@@ -87,9 +97,8 @@ class AdminAppWalletAccountTest extends TestCase
             ->get(route('admin.app-wallet-account.index'))
             ->assertOk()
             ->assertSee('حساب محفظة التطبيق')
-            ->assertSee('رسوم الحجز الثابتة')
-            ->assertSee('رسوم الحجز')
-            ->assertSee('قيمة الباقات')
+            ->assertSee('تحويل من محافظ بوابات الدفع')
+            ->assertSee('Gateway settlement transfer')
             ->assertSee('مصروفات تشغيل')
             ->assertSee('350.00')
             ->assertSee('60.00')
@@ -133,7 +142,7 @@ class AdminAppWalletAccountTest extends TestCase
         );
     }
 
-    public function test_app_wallet_summary_and_entries_are_converted_to_riyal(): void
+    public function test_app_wallet_account_ignores_automatic_sales_rows(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009605',
@@ -171,13 +180,12 @@ class AdminAppWalletAccountTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.app-wallet-account.index'))
             ->assertOk()
-            ->assertSee('8.00 SAR')
             ->assertSee('5.00 SAR')
-            ->assertSee('3.00 SAR')
+            ->assertSee('-5.00 SAR')
             ->assertDontSee('100.00 EGP');
     }
 
-    public function test_admin_can_filter_app_wallet_by_app_fee_analysis(): void
+    public function test_admin_can_filter_app_wallet_by_gateway_transfer(): void
     {
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000009606',
@@ -185,29 +193,33 @@ class AdminAppWalletAccountTest extends TestCase
         $admin->assignRole('ADMIN');
         $admin->givePermissionTo('manage_payments');
 
-        [$user, $request] = $this->createPaidRequestContext();
-
-        Payment::create([
-            'user_id' => $user->id,
-            'user_request_id' => $request->id,
+        GatewayWalletTransaction::create([
+            'gateway' => Payment::METHOD_TAMARA,
+            'direction' => GatewayWalletTransaction::DIRECTION_OUT,
+            'source' => GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER,
             'amount_minor' => 20_000,
-            'currency' => 'SAR',
-            'type' => Payment::TYPE_PLAN_FULL,
-            'payment_method' => 'wallet',
-            'status' => Payment::STATUS_SUCCEEDED,
-            'app_fee_minor' => 3_000,
-            'trainer_net_minor' => 17_000,
+            'notes' => 'Tamara app wallet transfer',
+            'created_by' => $admin->id,
+        ]);
+
+        AppWalletTransaction::create([
+            'direction' => AppWalletTransaction::DIRECTION_IN,
+            'source' => AppWalletTransaction::SOURCE_MANUAL_DEPOSIT,
+            'amount_minor' => 5_000,
+            'notes' => 'Manual deposit should be filtered out',
+            'created_by' => $admin->id,
         ]);
 
         $this->actingAs($admin)
             ->get(route('admin.app-wallet-account.index', [
                 'direction' => 'in',
-                'source' => 'app_fee',
+                'source' => GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER,
             ]))
             ->assertOk()
-            ->assertSee('رسوم الباقات')
-            ->assertSee('30.00')
-            ->assertDontSee('200.00');
+            ->assertSee('تحويل من محافظ بوابات الدفع')
+            ->assertSee('Tamara app wallet transfer')
+            ->assertSee('200.00')
+            ->assertDontSee('Manual deposit should be filtered out');
     }
 
     public function test_admin_can_record_manual_app_wallet_deposit_and_withdrawal(): void
@@ -307,6 +319,15 @@ class AdminAppWalletAccountTest extends TestCase
             'processed_at' => now(),
         ]);
 
+        GatewayWalletTransaction::create([
+            'gateway' => Payment::METHOD_TAP,
+            'direction' => GatewayWalletTransaction::DIRECTION_OUT,
+            'source' => GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER,
+            'amount_minor' => 13_000,
+            'notes' => 'Transferred sales settlement',
+            'created_by' => $admin->id,
+        ]);
+
         AppWalletTransaction::create([
             'direction' => AppWalletTransaction::DIRECTION_OUT,
             'source' => AppWalletTransaction::SOURCE_PACKAGE_REFUND_WITHDRAWAL,
@@ -322,6 +343,7 @@ class AdminAppWalletAccountTest extends TestCase
             ->assertSee('130.00')
             ->assertSee('50.00')
             ->assertSee('80.00')
+            ->assertSee('Transferred sales settlement')
             ->assertSee('Manual package refund withdrawal')
             ->assertDontSee('Refund after cancellation');
     }

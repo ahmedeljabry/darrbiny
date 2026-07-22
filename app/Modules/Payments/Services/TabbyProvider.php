@@ -98,7 +98,7 @@ class TabbyProvider implements PaymentProvider
     {
         $request = $payment->userRequest;
         $user = $payment->user;
-        $amount = GatewayPayloadSupport::amount($payment);
+        $amount = GatewayPayloadSupport::totalAmount($payment);
         $taxAmount = GatewayPayloadSupport::taxAmount($payment);
         $orderNumber = GatewayPayloadSupport::orderNumber($request);
         $planTitle = trim((string) ($request->plan?->title ?? 'Training course')) ?: 'Training course';

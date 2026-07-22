@@ -116,6 +116,16 @@ final class GatewayWalletAccountService
         ];
     }
 
+    public function totalGatewayExpensesMinor(array $filters = []): int
+    {
+        return collect(array_keys(self::GATEWAYS))
+            ->sum(function (string $gateway) use ($filters): int {
+                $summary = $this->summary($gateway, $filters);
+
+                return (int) $summary['gateway_fee_minor'] + (int) $summary['vat_minor'];
+            });
+    }
+
     private function paymentEntries(string $gateway, array $filters): Collection
     {
         $sourceFilter = $filters['source'] ?? null;
@@ -141,14 +151,16 @@ final class GatewayWalletAccountService
                 return $this->paymentSourceKey($payment) === $sourceFilter;
             })
             ->map(function (Payment $payment) use ($gateway): object {
+                $request = $payment->userRequest;
                 $amountMinor = $this->reportCurrencyConverter->convertMinor(
                     (int) $payment->amount_minor,
                     (string) $payment->currency
                 );
-                $feeMinor = $this->gatewayFeeMinor($gateway, $amountMinor);
+                $feeOriginalMinor = $this->gatewayFeeMinor($gateway, (int) $payment->amount_minor, $request);
+                $feeMinor = $this->reportCurrencyConverter->convertMinor($feeOriginalMinor, (string) $payment->currency);
                 $sourceKey = $this->paymentSourceKey($payment);
-                $request = $payment->userRequest;
-                $vatMinor = $this->vatMinor($feeMinor, $request);
+                $vatOriginalMinor = $this->vatMinor($feeOriginalMinor, $request);
+                $vatMinor = $this->reportCurrencyConverter->convertMinor($vatOriginalMinor, (string) $payment->currency);
 
                 return (object) [
                     'entry_type' => 'payment',
@@ -308,9 +320,9 @@ final class GatewayWalletAccountService
         ])->filter()->implode(' | ');
     }
 
-    private function gatewayFeeMinor(string $gateway, int $amountMinor): int
+    private function gatewayFeeMinor(string $gateway, int $amountMinor, ?UserRequest $request): int
     {
-        $config = $this->feeConfig($gateway);
+        $config = $this->feeConfig($gateway, $request);
 
         return (int) round($amountMinor * (((float) $config['commission_percent']) / 100))
             + (int) $config['fixed_fee_minor'];
@@ -321,12 +333,14 @@ final class GatewayWalletAccountService
         return (int) round($feeMinor * (Vat::percentForRequest($request) / 100));
     }
 
-    private function feeConfig(string $gateway): array
+    private function feeConfig(string $gateway, ?UserRequest $request): array
     {
         $stored = Setting::query()->where('key', PaymentGatewayFees::SETTINGS_KEY)->value('value');
 
         if (is_string($stored) && trim($stored) !== '') {
-            $row = collect(PaymentGatewayFees::rows($stored))->firstWhere('gateway', $gateway);
+            $request?->loadMissing(['country', 'plan.country']);
+            $countryId = $request?->country?->id ?: $request?->plan?->country?->id;
+            $row = PaymentGatewayFees::configFor($stored, $gateway, is_string($countryId) ? $countryId : null);
 
             if (is_array($row)) {
                 return [

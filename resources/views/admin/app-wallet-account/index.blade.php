@@ -60,9 +60,9 @@
         </span>
         <div class="report-hero__text">
           <h2>حساب محفظة التطبيق</h2>
-          <p>كشف حساب موحد لكل المدفوعات الواردة إلى محفظة التطبيق بكل أنواعها، وكل ما خرج منها كمصروفات تشغيلية أو مالية.</p>
+          <p>كشف حساب للحوالات القادمة من محافظ بوابات الدفع، والإيداعات والسحوبات اليدوية، وطلبات السحب المنفذة.</p>
           <div class="report-hero__tags">
-            <span class="report-tag"><i class="icon-base ti tabler-arrow-down-left"></i> وارد وصادر في شاشة واحدة</span>
+            <span class="report-tag"><i class="icon-base ti tabler-transfer"></i> تحويلات المحافظ</span>
             <span class="report-tag"><i class="icon-base ti tabler-exchange"></i> المجاميع بالـ {{ $reportCurrency }}</span>
             <span class="report-tag"><i class="icon-base ti tabler-file-excel"></i> يدعم تصدير Excel</span>
           </div>
@@ -207,7 +207,7 @@
       ])
 
       <div class="report-note-box mb-4">
-        <p>الوارد يشمل رسوم الحجز وقيمة الباقات والإيداعات اليدوية. الصادر يشمل مصروفات التشغيل وأوامر السحب اليدوية وطلبات السحب المنفذة من قسم العمليات، ولا يتم خصم إلغاء الكورس تلقائيًا من محفظة التطبيق. كل القيم في هذه الشاشة معروضة بالـ {{ $reportCurrency }}.</p>
+        <p>الوارد يشمل تحويلات محافظ بوابات الدفع والإيداعات اليدوية فقط، ولا يتم تسجيل المبيعات تلقائيًا في محفظة التطبيق. الصادر يشمل مصروفات التشغيل وأوامر السحب اليدوية وطلبات السحب المنفذة من قسم العمليات. كل القيم في هذه الشاشة معروضة بالـ {{ $reportCurrency }}.</p>
       </div>
 
       @if($sourceBreakdowns->isNotEmpty())

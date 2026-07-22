@@ -115,7 +115,7 @@ class TamaraProvider implements PaymentProvider
         }
 
         $user = $payment->user;
-        $amount = GatewayPayloadSupport::amount($payment);
+        $amount = GatewayPayloadSupport::totalAmount($payment);
         $taxAmount = GatewayPayloadSupport::taxAmount($payment);
         $currency = strtoupper((string) $payment->currency);
         $orderNumber = GatewayPayloadSupport::orderNumber($request);

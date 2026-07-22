@@ -43,6 +43,16 @@ final class Vat
         return self::minorForAmount((int) $payment->amount_minor, $payment->userRequest);
     }
 
+    public static function grossMinorForPayment(Payment $payment): int
+    {
+        return (int) $payment->amount_minor + self::minorForPayment($payment);
+    }
+
+    public static function formattedGrossGatewayAmount(Payment $payment): string
+    {
+        return number_format(self::grossMinorForPayment($payment) / 100, 2, '.', '');
+    }
+
     public static function formattedGatewayAmount(Payment $payment): string
     {
         return number_format(self::minorForPayment($payment) / 100, 2, '.', '');

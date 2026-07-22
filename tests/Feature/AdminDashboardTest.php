@@ -615,7 +615,7 @@ class AdminDashboardTest extends TestCase
             ->assertSee('10.00 SAR')
             ->assertSee('4.00 SAR')
             ->assertSee('1.00 SAR')
-            ->assertSee('99.00 SAR')
+            ->assertSee('-1.00 SAR')
             ->assertSee('13.00 SAR');
     }
 

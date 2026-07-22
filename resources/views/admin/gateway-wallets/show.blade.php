@@ -49,7 +49,7 @@
     </div>
   @endif
 
-  <div class="report-hero report-hero--primary mb-4">
+  <div id="gateway-wallet-main" class="report-hero report-hero--primary mb-4">
     <div class="report-hero__body">
       <div class="report-hero__lead">
         <span class="report-hero__icon bg-label-{{ $gatewayConfig['tone'] ?? 'primary' }}">
@@ -59,14 +59,12 @@
           <h2>{{ $gatewayConfig['title'] }}</h2>
           <p>كشف محفظة بوابة الدفع مطابق لملف Excel: مبيعات البوابة، الرسوم، الضريبة، الوارد اليدوي، والتحويلات.</p>
           <div class="report-hero__tags">
-            @foreach($gateways as $gatewayKey => $config)
-              <a
-                href="{{ route('admin.gateway-wallets.show', $gatewayKey) }}"
-                class="report-tag {{ $gatewayKey === $gateway ? 'bg-label-primary' : '' }}"
-              >
-                <i class="icon-base ti tabler-wallet"></i> {{ $config['label'] }}
-              </a>
-            @endforeach
+            <a href="#gateway-wallet-main" class="report-tag bg-label-primary">
+              <i class="icon-base ti tabler-layout-dashboard"></i> الرئيسية
+            </a>
+            <a href="#gateway-wallet-operations" class="report-tag">
+              <i class="icon-base ti tabler-list-details"></i> العمليات
+            </a>
           </div>
         </div>
       </div>
@@ -106,7 +104,7 @@
     </div>
   </div>
 
-  <div class="card report-panel">
+  <div id="gateway-wallet-operations" class="card report-panel">
     <div class="card-body">
       <div class="dashboard-section-head">
         <div>

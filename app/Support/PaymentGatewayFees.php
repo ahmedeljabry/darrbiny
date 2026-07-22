@@ -18,27 +18,42 @@ final class PaymentGatewayFees
         'tamara' => 'تمارا',
     ];
 
-    public static function rows(string|array|null $value): array
+    public static function rows(string|array|null $value, iterable $countries = []): array
     {
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            $value = is_array($decoded) ? $decoded : [];
+        $storedRows = self::submittedRows($value);
+        $countryRows = self::countryRows($countries);
+
+        if ($countryRows !== []) {
+            $rows = [];
+
+            foreach (self::GATEWAYS as $gateway => $label) {
+                foreach ($countryRows as $country) {
+                    $config = self::configForRows($storedRows, $gateway, $country['id']);
+                    $rows[] = [
+                        'gateway' => $gateway,
+                        'label' => $label,
+                        'fixed_fee_minor' => $config['fixed_fee_minor'],
+                        'commission_percent' => $config['commission_percent'],
+                        'country_id' => $country['id'],
+                        'country_name' => $country['name'],
+                        'currency' => $country['currency'],
+                    ];
+                }
+            }
+
+            return $rows;
         }
 
-        $submittedRows = collect($value ?? [])
-            ->filter(static fn (mixed $row): bool => is_array($row))
-            ->keyBy(static fn (array $row): string => (string) ($row['gateway'] ?? ''));
-
         return collect(self::GATEWAYS)
-            ->map(static function (string $label, string $gateway) use ($submittedRows): array {
-                $row = $submittedRows->get($gateway, []);
+            ->map(static function (string $label, string $gateway) use ($storedRows): array {
+                $config = self::configForRows($storedRows, $gateway, null);
 
                 return [
                     'gateway' => $gateway,
                     'label' => $label,
-                    'fixed_fee_minor' => self::fixedFeeMinor($row['fixed_fee_minor'] ?? null),
-                    'commission_percent' => self::commissionPercent($row['commission_percent'] ?? null),
-                    'country_id' => self::countryId($row['country_id'] ?? null),
+                    'fixed_fee_minor' => $config['fixed_fee_minor'],
+                    'commission_percent' => $config['commission_percent'],
+                    'country_id' => $config['country_id'],
                 ];
             })
             ->values()
@@ -47,7 +62,12 @@ final class PaymentGatewayFees
 
     public static function encode(string|array|null $value): string
     {
-        return json_encode(self::rows($value), JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+        return json_encode(self::submittedRows($value), JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    public static function configFor(string|array|null $value, string $gateway, ?string $countryId = null): array
+    {
+        return self::configForRows(self::submittedRows($value), $gateway, self::countryId($countryId));
     }
 
     public static function keys(): array
@@ -82,5 +102,77 @@ final class PaymentGatewayFees
         }
 
         return $value;
+    }
+
+    private static function submittedRows(string|array|null $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded) ? $decoded : [];
+        }
+
+        return collect($value ?? [])
+            ->filter(static fn (mixed $row): bool => is_array($row))
+            ->map(static function (array $row): ?array {
+                $gateway = (string) ($row['gateway'] ?? '');
+                if (! array_key_exists($gateway, self::GATEWAYS)) {
+                    return null;
+                }
+
+                return [
+                    'gateway' => $gateway,
+                    'fixed_fee_minor' => self::fixedFeeMinor($row['fixed_fee_minor'] ?? null),
+                    'commission_percent' => self::commissionPercent($row['commission_percent'] ?? null),
+                    'country_id' => self::countryId($row['country_id'] ?? null),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private static function configForRows(array $rows, string $gateway, ?string $countryId): array
+    {
+        $countryId = self::countryId($countryId);
+
+        $match = collect($rows)->first(static fn (array $row): bool => $row['gateway'] === $gateway && $row['country_id'] === $countryId)
+            ?? collect($rows)->first(static fn (array $row): bool => $row['gateway'] === $gateway && $row['country_id'] === null)
+            ?? collect($rows)->first(static fn (array $row): bool => $row['gateway'] === $gateway);
+
+        if (! is_array($match)) {
+            return [
+                'gateway' => $gateway,
+                'fixed_fee_minor' => self::DEFAULT_FIXED_FEE_MINOR,
+                'commission_percent' => self::DEFAULT_COMMISSION_PERCENT,
+                'country_id' => $countryId,
+            ];
+        }
+
+        return [
+            'gateway' => $gateway,
+            'fixed_fee_minor' => self::fixedFeeMinor($match['fixed_fee_minor'] ?? null),
+            'commission_percent' => self::commissionPercent($match['commission_percent'] ?? null),
+            'country_id' => self::countryId($match['country_id'] ?? $countryId),
+        ];
+    }
+
+    private static function countryRows(iterable $countries): array
+    {
+        $rows = [];
+
+        foreach ($countries as $country) {
+            $id = self::countryId(is_array($country) ? ($country['id'] ?? null) : ($country->id ?? null));
+            if ($id === null) {
+                continue;
+            }
+
+            $rows[] = [
+                'id' => $id,
+                'name' => trim((string) (is_array($country) ? ($country['name'] ?? '') : ($country->name ?? ''))) ?: '—',
+                'currency' => strtoupper(trim((string) (is_array($country) ? ($country['currency'] ?? '') : ($country->currency ?? '')))) ?: 'SAR',
+            ];
+        }
+
+        return $rows;
     }
 }

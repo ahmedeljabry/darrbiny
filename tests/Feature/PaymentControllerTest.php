@@ -303,6 +303,9 @@ class PaymentControllerTest extends TestCase
                 ->assertJsonPath('success', true)
                 ->assertJsonPath('data.payment_method', $paymentMethod)
                 ->assertJsonPath('data.status', Payment::STATUS_PENDING)
+                ->assertJsonPath('data.amount_minor', 15000)
+                ->assertJsonPath('data.vat_minor', 2250)
+                ->assertJsonPath('data.total_amount_minor', 17250)
                 ->assertJsonPath(
                     'data.checkout_url',
                     $paymentMethod === Payment::METHOD_TABBY
@@ -330,12 +333,16 @@ class PaymentControllerTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://tabby.test/api/v2/checkout'
             && str_contains((string) data_get($request->data(), 'merchant_urls.success'), '/payments/return/tabby/success/')
             && ! str_contains((string) data_get($request->data(), 'merchant_urls.success'), '/api/v1/')
+            && data_get($request->data(), 'payment.amount') === '172.50'
+            && data_get($request->data(), 'payment.order.items.0.unit_price') === '172.50'
             && data_get($request->data(), 'payment.order.tax_amount') === '22.50'
             && data_get($request->data(), 'payment.order.items.0.tax_amount') === '22.50');
 
         Http::assertSent(fn ($request) => $request->url() === 'https://tamara.test/checkout'
             && str_contains((string) data_get($request->data(), 'merchant_url.success'), '/payments/return/tamara/success/')
             && ! str_contains((string) data_get($request->data(), 'merchant_url.success'), '/api/v1/')
+            && data_get($request->data(), 'total_amount.amount') === '172.50'
+            && data_get($request->data(), 'items.0.total_amount.amount') === '172.50'
             && data_get($request->data(), 'tax_amount.amount') === '22.50'
             && data_get($request->data(), 'items.0.tax_amount.amount') === '22.50');
     }

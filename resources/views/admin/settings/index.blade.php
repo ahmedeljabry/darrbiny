@@ -698,7 +698,8 @@
                             $gatewayLabel = $gatewayFee['label'] ?? (\App\Support\PaymentGatewayFees::GATEWAYS[$gatewayKey] ?? $gatewayKey);
                             $gatewayCountryId = $gatewayFee['country_id'] ?? null;
                             $gatewayCountry = $gatewayCountryId ? $countries->firstWhere('id', (string) $gatewayCountryId) : null;
-                            $gatewayCurrency = $gatewayCountry?->currency ?: 'SAR';
+                            $gatewayCurrency = ($gatewayFee['currency'] ?? $gatewayCountry?->currency) ?: 'SAR';
+                            $gatewayCountryName = $gatewayFee['country_name'] ?? $gatewayCountry?->name ?? 'كل الدول';
                             $fixedFeeMinor = (int) ($gatewayFee['fixed_fee_minor'] ?? \App\Support\PaymentGatewayFees::DEFAULT_FIXED_FEE_MINOR);
                             $commissionPercent = $gatewayFee['commission_percent'] ?? \App\Support\PaymentGatewayFees::DEFAULT_COMMISSION_PERCENT;
                           @endphp
@@ -719,14 +720,11 @@
                               @enderror
                             </td>
                             <td>
-                              <select class="form-select" name="payment_gateway_fees[{{ $index }}][country_id]" style="min-width: 220px;">
-                                <option value="">اختر الدولة</option>
-                                @foreach($countries as $country)
-                                  <option value="{{ $country->id }}" @selected((string) $gatewayCountryId === (string) $country->id)>
-                                    {{ $country->name }} - {{ $country->currency }}
-                                  </option>
-                                @endforeach
-                              </select>
+                              <input type="hidden" name="payment_gateway_fees[{{ $index }}][country_id]" value="{{ $gatewayCountryId }}">
+                              <div class="d-flex flex-column" style="min-width: 220px;">
+                                <span class="fw-semibold">{{ $gatewayCountryName }}</span>
+                                <small class="text-muted">{{ $gatewayCurrency }}</small>
+                              </div>
                               @error("payment_gateway_fees.$index.country_id")
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                               @enderror

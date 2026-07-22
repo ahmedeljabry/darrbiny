@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\Payments\Http\Resources;
 
+use App\Support\Vat;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PaymentResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $vatMinor = Vat::minorForPayment($this->resource);
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
             'user_request_id' => $this->user_request_id,
             'amount_minor' => $this->amount_minor,
+            'vat_minor' => $vatMinor,
+            'total_amount_minor' => (int) $this->amount_minor + $vatMinor,
             'currency' => $this->currency,
             'type' => $this->type,
             'payment_method' => $this->payment_method,

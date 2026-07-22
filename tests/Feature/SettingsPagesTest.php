@@ -210,6 +210,11 @@ class SettingsPagesTest extends TestCase
             'iso2' => 'SA',
             'currency' => 'SAR',
         ]);
+        $egypt = Country::create([
+            'name' => 'Egypt',
+            'iso2' => 'EG',
+            'currency' => 'EGP',
+        ]);
 
         $admin = User::factory()->create([
             'phone_with_cc' => '+10000002003',
@@ -222,6 +227,8 @@ class SettingsPagesTest extends TestCase
             ->assertOk()
             ->assertSee('رسوم وعمولات بوابات الدفع')
             ->assertSee('name="payment_gateway_fees[0][fixed_fee_minor]"', false)
+            ->assertSee('name="payment_gateway_fees[5][fixed_fee_minor]"', false)
+            ->assertSee('Egypt')
             ->assertSee('تابي')
             ->assertSee('تمارا');
 
@@ -235,16 +242,34 @@ class SettingsPagesTest extends TestCase
                         'country_id' => $country->id,
                     ],
                     [
+                        'gateway' => 'tap',
+                        'fixed_fee_minor' => 250,
+                        'commission_percent' => 5,
+                        'country_id' => $egypt->id,
+                    ],
+                    [
                         'gateway' => 'tabby',
-                        'fixed_fee_minor' => 150,
-                        'commission_percent' => 7,
+                        'fixed_fee_minor' => 160,
+                        'commission_percent' => 6.5,
+                        'country_id' => $country->id,
+                    ],
+                    [
+                        'gateway' => 'tabby',
+                        'fixed_fee_minor' => 260,
+                        'commission_percent' => 8,
+                        'country_id' => $egypt->id,
+                    ],
+                    [
+                        'gateway' => 'tamara',
+                        'fixed_fee_minor' => 170,
+                        'commission_percent' => 6.75,
                         'country_id' => $country->id,
                     ],
                     [
                         'gateway' => 'tamara',
-                        'fixed_fee_minor' => 150,
-                        'commission_percent' => 7,
-                        'country_id' => $country->id,
+                        'fixed_fee_minor' => 270,
+                        'commission_percent' => 8.25,
+                        'country_id' => $egypt->id,
                     ],
                 ],
             ])
@@ -256,12 +281,15 @@ class SettingsPagesTest extends TestCase
             true
         );
 
-        $this->assertSame('tap', $storedGatewayFees[0]['gateway'] ?? null);
-        $this->assertSame(150, $storedGatewayFees[0]['fixed_fee_minor'] ?? null);
-        $this->assertSame(7.0, $storedGatewayFees[0]['commission_percent'] ?? null);
-        $this->assertSame($country->id, $storedGatewayFees[0]['country_id'] ?? null);
-        $this->assertSame('tabby', $storedGatewayFees[1]['gateway'] ?? null);
-        $this->assertSame('tamara', $storedGatewayFees[2]['gateway'] ?? null);
+        $this->assertCount(6, $storedGatewayFees);
+        $storedRows = collect($storedGatewayFees);
+        $saudiTap = $storedRows->first(fn ($row) => ($row['gateway'] ?? null) === 'tap' && ($row['country_id'] ?? null) === $country->id);
+        $egyptTabby = $storedRows->first(fn ($row) => ($row['gateway'] ?? null) === 'tabby' && ($row['country_id'] ?? null) === $egypt->id);
+
+        $this->assertSame(150, $saudiTap['fixed_fee_minor'] ?? null);
+        $this->assertSame(7.0, $saudiTap['commission_percent'] ?? null);
+        $this->assertSame(260, $egyptTabby['fixed_fee_minor'] ?? null);
+        $this->assertSame(8.0, $egyptTabby['commission_percent'] ?? null);
 
         $response = $this->getJson('/api/v1/settings/fees')->assertOk();
 

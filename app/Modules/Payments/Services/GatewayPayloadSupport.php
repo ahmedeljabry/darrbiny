@@ -25,6 +25,11 @@ final class GatewayPayloadSupport
         return number_format(((int) $payment->amount_minor) / 100, 2, '.', '');
     }
 
+    public static function totalAmount(Payment $payment): string
+    {
+        return Vat::formattedGrossGatewayAmount($payment);
+    }
+
     public static function taxAmount(Payment $payment): string
     {
         return Vat::formattedGatewayAmount($payment);

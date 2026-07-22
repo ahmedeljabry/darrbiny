@@ -8,6 +8,7 @@ use App\Enums\UserType;
 use App\Models\AppExpense;
 use App\Models\WalletTransaction;
 use App\Services\Admin\AppWalletAccountService;
+use App\Services\Admin\GatewayWalletAccountService;
 use App\Services\Admin\ReportsService;
 use App\Support\ReportCurrencyConverter;
 use Carbon\CarbonImmutable;
@@ -21,6 +22,7 @@ class DashboardController extends BaseController
 {
     public function __construct(
         private readonly AppWalletAccountService $appWalletAccountService,
+        private readonly GatewayWalletAccountService $gatewayWalletAccountService,
         private readonly ReportsService $reportsService,
         private readonly ReportCurrencyConverter $reportCurrencyConverter
     ) {}
@@ -129,9 +131,14 @@ class DashboardController extends BaseController
                 ->whereHas('user', fn ($query) => $query->where('user_type', UserType::CAPTAIN->value))
         );
         $bookingsValueMinor = max(0, $bookingsValueMinor - $trainerWithdrawalsMinor);
-        $expensesMinor = (int) AppExpense::query()
+        $manualExpensesMinor = (int) AppExpense::query()
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount_minor');
+        $gatewayExpensesMinor = $this->gatewayWalletAccountService->totalGatewayExpensesMinor([
+            'from' => CarbonImmutable::instance($from),
+            'to' => CarbonImmutable::instance($to),
+        ]);
+        $expensesMinor = $manualExpensesMinor + $gatewayExpensesMinor;
         $netProfitMinor = $salesMinor - $expensesMinor;
         $appWalletBalanceMinor = $this->appWalletAccountService->summary()['net_minor'];
 

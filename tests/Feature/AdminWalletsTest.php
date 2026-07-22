@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
+use App\Support\PaymentGatewayFees;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Maatwebsite\Excel\Facades\Excel;
@@ -331,6 +332,52 @@ class AdminWalletsTest extends TestCase
             ->assertSee('50.00 SAR');
     }
 
+    public function test_gateway_wallet_uses_country_specific_gateway_fee_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create([
+            'phone_with_cc' => '+10000007105',
+        ]);
+        $admin->assignRole('ADMIN');
+        $admin->givePermissionTo('manage_wallets');
+
+        [$student, $booking] = $this->createGatewayWalletBooking();
+
+        Setting::updateOrCreate(['key' => PaymentGatewayFees::SETTINGS_KEY], [
+            'value' => PaymentGatewayFees::encode([
+                [
+                    'gateway' => Payment::METHOD_TABBY,
+                    'country_id' => $booking->country_id,
+                    'fixed_fee_minor' => 200,
+                    'commission_percent' => 10,
+                ],
+            ]),
+        ]);
+
+        Payment::create([
+            'user_id' => $student->id,
+            'user_request_id' => $booking->id,
+            'amount_minor' => 10_000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_FULL,
+            'payment_method' => Payment::METHOD_TABBY,
+            'gateway_reference' => 'country-tabby-fee',
+            'gateway_status' => 'closed',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'app_fee_minor' => 1_000,
+            'trainer_net_minor' => 9_000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.gateway-wallets.show', 'tabby'))
+            ->assertOk()
+            ->assertSee('country-tabby-fee')
+            ->assertSee('12.00 SAR')
+            ->assertSee('1.80 SAR')
+            ->assertSee('86.20 SAR');
+    }
+
     public function test_admin_can_export_gateway_wallet_excel(): void
     {
         Excel::fake();
@@ -364,6 +411,7 @@ class AdminWalletsTest extends TestCase
             'name' => 'Saudi Arabia',
             'iso2' => 'SA',
             'currency' => 'SAR',
+            'vat_percent' => 15.0,
         ]);
 
         $plan = Plan::create([

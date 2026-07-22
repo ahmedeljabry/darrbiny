@@ -6,8 +6,7 @@ namespace App\Services\Admin;
 
 use App\Models\AppExpense;
 use App\Models\AppWalletTransaction;
-use App\Models\Payment;
-use App\Models\UserRequest;
+use App\Models\GatewayWalletTransaction;
 use App\Models\WalletTransaction;
 use App\Support\ReportCurrencyConverter;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,10 +21,7 @@ final class AppWalletAccountService
     public function sourceOptions(): array
     {
         return [
-            Payment::TYPE_RESERVATION_FEE => 'وارد: رسوم الحجز الثابتة',
-            Payment::TYPE_PLAN_PARTIAL => 'وارد: رسوم الحجز',
-            Payment::TYPE_PLAN_FULL => 'وارد: قيمة الباقات',
-            'app_fee' => 'تحليل: رسوم الباقات',
+            GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER => 'وارد: تحويل من محافظ بوابات الدفع',
             AppWalletTransaction::SOURCE_MANUAL_DEPOSIT => 'وارد: إيداع محفظة التطبيق',
             AppExpense::TYPE_OPERATING_EXPENSE => 'صادر: مصروفات تشغيل',
             AppWalletTransaction::SOURCE_TRAINER_DUES_WITHDRAWAL => 'صادر: سحب مستحقات مدرب',
@@ -44,16 +40,8 @@ final class AppWalletAccountService
         $outgoingMinor = 0;
 
         if (($filters['direction'] ?? null) !== 'out') {
-            $incomingQuery = $this->incomingPaymentsQuery($filters);
-            $source = $filters['source'] ?? null;
-
-            if ($source === 'app_fee') {
-                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'app_fee_minor');
-            } else {
-                $incomingMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($incomingQuery, 'amount_minor');
-            }
-
-            $incomingMinor += (int) $this->incomingManualTransactionsQuery($filters)->sum('amount_minor');
+            $incomingMinor = (int) $this->incomingGatewayWalletTransfersQuery($filters)->sum('amount_minor')
+                + (int) $this->incomingManualTransactionsQuery($filters)->sum('amount_minor');
         }
 
         if (($filters['direction'] ?? null) !== 'in') {
@@ -71,7 +59,7 @@ final class AppWalletAccountService
 
     public function ledgerEntries(array $filters = []): Collection
     {
-        return $this->incomingEntries($filters)
+        return $this->gatewayWalletTransferEntries($filters)
             ->concat($this->manualAppWalletEntries($filters))
             ->concat($this->outgoingEntries($filters))
             ->concat($this->approvedWalletWithdrawalEntries($filters))
@@ -79,43 +67,35 @@ final class AppWalletAccountService
             ->values();
     }
 
-    private function incomingEntries(array $filters): Collection
+    private function gatewayWalletTransferEntries(array $filters): Collection
     {
         if (($filters['direction'] ?? null) === 'out') {
             return collect();
         }
 
-        $sourceFilter = $filters['source'] ?? null;
-
-        return $this->incomingPaymentsQuery($filters)
+        return $this->incomingGatewayWalletTransfersQuery($filters)
             ->get()
-            ->map(function (Payment $payment) use ($sourceFilter): object {
-                $isAppFeeEntry = $sourceFilter === 'app_fee' && $payment->type === Payment::TYPE_PLAN_FULL;
-                $amountMinor = $isAppFeeEntry ? (int) $payment->app_fee_minor : (int) $payment->amount_minor;
-                $sourceKey = $isAppFeeEntry ? 'app_fee' : (string) $payment->type;
-
+            ->map(function (GatewayWalletTransaction $transaction): object {
                 return (object) [
-                    'reference_id' => $payment->id,
-                    'reference_label' => '#' . substr((string) $payment->id, 0, 8),
+                    'reference_id' => $transaction->id,
+                    'reference_label' => '#' . substr((string) $transaction->id, 0, 8),
                     'direction' => 'in',
                     'direction_label' => 'وارد',
-                    'source_key' => $sourceKey,
-                    'source_label' => $this->entrySourceLabel($sourceKey),
-                    'description' => $this->incomingDescription($sourceKey),
-                    'order_reference' => $payment->userRequest?->formatted_order_number
-                        ? '#' . $payment->userRequest->formatted_order_number
-                        : '—',
-                    'counterparty' => $payment->user?->name ?? 'غير معروف',
+                    'source_key' => GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER,
+                    'source_label' => $this->entrySourceLabel(GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER),
+                    'description' => 'تحويل من محفظة بوابة الدفع إلى محفظة التطبيق',
+                    'order_reference' => '—',
+                    'counterparty' => $transaction->creator?->name ?? 'الإدارة',
                     'details' => collect([
-                        $payment->userRequest?->trainer?->name ? 'المدرب: ' . $payment->userRequest->trainer->name : null,
-                        $payment->userRequest?->plan?->title ? 'الباقة: ' . $payment->userRequest->plan->title : null,
+                        'البوابة: ' . strtoupper((string) $transaction->gateway),
+                        $transaction->notes ? 'ملاحظات: ' . $transaction->notes : null,
                     ])->filter()->implode(' | ') ?: '—',
-                    'amount_minor' => $amountMinor,
-                    'report_amount_minor' => $this->reportCurrencyConverter->convertMinor($amountMinor, $payment->currency),
-                    'currency' => $payment->currency ?: 'SAR',
+                    'amount_minor' => (int) $transaction->amount_minor,
+                    'report_amount_minor' => (int) $transaction->amount_minor,
+                    'currency' => ReportCurrencyConverter::REPORT_CURRENCY,
                     'report_currency' => ReportCurrencyConverter::REPORT_CURRENCY,
-                    'notes' => 'وسيلة الدفع: ' . strtoupper((string) ($payment->payment_method ?? '-')),
-                    'occurred_at' => $payment->created_at,
+                    'notes' => $transaction->notes ?: '—',
+                    'occurred_at' => $transaction->created_at,
                 ];
             });
     }
@@ -224,30 +204,16 @@ final class AppWalletAccountService
             });
     }
 
-    private function incomingPaymentsQuery(array $filters): Builder
+    private function incomingGatewayWalletTransfersQuery(array $filters): Builder
     {
         $source = $filters['source'] ?? null;
 
-        $query = Payment::query()
-            ->with(['user', 'userRequest.trainer', 'userRequest.plan'])
-            ->where('status', Payment::STATUS_SUCCEEDED)
-            ->whereIn('type', [
-                Payment::TYPE_RESERVATION_FEE,
-                Payment::TYPE_PLAN_PARTIAL,
-                Payment::TYPE_PLAN_FULL,
-            ]);
+        $query = GatewayWalletTransaction::query()
+            ->with('creator')
+            ->where('direction', GatewayWalletTransaction::DIRECTION_OUT)
+            ->where('source', GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER);
 
-        if ($source === 'app_fee') {
-            $query
-                ->where('type', Payment::TYPE_PLAN_FULL)
-                ->where('app_fee_minor', '>', 0);
-        } elseif (in_array($source, [
-            Payment::TYPE_RESERVATION_FEE,
-            Payment::TYPE_PLAN_PARTIAL,
-            Payment::TYPE_PLAN_FULL,
-        ], true)) {
-            $query->where('type', $source);
-        } elseif ($source !== null) {
+        if ($source !== null && $source !== GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER) {
             $query->whereRaw('1 = 0');
         }
 
@@ -256,32 +222,16 @@ final class AppWalletAccountService
             ->when($filters['to'] ?? null, fn (Builder $builder, $to) => $builder->where('created_at', '<=', $to))
             ->when($filters['search'] ?? null, function (Builder $builder, string $search): void {
                 $like = '%' . $search . '%';
-                $normalizedOrderNumber = UserRequest::normalizeOrderNumberSearch($search);
 
-                $builder->where(function (Builder $nested) use ($like, $normalizedOrderNumber): void {
+                $builder->where(function (Builder $nested) use ($like): void {
                     $nested
                         ->where('id', 'like', $like)
-                        ->orWhere('user_request_id', 'like', $like)
-                        ->orWhere('payment_method', 'like', $like)
-                        ->orWhereHas('user', function (Builder $userQuery) use ($like): void {
-                            $userQuery
+                        ->orWhere('gateway', 'like', $like)
+                        ->orWhere('notes', 'like', $like)
+                        ->orWhereHas('creator', function (Builder $creatorQuery) use ($like): void {
+                            $creatorQuery
                                 ->where('name', 'like', $like)
                                 ->orWhere('phone_with_cc', 'like', $like);
-                        })
-                        ->orWhereHas('userRequest.trainer', function (Builder $trainerQuery) use ($like): void {
-                            $trainerQuery
-                                ->where('name', 'like', $like)
-                                ->orWhere('phone_with_cc', 'like', $like);
-                        })
-                        ->orWhereHas('userRequest.plan', fn (Builder $planQuery) => $planQuery->where('title', 'like', $like))
-                        ->orWhereHas('userRequest', function (Builder $requestQuery) use ($like, $normalizedOrderNumber): void {
-                            $requestQuery
-                                ->where('id', 'like', $like)
-                                ->orWhereRaw('CAST(order_number as CHAR) like ?', [$like]);
-
-                            if ($normalizedOrderNumber !== null) {
-                                $requestQuery->orWhere('order_number', $normalizedOrderNumber);
-                            }
                         });
                 });
             });
@@ -419,16 +369,5 @@ final class AppWalletAccountService
     private function entrySourceLabel(string $sourceKey): string
     {
         return $this->sourceOptions()[$sourceKey] ?? $sourceKey;
-    }
-
-    private function incomingDescription(string $sourceKey): string
-    {
-        return match ($sourceKey) {
-            Payment::TYPE_RESERVATION_FEE => 'تحصيل رسوم الحجز الثابتة',
-            Payment::TYPE_PLAN_PARTIAL => 'تحصيل رسوم الحجز',
-            Payment::TYPE_PLAN_FULL => 'تحصيل قيمة الباقة من العميل',
-            'app_fee' => 'تحليل رسوم الباقات من الدفعات الكلية',
-            default => 'حركة واردة على محفظة التطبيق',
-        };
     }
 }
