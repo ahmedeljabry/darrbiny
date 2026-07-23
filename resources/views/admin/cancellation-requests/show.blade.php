@@ -77,16 +77,16 @@
                             $userRequest = $cancellation->userRequest;
                             $fullPayment = $userRequest->latestSuccessfulFullPayment();
                             $partialPayment = $userRequest->latestSuccessfulPartialPayment();
-                            $successfulPaymentsMinor = $userRequest->totalSuccessfulPaymentsMinor();
+                            $successfulPaymentsMinor = $userRequest->totalSuccessfulGrossPaymentsMinor();
                             $refundAmountMinor = (int) ($cancellation->refund_amount_minor ?? $successfulPaymentsMinor);
                         @endphp
                         <p class="mb-1"><strong>العملة المعتمدة:</strong> {{ $reportCurrency }}</p>
                         @if($fullPayment)
-                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $userRequest->currency ?? $reportCurrency) }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor($fullPayment->grossAmountMinor(), $userRequest->currency ?? $reportCurrency) }}</p>
                             <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $userRequest->currency ?? $reportCurrency) }}</p>
                         @endif
                         @if($partialPayment)
-                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $userRequest->currency ?? $reportCurrency) }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor($partialPayment->grossAmountMinor(), $userRequest->currency ?? $reportCurrency) }}</p>
                         @endif
                         <p class="mb-1"><strong>إجمالي الدفعات الناجحة:</strong> {{ $converter->formatConvertedMinor((int) $successfulPaymentsMinor, $userRequest->currency ?? $reportCurrency) }}</p>
                         <p class="mb-1"><strong>المبلغ المراد إرجاعه:</strong> {{ $converter->formatConvertedMinor((int) $refundAmountMinor, $userRequest->currency ?? $reportCurrency) }}</p>

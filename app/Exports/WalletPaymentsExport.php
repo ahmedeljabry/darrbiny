@@ -40,7 +40,7 @@ class WalletPaymentsExport implements FromCollection, WithHeadings, WithMapping,
             $payment->user?->name ?? '-',
             $payment->userRequest?->trainer?->name ?? '-',
             $payment->type,
-            number_format($payment->amount_minor / 100, 2),
+            number_format($payment->grossAmountMinor() / 100, 2),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];
     }
@@ -52,6 +52,3 @@ class WalletPaymentsExport implements FromCollection, WithHeadings, WithMapping,
         ];
     }
 }
-
-
-

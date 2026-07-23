@@ -89,7 +89,7 @@
                     <small class="text-muted">{{ collect([$payment->userRequest?->area_level_2, $payment->userRequest?->area_level_3, $payment->userRequest?->locality])->filter()->implode(' / ') ?: 'بدون تفاصيل إضافية' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency) }}</span></td>
                 <td><span class="fw-semibold text-warning">{{ $converter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency) }}</span></td>
                 <td>{{ strtoupper((string) ($payment->payment_method ?? '-')) }}</td>
                 <td><small class="text-muted">{{ $payment->created_at?->format('Y-m-d H:i') }}</small></td>

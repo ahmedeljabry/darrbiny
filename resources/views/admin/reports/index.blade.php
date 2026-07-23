@@ -127,7 +127,7 @@
               <tr>
                 <td><code class="text-primary">#{{ $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '—' }}</code></td>
                 <td>{{ $payment->user?->name ?? 'غير معروف' }}</td>
-                <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</td>
+                <td>{{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency) }}</td>
                 <td>{{ $reportTypeLabels[$payment->type] ?? $payment->typeLabel() }}</td>
                 <td><span class="report-status report-status--{{ $statusTone }}">{{ $payment->statusLabel() }}</span></td>
                 <td>{{ $payment->created_at?->format('Y-m-d H:i') }}</td>

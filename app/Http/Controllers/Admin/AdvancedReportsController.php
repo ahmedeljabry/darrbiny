@@ -327,7 +327,7 @@ class AdvancedReportsController extends BaseController
                 $req->id,
                 $req->trainer?->name ?? '-',
                 $req->user?->name ?? '-',
-                $payment ? number_format($payment->amount_minor / 100, 2) : '-',
+                $payment ? number_format($payment->grossAmountMinor() / 100, 2) : '-',
                 $req->start_date?->toDateString(),
             ];
         })->all();
@@ -642,7 +642,7 @@ class AdvancedReportsController extends BaseController
         $rows = $requests->map(function (UserRequest $userRequest) use ($converter, $statusOptions, &$totalBookingFeesMinor, &$totalPackageFeesMinor): array {
             $bookingFeesMinor = (int) $userRequest->payments
                 ->filter(fn (Payment $payment) => in_array($payment->type, Payment::partialTypes(), true))
-                ->sum(fn (Payment $payment) => $converter->convertMinor((int) $payment->amount_minor, $payment->currency));
+                ->sum(fn (Payment $payment) => $converter->convertMinor($payment->grossAmountMinor(), $payment->currency));
 
             $packageFeesMinor = (int) $userRequest->payments
                 ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
@@ -716,7 +716,7 @@ class AdvancedReportsController extends BaseController
                 $p->user?->name ?? '-',
                 $p->userRequest?->trainer?->name ?? '-',
                 $p->type,
-                number_format($p->amount_minor / 100, 2),
+                number_format($p->grossAmountMinor() / 100, 2),
                 $p->created_at,
             ];
         })->all();

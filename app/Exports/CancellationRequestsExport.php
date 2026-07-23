@@ -53,8 +53,8 @@ class CancellationRequestsExport implements FromCollection, WithHeadings, WithMa
 
         $userRequest = $request->userRequest;
         $fullPayment = $userRequest?->latestSuccessfulFullPayment();
-        $packageValue = $fullPayment?->amount_minor ?? ($userRequest?->plan?->price_min ?? 0);
-        $totalPaid = $userRequest?->totalSuccessfulPaymentsMinor() ?? 0;
+        $packageValue = $fullPayment?->grossAmountMinor() ?? (($userRequest?->plan?->price_min ?? 0) * 100);
+        $totalPaid = $userRequest?->totalSuccessfulGrossPaymentsMinor() ?? 0;
 
         return [
             $request->id,
@@ -78,6 +78,3 @@ class CancellationRequestsExport implements FromCollection, WithHeadings, WithMa
         ];
     }
 }
-
-
-

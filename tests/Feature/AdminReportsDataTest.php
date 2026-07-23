@@ -402,7 +402,10 @@ class AdminReportsDataTest extends TestCase
             'trainer_net_minor' => 17_013,
         ]);
 
-        $convertedAmount = app(ReportCurrencyConverter::class)->formatConvertedMinor(18_903, 'JOD');
+        $convertedAmount = app(ReportCurrencyConverter::class)->formatConvertedMinor(
+            18_903 + (int) round(18_903 * 0.15),
+            'JOD'
+        );
         $convertedVat = app(ReportCurrencyConverter::class)->formatConvertedMinor((int) round(18_903 * 0.15), 'JOD');
 
         $this->actingAs($admin)

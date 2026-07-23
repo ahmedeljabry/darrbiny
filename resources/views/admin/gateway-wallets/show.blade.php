@@ -16,12 +16,14 @@
     ['label' => 'عدد العمليات', 'value' => $summary['operations_count'], 'tone' => 'dark', 'icon' => 'list-details', 'is_count' => true],
   ];
   $filterFields = [
+    ['name' => 'tab', 'type' => 'hidden', 'value' => 'operations'],
     ['name' => 'search', 'label' => 'بحث سريع', 'placeholder' => 'اسم العميل أو المدرب أو رقم الطلب أو المرجع', 'col' => 'col-xl-4 col-md-6'],
     ['name' => 'direction', 'label' => 'نوع الحركة', 'type' => 'select', 'options' => $directionOptions, 'placeholder' => 'كل الحركات', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'source', 'label' => 'المصدر', 'type' => 'select', 'options' => $sourceOptions, 'placeholder' => 'كل المصادر', 'col' => 'col-xl-3 col-md-3'],
     ['name' => 'from', 'label' => 'من تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
     ['name' => 'to', 'label' => 'إلى تاريخ', 'type' => 'date', 'col' => 'col-xl-2 col-md-3'],
   ];
+  $isOperationsTab = ($activeTab ?? 'main') === 'operations';
 @endphp
 
 @section('content')
@@ -59,10 +61,16 @@
           <h2>{{ $gatewayConfig['title'] }}</h2>
           <p>كشف محفظة بوابة الدفع مطابق لملف Excel: مبيعات البوابة، الرسوم، الضريبة، الوارد اليدوي، والتحويلات.</p>
           <div class="report-hero__tags">
-            <a href="#gateway-wallet-main" class="report-tag bg-label-primary">
+            <a
+              href="{{ route('admin.gateway-wallets.show', ['gateway' => $gateway, 'tab' => 'main']) }}"
+              class="report-tag {{ $isOperationsTab ? '' : 'bg-label-primary' }}"
+            >
               <i class="icon-base ti tabler-layout-dashboard"></i> الرئيسية
             </a>
-            <a href="#gateway-wallet-operations" class="report-tag">
+            <a
+              href="{{ route('admin.gateway-wallets.show', ['gateway' => $gateway, 'tab' => 'operations']) }}"
+              class="report-tag {{ $isOperationsTab ? 'bg-label-primary' : '' }}"
+            >
               <i class="icon-base ti tabler-list-details"></i> العمليات
             </a>
           </div>
@@ -104,7 +112,8 @@
     </div>
   </div>
 
-  <div id="gateway-wallet-operations" class="card report-panel">
+  @unless($isOperationsTab)
+  <div id="gateway-wallet-main-actions" class="card report-panel">
     <div class="card-body">
       <div class="dashboard-section-head">
         <div>
@@ -170,13 +179,15 @@
       </div>
     </div>
   </div>
+  @endunless
 
+  @if($isOperationsTab)
   <div class="card report-panel">
     <div class="card-body">
       @include('admin.reports.partials.filter-fields', [
         'fields' => $filterFields,
         'values' => $filters,
-        'resetUrl' => route('admin.gateway-wallets.show', $gateway),
+        'resetUrl' => route('admin.gateway-wallets.show', ['gateway' => $gateway, 'tab' => 'operations']),
         'title' => 'فلترة كشف محفظة البوابة',
         'subtitle' => 'فلتر العمليات حسب الحركة أو المصدر أو التاريخ أو رقم الطلب والمرجع.',
       ])
@@ -249,4 +260,5 @@
       <div class="card-footer border-0 bg-white">{{ $entries->links() }}</div>
     @endif
   </div>
+  @endif
 @endsection

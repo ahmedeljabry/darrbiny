@@ -36,7 +36,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             'الخطة',
             'الحالة',
             'تاريخ البدء',
-            'الدفعات (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'الدفعات ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
             'العملة المعروضة',
             'تاريخ الإنشاء',
         ];
@@ -61,7 +61,7 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
                     '%s: %s (%s)',
                     $payment->typeLabel(),
                     $this->reportCurrencyConverter->formatConvertedMinor(
-                        (int) $payment->amount_minor,
+                        $payment->grossAmountMinor(),
                         $payment->currency ?: $booking->currency
                     ),
                     $payment->statusLabel()
@@ -89,5 +89,3 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         ];
     }
 }
-
-

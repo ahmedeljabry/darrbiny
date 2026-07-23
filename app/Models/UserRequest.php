@@ -4,19 +4,28 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Vat;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class UserRequest extends BaseModel
 {
     public const ORDER_NUMBER_START = 5000;
+
     public const ORDER_NUMBER_LENGTH = 8;
+
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
+
     public const STATUS_AWAITING_OFFERS = 'awaiting_offers';
+
     public const STATUS_OFFER_SELECTED = 'offer_selected';
+
     public const STATUS_PAID = 'paid';
+
     public const STATUS_IN_TRAINING = 'in_training';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
@@ -75,8 +84,6 @@ class UserRequest extends BaseModel
     {
         return $this->belongsTo(User::class)->withTrashed();
     }
-
-
 
     public function trainer()
     {
@@ -153,6 +160,12 @@ class UserRequest extends BaseModel
     public function totalSuccessfulPaymentsMinor(): int
     {
         return (int) $this->successfulPayments()->sum('amount_minor');
+    }
+
+    public function totalSuccessfulGrossPaymentsMinor(): int
+    {
+        return (int) $this->successfulPayments()
+            ->sum(fn (Payment $payment) => (int) $payment->amount_minor + Vat::minorForAmount((int) $payment->amount_minor, $this));
     }
 
     public function latestSuccessfulFullPayment(): ?Payment

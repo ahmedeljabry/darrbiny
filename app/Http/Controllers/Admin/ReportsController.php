@@ -28,7 +28,10 @@ class ReportsController extends BaseController
         $from = $this->parseDate($request->input('from'));
         $to = $this->parseDate($request->input('to'), true);
         $payments = $service->recentPayments($from, $to, 50);
-        $previewTotalMinor = $reportCurrencyConverter->sumCollectionMinorToReportCurrency($payments);
+        $previewTotalMinor = $payments->sum(fn (Payment $payment) => $reportCurrencyConverter->convertMinor(
+            $payment->grossAmountMinor(),
+            $payment->currency
+        ));
 
         return view('admin.reports.index', compact('payments', 'from', 'to', 'previewTotalMinor'));
     }

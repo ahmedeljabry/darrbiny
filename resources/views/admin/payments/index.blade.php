@@ -102,7 +102,7 @@
               </div>
             </td>
             <td>
-              <span class="fw-semibold">{{ $converter->formatConvertedMinor((int) $p->amount_minor, $p->currency) }}</span>
+              <span class="fw-semibold">{{ $converter->formatConvertedMinor($p->grossAmountMinor(), $p->currency) }}</span>
             </td>
             <td>
               <span class="badge bg-label-info">

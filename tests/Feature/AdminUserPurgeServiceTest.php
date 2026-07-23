@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\AppExpense;
+use App\Models\AppWalletTransaction;
 use App\Models\CancellationRequest;
 use App\Models\Country;
+use App\Models\GatewayWalletTransaction;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Reward;
@@ -321,6 +324,31 @@ class AdminUserPurgeServiceTest extends TestCase
             'status' => WalletTransaction::STATUS_PENDING,
         ]);
 
+        GatewayWalletTransaction::create([
+            'gateway' => Payment::METHOD_TABBY,
+            'direction' => GatewayWalletTransaction::DIRECTION_IN,
+            'source' => GatewayWalletTransaction::SOURCE_BANK_DEPOSIT,
+            'amount_minor' => 10_000,
+            'notes' => 'Gateway movement to reset',
+            'created_by' => $admin->id,
+        ]);
+
+        AppWalletTransaction::create([
+            'direction' => AppWalletTransaction::DIRECTION_IN,
+            'source' => AppWalletTransaction::SOURCE_MANUAL_DEPOSIT,
+            'amount_minor' => 5_000,
+            'notes' => 'App wallet movement to reset',
+            'created_by' => $admin->id,
+        ]);
+
+        AppExpense::create([
+            'type' => AppExpense::TYPE_OPERATING_EXPENSE,
+            'amount_minor' => 2_000,
+            'notes' => 'App expense to reset',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
         SupportTicket::create([
             'user_id' => $student->id,
             'name' => $student->name,
@@ -342,6 +370,9 @@ class AdminUserPurgeServiceTest extends TestCase
         $this->assertDatabaseCount('user_requests', 0);
         $this->assertDatabaseCount('payments', 0);
         $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('gateway_wallet_transactions', 0);
+        $this->assertDatabaseCount('app_wallet_transactions', 0);
+        $this->assertDatabaseCount('app_expenses', 0);
         $this->assertDatabaseCount('support_tickets', 0);
     }
 

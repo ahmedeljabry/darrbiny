@@ -76,7 +76,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
             $payment->userRequest?->area_level_2 ?? '-',
             $payment->userRequest?->area_level_3 ?? '-',
             $payment->userRequest?->locality ?? '-',
-            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
+            $this->reportCurrencyConverter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency),
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency),
             \App\Models\Payment::reportTypeLabels()[$payment->type] ?? $payment->type,
             $requestStatusLabels[$payment->userRequest?->status] ?? ($payment->userRequest?->status ?? '-'),

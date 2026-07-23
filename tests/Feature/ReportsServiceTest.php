@@ -20,7 +20,7 @@ class ReportsServiceTest extends TestCase
 
     private ?string $vatCountryId = null;
 
-    public function test_sales_total_uses_charged_amount_without_double_counting_app_fees(): void
+    public function test_sales_total_uses_vat_inclusive_charged_amount_without_double_counting_app_fees(): void
     {
         $this->createPayment([
             'type' => Payment::TYPE_PLAN_FULL,
@@ -43,7 +43,7 @@ class ReportsServiceTest extends TestCase
 
         ['payments' => $payments, 'totalMinor' => $totalMinor] = app(ReportsService::class)->sales();
 
-        $this->assertSame(12_000, $totalMinor);
+        $this->assertSame(13_800, $totalMinor);
         $this->assertSame(2, $payments->total());
     }
 
@@ -70,7 +70,7 @@ class ReportsServiceTest extends TestCase
         );
 
         $this->assertSame(1, $payments->total());
-        $this->assertSame(4_000, $totalMinor);
+        $this->assertSame(4_600, $totalMinor);
     }
 
     public function test_app_fees_and_vat_totals_use_only_succeeded_payments(): void
@@ -128,8 +128,8 @@ class ReportsServiceTest extends TestCase
         ['totalMinor' => $appFeesMinor] = $service->appFees();
         ['vatTotalMinor' => $vatTotalMinor] = $service->vatReport();
 
-        $this->assertSame(10_800, $salesMinor);
-        $this->assertSame(10_800, $paymentsMinor);
+        $this->assertSame(12_420, $salesMinor);
+        $this->assertSame(12_420, $paymentsMinor);
         $this->assertSame(1_080, $appFeesMinor);
         $this->assertSame(1_620, $vatTotalMinor);
     }
@@ -175,7 +175,7 @@ class ReportsServiceTest extends TestCase
         );
 
         $this->assertSame(1, $payments->total());
-        $this->assertSame(2_500, $totalMinor);
+        $this->assertSame(2_875, $totalMinor);
         $this->assertSame(Payment::TYPE_PLAN_PARTIAL, $payments->first()->type);
     }
 

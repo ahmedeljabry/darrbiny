@@ -134,7 +134,7 @@
               <a href="{{ route('admin.wallets.index') }}" class="menu-link">محافظ العملاء</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.wallet-transactions.*') ? 'active' : '' }}">
-              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">محافظ العملاء</a>
+              <a href="{{ route('admin.wallet-transactions.index') }}" class="menu-link">طلبات محافظ العملاء</a>
             </li>
             <li class="menu-item {{ request()->routeIs('admin.gateway-wallets.*') && request()->route('gateway') === 'tap' ? 'active' : '' }}">
               <a href="{{ route('admin.gateway-wallets.show', 'tap') }}" class="menu-link">محفظة تاب</a>

@@ -4,6 +4,7 @@
   $resetUrl = $resetUrl ?? url()->current();
   $title = $title ?? 'الفلاتر';
   $subtitle = $subtitle ?? 'فلترة النتائج حسب أكثر من معيار';
+  $visibleFields = collect($fields)->reject(fn ($field) => ($field['type'] ?? 'text') === 'hidden');
 @endphp
 
 <div class="report-filter-card">
@@ -18,7 +19,7 @@
       </div>
     </div>
     <div class="report-toolbar-note">
-      {{ collect($fields)->filter(fn ($field) => filled($values[$field['name']] ?? null))->count() }} فلتر نشط
+      {{ $visibleFields->filter(fn ($field) => filled($values[$field['name']] ?? null))->count() }} فلتر نشط
     </div>
   </div>
 
@@ -28,7 +29,7 @@
         $name = $field['name'];
         $type = $field['type'] ?? 'text';
         $col = $field['col'] ?? 'col-xl-3 col-md-4';
-        $value = $values[$name] ?? null;
+        $value = $field['value'] ?? ($values[$name] ?? null);
 
         if ($value instanceof \DateTimeInterface) {
           $value = match ($type) {
@@ -38,6 +39,11 @@
           };
         }
       @endphp
+
+      @if($type === 'hidden')
+        <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+        @continue
+      @endif
 
       <div class="{{ $col }}">
         <label class="report-form-label" for="filter-{{ $name }}">{{ $field['label'] }}</label>

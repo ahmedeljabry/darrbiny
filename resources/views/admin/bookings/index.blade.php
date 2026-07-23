@@ -189,7 +189,7 @@
                                                 <div class="d-flex flex-column">
                                                     <span class="fw-semibold">{{ $payment->typeLabel() }}</span>
                                                     <small class="text-muted">
-                                                        {{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency ?: $booking->currency) }}
+                                                        {{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency ?: $booking->currency) }}
                                                         ({{ $payment->statusLabel() }})
                                                     </small>
                                                 </div>

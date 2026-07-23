@@ -109,7 +109,7 @@
                     </small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency) }}</span></td>
                 <td><span class="fw-semibold text-warning">{{ $converter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">

@@ -32,10 +32,10 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             'رقم الطلب',
             'المستخدم',
-            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'المبلغ ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
             'النوع',
             'نسبة الضريبة',
-            'ضريبة القيمة المضافة (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'ضريبة القيمة المضافة ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
             'التاريخ',
         ];
     }
@@ -48,7 +48,7 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             $payment->userRequest?->formatted_order_number ?? $payment->userRequest?->order_number ?? '-',
             $payment->user?->name ?? $payment->user_id,
-            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
+            $this->reportCurrencyConverter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency),
             $payment->type,
             number_format($vatPercent, 2).'%',
             $this->reportCurrencyConverter->formatConvertedMinor($vatMinor, $payment->currency),
@@ -63,4 +63,3 @@ class VatReportExport implements FromCollection, WithHeadings, WithMapping, With
         ];
     }
 }
-

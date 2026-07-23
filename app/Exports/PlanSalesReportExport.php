@@ -38,8 +38,8 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             'المنطقة الثانية',
             'المنطقة الثالثة',
             'الحي / المحلية',
-            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
-            'العمولة (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'المبلغ ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
+            'العمولة ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
             'تاريخ/وقت',
         ];
     }
@@ -56,7 +56,7 @@ class PlanSalesReportExport implements FromCollection, WithHeadings, WithMapping
             $payment->userRequest?->area_level_2 ?? '-',
             $payment->userRequest?->area_level_3 ?? '-',
             $payment->userRequest?->locality ?? '-',
-            $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency),
+            $this->reportCurrencyConverter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency),
             $this->reportCurrencyConverter->formatConvertedMinor((int) $payment->app_fee_minor, $payment->currency),
             $payment->created_at?->format('Y-m-d H:i:s'),
         ];

@@ -31,6 +31,7 @@ class GatewayWalletsController extends BaseController
             'from' => $this->parseDate($request->query('from')),
             'to' => $this->parseDate($request->query('to'), true),
         ];
+        $activeTab = $request->query('tab') === 'operations' ? 'operations' : 'main';
 
         $entriesCollection = $this->service->ledgerEntries($gateway, $filters);
         $summary = $this->service->summary($gateway, $filters);
@@ -59,7 +60,8 @@ class GatewayWalletsController extends BaseController
             'directionOptions',
             'sourceOptions',
             'incomingSourceOptions',
-            'outgoingSourceOptions'
+            'outgoingSourceOptions',
+            'activeTab'
         ));
     }
 

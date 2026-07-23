@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Vat;
+
 class Payment extends BaseModel
 {
     public const TYPE_RESERVATION_FEE = 'reservation_fee';
@@ -134,5 +136,15 @@ class Payment extends BaseModel
     public function isPartialType(): bool
     {
         return in_array($this->type, self::partialTypes(), true);
+    }
+
+    public function vatMinor(): int
+    {
+        return Vat::minorForPayment($this);
+    }
+
+    public function grossAmountMinor(): int
+    {
+        return Vat::grossMinorForPayment($this);
     }
 }

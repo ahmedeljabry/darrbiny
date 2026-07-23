@@ -26,7 +26,7 @@ class TapProvider implements PaymentProvider
         // For now, return a placeholder with required info to proceed on frontend
         return [
             'payment_method' => 'tap',
-            'amount' => $payment->amount_minor / 100,
+            'amount' => GatewayPayloadSupport::totalAmount($payment),
             'currency' => $payment->currency,
             'reference' => $payment->id,
             'public_key' => $public,

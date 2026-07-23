@@ -104,7 +104,7 @@
                     <small class="text-muted">{{ $payment->userRequest?->country?->name ?? $payment->userRequest?->plan?->country?->name ?? '—' }}</small>
                   </div>
                 </td>
-                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}</span></td>
+                <td><span class="fw-semibold text-success">{{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency) }}</span></td>
                 <td>
                   <div class="d-flex flex-column gap-1">
                     <span class="badge bg-label-primary">{{ $typeLabelFor($payment->type) }}</span>

@@ -35,11 +35,12 @@ class ActiveCoursesExport implements FromCollection, WithHeadings, WithMapping, 
     public function map($course): array
     {
         $payment = $course->payments->first();
+
         return [
             $course->id,
             $course->trainer?->name ?? '-',
             $course->user?->name ?? '-',
-            $payment ? number_format($payment->amount_minor / 100, 2) : '-',
+            $payment ? number_format($payment->grossAmountMinor() / 100, 2) : '-',
             $course->start_date?->toDateString(),
         ];
     }
@@ -51,6 +52,3 @@ class ActiveCoursesExport implements FromCollection, WithHeadings, WithMapping, 
         ];
     }
 }
-
-
-

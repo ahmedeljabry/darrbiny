@@ -48,7 +48,7 @@ class GatewayWalletTransaction extends BaseModel
     public static function incomingSourceLabels(): array
     {
         return [
-            self::SOURCE_BANK_DEPOSIT => 'تحويل الى البنك',
+            self::SOURCE_BANK_DEPOSIT => 'تحويل من البنك',
             self::SOURCE_OTHER => 'أخرى',
         ];
     }

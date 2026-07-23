@@ -5,7 +5,7 @@
   $reportCurrency = \App\Support\ReportCurrencyConverter::REPORT_CURRENCY;
   $successfulPayments = $payments->filter(fn ($payment) => $payment->status === \App\Models\Payment::STATUS_SUCCEEDED);
   $refundableAmountReportMinor = $successfulPayments->isNotEmpty()
-    ? $converter->sumCollectionMinorToReportCurrency($successfulPayments)
+    ? $successfulPayments->sum(fn ($payment) => $converter->convertMinor($payment->grossAmountMinor(), $payment->currency ?: $booking->currency))
     : $converter->convertMinor((int) $refundableAmountMinor, $booking->currency);
 @endphp
 @section('content')
@@ -104,11 +104,11 @@
                         <p class="mb-1"><strong>العملة المعروضة:</strong> {{ $reportCurrency }}</p>
                         @if($fullPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $fullPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->amount_minor, $fullPayment->currency ?: $booking->currency) }}</p>
+                            <p class="mb-1"><strong>قيمة الباقة:</strong> {{ $converter->formatConvertedMinor($fullPayment->grossAmountMinor(), $fullPayment->currency ?: $booking->currency) }}</p>
                             <p class="mb-1"><strong>رسوم التطبيق:</strong> {{ $converter->formatConvertedMinor((int) $fullPayment->app_fee_minor, $fullPayment->currency ?: $booking->currency) }}</p>
                         @elseif($partialPayment)
                             <p class="mb-1"><strong>نوع الدفع:</strong> {{ $partialPayment->typeLabel() }}</p>
-                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor((int) $partialPayment->amount_minor, $partialPayment->currency ?: $booking->currency) }}</p>
+                            <p class="mb-1"><strong>{{ $partialPayment->typeLabel() }}:</strong> {{ $converter->formatConvertedMinor($partialPayment->grossAmountMinor(), $partialPayment->currency ?: $booking->currency) }}</p>
                         @else
                             <p class="mb-1"><strong>نوع الدفع:</strong> -</p>
                         @endif
@@ -213,7 +213,7 @@
                     <tbody>
                         @foreach($payments as $payment)
                             <tr>
-                                <td>{{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency ?: $booking->currency) }}</td>
+                                <td>{{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency ?: $booking->currency) }}</td>
                                 <td>{{ $payment->typeLabel() }}</td>
                                 <td>
                                     <span class="badge bg-label-{{ $payment->status === 'succeeded' ? 'success' : ($payment->status === 'pending' ? 'warning' : 'danger') }}">

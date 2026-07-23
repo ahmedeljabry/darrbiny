@@ -32,7 +32,7 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
             'رقم الطلب',
             'المستخدم',
             'الخطة',
-            'المبلغ (' . ReportCurrencyConverter::REPORT_CURRENCY . ')',
+            'المبلغ ('.ReportCurrencyConverter::REPORT_CURRENCY.')',
             'الحالة',
             'تاريخ البدء',
             'تاريخ الإنشاء',
@@ -46,7 +46,10 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
             ->values();
         $amountDisplay = $successfulPayments->isNotEmpty()
             ? $this->reportCurrencyConverter->formatReportMinor(
-                $this->reportCurrencyConverter->sumCollectionMinorToReportCurrency($successfulPayments)
+                $successfulPayments->sum(fn ($payment) => $this->reportCurrencyConverter->convertMinor(
+                    $payment->grossAmountMinor(),
+                    $payment->currency ?: $subscription->currency
+                ))
             )
             : $this->reportCurrencyConverter->formatConvertedMinor(
                 (int) ($subscription->total_paid_minor ?? 0),
@@ -71,4 +74,3 @@ class SubscriptionsReportExport implements FromCollection, WithHeadings, WithMap
         ];
     }
 }
-

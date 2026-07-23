@@ -56,6 +56,7 @@ class AdminWalletsTest extends TestCase
             ->get(route('admin.wallet-transactions.index'))
             ->assertOk()
             ->assertSee('محافظ العملاء')
+            ->assertSee('طلبات محافظ العملاء')
             ->assertSee('إدارة طلبات الإضافة والسحب لمحافظ العملاء')
             ->assertDontSee('طلبات المحافظ');
 
@@ -63,6 +64,7 @@ class AdminWalletsTest extends TestCase
             ->get(route('admin.wallet-transactions.show', $transaction->id))
             ->assertOk()
             ->assertSee('محافظ العملاء')
+            ->assertSee('طلبات محافظ العملاء')
             ->assertDontSee('طلبات المحافظ');
     }
 
@@ -270,25 +272,26 @@ class AdminWalletsTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.gateway-wallets.show', 'tap'))
+            ->get(route('admin.gateway-wallets.show', ['gateway' => 'tap', 'tab' => 'operations']))
             ->assertOk()
             ->assertSee('محفظة حساب تاب')
             ->assertSee('tap-ref-100')
             ->assertSee('وارد: قيمة الباقات')
-            ->assertSee('100.00 SAR')
-            ->assertSee('1.00 SAR')
-            ->assertSee('0.15 SAR')
-            ->assertSee('98.85 SAR')
+            ->assertSee('115.00 SAR')
+            ->assertSee('1.15 SAR')
+            ->assertSee('0.17 SAR')
+            ->assertSee('113.68 SAR')
             ->assertDontSee('tabby-ref-100');
 
         $this->actingAs($admin)
-            ->get(route('admin.gateway-wallets.show', 'tabby'))
+            ->get(route('admin.gateway-wallets.show', ['gateway' => 'tabby', 'tab' => 'operations']))
             ->assertOk()
             ->assertSee('محفظة حساب تابي')
             ->assertSee('tabby-ref-100')
-            ->assertSee('8.49 SAR')
-            ->assertSee('1.27 SAR')
-            ->assertSee('90.24 SAR');
+            ->assertSee('115.00 SAR')
+            ->assertSee('9.54 SAR')
+            ->assertSee('1.43 SAR')
+            ->assertSee('104.03 SAR');
 
         $this->actingAs($admin)
             ->get(route('admin.gateway-wallets.show', 'tamara'))
@@ -326,7 +329,7 @@ class AdminWalletsTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.gateway-wallets.show', 'tap'))
+            ->get(route('admin.gateway-wallets.show', ['gateway' => 'tap', 'tab' => 'operations']))
             ->assertOk()
             ->assertSee('Bank settlement transfer')
             ->assertSee('50.00 SAR');
@@ -370,12 +373,13 @@ class AdminWalletsTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.gateway-wallets.show', 'tabby'))
+            ->get(route('admin.gateway-wallets.show', ['gateway' => 'tabby', 'tab' => 'operations']))
             ->assertOk()
             ->assertSee('country-tabby-fee')
-            ->assertSee('12.00 SAR')
-            ->assertSee('1.80 SAR')
-            ->assertSee('86.20 SAR');
+            ->assertSee('115.00 SAR')
+            ->assertSee('13.50 SAR')
+            ->assertSee('2.03 SAR')
+            ->assertSee('99.47 SAR');
     }
 
     public function test_admin_can_export_gateway_wallet_excel(): void

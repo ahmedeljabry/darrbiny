@@ -66,7 +66,7 @@ final class GatewayWalletAccountService
         return [
             'sales_package' => 'وارد: قيمة الباقات',
             'sales_reservation' => 'وارد: رسوم الحجز',
-            GatewayWalletTransaction::SOURCE_BANK_DEPOSIT => 'وارد: تحويل الى البنك',
+            GatewayWalletTransaction::SOURCE_BANK_DEPOSIT => 'وارد: تحويل من البنك',
             GatewayWalletTransaction::SOURCE_APP_WALLET_TRANSFER => 'صادر: حساب محفظة التطبيق',
             GatewayWalletTransaction::SOURCE_GATEWAY_FEE => 'صادر: رسوم بوابة الدفع',
             GatewayWalletTransaction::SOURCE_OTHER => 'أخرى',
@@ -152,11 +152,12 @@ final class GatewayWalletAccountService
             })
             ->map(function (Payment $payment) use ($gateway): object {
                 $request = $payment->userRequest;
+                $grossOriginalMinor = $payment->grossAmountMinor();
                 $amountMinor = $this->reportCurrencyConverter->convertMinor(
-                    (int) $payment->amount_minor,
+                    $grossOriginalMinor,
                     (string) $payment->currency
                 );
-                $feeOriginalMinor = $this->gatewayFeeMinor($gateway, (int) $payment->amount_minor, $request);
+                $feeOriginalMinor = $this->gatewayFeeMinor($gateway, $grossOriginalMinor, $request);
                 $feeMinor = $this->reportCurrencyConverter->convertMinor($feeOriginalMinor, (string) $payment->currency);
                 $sourceKey = $this->paymentSourceKey($payment);
                 $vatOriginalMinor = $this->vatMinor($feeOriginalMinor, $request);

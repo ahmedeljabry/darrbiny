@@ -310,6 +310,7 @@ final class UserPurgeService
             'trainer_offers',
             'payments',
             'wallet_transactions',
+            'gateway_wallet_transactions',
             'app_wallet_transactions',
             'app_expenses',
             'user_requests',

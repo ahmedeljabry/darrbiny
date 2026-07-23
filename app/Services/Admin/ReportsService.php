@@ -24,7 +24,7 @@ final class ReportsService
     public function recentPayments(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, int $limit = 50): Collection
     {
         return $this->paymentsWithinRange($from, $to)
-            ->with(['user', 'userRequest'])
+            ->with(['user', 'userRequest.country', 'userRequest.plan.country'])
             ->latest()
             ->limit($limit)
             ->get();
@@ -36,7 +36,7 @@ final class ReportsService
             'type' => $paymentType,
         ]);
 
-        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->sumGrossPaymentsToReportCurrency($query);
         $refundsMinor = $this->allocatedCancellationRefundsMinor($from, $to, ['type' => $paymentType], 'gross');
         $totalMinor = $grossTotalMinor - $refundsMinor;
 
@@ -61,7 +61,7 @@ final class ReportsService
             $filters
         );
 
-        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->sumGrossPaymentsToReportCurrency($query);
         $refundsMinor = $this->allocatedCancellationRefundsMinor(
             $filters['from'] ?? null,
             $filters['to'] ?? null,
@@ -103,7 +103,7 @@ final class ReportsService
     public function paymentsReport(array $filters = []): array
     {
         $query = $this->paymentsQuery($filters);
-        $totalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $totalMinor = $this->sumGrossPaymentsToReportCurrency($query);
         $count = (int) (clone $query)->count();
 
         return [
@@ -137,7 +137,7 @@ final class ReportsService
     public function planSales(?CarbonImmutable $from = null, ?CarbonImmutable $to = null, array $filters = []): array
     {
         $query = $this->planSalesQuery($from, $to, $filters);
-        $grossTotalMinor = $this->reportCurrencyConverter->convertGroupedMinorSumsToReportCurrency($query, 'amount_minor');
+        $grossTotalMinor = $this->sumGrossPaymentsToReportCurrency($query);
         $refundsMinor = $this->allocatedCancellationRefundsMinor($from, $to, $filters, 'plan_full');
         $totalMinor = $grossTotalMinor - $refundsMinor;
         $count = (int) (clone $query)->count();
@@ -394,6 +394,17 @@ final class ReportsService
             });
     }
 
+    private function sumGrossPaymentsToReportCurrency(Builder $query): int
+    {
+        return (clone $query)
+            ->with(['userRequest.country', 'userRequest.plan.country'])
+            ->get()
+            ->sum(fn (Payment $payment) => $this->reportCurrencyConverter->convertMinor(
+                $payment->grossAmountMinor(),
+                (string) $payment->currency
+            ));
+    }
+
     public function allocatedCancellationRefundsMinor(
         ?\DateTimeInterface $from = null,
         ?\DateTimeInterface $to = null,
@@ -426,7 +437,8 @@ final class ReportsService
                 ->filter(fn (Payment $payment) => $payment->status === Payment::STATUS_SUCCEEDED)
                 ->values();
 
-            $totalSuccessfulMinor = (int) $successfulPayments->sum('amount_minor');
+            $totalSuccessfulMinor = (int) $successfulPayments
+                ->sum(fn (Payment $payment) => $this->grossPaymentMinor($payment));
             if ($totalSuccessfulMinor <= 0) {
                 return 0;
             }
@@ -438,17 +450,17 @@ final class ReportsService
             $matchingMinor = match ($amountMode) {
                 'plan_full' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
-                    ->sum('amount_minor'),
+                    ->sum(fn (Payment $payment) => $this->grossPaymentMinor($payment)),
                 'plan_partial' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_PARTIAL)
-                    ->sum('amount_minor'),
+                    ->sum(fn (Payment $payment) => $this->grossPaymentMinor($payment)),
                 'booking_fees' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => in_array($payment->type, Payment::partialTypes(), true))
-                    ->sum('amount_minor'),
+                    ->sum(fn (Payment $payment) => $this->grossPaymentMinor($payment)),
                 'app_fee' => (int) $relevantPayments
                     ->filter(fn (Payment $payment) => $payment->type === Payment::TYPE_PLAN_FULL)
                     ->sum('app_fee_minor'),
-                default => (int) $relevantPayments->sum('amount_minor'),
+                default => (int) $relevantPayments->sum(fn (Payment $payment) => $this->grossPaymentMinor($payment)),
             };
 
             if ($matchingMinor <= 0) {
@@ -465,6 +477,11 @@ final class ReportsService
                 $this->currencyForCancellationRefund($relevantPayments, $successfulPayments, $request)
             );
         });
+    }
+
+    private function grossPaymentMinor(Payment $payment): int
+    {
+        return $payment->grossAmountMinor();
     }
 
     private function currencyForCancellationRefund(Collection $relevantPayments, Collection $successfulPayments, ?UserRequest $request): string

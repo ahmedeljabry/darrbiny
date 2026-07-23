@@ -147,7 +147,7 @@
                                                 <div class="d-flex flex-column">
                                                     <small class="text-muted d-block">{{ $payment->typeLabel() }}:</small>
                                                     <span class="fw-semibold {{ $payment->status === \App\Models\Payment::STATUS_SUCCEEDED ? 'text-success' : 'text-body' }}">
-                                                        {{ $converter->formatConvertedMinor((int) $payment->amount_minor, $payment->currency) }}
+                                                        {{ $converter->formatConvertedMinor($payment->grossAmountMinor(), $payment->currency) }}
                                                         ({{ $payment->statusLabel() }})
                                                     </span>
                                                 </div>
@@ -155,7 +155,7 @@
                                             <div class="mt-1">
                                                 <small class="text-muted d-block">إجمالي الدفعات الناجحة:</small>
                                                 <span class="badge bg-label-success">
-                                                    {{ $converter->formatConvertedMinor($userRequest->totalSuccessfulPaymentsMinor(), $userRequest->currency ?? $reportCurrency) }}
+                                                    {{ $converter->formatConvertedMinor($userRequest->totalSuccessfulGrossPaymentsMinor(), $userRequest->currency ?? $reportCurrency) }}
                                                 </span>
                                             </div>
                                         </div>

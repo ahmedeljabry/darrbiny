@@ -75,7 +75,9 @@
                   ->filter(fn ($payment) => $payment->status === \App\Models\Payment::STATUS_SUCCEEDED)
                   ->values();
                 $subscriptionAmountDisplay = $successfulPayments->isNotEmpty()
-                  ? $converter->formatReportMinor($converter->sumCollectionMinorToReportCurrency($successfulPayments))
+                  ? $converter->formatReportMinor(
+                      $successfulPayments->sum(fn ($payment) => $converter->convertMinor($payment->grossAmountMinor(), $payment->currency ?: $subscription->currency))
+                    )
                   : $converter->formatConvertedMinor(
                       (int) ($subscription->total_paid_minor ?? 0),
                       $subscription->currency ?? \App\Support\ReportCurrencyConverter::REPORT_CURRENCY
