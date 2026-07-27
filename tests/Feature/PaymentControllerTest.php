@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Jobs\NotifyEligibleTrainers;
 use App\Models\Country;
 use App\Models\Payment;
 use App\Models\Plan;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\UserRequest;
 use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
@@ -347,6 +349,99 @@ class PaymentControllerTest extends TestCase
             && data_get($request->data(), 'items.0.tax_amount.amount') === '22.50');
     }
 
+    public function test_tap_plan_payment_creates_backend_charge_session(): void
+    {
+        Queue::fake();
+        Http::fake([
+            'https://tap.test/v2/charges' => Http::response([
+                'id' => 'chg_tap_create',
+                'status' => 'INITIATED',
+                'transaction' => [
+                    'url' => 'https://checkout.tap.test/session/chg_tap_create',
+                ],
+            ]),
+        ]);
+
+        Setting::updateOrCreate(['key' => 'payment.tap.public_key'], ['value' => 'tap-public']);
+        Setting::updateOrCreate(['key' => 'payment.tap.secret_key'], ['value' => 'tap-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tap.base_url'], ['value' => 'https://tap.test']);
+
+        $country = Country::create([
+            'name' => 'Tap Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+            'vat_percent' => 15.0,
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tap Plan',
+            'description' => 'Tap payment plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Tap Customer',
+            'email' => 'tap.customer@example.com',
+            'phone_with_cc' => '+966500000301',
+        ]);
+        Sanctum::actingAs($user);
+
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $response = $this->postJson('/api/v1/payments/plan', [
+            'user_request_id' => $userRequest->id,
+            'payment_method' => Payment::METHOD_TAP,
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'price' => 15000,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.payment_method', Payment::METHOD_TAP)
+            ->assertJsonPath('data.status', Payment::STATUS_PENDING)
+            ->assertJsonPath('data.amount_minor', 15000)
+            ->assertJsonPath('data.vat_minor', 2250)
+            ->assertJsonPath('data.total_amount_minor', 17250)
+            ->assertJsonPath('data.gateway_reference', 'chg_tap_create')
+            ->assertJsonPath('data.checkout_url', 'https://checkout.tap.test/session/chg_tap_create');
+
+        $paymentId = $response->json('data.id');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $paymentId,
+            'user_request_id' => $userRequest->id,
+            'user_id' => $user->id,
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TAP,
+            'status' => Payment::STATUS_PENDING,
+            'amount_minor' => 15000,
+            'gateway_reference' => 'chg_tap_create',
+        ]);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tap.test/v2/charges'
+            && $request->method() === 'POST'
+            && data_get($request->data(), 'amount') === 172.5
+            && data_get($request->data(), 'currency') === 'SAR'
+            && data_get($request->data(), 'source.id') === 'src_all'
+            && data_get($request->data(), 'metadata.payment_id') === $paymentId
+            && str_contains((string) data_get($request->data(), 'post.url'), '/api/v1/payments/webhooks/tap')
+            && str_contains((string) data_get($request->data(), 'redirect.url'), '/payments/return/tap/success/'));
+    }
+
     public function test_bnpl_payment_methods_are_rejected_for_unsupported_country_currency(): void
     {
         Queue::fake();
@@ -470,6 +565,99 @@ class PaymentControllerTest extends TestCase
             'id' => $payment->id,
             'status' => Payment::STATUS_SUCCEEDED,
             'gateway_status' => 'closed',
+        ]);
+
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'total_paid_minor' => 15000,
+        ]);
+    }
+
+    public function test_tap_webhook_verifies_charge_before_marking_pending_gateway_payment_successful(): void
+    {
+        Bus::fake();
+
+        Setting::updateOrCreate(['key' => 'payment.tap.secret_key'], ['value' => 'tap-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tap.base_url'], ['value' => 'https://tap.test']);
+
+        $country = Country::create([
+            'name' => 'Tap Webhook Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+            'vat_percent' => 15.0,
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tap Webhook Plan',
+            'description' => 'Gateway webhook plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+966500000302']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TAP,
+            'gateway_reference' => 'chg_tap_webhook',
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+
+        Http::fake([
+            'https://tap.test/v2/charges/chg_tap_webhook' => Http::response([
+                'id' => 'chg_tap_webhook',
+                'status' => 'CAPTURED',
+                'amount' => 172.5,
+                'currency' => 'SAR',
+                'metadata' => [
+                    'payment_id' => $payment->id,
+                    'user_request_id' => $userRequest->id,
+                ],
+            ]),
+        ]);
+
+        $this->postJson('/api/v1/payments/webhooks/tap', [
+            'id' => 'chg_tap_webhook',
+            'status' => 'CAPTURED',
+            'metadata' => [
+                'payment_id' => $payment->id,
+            ],
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED)
+            ->assertJsonPath('data.gateway_status', 'captured');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://tap.test/v2/charges/chg_tap_webhook'
+            && $request->method() === 'GET');
+        Bus::assertDispatched(NotifyEligibleTrainers::class);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'captured',
         ]);
 
         $this->assertDatabaseHas('user_requests', [
@@ -612,6 +800,92 @@ class PaymentControllerTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.payment_id', $payment->id)
             ->assertJsonPath('data.status', Payment::STATUS_PENDING);
+    }
+
+    public function test_tap_success_return_binds_tap_id_and_marks_payment_successful(): void
+    {
+        Bus::fake();
+
+        Setting::updateOrCreate(['key' => 'payment.tap.secret_key'], ['value' => 'tap-secret']);
+        Setting::updateOrCreate(['key' => 'payment.tap.base_url'], ['value' => 'https://tap.test']);
+
+        $country = Country::create([
+            'name' => 'Tap Return Country',
+            'iso2' => 'SA',
+            'currency' => 'SAR',
+            'vat_percent' => 15.0,
+        ]);
+        $plan = Plan::create([
+            'title' => 'Tap Return Plan',
+            'description' => 'Gateway return plan',
+            'price_min' => 150,
+            'duration_days' => '3',
+            'hours_count' => 12,
+            'country_id' => $country->id,
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create(['phone_with_cc' => '+966500000303']);
+        $userRequest = UserRequest::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'country_id' => $country->id,
+            'start_date' => now()->toDateString(),
+            'status' => UserRequest::STATUS_PENDING_PAYMENT,
+            'currency' => 'SAR',
+            'app_fee_reserved_minor' => 0,
+            'total_paid_minor' => 0,
+            'has_user_car' => false,
+            'wants_trainer_car' => true,
+            'needs_pickup' => false,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'user_request_id' => $userRequest->id,
+            'amount_minor' => 15000,
+            'currency' => 'SAR',
+            'type' => Payment::TYPE_PLAN_PARTIAL,
+            'payment_method' => Payment::METHOD_TAP,
+            'status' => Payment::STATUS_PENDING,
+            'app_fee_minor' => 0,
+            'trainer_net_minor' => 15000,
+        ]);
+        $payment->forceFill(['gateway_reference' => $payment->id])->save();
+
+        Http::fake([
+            'https://tap.test/v2/charges/chg_tap_return' => Http::response([
+                'id' => 'chg_tap_return',
+                'status' => 'CAPTURED',
+                'amount' => 172.5,
+                'currency' => 'SAR',
+                'metadata' => [
+                    'payment_id' => $payment->id,
+                    'user_request_id' => $userRequest->id,
+                ],
+            ]),
+        ]);
+
+        $this->getJson('/api/v1/payments/return/tap/success/'.$payment->id.'?tap_id=chg_tap_return')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.payment_id', $payment->id)
+            ->assertJsonPath('data.status', Payment::STATUS_SUCCEEDED)
+            ->assertJsonPath('data.gateway_status', 'captured');
+
+        Bus::assertDispatched(NotifyEligibleTrainers::class);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'gateway_reference' => 'chg_tap_return',
+            'status' => Payment::STATUS_SUCCEEDED,
+            'gateway_status' => 'captured',
+        ]);
+        $this->assertDatabaseHas('user_requests', [
+            'id' => $userRequest->id,
+            'status' => UserRequest::STATUS_AWAITING_OFFERS,
+            'total_paid_minor' => 15000,
+        ]);
     }
 
     public function test_tabby_success_return_marks_payment_successful_when_gateway_confirms_authorized(): void

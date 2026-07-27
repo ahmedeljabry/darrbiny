@@ -9,6 +9,7 @@ use App\Models\UserRequest;
 use App\Modules\Payments\Http\Resources\PaymentResource;
 use App\Modules\Payments\Services\PaymentGatewayException;
 use App\Modules\Payments\Services\PaymentGatewayFactory;
+use App\Modules\Payments\Services\PaymentProvider;
 use App\Modules\Payments\Services\PaymentService;
 use App\Modules\Payments\Services\TamaraProvider;
 use App\Support\PaymentMethodSettings;
@@ -104,18 +105,23 @@ class PaymentController extends BaseController
             return response()->json(['data' => ['processed' => false, 'reason' => 'payment_not_found']]);
         }
 
-        $gatewayStatus = $this->webhookGatewayStatus($payload);
+        $statusPayload = $this->verifiedWebhookPayload($gateway, $payment, $payload, $provider);
+        if (! $statusPayload) {
+            return response()->json(['data' => ['processed' => false, 'reason' => 'gateway_status_unverified']], 503);
+        }
+
+        $gatewayStatus = $this->webhookGatewayStatus($statusPayload);
 
         if ($this->isSuccessfulWebhookStatus($gatewayStatus)) {
             if ($gateway === Payment::METHOD_TAMARA && $provider instanceof TamaraProvider && $gatewayStatus === 'order_approved') {
                 $authorisePayload = $provider->authorise($payment);
-                $payload['authorise_response'] = $authorisePayload;
+                $statusPayload['authorise_response'] = $authorisePayload;
                 $gatewayStatus = strtolower((string) (data_get($authorisePayload, 'status') ?: 'authorised'));
             }
 
-            $payment = $this->service->markGatewayPaymentSucceeded($payment, $payload, $gatewayStatus);
+            $payment = $this->service->markGatewayPaymentSucceeded($payment, $statusPayload, $gatewayStatus);
         } elseif ($this->isFailedWebhookStatus($gatewayStatus)) {
-            $payment = $this->service->markGatewayPaymentFailed($payment, $payload, $gatewayStatus);
+            $payment = $this->service->markGatewayPaymentFailed($payment, $statusPayload, $gatewayStatus);
         }
 
         return response()->json([
@@ -160,6 +166,8 @@ class PaymentController extends BaseController
     {
         $paymentId = data_get($payload, 'payment_id')
             ?? data_get($payload, 'order_reference_id')
+            ?? data_get($payload, 'metadata.payment_id')
+            ?? data_get($payload, 'reference.transaction')
             ?? data_get($payload, 'payment.meta.payment_id')
             ?? data_get($payload, 'meta.payment_id');
 
@@ -176,6 +184,10 @@ class PaymentController extends BaseController
 
         $gatewayReference = data_get($payload, 'order_id')
             ?? data_get($payload, 'checkout_id')
+            ?? data_get($payload, 'tap_id')
+            ?? data_get($payload, 'charge_id')
+            ?? data_get($payload, 'charge.id')
+            ?? data_get($payload, 'data.id')
             ?? data_get($payload, 'payment.id')
             ?? data_get($payload, 'id')
             ?? data_get($payload, 'payment_id');
@@ -231,6 +243,11 @@ class PaymentController extends BaseController
             'canceled',
             'cancelled',
             'failed',
+            'abandoned',
+            'timedout',
+            'timeout',
+            'void',
+            'restricted',
             'payment_declined',
             'payment_expired',
             'payment_voided',
@@ -252,7 +269,7 @@ class PaymentController extends BaseController
         }
 
         if ($payment && $this->isSuccessfulReturnResult($result)) {
-            return $this->syncGatewayReturnStatus($gateway, $payment);
+            return $this->syncGatewayReturnStatus($gateway, $payment, $this->gatewayReferenceFromRequest($request));
         }
 
         return $payment;
@@ -263,13 +280,25 @@ class PaymentController extends BaseController
         $candidateId = trim((string) ($paymentId ?: $request->query('payment_id', '')));
 
         if ($candidateId !== '') {
-            return Payment::query()
+            $payment = Payment::query()
                 ->where('payment_method', $gateway)
                 ->whereKey($candidateId)
                 ->first();
+
+            if ($payment) {
+                return $payment;
+            }
         }
 
-        return null;
+        $gatewayReference = $this->gatewayReferenceFromRequest($request);
+        if ($gatewayReference === null) {
+            return null;
+        }
+
+        return Payment::query()
+            ->where('payment_method', $gateway)
+            ->where('gateway_reference', $gatewayReference)
+            ->first();
     }
 
     private function paymentReturnPayload(string $gateway, string $result, ?Payment $payment): array
@@ -293,9 +322,14 @@ class PaymentController extends BaseController
         return in_array(strtolower($result), ['success', 'succeeded', 'paid', 'approved'], true);
     }
 
-    private function syncGatewayReturnStatus(string $gateway, Payment $payment): Payment
+    private function syncGatewayReturnStatus(string $gateway, Payment $payment, ?string $gatewayReference = null): Payment
     {
-        if ($payment->status === Payment::STATUS_SUCCEEDED || ! $payment->gateway_reference) {
+        if ($payment->status === Payment::STATUS_SUCCEEDED) {
+            return $payment;
+        }
+
+        $gatewayReference = $this->preferredGatewayReference($gateway, $payment, $gatewayReference);
+        if (! $gatewayReference) {
             return $payment;
         }
 
@@ -305,13 +339,21 @@ class PaymentController extends BaseController
         }
 
         try {
-            $gatewayPayload = $provider->paymentStatus((string) $payment->gateway_reference);
+            $gatewayPayload = $provider->paymentStatus($gatewayReference);
         } catch (\Throwable) {
             return $payment;
         }
 
         if (! is_array($gatewayPayload)) {
             return $payment;
+        }
+
+        if ($gateway === Payment::METHOD_TAP) {
+            if (! $this->tapPayloadMatchesPayment($gatewayPayload, $payment)) {
+                return $payment;
+            }
+
+            $payment = $this->bindTapGatewayReference($payment, $gatewayReference);
         }
 
         $gatewayStatus = $this->webhookGatewayStatus($gatewayPayload);
@@ -338,5 +380,135 @@ class PaymentController extends BaseController
         ])->save();
 
         return $payment->refresh();
+    }
+
+    private function verifiedWebhookPayload(string $gateway, Payment $payment, array $payload, PaymentProvider $provider): ?array
+    {
+        if ($gateway !== Payment::METHOD_TAP) {
+            return $payload;
+        }
+
+        if (! method_exists($provider, 'paymentStatus')) {
+            return null;
+        }
+
+        $gatewayReference = $this->preferredGatewayReference(
+            $gateway,
+            $payment,
+            $this->gatewayReferenceFromPayload($payload)
+        );
+
+        if (! $gatewayReference) {
+            return null;
+        }
+
+        try {
+            $gatewayPayload = $provider->paymentStatus($gatewayReference);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! is_array($gatewayPayload) || ! $this->tapPayloadMatchesPayment($gatewayPayload, $payment)) {
+            return null;
+        }
+
+        $this->bindTapGatewayReference($payment, $gatewayReference);
+
+        return array_merge($gatewayPayload, [
+            'webhook_payload' => $payload,
+        ]);
+    }
+
+    private function preferredGatewayReference(string $gateway, Payment $payment, ?string $candidate = null): ?string
+    {
+        $candidate = trim((string) $candidate);
+        $stored = trim((string) $payment->gateway_reference);
+
+        if ($gateway === Payment::METHOD_TAP && $candidate !== '' && $candidate !== (string) $payment->id) {
+            return $candidate;
+        }
+
+        return $stored !== '' ? $stored : ($candidate !== '' ? $candidate : null);
+    }
+
+    private function gatewayReferenceFromRequest(Request $request): ?string
+    {
+        foreach (['tap_id', 'charge_id', 'order_id', 'checkout_id', 'id'] as $key) {
+            $value = trim((string) $request->query($key, ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function gatewayReferenceFromPayload(array $payload): ?string
+    {
+        foreach (['tap_id', 'charge_id', 'charge.id', 'data.id', 'order_id', 'checkout_id', 'payment.id', 'id'] as $key) {
+            $value = data_get($payload, $key);
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return null;
+    }
+
+    private function bindTapGatewayReference(Payment $payment, string $gatewayReference): Payment
+    {
+        $gatewayReference = trim($gatewayReference);
+        $stored = trim((string) $payment->gateway_reference);
+
+        if ($gatewayReference === '' || $stored === $gatewayReference) {
+            return $payment;
+        }
+
+        if ($stored !== '' && $stored !== (string) $payment->id) {
+            return $payment;
+        }
+
+        $payment->forceFill([
+            'gateway_reference' => $gatewayReference,
+        ])->save();
+
+        return $payment->refresh();
+    }
+
+    private function tapPayloadMatchesPayment(array $payload, Payment $payment): bool
+    {
+        $paymentIdCandidates = [
+            data_get($payload, 'metadata.payment_id'),
+            data_get($payload, 'reference.transaction'),
+            data_get($payload, 'payment_id'),
+            data_get($payload, 'order_reference_id'),
+        ];
+
+        foreach ($paymentIdCandidates as $candidate) {
+            if (is_string($candidate) && $candidate === (string) $payment->id) {
+                return true;
+            }
+        }
+
+        $payment->loadMissing('userRequest');
+        $orderNumber = (string) ($payment->userRequest?->order_number ?? '');
+        $orderCandidates = [
+            data_get($payload, 'metadata.order_number'),
+            data_get($payload, 'reference.order'),
+            data_get($payload, 'order_number'),
+        ];
+
+        foreach ($orderCandidates as $candidate) {
+            if ($orderNumber !== '' && is_string($candidate) && $candidate === $orderNumber) {
+                return true;
+            }
+        }
+
+        $currency = strtoupper((string) (data_get($payload, 'currency') ?? ''));
+        $amount = data_get($payload, 'amount');
+
+        return $currency === strtoupper((string) $payment->currency)
+            && is_numeric($amount)
+            && (int) round(((float) $amount) * 100) === $payment->grossAmountMinor();
     }
 }
